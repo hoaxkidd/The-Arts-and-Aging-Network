@@ -1,0 +1,766 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  action    String
+  details   String?
+  userId    String?
+  createdAt DateTime @default(now())
+  user      User?    @relation(fields: [userId], references: [id])
+}
+
+model DirectMessage {
+  id          String    @id @default(cuid())
+  senderId    String
+  recipientId String
+  subject     String
+  content     String
+  read        Boolean   @default(false)
+  emailSent   Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  editedAt    DateTime?
+  sender      User      @relation("DirectMessage_sender", fields: [senderId], references: [id])
+  recipient   User      @relation("DirectMessage_recipient", fields: [recipientId], references: [id])
+
+  @@index([recipientId, read])
+}
+
+model DirectMessageRequest {
+  id           String   @id @default(cuid())
+  requesterId  String
+  requestedId  String
+  message      String?
+  status       String   @default("PENDING")
+  reviewedById String?
+  reviewNote   String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  requested    User     @relation("DirectMessageRequest_requested", fields: [requestedId], references: [id])
+  requester    User     @relation("DirectMessageRequest_requester", fields: [requesterId], references: [id])
+
+  @@unique([requesterId, requestedId])
+  @@index([status])
+}
+
+model Document {
+  id             String         @id @default(cuid())
+  name           String
+  url            String
+  type           String
+  userId         String?
+  organizationId String?
+  expiryDate     DateTime?
+  verified       Boolean        @default(false)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime @updatedAt
+  geriatricHome  GeriatricHome? @relation(fields: [organizationId], references: [id])
+  user           User?          @relation(fields: [userId], references: [id])
+}
+
+model Donation {
+  id            String    @id @default(cuid())
+  donorId       String
+  amount        Float
+  currency      String    @default("CAD")
+  type          String    @default("MONETARY")
+  method        String?
+  campaign      String?
+  programType   String?
+  isRestricted  Boolean   @default(false)
+  restrictions  String?
+  receiptNumber String?   @unique
+  receiptIssued Boolean   @default(false)
+  receiptDate   DateTime?
+  thankYouSent  Boolean   @default(false)
+  thankYouDate  DateTime?
+  notes         String?
+  donationDate  DateTime  @default(now())
+  recordedBy    String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime @updatedAt
+  user          User?     @relation(fields: [recordedBy], references: [id])
+  donor         Donor     @relation(fields: [donorId], references: [id])
+
+  @@index([campaign])
+  @@index([donationDate])
+  @@index([donorId, donationDate])
+}
+
+model Donor {
+  id                String     @id @default(cuid())
+  name              String
+  email             String?
+  phone             String?
+  address           String?
+  type              String
+  tier              String     @default("SUPPORTER")
+  status            String     @default("ACTIVE")
+  isRecurring       Boolean    @default(false)
+  totalDonated      Float      @default(0)
+  donationCount     Int        @default(0)
+  firstDonation     DateTime?
+  lastDonation      DateTime?
+  newsletter        Boolean    @default(true)
+  taxReceipts       Boolean    @default(true)
+  publicRecognition Boolean    @default(true)
+  notes             String?
+  tags              String?
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime @updatedAt
+  donations         Donation[]
+
+  @@index([email])
+  @@index([tier])
+  @@index([type, status])
+}
+
+model EmailReminder {
+  id                  String    @id @default(cuid())
+  eventId             String
+  recipientType       String
+  recipientId         String?
+  reminderType        String
+  scheduledFor        DateTime
+  status              String    @default("PENDING")
+  sentAt              DateTime?
+  mailchimpCampaignId String?
+  mailchimpStatus     String?
+  error               String?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime @updatedAt
+  event               Event     @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, recipientType, recipientId, reminderType])
+  @@index([status, scheduledFor])
+  @@index([eventId, recipientType, reminderType])
+}
+
+model Event {
+  id                   String              @id @default(cuid())
+  title                String
+  description          String?
+  startDateTime        DateTime
+  endDateTime          DateTime
+  locationId           String
+  organizerName        String?
+  organizerRole        String?
+  organizerEmail       String?
+  organizerPhone       String?
+  maxAttendees         Int                 @default(20)
+  autoAcceptLimit      Int                 @default(4)
+  status               String              @default("DRAFT")
+  origin               String              @default("ADMIN")
+  geriatricHomeId      String?
+  programId            String?
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime @updatedAt
+  emailReminders       EmailReminder[]
+  program              Program?            @relation(fields: [programId], references: [id])
+  geriatricHome        GeriatricHome?      @relation(fields: [geriatricHomeId], references: [id])
+  location             Location            @relation(fields: [locationId], references: [id])
+  attendances          EventAttendance[]
+  comments             EventComment[]
+  photos               EventPhoto[]
+  approvedEventRequest EventRequest?       @relation("EventRequest_approvedEvent")
+  existingEventRequests EventRequest[]     @relation("EventRequest_existingEvent")
+  formSubmissions      FormSubmission[]
+  messageGroups        MessageGroup[]
+  testimonials         Testimonial[]
+}
+
+model EventAttendance {
+  id              String    @id @default(cuid())
+  eventId         String
+  userId          String
+  status          String    @default("MAYBE")
+  checkInTime     DateTime?
+  feedbackRating  Int?
+  feedbackComment String?
+  isAnonymous     Boolean   @default(false)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime @updatedAt
+  user            User      @relation(fields: [userId], references: [id])
+  event           Event     @relation(fields: [eventId], references: [id])
+
+  @@unique([eventId, userId])
+}
+
+model EventComment {
+  id        String         @id @default(cuid())
+  eventId   String
+  userId    String
+  content   String
+  parentId  String?
+  createdAt DateTime       @default(now())
+  updatedAt DateTime @updatedAt
+  parent    EventComment?  @relation("EventCommentToEventComment", fields: [parentId], references: [id])
+  replies   EventComment[] @relation("EventCommentToEventComment")
+  user      User           @relation(fields: [userId], references: [id])
+  event     Event          @relation(fields: [eventId], references: [id])
+  reactions EventReaction[]
+
+  @@index([eventId, parentId])
+}
+
+model EventPhoto {
+  id        String          @id @default(cuid())
+  eventId   String
+  uploaderId String
+  url       String
+  caption   String?
+  createdAt DateTime        @default(now())
+  uploader  User            @relation(fields: [uploaderId], references: [id])
+  event     Event           @relation(fields: [eventId], references: [id])
+  reactions EventReaction[]
+}
+
+model EventReaction {
+  id        String        @id @default(cuid())
+  userId    String
+  commentId String?
+  photoId   String?
+  type      String
+  createdAt DateTime      @default(now())
+  photo     EventPhoto?   @relation(fields: [photoId], references: [id], onDelete: Cascade)
+  comment   EventComment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  user      User          @relation(fields: [userId], references: [id])
+
+  @@unique([userId, photoId])
+  @@unique([userId, commentId])
+  @@index([photoId])
+  @@index([commentId])
+}
+
+model EventRequest {
+  id                  String                 @id @default(cuid())
+  geriatricHomeId     String
+  type                String
+  existingEventId     String?
+  customTitle         String?
+  customDescription   String?
+  customStartDateTime DateTime?
+  customEndDateTime   DateTime?
+  customLocationName  String?
+  customLocationAddress String?
+  preferredDates      String?
+  status              String                 @default("PENDING")
+  requestedBy         String
+  requestedAt         DateTime               @default(now())
+  reviewedBy          String?
+  reviewedAt          DateTime?
+  rejectionReason     String?
+  selectedDateIndex   Int?
+  approvedEventId     String?                @unique
+  notes               String?
+  expectedAttendees   Int?
+  programType         String?
+  createdAt           DateTime               @default(now())
+  updatedAt           DateTime @updatedAt
+  approvedEvent       Event?                 @relation("EventRequest_approvedEvent", fields: [approvedEventId], references: [id])
+  existingEvent       Event?                 @relation("EventRequest_existingEvent", fields: [existingEventId], references: [id])
+  geriatricHome       GeriatricHome          @relation(fields: [geriatricHomeId], references: [id])
+  responses           EventRequestResponse[]
+
+  @@index([status, requestedAt])
+  @@index([geriatricHomeId, status])
+}
+
+model EventRequestResponse {
+  id           String       @id @default(cuid())
+  requestId    String
+  staffId      String
+  availability String
+  notes        String?
+  respondedAt  DateTime     @default(now())
+  user         User         @relation(fields: [staffId], references: [id])
+  request      EventRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+
+  @@unique([requestId, staffId])
+  @@index([staffId])
+  @@index([requestId])
+}
+
+model ExpenseRequest {
+  id          String   @id @default(cuid())
+  userId      String
+  amount      Float?
+  description String
+  category    String
+  status      String   @default("PENDING")
+  receiptUrl  String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  attachments String?
+  user        User     @relation(fields: [userId], references: [id])
+}
+
+model FormSubmission {
+  id          String       @id @default(cuid())
+  templateId  String
+  submittedBy String
+  formData    String
+  attachments String?
+  eventId     String?
+  status      String       @default("SUBMITTED")
+  reviewedBy  String?
+  reviewedAt  DateTime?
+  reviewNotes String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime @updatedAt
+  reviewer    User?        @relation("FormSubmission_reviewer", fields: [reviewedBy], references: [id])
+  event       Event?       @relation(fields: [eventId], references: [id])
+  submitter   User         @relation("FormSubmission_submitter", fields: [submittedBy], references: [id])
+  template    FormTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@index([eventId])
+  @@index([status, createdAt])
+  @@index([templateId, submittedBy])
+}
+
+model FormTemplate {
+  id            String           @id @default(cuid())
+  title         String
+  description   String?
+  category      String
+  fileUrl       String?
+  fileName      String?
+  fileType      String?
+  fileSize      Int?
+  isFillable    Boolean          @default(false)
+  formFields    String?
+  version       String           @default("1.0")
+  tags          String?
+  requiredFor   String?
+  downloadCount Int              @default(0)
+  usageCount    Int              @default(0)
+  isActive      Boolean          @default(true)
+  isPublic      Boolean          @default(true)
+  uploadedBy    String
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime @updatedAt
+  submissions   FormSubmission[]
+  uploader      User             @relation(fields: [uploadedBy], references: [id])
+
+  @@index([isActive, createdAt])
+  @@index([category, isActive])
+}
+
+model GeriatricHome {
+  id                 String         @id @default(cuid())
+  name               String
+  address            String
+  latitude           Float?
+  longitude          Float?
+  residentCount      Int
+  maxCapacity        Int
+  specialNeeds       String?
+  emergencyProtocol  String?
+  contactName        String
+  contactEmail       String
+  contactPhone       String
+  contactPosition    String?
+  additionalContacts String?
+  type               String?
+  region             String?
+  isPartner          Boolean        @default(false)
+  newsletterSub      Boolean        @default(false)
+  lastLogin          DateTime?
+  flags              String?
+  secondaryContact   String?
+  accessibilityInfo  String?
+  triggerWarnings    String?
+  accommodations     String?
+  photoPermissions   String?
+  feedbackFormUrl    String?
+  userId             String         @unique
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime @updatedAt
+  documents          Document[]
+  events             Event[]
+  eventRequests      EventRequest[]
+  user               User           @relation(fields: [userId], references: [id])
+}
+
+model GroupMember {
+  id         String       @id @default(cuid())
+  groupId    String
+  userId     String
+  role       String       @default("MEMBER")
+  isActive   Boolean      @default(true)
+  isMuted    Boolean      @default(false)
+  lastReadAt DateTime?
+  joinedAt   DateTime     @default(now())
+  user       User         @relation(fields: [userId], references: [id])
+  group      MessageGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, userId])
+  @@index([userId, isActive])
+}
+
+model GroupMessage {
+  id          String            @id @default(cuid())
+  groupId     String
+  senderId    String
+  content     String
+  attachments String?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime @updatedAt
+  editedAt    DateTime?
+  sender      User              @relation(fields: [senderId], references: [id])
+  group       MessageGroup      @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  reactions   MessageReaction[]
+
+  @@index([senderId])
+  @@index([groupId, createdAt])
+}
+
+model InventoryItem {
+  id           String                 @id @default(cuid())
+  name         String
+  description  String?
+  category     String
+  sku          String?                @unique
+  quantity     Int                    @default(0)
+  minQuantity  Int                    @default(0)
+  maxQuantity  Int?
+  unit         String                 @default("pcs")
+  cost         Float?
+  price        Float?
+  isForSale    Boolean                @default(false)
+  size         String?
+  color        String?
+  imageUrl     String?
+  tags         String?
+  location     String?
+  supplier     String?
+  isActive     Boolean                @default(true)
+  createdAt    DateTime               @default(now())
+  updatedAt    DateTime @updatedAt
+  transactions InventoryTransaction[]
+
+  @@index([quantity])
+  @@index([category, isActive])
+}
+
+model InventoryTransaction {
+  id           String        @id @default(cuid())
+  itemId       String
+  type         String
+  quantity     Int
+  balanceAfter Int
+  reason       String?
+  eventId      String?
+  notes        String?
+  userId       String
+  createdAt    DateTime      @default(now())
+  user         User          @relation(fields: [userId], references: [id])
+  item         InventoryItem @relation(fields: [itemId], references: [id])
+
+  @@index([type, createdAt])
+  @@index([itemId, createdAt])
+}
+
+model Invitation {
+  id          String   @id @default(cuid())
+  email       String
+  role        String
+  token       String   @unique
+  expiresAt   DateTime
+  status      String   @default("PENDING")
+  createdById String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdBy   User     @relation(fields: [createdById], references: [id])
+}
+
+model Location {
+  id        String   @id @default(cuid())
+  name      String
+  address   String
+  type      String   @default("HOME")
+  latitude  Float?
+  longitude Float?
+  verified  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  events    Event[]
+}
+
+model MeetingRequest {
+  id            String    @id @default(cuid())
+  requesterId   String
+  requestedId   String
+  proposedTimes String
+  selectedTime  DateTime?
+  status        String    @default("PENDING")
+  notes         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime @updatedAt
+  requested     User      @relation("MeetingRequest_requested", fields: [requestedId], references: [id])
+  requester     User      @relation("MeetingRequest_requester", fields: [requesterId], references: [id])
+}
+
+model MessageGroup {
+  id            String         @id @default(cuid())
+  name          String
+  description   String?
+  type          String         @default("CUSTOM")
+  iconEmoji     String         @default("💬")
+  color         String         @default("blue")
+  eventId       String?
+  isActive      Boolean        @default(true)
+  allowAllStaff Boolean        @default(false)
+  createdBy     String
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime @updatedAt
+  members       GroupMember[]
+  messages      GroupMessage[]
+  creator       User           @relation(fields: [createdBy], references: [id])
+  event         Event?         @relation(fields: [eventId], references: [id])
+
+  @@index([eventId])
+  @@index([isActive, createdAt])
+}
+
+model MessageReaction {
+  id        String       @id @default(cuid())
+  messageId String
+  userId    String
+  emoji     String
+  createdAt DateTime     @default(now())
+  user      User         @relation(fields: [userId], references: [id])
+  message   GroupMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, userId, emoji])
+  @@index([userId])
+  @@index([messageId])
+}
+
+model MileageEntry {
+  id            String    @id @default(cuid())
+  userId        String
+  date          DateTime
+  month         Int
+  year          Int
+  startLocation String
+  endLocation   String
+  kilometers    Float
+  fundingClass  String?
+  purpose       String?
+  status        String    @default("PENDING")
+  approvedBy    String?
+  approvedAt    DateTime?
+  rejectionNote String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime @updatedAt
+  user          User      @relation(fields: [userId], references: [id])
+
+  @@index([userId, year, month])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String
+  title     String
+  message   String
+  link      String?
+  read      Boolean  @default(false)
+  emailSent Boolean  @default(false)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, read])
+}
+
+model PhoneRequest {
+  id          String   @id @default(cuid())
+  requesterId String
+  requestedId String
+  status      String   @default("PENDING")
+  message     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  requested   User     @relation("PhoneRequest_requested", fields: [requestedId], references: [id])
+  requester   User     @relation("PhoneRequest_requester", fields: [requesterId], references: [id])
+
+  @@unique([requesterId, requestedId])
+}
+
+model Program {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  budget      Float    @default(0)
+  year        Int
+  folders     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  events      Event[]
+}
+
+model Testimonial {
+  id               String    @id @default(cuid())
+  authorName       String
+  authorRole       String?
+  authorImage      String?
+  organizationName String?
+  content          String
+  rating           Int?
+  eventId          String?
+  programType      String?
+  status           String    @default("PENDING")
+  featured         Boolean   @default(false)
+  displayOrder     Int       @default(0)
+  photoUrl         String?
+  videoUrl         String?
+  collectedBy      String?
+  collectedAt      DateTime  @default(now())
+  reviewedBy       String?
+  reviewedAt       DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime @updatedAt
+  collector        User?     @relation(fields: [collectedBy], references: [id])
+  event            Event?    @relation(fields: [eventId], references: [id])
+
+  @@index([eventId])
+  @@index([status, featured])
+}
+
+model TimeEntry {
+  id        String   @id @default(cuid())
+  userId    String
+  date      DateTime @default(now())
+  hours     Float
+  status    String   @default("PENDING")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model Timesheet {
+  id            String           @id @default(cuid())
+  userId        String
+  weekStart     DateTime
+  status        String           @default("DRAFT")
+  submittedAt   DateTime?
+  approvedBy    String?
+  approvedAt    DateTime?
+  rejectionNote String?
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime @updatedAt
+  user          User             @relation(fields: [userId], references: [id])
+  entries       TimesheetEntry[]
+
+  @@unique([userId, weekStart])
+  @@index([status, weekStart])
+}
+
+model TimesheetEntry {
+  id           String    @id @default(cuid())
+  timesheetId  String
+  userId       String
+  date         DateTime
+  eventId      String?
+  programId    String?
+  programName  String?
+  checkInTime  DateTime?
+  checkOutTime DateTime?
+  hoursWorked  Float     @default(0)
+  fundingClass String?
+  notes        String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime @updatedAt
+  user         User      @relation(fields: [userId], references: [id])
+  timesheet    Timesheet @relation(fields: [timesheetId], references: [id], onDelete: Cascade)
+
+  @@index([timesheetId, date])
+}
+
+model User {
+  id                      String                 @id @default(cuid())
+  name                    String?
+  email                   String                 @unique
+  password                String?
+  image                   String?
+  role                    String                 @default("VOLUNTEER")
+  status                  String                 @default("ACTIVE")
+  phone                   String?
+  bio                     String?
+  roleData                String?
+  notificationPreferences String?
+  pronouns                String?
+  preferredName           String?
+  birthDate               DateTime?
+  address                 String?
+  emergencyContact        String?
+  healthInfo              String?
+  sinHash                 String?
+  directDeposit           Boolean                @default(false)
+  intakeAnswers           String?
+  employmentStatus        String?
+  startDate               DateTime?
+  supervisorId            String?
+  region                  String?
+  employmentType          String?
+  position                String?
+  lastLoginAt             DateTime?
+  createdAt               DateTime               @default(now())
+  updatedAt               DateTime               @updatedAt
+  auditLogs               AuditLog[]
+  sentMessages            DirectMessage[]        @relation("DirectMessage_sender")
+  receivedMessages        DirectMessage[]        @relation("DirectMessage_recipient")
+  dmRequestsReceived      DirectMessageRequest[] @relation("DirectMessageRequest_requested")
+  dmRequestsSent          DirectMessageRequest[] @relation("DirectMessageRequest_requester")
+  documents               Document[]
+  donations               Donation[]
+  eventAttendances        EventAttendance[]
+  eventComments           EventComment[]
+  eventPhotos             EventPhoto[]
+  eventReactions          EventReaction[]
+  eventRequestResponses   EventRequestResponse[]
+  expenseRequests         ExpenseRequest[]
+  reviewedSubmissions     FormSubmission[]       @relation("FormSubmission_reviewer")
+  submittedForms          FormSubmission[]       @relation("FormSubmission_submitter")
+  formTemplates           FormTemplate[]
+  geriatricHome           GeriatricHome?
+  groupMemberships        GroupMember[]
+  groupMessages           GroupMessage[]
+  inventoryTransactions   InventoryTransaction[]
+  invitations             Invitation[]
+  meetingRequestsReceived MeetingRequest[]       @relation("MeetingRequest_requested")
+  meetingRequestsSent     MeetingRequest[]       @relation("MeetingRequest_requester")
+  messageGroups           MessageGroup[]
+  messageReactions        MessageReaction[]
+  mileageEntries          MileageEntry[]
+  notifications           Notification[]
+  phoneRequestsReceived   PhoneRequest[]         @relation("PhoneRequest_requested")
+  phoneRequestsSent       PhoneRequest[]         @relation("PhoneRequest_requester")
+  testimonials            Testimonial[]
+  timeEntries             TimeEntry[]
+  timesheets              Timesheet[]
+  timesheetEntries        TimesheetEntry[]
+  workLogs                WorkLog[]
+}
+
+model WorkLog {
+  id         String    @id @default(cuid())
+  userId     String
+  date       DateTime  @default(now())
+  startTime  DateTime  @default(now())
+  endTime    DateTime?
+  type       String    @default("OFFICE")
+  status     String    @default("ACTIVE")
+  activities String?
+  notes      String?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime @updatedAt
+  user       User      @relation(fields: [userId], references: [id])
+}

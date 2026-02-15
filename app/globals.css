@@ -1,26 +1,155 @@
 @import "tailwindcss";
 
+@theme {
+  /* Primary - Arts & Aging Blue */
+  --color-primary-50: #EBF3FB;
+  --color-primary-100: #D6E7F7;
+  --color-primary-200: #ADC9ED;
+  --color-primary-300: #84ABE3;
+  --color-primary-400: #5B8DD9;
+  --color-primary-500: #4A7EB8;
+  --color-primary-600: #3B6693;
+  --color-primary-700: #2C4D6E;
+  --color-primary-800: #1D3349;
+  --color-primary-900: #0E1A24;
+
+  /* Secondary - Arts & Aging Yellow */
+  --color-secondary-50: #FFFEF5;
+  --color-secondary-100: #FEFCE8;
+  --color-secondary-200: #FEF7C3;
+  --color-secondary-300: #FEF08A;
+  --color-secondary-400: #F5E050;
+  --color-secondary-500: #EACC00;
+  --color-secondary-600: #CA8A04;
+  --color-secondary-700: #A16207;
+  --color-secondary-800: #854D0E;
+  --color-secondary-900: #713F12;
+
+  /* Accent - Arts & Aging Cyan/Turquoise */
+  --color-accent-50: #ECFEFF;
+  --color-accent-100: #CFFAFE;
+  --color-accent-200: #A5F3FC;
+  --color-accent-300: #67E8F9;
+  --color-accent-400: #5CC8D9;
+  --color-accent-500: #22B8CF;
+  --color-accent-600: #0891B2;
+  --color-accent-700: #0E7490;
+  --color-accent-800: #155E75;
+  --color-accent-900: #164E63;
+
+  --color-background: #FAFBFC;
+}
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --background: #FAFBFC;
+  --foreground: #1F2937;
+  --color-sidebar-bg: #1D3349;
+  --color-sidebar-text: #ffffff;
 }
 
 body {
-  background: var(--background);
   color: var(--foreground);
+  background: var(--background);
   font-family: Arial, Helvetica, sans-serif;
+  font-size: 16px; /* Minimum readable font size */
+  line-height: 1.5;
+}
+
+/* Custom Date/Time Picker Styling */
+input[type="datetime-local"],
+input[type="date"],
+input[type="time"] {
+  accent-color: #4A7EB8;
+  color-scheme: light;
+}
+
+input[type="datetime-local"]::-webkit-calendar-picker-indicator,
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="time"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  padding: 4px;
+  margin-right: -4px;
+  border-radius: 4px;
+  background-color: #EBF3FB;
+  transition: background-color 0.2s ease;
+  filter: invert(38%) sepia(54%) saturate(497%) hue-rotate(175deg) brightness(91%) contrast(87%);
+}
+
+input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover,
+input[type="date"]::-webkit-calendar-picker-indicator:hover,
+input[type="time"]::-webkit-calendar-picker-indicator:hover {
+  background-color: #D6E7F7;
+}
+
+input[type="datetime-local"]:focus,
+input[type="date"]:focus,
+input[type="time"]:focus {
+  border-color: #4A7EB8;
+  box-shadow: 0 0 0 3px rgba(74, 126, 184, 0.15);
+  outline: none;
+}
+
+/* Firefox date picker styling */
+input[type="datetime-local"]::-moz-calendar-picker-indicator,
+input[type="date"]::-moz-calendar-picker-indicator {
+  background-color: #EBF3FB;
+}
+
+/* Style the datetime inner elements */
+input[type="datetime-local"]::-webkit-datetime-edit-fields-wrapper {
+  padding: 0;
+}
+
+input[type="datetime-local"]::-webkit-datetime-edit-text {
+  color: #6B7280;
+  padding: 0 2px;
+}
+
+input[type="datetime-local"]::-webkit-datetime-edit-month-field,
+input[type="datetime-local"]::-webkit-datetime-edit-day-field,
+input[type="datetime-local"]::-webkit-datetime-edit-year-field,
+input[type="datetime-local"]::-webkit-datetime-edit-hour-field,
+input[type="datetime-local"]::-webkit-datetime-edit-minute-field,
+input[type="datetime-local"]::-webkit-datetime-edit-ampm-field {
+  padding: 2px 4px;
+  border-radius: 4px;
+  transition: background-color 0.15s ease;
+}
+
+input[type="datetime-local"]::-webkit-datetime-edit-month-field:focus,
+input[type="datetime-local"]::-webkit-datetime-edit-day-field:focus,
+input[type="datetime-local"]::-webkit-datetime-edit-year-field:focus,
+input[type="datetime-local"]::-webkit-datetime-edit-hour-field:focus,
+input[type="datetime-local"]::-webkit-datetime-edit-minute-field:focus,
+input[type="datetime-local"]::-webkit-datetime-edit-ampm-field:focus {
+  background-color: #EBF3FB;
+  outline: none;
+}
+
+/* Custom Scrollbar Styles */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #E5E7EB; /* gray-200 */
+  border-radius: 99px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #D1D5DB; /* gray-300 */
+}
+
+/* Darker scrollbar for light backgrounds if needed */
+.custom-scrollbar-dark::-webkit-scrollbar-thumb {
+  background: #9CA3AF; /* gray-400 */
+}
+
+.custom-scrollbar-dark::-webkit-scrollbar-thumb:hover {
+  background: #6B7280; /* gray-500 */
 }
