@@ -274,7 +274,9 @@ export function NewMessageModal({ isOpen, onClose, currentUserRole }: Props) {
               <p className="text-xs text-gray-500">
                 {isAdmin
                   ? 'As an admin, you can message anyone directly.'
-                  : 'Your request will be sent to an admin for approval.'}
+                  : currentUserRole === 'HOME_ADMIN'
+                    ? 'You can only start conversations with administrators.'
+                    : 'Your request will be sent to an admin for approval.'}
               </p>
             </div>
           )}

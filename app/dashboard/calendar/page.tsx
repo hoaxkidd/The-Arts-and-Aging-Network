@@ -42,7 +42,7 @@ export default async function CalendarPage() {
     }
   }
 
-  // Fetch all published events
+  // Fetch all published events (include requiredFormTemplateId for sign-up flow)
   const allEvents = await db.event.findMany({
     where: {
       status: 'PUBLISHED',
@@ -50,7 +50,13 @@ export default async function CalendarPage() {
         gte: new Date(new Date().setMonth(new Date().getMonth() - 1)) // Events from last month onwards
       }
     },
-    include: {
+    select: {
+      id: true,
+      title: true,
+      startDateTime: true,
+      endDateTime: true,
+      status: true,
+      requiredFormTemplateId: true,
       location: { select: { name: true } }
     },
     orderBy: { startDateTime: 'asc' }
@@ -61,7 +67,13 @@ export default async function CalendarPage() {
     where: {
       geriatricHomeId: home.id
     },
-    include: {
+    select: {
+      id: true,
+      title: true,
+      startDateTime: true,
+      endDateTime: true,
+      status: true,
+      requiredFormTemplateId: true,
       location: { select: { name: true } }
     }
   })
@@ -74,17 +86,16 @@ export default async function CalendarPage() {
     }
   }
 
-  const formattedEvents = Array.from(eventMap.values()).map((e: any) => {
-    return {
-      id: e.id,
-      title: e.title,
-      startDateTime: e.startDateTime,
-      endDateTime: e.endDateTime,
-      status: e.status,
-      location: e.location,
-      myRequestStatus: requestStatusMap.get(e.id) || null
-    }
-  })
+  const formattedEvents = Array.from(eventMap.values()).map((e: any) => ({
+    id: e.id,
+    title: e.title,
+    startDateTime: e.startDateTime,
+    endDateTime: e.endDateTime,
+    status: e.status,
+    location: e.location,
+    myRequestStatus: requestStatusMap.get(e.id) || null,
+    requiredFormTemplateId: e.requiredFormTemplateId ?? null
+  }))
 
   return (
     <div className="h-full flex flex-col">

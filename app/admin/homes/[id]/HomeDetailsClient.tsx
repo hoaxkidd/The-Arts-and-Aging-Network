@@ -17,6 +17,7 @@ import {
   removePersonnel,
   deleteHome
 } from '@/app/actions/home-management'
+import { AddressAutocomplete } from '@/components/ui/AddressAutocomplete'
 
 type Personnel = {
   id: string
@@ -277,6 +278,7 @@ export function HomeDetailsClient({ home }: { home: HomeData }) {
   const [showPersonnelModal, setShowPersonnelModal] = useState(false)
   const [editingPersonnel, setEditingPersonnel] = useState<Personnel | undefined>()
   const [personnelToDelete, setPersonnelToDelete] = useState<string | null>(null)
+  const [editAddress, setEditAddress] = useState(home.address || '')
 
   const handleDeleteHome = async (confirmText: string) => {
     startTransition(async () => {
@@ -421,7 +423,14 @@ export function HomeDetailsClient({ home }: { home: HomeData }) {
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">Address</label>
-                  <input name="address" defaultValue={home.address} className={cn(STYLES.input)} />
+                  <AddressAutocomplete
+                    name="address"
+                    value={editAddress}
+                    onChange={setEditAddress}
+                    placeholder="Start typing address..."
+                    countries={['ca']}
+                    className={cn(STYLES.input)}
+                  />
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">Max Capacity</label>

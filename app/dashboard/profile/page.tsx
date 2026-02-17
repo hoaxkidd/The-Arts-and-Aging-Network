@@ -24,38 +24,43 @@ export default async function HomeProfilePage() {
   if (!user) return <div>User not found</div>
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-            <Building2 className="w-6 h-6 text-gray-700" />
-            Profile & Settings
-        </h1>
-        <p className="text-gray-500 text-sm mt-1">Manage your facility details and personal account information</p>
-      </div>
+    <div className="h-full flex flex-col">
+      {/* Simple header */}
+      <header className="flex-shrink-0 pb-4 border-b border-gray-200">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-md bg-primary-100 text-primary-600 flex items-center justify-center">
+            <Building2 className="w-4 h-4" />
+          </div>
+          <div>
+            <h1 className="text-base font-semibold text-gray-900">Profile & Settings</h1>
+            <p className="text-xs text-gray-500">
+              Manage your facility details and personal account information
+            </p>
+          </div>
+        </div>
+      </header>
 
-      <HomeProfileTabs
-        facilityContent={
-            <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-                {home ? (
-                <HomeProfileForm home={home} />
-                ) : (
-                <div className="p-12 text-center">
-                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-400">
-                        <Building2 className="w-8 h-8" />
-                    </div>
-                    <h3 className="text-lg font-medium text-gray-900">No Facility Profile</h3>
-                    <p className="text-gray-500 mt-1">Please contact support to link your account to a facility.</p>
-                </div>
-                )}
-            </div>
-        }
-        accountContent={
-            <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-                <ProfileForm user={user} documents={user?.documents || []} visibleTabs={['contact', 'emergency', 'documents']} flat />
-            </div>
-        }
-      />
+      {/* Tabbed content */}
+      <div className="flex-1 min-h-0 overflow-auto pt-4">
+        <HomeProfileTabs
+          facilityContent={
+            home ? (
+              <HomeProfileForm home={home} />
+            ) : (
+              <div className="p-8 text-center text-sm text-gray-500 border border-dashed border-gray-300 rounded-md">
+                No facility profile is linked to this account yet.
+              </div>
+            )
+          }
+          accountContent={
+            <ProfileForm
+              user={user}
+              documents={user?.documents || []}
+              embedded
+            />
+          }
+        />
+      </div>
     </div>
   )
 }

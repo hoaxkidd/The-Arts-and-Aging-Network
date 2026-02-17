@@ -16,7 +16,7 @@ export async function getInventoryItems(filters?: {
   }
 
   try {
-    const where: any = {}
+    const where: { category?: string; isActive?: boolean } = {}
 
     if (filters?.category && filters.category !== 'ALL') {
       where.category = filters.category
@@ -67,6 +67,8 @@ export async function createInventoryItem(data: {
   imageUrl?: string
   location?: string
   supplier?: string
+  supplierEmail?: string
+  supplierPhone?: string
   tags?: string[]
 }) {
   const session = await auth()
@@ -79,27 +81,28 @@ export async function createInventoryItem(data: {
   }
 
   try {
-    const item = await prisma.inventoryItem.create({
-      data: {
-        name: data.name,
-        description: data.description || null,
-        category: data.category,
-        sku: data.sku || null,
-        quantity: data.quantity || 0,
-        minQuantity: data.minQuantity || 0,
-        maxQuantity: data.maxQuantity || null,
-        unit: data.unit || 'pcs',
-        cost: data.cost || null,
-        price: data.price || null,
-        isForSale: data.isForSale || false,
-        size: data.size || null,
-        color: data.color || null,
-        imageUrl: data.imageUrl || null,
-        location: data.location || null,
-        supplier: data.supplier || null,
-        tags: data.tags ? JSON.stringify(data.tags) : null
-      }
-    })
+    const createData = {
+      name: data.name,
+      description: data.description || null,
+      category: data.category,
+      sku: data.sku || null,
+      quantity: data.quantity || 0,
+      minQuantity: data.minQuantity || 0,
+      maxQuantity: data.maxQuantity ?? null,
+      unit: data.unit || 'pcs',
+      cost: data.cost ?? null,
+      price: data.price ?? null,
+      isForSale: data.isForSale || false,
+      size: data.size || null,
+      color: data.color || null,
+      imageUrl: data.imageUrl || null,
+      location: data.location || null,
+      supplier: data.supplier || null,
+      supplierEmail: data.supplierEmail || null,
+      supplierPhone: data.supplierPhone || null,
+      tags: data.tags ? JSON.stringify(data.tags) : null
+    }
+    const item = await prisma.inventoryItem.create({ data: createData })
 
     // Create initial transaction if quantity > 0
     if (data.quantity && data.quantity > 0) {
@@ -133,7 +136,10 @@ export async function createInventoryItem(data: {
 }
 
 // Update inventory item
-export async function updateInventoryItem(id: string, data: any) {
+export async function updateInventoryItem(
+  id: string,
+  data: Record<string, unknown>
+) {
   const session = await auth()
   if (session?.user?.role !== 'ADMIN') {
     return { error: "Unauthorized" }
@@ -214,5 +220,32 @@ export async function createInventoryTransaction(data: {
   } catch (error) {
     console.error("Failed to create transaction:", error)
     return { error: "Failed to create transaction" }
+  }
+}
+
+// Deactivate (soft delete) an inventory item
+export async function deactivateInventoryItem(id: string) {
+  const session = await auth()
+  if (session?.user?.role !== 'ADMIN') {
+    return { error: "Unauthorized" }
+  }
+
+  try {
+    await prisma.inventoryItem.update({
+      where: { id },
+      data: { isActive: false }
+    })
+    await prisma.auditLog.create({
+      data: {
+        action: 'INVENTORY_ITEM_DEACTIVATED',
+        details: JSON.stringify({ itemId: id }),
+        userId: session.user.id
+      }
+    })
+    revalidatePath('/admin/inventory')
+    return { success: true }
+  } catch (error) {
+    console.error("Failed to deactivate item:", error)
+    return { error: "Failed to remove item" }
   }
 }

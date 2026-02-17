@@ -96,7 +96,110 @@ export async function requestExistingEvent(
     return { success: true, data: request }
   } catch (error) {
     console.error("Failed to request event:", error)
-    return { error: "Failed to submit event request" }
+    const msg = error instanceof Error ? error.message : "Unknown error"
+    return { error: process.env.NODE_ENV === "development" ? `Failed to submit event request: ${msg}` : "Failed to submit event request" }
+  }
+}
+
+// Submit event sign-up form and create event request (when event requires a form template)
+export async function submitEventSignUpForm(
+  eventId: string,
+  formData: Record<string, unknown>,
+  attachments?: string[]
+) {
+  const session = await auth()
+  if (!session?.user?.id) return { error: "Unauthorized" }
+  if (session.user.role !== 'HOME_ADMIN') return { error: "Only home admins can use this form" }
+
+  try {
+    const home = await db.geriatricHome.findUnique({
+      where: { userId: session.user.id }
+    })
+    if (!home) return { error: "No home found for this user" }
+
+    const event = await db.event.findUnique({
+      where: { id: eventId },
+      include: { requiredFormTemplate: true }
+    })
+    if (!event) return { error: "Event not found" }
+    if (event.status !== 'PUBLISHED') return { error: "Event is not available for requests" }
+    if (!event.requiredFormTemplateId || !event.requiredFormTemplate) {
+      return { error: "This event does not require a sign-up form" }
+    }
+
+    const existingRequest = await db.eventRequest.findFirst({
+      where: {
+        geriatricHomeId: home.id,
+        existingEventId: eventId,
+        status: { in: ['PENDING', 'APPROVED'] }
+      }
+    })
+    if (existingRequest) return { error: "You have already requested this event" }
+
+    const templateId = event.requiredFormTemplate.id
+
+    const [submission, request] = await db.$transaction(async (tx) => {
+      const sub = await tx.formSubmission.create({
+        data: {
+          templateId,
+          submittedBy: session.user.id,
+          formData: JSON.stringify(formData),
+          eventId,
+          attachments: attachments?.length ? JSON.stringify(attachments) : null
+        }
+      })
+      const req = await tx.eventRequest.create({
+        data: {
+          geriatricHomeId: home.id,
+          type: 'REQUEST_EXISTING',
+          existingEventId: eventId,
+          requestedBy: session.user.id
+        }
+      })
+      await tx.formSubmission.update({
+        where: { id: sub.id },
+        data: { eventRequestId: req.id }
+      })
+      await tx.formTemplate.update({
+        where: { id: templateId },
+        data: { usageCount: { increment: 1 } }
+      })
+      return [sub, req]
+    })
+
+    const admins = await db.user.findMany({
+      where: { role: 'ADMIN', status: 'ACTIVE' },
+      select: { id: true }
+    })
+    for (const admin of admins) {
+      await db.notification.create({
+        data: {
+          userId: admin.id,
+          type: 'EVENT_REQUEST_SUBMITTED',
+          title: 'New Event Request',
+          message: `${home.name} has requested to participate in "${event.title}"`,
+          link: `/admin/event-requests/${request.id}`
+        }
+      })
+    }
+
+    await db.auditLog.create({
+      data: {
+        action: 'EVENT_REQUEST_CREATED',
+        details: JSON.stringify({ requestId: request.id, eventId, homeId: home.id, formSubmissionId: submission.id }),
+        userId: session.user.id
+      }
+    })
+
+    revalidatePath('/dashboard/requests')
+    revalidatePath('/dashboard/calendar')
+    revalidatePath('/admin/event-requests')
+
+    return { success: true, data: { request, submission } }
+  } catch (error) {
+    console.error("Submit event sign-up form error:", error)
+    const msg = error instanceof Error ? error.message : "Unknown error"
+    return { error: process.env.NODE_ENV === "development" ? `Failed to submit event request: ${msg}` : "Failed to submit event request" }
   }
 }
 
@@ -358,7 +461,26 @@ export async function getAllEventRequests(filters?: {
       orderBy: { requestedAt: 'desc' }
     })
 
-    return { success: true, data: requests }
+    type RequestWithSubmission = (typeof requests)[0] & { formSubmission: { id: string; formData: string; template: { title: string } } | null }
+    let data: RequestWithSubmission[]
+    try {
+      const requestIds = requests.map((r) => r.id)
+      const submissions = requestIds.length
+        ? await db.formSubmission.findMany({
+            where: { eventRequestId: { in: requestIds } },
+            include: { template: { select: { title: true } } }
+          })
+        : []
+      const submissionByRequestId = new Map(submissions.map((s) => [s.eventRequestId!, s]))
+      data = requests.map((r) => ({
+        ...r,
+        formSubmission: submissionByRequestId.get(r.id) ?? null
+      }))
+    } catch {
+      data = requests.map((r) => ({ ...r, formSubmission: null }))
+    }
+
+    return { success: true, data }
   } catch (error) {
     console.error("Failed to get requests:", error)
     return { error: "Failed to load requests" }
@@ -390,6 +512,9 @@ export async function getEventRequestDetail(requestId: string) {
             attendances: { include: { user: true } },
             _count: { select: { attendances: true, photos: true, comments: true } }
           }
+        },
+        formSubmission: {
+          include: { template: { select: { title: true } } }
         }
       }
     })

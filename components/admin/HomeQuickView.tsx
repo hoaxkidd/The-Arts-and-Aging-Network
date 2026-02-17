@@ -32,6 +32,8 @@ type HomeDetails = {
     name: string | null
     email: string
     phone: string | null
+    address: string | null
+    emergencyContact: string | null
     status: string
     createdAt: Date
   }
@@ -350,7 +352,49 @@ export function HomeQuickView({ homeId, isOpen, onClose }: HomeQuickViewProps) {
                     type="email"
                     onUpdate={handleUpdate}
                   />
+                  <EditableField
+                    label="Phone"
+                    value={home.user.phone}
+                    field="userPhone"
+                    homeId={home.id}
+                    onUpdate={handleUpdate}
+                  />
+                  <EditableField
+                    label="Address"
+                    value={home.user.address}
+                    field="userAddress"
+                    homeId={home.id}
+                    onUpdate={handleUpdate}
+                  />
                 </div>
+                {home.user.emergencyContact && (() => {
+                  try {
+                    const ec = JSON.parse(home.user.emergencyContact)
+                    return (
+                      <div className="pt-2 border-t border-gray-200">
+                        <h4 className="text-xs font-semibold text-gray-700 mb-2">Emergency Contact</h4>
+                        <div className="grid grid-cols-2 gap-3 text-xs">
+                          <div>
+                            <span className="text-gray-500">Name:</span>
+                            <span className="ml-2 text-gray-900">{ec.name || 'Not set'}</span>
+                          </div>
+                          <div>
+                            <span className="text-gray-500">Phone:</span>
+                            <span className="ml-2 text-gray-900">{ec.phone || 'Not set'}</span>
+                          </div>
+                          {ec.relation && (
+                            <div className="col-span-2">
+                              <span className="text-gray-500">Relationship:</span>
+                              <span className="ml-2 text-gray-900">{ec.relation}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )
+                  } catch {
+                    return null
+                  }
+                })()}
                 <div className="flex items-center gap-4 text-xs text-gray-500 pt-2 border-t border-gray-200">
                   <span className="flex items-center gap-1">
                     <Clock className="w-3 h-3" />

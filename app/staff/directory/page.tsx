@@ -1,19 +1,7 @@
 import { getStaffDirectory } from '@/app/actions/directory'
 import { DirectoryTabs } from './DirectoryTabs'
 import { Search, Users } from 'lucide-react'
-
-const ROLE_LABELS: Record<string, string> = {
-  ADMIN: 'Administration',
-  BOARD: 'Board',
-  PAYROLL: 'Payroll',
-  HOME_ADMIN: 'Home Admins',
-  FACILITATOR: 'Facilitators',
-  CONTRACTOR: 'Contractors',
-  VOLUNTEER: 'Volunteers',
-  PARTNER: 'Partners',
-}
-
-const ROLE_ORDER = ['ADMIN', 'BOARD', 'PAYROLL', 'HOME_ADMIN', 'FACILITATOR', 'CONTRACTOR', 'VOLUNTEER', 'PARTNER']
+import { ROLE_ORDER, ROLE_LABELS_SHORT } from '@/lib/roles'
 
 export default async function StaffDirectoryPage({
   searchParams
@@ -41,7 +29,7 @@ export default async function StaffDirectoryPage({
     .filter(role => grouped[role]?.length)
     .map(role => ({
       role,
-      label: ROLE_LABELS[role] || role,
+      label: ROLE_LABELS_SHORT[role] || role,
       members: grouped[role]
     }))
 

@@ -313,8 +313,9 @@ export async function deleteFormTemplate(id: string) {
 // Submit a filled form
 export async function submitForm(data: {
   templateId: string
-  formData: Record<string, any>
+  formData: Record<string, unknown>
   eventId?: string
+  eventRequestId?: string
   attachments?: string[]
 }) {
   const session = await auth()
@@ -341,6 +342,7 @@ export async function submitForm(data: {
         submittedBy: session.user.id,
         formData: JSON.stringify(data.formData),
         eventId: data.eventId || null,
+        eventRequestId: data.eventRequestId || null,
         attachments: data.attachments ? JSON.stringify(data.attachments) : null
       }
     })

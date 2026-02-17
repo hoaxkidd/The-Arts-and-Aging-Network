@@ -25,6 +25,7 @@ const EventSchema = z.object({
   organizerRole: z.string().optional(),
   organizerEmail: z.string().optional(),
   organizerPhone: z.string().optional(),
+  requiredFormTemplateId: z.string().optional(),
 })
 
 export async function createEvent(formData: FormData) {
@@ -63,6 +64,15 @@ export async function createEvent(formData: FormData) {
 
     if (!locationId) return { error: 'Location required' }
 
+    // Validate optional form template exists and is active if provided
+    let requiredFormTemplateId: string | null = validated.data.requiredFormTemplateId?.trim() || null
+    if (requiredFormTemplateId) {
+      const template = await prisma.formTemplate.findFirst({
+        where: { id: requiredFormTemplateId, isActive: true, isFillable: true },
+      })
+      if (!template) requiredFormTemplateId = null
+    }
+
     if (id) {
         // Update Existing Event
         const updatedEvent = await prisma.event.update({
@@ -79,6 +89,7 @@ export async function createEvent(formData: FormData) {
                 organizerRole: validated.data.organizerRole || null,
                 organizerEmail: validated.data.organizerEmail || null,
                 organizerPhone: validated.data.organizerPhone || null,
+                requiredFormTemplateId,
             }
         })
         
@@ -117,6 +128,7 @@ export async function createEvent(formData: FormData) {
                 organizerEmail: validated.data.organizerEmail || null,
                 organizerPhone: validated.data.organizerPhone || null,
                 status: 'PUBLISHED',
+                requiredFormTemplateId,
                 updatedAt: new Date()
             },
             include: { location: true }

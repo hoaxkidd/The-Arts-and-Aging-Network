@@ -20,7 +20,8 @@ const ProfileSchema = z.object({
     relation: z.string().optional(),
   }).optional(),
   healthInfo: z.string().optional(),
-  intakeAnswers: z.record(z.string(), z.string()).optional(), // Zod v4: key and value schemas required
+  // Allow richer intake data (arrays/objects) like skills, tasks, etc.
+  intakeAnswers: z.record(z.string(), z.unknown()).optional(),
 })
 
 export async function updateStaffProfile(formData: FormData) {
@@ -69,13 +70,54 @@ export async function updateStaffProfile(formData: FormData) {
     healthInfo: formData.get("healthInfo") || undefined,
   }
 
-  // Extract intake answers
-  const intakeAnswers: Record<string, string> = {}
+  // Load existing intake answers to merge with new values
+  const existingUser = await prisma.user.findUnique({
+    where: { id: targetUserId },
+    select: { intakeAnswers: true }
+  })
+  
+  const existingIntake: Record<string, unknown> = existingUser?.intakeAnswers 
+    ? (() => {
+        try {
+          return JSON.parse(existingUser.intakeAnswers)
+        } catch {
+          return {}
+        }
+      })()
+    : {}
+
+  // Extract intake answers from form
+  const newIntakeAnswers: Record<string, unknown> = {}
   for (const [key, value] of formData.entries()) {
-    if (key.startsWith('intake_') && value) {
-        intakeAnswers[key.replace('intake_', '')] = value as string
+    if (!key.startsWith('intake_')) continue
+    
+    // Allow empty strings/arrays to be saved (don't skip if value is empty)
+    const intakeKey = key.replace('intake_', '')
+    const raw = value as string
+
+    // Fields we explicitly JSON-encode on the client (arrays/objects)
+    if (intakeKey === 'skills' || intakeKey === 'tasks') {
+      try {
+        const parsed = JSON.parse(raw)
+        // Always save, even if empty array
+        newIntakeAnswers[intakeKey] = parsed
+      } catch {
+        // Fallback to raw string if parsing fails
+        newIntakeAnswers[intakeKey] = raw
+      }
+    } else if (value) {
+      // Only save non-empty strings for other fields
+      newIntakeAnswers[intakeKey] = raw
     }
   }
+  
+  // Merge existing intake with new values (new values override existing)
+  const intakeAnswers = { ...existingIntake, ...newIntakeAnswers }
+  
+  // Debug logging (remove in production)
+  console.log('[updateStaffProfile] Existing intake:', existingIntake)
+  console.log('[updateStaffProfile] New intake from form:', newIntakeAnswers)
+  console.log('[updateStaffProfile] Merged intake:', intakeAnswers)
   
   // Merge intake into rawData for validation
   const dataToValidate = { ...rawData, intakeAnswers }

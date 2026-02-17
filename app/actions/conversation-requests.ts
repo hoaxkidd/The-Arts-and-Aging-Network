@@ -221,8 +221,34 @@ export async function canMessageUser(userId: string) {
     return { canMessage: false, reason: 'Not authenticated' }
   }
 
+  const target = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { role: true }
+  })
+  if (!target) {
+    return { canMessage: false, reason: 'User not found' }
+  }
+
+  const myRole = session.user.role as string
+  const targetRole = target.role
+
   // Admins can message anyone
-  if (session.user.role === 'ADMIN') {
+  if (myRole === 'ADMIN') {
+    return { canMessage: true }
+  }
+
+  // Anyone can message an admin (no approval required)
+  if (targetRole === 'ADMIN') {
+    return { canMessage: true }
+  }
+
+  // HOME_ADMIN can only message admins (already handled above if target is ADMIN)
+  if (myRole === 'HOME_ADMIN') {
+    return { canMessage: false, reason: 'Home admins can only message administrators' }
+  }
+
+  // Same role can message each other (e.g. payroll ↔ payroll)
+  if (myRole === targetRole) {
     return { canMessage: true }
   }
 
@@ -254,5 +280,5 @@ export async function canMessageUser(userId: string) {
     return { canMessage: true }
   }
 
-  return { canMessage: false, reason: 'No approved conversation' }
+  return { canMessage: false, reason: 'Admin approval required to start a conversation' }
 }

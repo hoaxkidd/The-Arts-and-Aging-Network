@@ -2,20 +2,9 @@
 
 import { prisma } from "@/lib/prisma"
 import { auth } from "@/auth"
+import { ROLE_ORDER, isValidRole } from "@/lib/roles"
 
-// Role hierarchy order for directory grouping
-const ROLE_ORDER: Record<string, number> = {
-  ADMIN: 0,
-  BOARD: 1,
-  PAYROLL: 2,
-  HOME_ADMIN: 3,
-  FACILITATOR: 4,
-  CONTRACTOR: 5,
-  VOLUNTEER: 6,
-  PARTNER: 7,
-}
-
-// Get all active staff for directory listing
+// Get all active staff for directory listing. Only includes users with a valid assigned role.
 export async function getStaffDirectory(search?: string) {
   const session = await auth()
   if (!session?.user?.id) return { error: "Unauthorized" }
@@ -49,10 +38,16 @@ export async function getStaffDirectory(search?: string) {
     orderBy: { name: 'asc' }
   })
 
+  // Only include users with a valid role; exclude HOME_ADMIN (not listed in staff directory)
+  const withValidRole = staff.filter(
+    (u) => isValidRole(u.role) && u.role !== 'HOME_ADMIN'
+  )
+
   // Sort by role hierarchy, then by name within each group
-  const sorted = staff.sort((a, b) => {
-    const orderA = ROLE_ORDER[a.role] ?? 99
-    const orderB = ROLE_ORDER[b.role] ?? 99
+  const roleOrderMap = Object.fromEntries(ROLE_ORDER.map((r, i) => [r, i]))
+  const sorted = withValidRole.sort((a, b) => {
+    const orderA = roleOrderMap[a.role as keyof typeof roleOrderMap] ?? 99
+    const orderB = roleOrderMap[b.role as keyof typeof roleOrderMap] ?? 99
     if (orderA !== orderB) return orderA - orderB
     return (a.name || '').localeCompare(b.name || '')
   })
@@ -82,6 +77,9 @@ export async function getStaffPublicProfile(staffId: string) {
   })
 
   if (!staff) return { error: "Staff member not found" }
+
+  // HOME_ADMIN profiles are not exposed via the directory (they are not listed)
+  if (staff.role === 'HOME_ADMIN') return { error: "Staff member not found" }
 
   // Get upcoming confirmed events
   const upcomingEvents = await prisma.eventAttendance.findMany({

@@ -63,10 +63,20 @@ export default auth((req) => {
     })
   }
 
-  // Allow all logged-in users to access inbox, messages, and directory (MUST come before general /staff check)
-  if (pathname.startsWith('/staff/inbox') || pathname.startsWith('/staff/groups') || pathname.startsWith('/staff/directory')) {
+  // HOME_ADMIN cannot access staff directory (redirect to dashboard)
+  if (pathname.startsWith('/staff/directory')) {
     if (!isLoggedIn) return NextResponse.redirect(new URL('/login', req.nextUrl))
-    // All authenticated users can access these routes
+    if (userRole === 'HOME_ADMIN') return NextResponse.redirect(new URL('/dashboard', req.nextUrl))
+    return NextResponse.next({
+      request: {
+        headers: requestHeaders
+      }
+    })
+  }
+
+  // Allow all logged-in users to access inbox and groups (MUST come before general /staff check)
+  if (pathname.startsWith('/staff/inbox') || pathname.startsWith('/staff/groups')) {
+    if (!isLoggedIn) return NextResponse.redirect(new URL('/login', req.nextUrl))
     return NextResponse.next({
       request: {
         headers: requestHeaders

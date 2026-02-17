@@ -12,20 +12,24 @@ export async function searchUsers(query: string) {
   }
 
   try {
-    const users = await prisma.user.findMany({
-      where: {
-        AND: [
-          { id: { not: session.user.id } }, // Exclude current user
-          { status: 'ACTIVE' },
-          {
-            OR: [
-              { name: { contains: query } },
-              { preferredName: { contains: query } },
-              { email: { contains: query } }
-            ]
-          }
+    const andConditions: object[] = [
+      { id: { not: session.user.id } },
+      { status: 'ACTIVE' },
+      {
+        OR: [
+          { name: { contains: query } },
+          { preferredName: { contains: query } },
+          { email: { contains: query } }
         ]
-      },
+      }
+    ]
+    // HOME_ADMIN can only message administrators; restrict search to ADMIN role only
+    if (session.user.role === 'HOME_ADMIN') {
+      andConditions.push({ role: 'ADMIN' })
+    }
+
+    const users = await prisma.user.findMany({
+      where: { AND: andConditions },
       select: {
         id: true,
         name: true,

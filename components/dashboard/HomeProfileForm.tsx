@@ -1,9 +1,11 @@
 'use client'
 
+import { useState } from 'react'
 import { updateHomeDetails } from "@/app/actions/home-management"
 import { STYLES } from "@/lib/styles"
 import { cn } from "@/lib/utils"
 import { Building2, Save, MapPin, Users, AlertTriangle, Camera, Settings, Info } from "lucide-react"
+import { AddressAutocomplete } from "@/components/ui/AddressAutocomplete"
 
 type HomeData = {
   id: string
@@ -30,6 +32,8 @@ type HomeData = {
 }
 
 export function HomeProfileForm({ home }: { home: HomeData }) {
+  const [address, setAddress] = useState(home.address || '')
+
   // Parse photo permissions JSON
   const photoPerms = home.photoPermissions ? JSON.parse(home.photoPermissions) : { formReceived: false, restrictions: '' }
 
@@ -119,12 +123,14 @@ export function HomeProfileForm({ home }: { home: HomeData }) {
                         <MapPin className="w-3 h-3" />
                         Physical Address
                     </label>
-                    <textarea
+                    <AddressAutocomplete
                         name="address"
-                        defaultValue={home.address}
-                        rows={2}
-                        className={cn(STYLES.input, "resize-none")}
+                        value={address}
+                        onChange={setAddress}
                         placeholder="Enter complete address"
+                        multiline
+                        countries={['ca']}
+                        className={cn(STYLES.input, "resize-none")}
                     />
                 </div>
             </div>

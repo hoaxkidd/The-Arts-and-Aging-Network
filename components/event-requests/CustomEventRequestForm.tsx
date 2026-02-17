@@ -15,6 +15,7 @@ import {
 import { cn } from '@/lib/utils'
 import { STYLES } from '@/lib/styles'
 import { createCustomEventRequest } from '@/app/actions/event-requests'
+import { AddressAutocomplete } from '@/components/ui/AddressAutocomplete'
 
 export function CustomEventRequestForm() {
   const router = useRouter()
@@ -287,12 +288,12 @@ export function CustomEventRequestForm() {
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Address
               </label>
-              <input
-                type="text"
+              <AddressAutocomplete
                 value={formData.locationAddress}
-                onChange={(e) => setFormData({ ...formData, locationAddress: e.target.value })}
-                className={STYLES.input}
+                onChange={(val) => setFormData({ ...formData, locationAddress: val })}
                 placeholder="Full address"
+                countries={['ca']}
+                className={STYLES.input}
               />
             </div>
           </div>

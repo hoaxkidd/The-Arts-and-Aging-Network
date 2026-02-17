@@ -3,6 +3,7 @@
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
+import { canMessageUser } from './conversation-requests'
 
 // Get all conversations for current user
 export async function getConversations() {
@@ -152,6 +153,11 @@ export async function sendMessage(recipientId: string, content: string) {
   const session = await auth()
   if (!session?.user?.id) {
     return { error: 'Unauthorized' }
+  }
+
+  const permission = await canMessageUser(recipientId)
+  if (!permission.canMessage) {
+    return { error: permission.reason ?? 'You do not have permission to message this user' }
   }
 
   try {

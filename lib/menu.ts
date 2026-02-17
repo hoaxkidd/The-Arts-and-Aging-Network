@@ -29,6 +29,7 @@ export const adminMenu = [
   { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
   { label: "Financial Management", href: "/admin/financials", icon: Receipt },
   { label: "Event Management", href: "/admin/events", icon: Calendar },
+  { label: "Event Requests", href: "/admin/event-requests", icon: ClipboardList },
   { label: "Communication Hub", href: "/admin/communication", icon: MessageSquare },
   { label: "Homes", href: "/admin/homes", icon: Building },
   { label: "User Management", href: "/admin/users", icon: Users },
@@ -87,11 +88,6 @@ export const homeAdminMenu = [
     label: "Browse Events",
     href: "/dashboard/events",
     icon: Calendar,
-  },
-  {
-    label: "Staff Directory",
-    href: "/staff/directory",
-    icon: Users,
   },
   {
     label: "Inbox",

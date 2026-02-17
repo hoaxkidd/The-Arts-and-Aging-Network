@@ -1,9 +1,11 @@
 datasource db {
   provider  = "postgresql"
-  // Uses the connection pooling URL for deployments
-  url       = env("POSTGRES_PRISMA_URL")
-  // Uses the direct URL for migrations
-  directUrl = env("POSTGRES_URL_NON_POOLING")
+  url       = env("STORAGE_URL")
+  directUrl = env("STORAGE_URL_UNPOOLED")
+}
+
+generator client {
+  provider = "prisma-client-js"
 }
 
 model AuditLog {
@@ -142,36 +144,40 @@ model EmailReminder {
 }
 
 model Event {
-  id                   String              @id @default(cuid())
-  title                String
-  description          String?
-  startDateTime        DateTime
-  endDateTime          DateTime
-  locationId           String
-  organizerName        String?
-  organizerRole        String?
-  organizerEmail       String?
-  organizerPhone       String?
-  maxAttendees         Int                 @default(20)
-  autoAcceptLimit      Int                 @default(4)
-  status               String              @default("DRAFT")
-  origin               String              @default("ADMIN")
-  geriatricHomeId      String?
-  programId            String?
-  createdAt            DateTime            @default(now())
-  updatedAt            DateTime @updatedAt
-  emailReminders       EmailReminder[]
-  program              Program?            @relation(fields: [programId], references: [id])
-  geriatricHome        GeriatricHome?      @relation(fields: [geriatricHomeId], references: [id])
-  location             Location            @relation(fields: [locationId], references: [id])
-  attendances          EventAttendance[]
-  comments             EventComment[]
-  photos               EventPhoto[]
-  approvedEventRequest EventRequest?       @relation("EventRequest_approvedEvent")
-  existingEventRequests EventRequest[]     @relation("EventRequest_existingEvent")
-  formSubmissions      FormSubmission[]
-  messageGroups        MessageGroup[]
-  testimonials         Testimonial[]
+  id                      String              @id @default(cuid())
+  title                   String
+  description             String?
+  startDateTime           DateTime
+  endDateTime             DateTime
+  locationId              String
+  organizerName           String?
+  organizerRole           String?
+  organizerEmail          String?
+  organizerPhone          String?
+  maxAttendees            Int                 @default(20)
+  autoAcceptLimit         Int                 @default(4)
+  status                  String              @default("DRAFT")
+  origin                  String              @default("ADMIN")
+  geriatricHomeId         String?
+  programId               String?
+  requiredFormTemplateId  String?
+  createdAt               DateTime            @default(now())
+  updatedAt               DateTime            @updatedAt
+  emailReminders          EmailReminder[]
+  program                 Program?            @relation(fields: [programId], references: [id])
+  geriatricHome           GeriatricHome?      @relation(fields: [geriatricHomeId], references: [id])
+  location                Location            @relation(fields: [locationId], references: [id])
+  requiredFormTemplate    FormTemplate?       @relation(fields: [requiredFormTemplateId], references: [id])
+  attendances             EventAttendance[]
+  comments                EventComment[]
+  photos                  EventPhoto[]
+  approvedEventRequest    EventRequest?       @relation("EventRequest_approvedEvent")
+  existingEventRequests   EventRequest[]      @relation("EventRequest_existingEvent")
+  formSubmissions         FormSubmission[]
+  messageGroups           MessageGroup[]
+  testimonials            Testimonial[]
+
+  @@index([requiredFormTemplateId])
 }
 
 model EventAttendance {
@@ -266,6 +272,7 @@ model EventRequest {
   existingEvent       Event?                 @relation("EventRequest_existingEvent", fields: [existingEventId], references: [id])
   geriatricHome       GeriatricHome          @relation(fields: [geriatricHomeId], references: [id])
   responses           EventRequestResponse[]
+  formSubmission      FormSubmission?
 
   @@index([status, requestedAt])
   @@index([geriatricHomeId, status])
@@ -301,24 +308,27 @@ model ExpenseRequest {
 }
 
 model FormSubmission {
-  id          String       @id @default(cuid())
-  templateId  String
-  submittedBy String
-  formData    String
-  attachments String?
-  eventId     String?
-  status      String       @default("SUBMITTED")
-  reviewedBy  String?
-  reviewedAt  DateTime?
-  reviewNotes String?
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime @updatedAt
-  reviewer    User?        @relation("FormSubmission_reviewer", fields: [reviewedBy], references: [id])
-  event       Event?       @relation(fields: [eventId], references: [id])
-  submitter   User         @relation("FormSubmission_submitter", fields: [submittedBy], references: [id])
-  template    FormTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  id             String        @id @default(cuid())
+  templateId     String
+  submittedBy    String
+  formData       String
+  attachments    String?
+  eventId        String?
+  eventRequestId String?       @unique
+  status         String        @default("SUBMITTED")
+  reviewedBy     String?
+  reviewedAt     DateTime?
+  reviewNotes    String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  reviewer       User?         @relation("FormSubmission_reviewer", fields: [reviewedBy], references: [id])
+  event          Event?       @relation(fields: [eventId], references: [id])
+  eventRequest   EventRequest? @relation(fields: [eventRequestId], references: [id])
+  submitter      User          @relation("FormSubmission_submitter", fields: [submittedBy], references: [id])
+  template       FormTemplate  @relation(fields: [templateId], references: [id], onDelete: Cascade)
 
   @@index([eventId])
+  @@index([eventRequestId])
   @@index([status, createdAt])
   @@index([templateId, submittedBy])
 }
@@ -343,9 +353,10 @@ model FormTemplate {
   isPublic      Boolean          @default(true)
   uploadedBy    String
   createdAt     DateTime         @default(now())
-  updatedAt     DateTime @updatedAt
+  updatedAt     DateTime         @updatedAt
   submissions   FormSubmission[]
   uploader      User             @relation(fields: [uploadedBy], references: [id])
+  events        Event[]
 
   @@index([isActive, createdAt])
   @@index([category, isActive])
@@ -439,6 +450,8 @@ model InventoryItem {
   tags         String?
   location     String?
   supplier     String?
+  supplierEmail String?
+  supplierPhone String?
   isActive     Boolean                @default(true)
   createdAt    DateTime               @default(now())
   updatedAt    DateTime @updatedAt

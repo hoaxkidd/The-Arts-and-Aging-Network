@@ -6,7 +6,9 @@ import Link from "next/link"
 import { ArrowLeft, Save, AlertTriangle, Building2, Plus, Settings } from "lucide-react"
 import { STYLES } from "@/lib/styles"
 import { cn } from "@/lib/utils"
+import { ROLE_ORDER, ROLE_LABELS, isValidRole } from "@/lib/roles"
 import DeleteUserButton from "@/components/admin/DeleteUserButton"
+import { CreateFacilityForm } from "@/components/admin/CreateFacilityForm"
 import { ProfileForm } from "@/components/staff/ProfileForm"
 import { HomeProfileForm } from "@/components/dashboard/HomeProfileForm"
 import { PersonnelManager } from "@/components/dashboard/PersonnelManager"
@@ -64,16 +66,20 @@ export default async function EditUserPage({ params }: { params: Promise<{ id: s
           </div>
           <div className="flex items-center gap-2">
             <label className="text-xs text-gray-500">Role</label>
-            <select name="role" defaultValue={user.role} className="text-sm rounded-md border-gray-300 py-1.5 pr-8 pl-2">
-              <option value="ADMIN">Admin</option>
-              <option value="HOME_ADMIN">Home Admin</option>
-              <option value="PAYROLL">Payroll Staff</option>
-              <option value="BOARD">Board Member</option>
-              <option value="CONTRACTOR">Contractor</option>
-              <option value="VOLUNTEER">Volunteer</option>
-              <option value="FACILITATOR">Facilitator</option>
-              <option value="PARTNER">Community Partner</option>
+            <select
+              name="role"
+              defaultValue={isValidRole(user.role) ? user.role : ROLE_ORDER[0]}
+              className="text-sm rounded-md border-gray-300 py-1.5 pr-8 pl-2"
+            >
+              {ROLE_ORDER.map((role) => (
+                <option key={role} value={role}>
+                  {ROLE_LABELS[role]}
+                </option>
+              ))}
             </select>
+            {!isValidRole(user.role) && (
+              <span className="text-xs text-amber-600">Current role &quot;{user.role}&quot; is invalid — please assign above.</span>
+            )}
           </div>
           <div className="flex items-center gap-2">
             <label className="text-xs text-gray-500">Status</label>
@@ -130,48 +136,22 @@ export default async function EditUserPage({ params }: { params: Promise<{ id: s
                         <h3 className="font-medium text-gray-900 text-sm">No Facility Linked</h3>
                         <p className="text-xs text-gray-500 mt-1">Create a facility profile below, or the Home Admin can set it up from their own dashboard.</p>
                       </div>
-                      <form action={async (formData) => {
-                        'use server'
-                        await createFacilityProfile(formData)
-                        redirect(`/admin/users/${id}`)
-                      }} className="border border-dashed border-gray-300 rounded-lg p-4 space-y-3">
+                      <div className="border border-dashed border-gray-300 rounded-lg p-4 space-y-3">
                         <h4 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
                           <Plus className="w-4 h-4 text-primary-500" />
                           Create Facility Profile
                         </h4>
-                        <input type="hidden" name="userId" value={id} />
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                          <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1">Facility Name *</label>
-                            <input name="name" required className={STYLES.input} placeholder="e.g., Sunrise Personal Care Home" />
-                          </div>
-                          <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1">Max Capacity</label>
-                            <input name="maxCapacity" type="number" defaultValue="10" className={STYLES.input} />
-                          </div>
-                          <div className="md:col-span-2">
-                            <label className="block text-xs font-medium text-gray-600 mb-1">Address *</label>
-                            <input name="address" required className={STYLES.input} placeholder="123 Main St, Winnipeg, MB" />
-                          </div>
-                          <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1">Contact Name *</label>
-                            <input name="contactName" required defaultValue={user.name || ''} className={STYLES.input} />
-                          </div>
-                          <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1">Contact Email *</label>
-                            <input name="contactEmail" type="email" required defaultValue={user.email} className={STYLES.input} />
-                          </div>
-                          <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1">Contact Phone *</label>
-                            <input name="contactPhone" required className={STYLES.input} placeholder="(204) 555-0123" />
-                          </div>
-                        </div>
-                        <div className="flex justify-end pt-2">
-                          <button type="submit" className={cn(STYLES.btn, STYLES.btnPrimary, "text-sm")}>
-                            <Plus className="w-4 h-4" /> Create Facility
-                          </button>
-                        </div>
-                      </form>
+                        <CreateFacilityForm
+                          userId={id}
+                          userName={user.name}
+                          userEmail={user.email}
+                          action={async (formData) => {
+                            'use server'
+                            await createFacilityProfile(formData)
+                            redirect(`/admin/users/${id}`)
+                          }}
+                        />
+                      </div>
                     </div>
                   )}
                 </div>

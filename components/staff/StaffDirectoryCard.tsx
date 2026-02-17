@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { MessageCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { getRoleLabel } from '@/lib/roles'
 
 type StaffMember = {
   id: string
@@ -15,17 +16,6 @@ type StaffMember = {
   position: string | null
   region: string | null
   bio: string | null
-}
-
-const roleLabels: Record<string, string> = {
-  ADMIN: 'Administrator',
-  BOARD: 'Board Member',
-  PAYROLL: 'Payroll Staff',
-  HOME_ADMIN: 'Home Administrator',
-  FACILITATOR: 'Facilitator',
-  CONTRACTOR: 'Contractor',
-  VOLUNTEER: 'Volunteer',
-  PARTNER: 'Community Partner',
 }
 
 const avatarColors: Record<string, string> = {
@@ -68,7 +58,7 @@ export function StaffDirectoryCard({ staff }: { staff: StaffMember }) {
             )}
           </div>
           <p className="text-xs text-gray-500 truncate">
-            {[staff.position || roleLabels[staff.role], staff.region].filter(Boolean).join(' · ')}
+            {[getRoleLabel(staff.role), staff.position, staff.region].filter(Boolean).join(' · ')}
           </p>
         </div>
       </Link>

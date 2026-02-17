@@ -15,7 +15,8 @@ import {
   AlertCircle,
   Users,
   Eye,
-  X
+  X,
+  FileText
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { STYLES } from '@/lib/styles'
@@ -51,6 +52,11 @@ type Request = {
   approvedEvent: {
     id: string
     title: string
+  } | null
+  formSubmission?: {
+    id: string
+    formData: string
+    template: { title: string }
   } | null
 }
 
@@ -327,6 +333,45 @@ export function AdminRequestList({ requests }: { requests: Request[] }) {
                         <div className="mt-3 text-sm text-gray-600 bg-gray-50 rounded-lg p-3">
                           <span className="font-medium">Note: </span>
                           {request.notes}
+                        </div>
+                      )}
+
+                      {/* Sign-up form responses */}
+                      {request.formSubmission && (
+                        <div className="mt-3 text-sm bg-primary-50/50 border border-primary-100 rounded-lg p-3">
+                          <div className="flex items-center gap-2 font-medium text-gray-900 mb-2">
+                            <FileText className="w-4 h-4 text-primary-600" />
+                            Sign-up form: {request.formSubmission.template.title}
+                          </div>
+                          <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                            {(() => {
+                              try {
+                                const data = JSON.parse(request.formSubmission.formData) as Record<string, unknown>
+                                return Object.entries(data)
+                                  .filter(([, val]) => val !== undefined && val !== null && val !== '')
+                                  .map(([key, val]) => {
+                                    const raw = Array.isArray(val)
+                                      ? val.join(', ')
+                                      : typeof val === 'object' && val !== null && '_value' in val
+                                        ? String((val as Record<string, unknown>)._value) +
+                                          ((val as Record<string, unknown>)._other ? ` (Other: ${(val as Record<string, unknown>)._other})` : '')
+                                        : typeof val === 'object' && val !== null && '_options' in val
+                                          ? ((val as Record<string, unknown>)._options as string[])?.join(', ') +
+                                            ((val as Record<string, unknown>)._other ? ` (Other: ${(val as Record<string, unknown>)._other})` : '')
+                                          : String(val)
+                                    const display = raw.startsWith('data:') ? '(file uploaded)' : raw
+                                    return (
+                                      <div key={key} className="flex gap-2">
+                                        <span className="text-gray-500 shrink-0">{key}:</span>
+                                        <span className="text-gray-900 break-words">{display}</span>
+                                      </div>
+                                    )
+                                  })
+                              } catch {
+                                return <span className="text-gray-500">Unable to parse form data</span>
+                              }
+                            })()}
+                          </div>
                         </div>
                       )}
 

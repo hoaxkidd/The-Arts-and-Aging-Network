@@ -28,6 +28,7 @@ interface CalendarEvent {
   status: string
   location?: { name: string } | null
   myRequestStatus?: 'PENDING' | 'APPROVED' | 'REJECTED' | null
+  requiredFormTemplateId?: string | null
 }
 
 // Date Events Popup Modal
@@ -393,7 +394,11 @@ export function HomeCalendarView({
       return
     }
 
-    // For available future events, open request modal
+    // For available future events: if event requires a sign-up form, go to form page; else open request modal
+    if (event.requiredFormTemplateId) {
+      router.push(`/dashboard/events/${event.id}/sign-up`)
+      return
+    }
     setSelectedEvent(event)
   }
 

@@ -107,6 +107,8 @@ export async function getHomeDetails(homeId: string) {
             name: true,
             email: true,
             phone: true,
+            address: true,
+            emergencyContact: true,
             status: true,
             createdAt: true,
           }

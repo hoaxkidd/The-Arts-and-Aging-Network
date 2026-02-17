@@ -3,11 +3,13 @@
 import { useState } from 'react'
 import { registerGeriatricHome } from '@/app/actions/home-registration'
 import { Building2, User, Phone, ShieldAlert, CheckCircle, ArrowRight, ArrowLeft } from 'lucide-react'
+import { AddressAutocomplete } from '@/components/ui/AddressAutocomplete'
 
 export function HomeRegistrationForm() {
   const [step, setStep] = useState(1)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [address, setAddress] = useState('')
 
   // Field validation helper
   const validateStep = (currentStep: number) => {
@@ -130,7 +132,16 @@ export function HomeRegistrationForm() {
                 </div>
                 <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Physical Address</label>
-                    <textarea name="address" required rows={3} className="w-full rounded-lg border-gray-300 focus:ring-primary-500 focus:border-primary-500" placeholder="123 Care Lane, Springfield..." />
+                    <AddressAutocomplete
+                        name="address"
+                        value={address}
+                        onChange={setAddress}
+                        placeholder="123 Care Lane, Springfield..."
+                        required
+                        multiline
+                        countries={['ca']}
+                        className="w-full rounded-lg border-gray-300 focus:ring-primary-500 focus:border-primary-500"
+                    />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                     <div>

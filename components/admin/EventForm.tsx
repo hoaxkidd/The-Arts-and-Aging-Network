@@ -1,10 +1,14 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
+import Link from 'next/link'
 import { createEvent } from "@/app/actions/events"
-import { CheckCircle, AlertTriangle, Plus, Search, Loader2, Calendar, Clock } from "lucide-react"
+import { getFormTemplates } from "@/app/actions/form-templates"
+import { CheckCircle, AlertTriangle, Plus, Search, Calendar, Clock, FileText, ExternalLink } from "lucide-react"
 import { STYLES } from "@/lib/styles"
 import { cn } from "@/lib/utils"
+import { AddressAutocomplete } from "@/components/ui/AddressAutocomplete"
+import { FormTemplateBuilder } from "@/components/admin/FormTemplateBuilder"
 
 interface CurrentUser {
   name: string
@@ -12,62 +16,33 @@ interface CurrentUser {
   role: string
 }
 
-export function EventForm({ locations, initialData, currentUser }: { locations: any[], initialData?: any, currentUser?: CurrentUser | null }) {
+type FormTemplateOption = { id: string; title: string }
+
+export function EventForm({
+  locations,
+  initialData,
+  currentUser,
+  formTemplates = [],
+}: {
+  locations: any[]
+  initialData?: any
+  currentUser?: CurrentUser | null
+  formTemplates?: FormTemplateOption[]
+}) {
   const [isNewLocation, setIsNewLocation] = useState(false)
-  
-  // Address State
-  const [address, setAddress] = useState('')
-  const [suggestions, setSuggestions] = useState<any[]>([])
-  const [isSearching, setIsSearching] = useState(false)
-  const [showSuggestions, setShowSuggestions] = useState(false)
-  const [coords, setCoords] = useState<{ lat: number, lng: number } | null>(null)
-  
+  const [address, setAddress] = useState(initialData?.newLocationAddress ?? '')
+  const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null)
+  const [showCreateTemplateModal, setShowCreateTemplateModal] = useState(false)
+  const [templates, setTemplates] = useState<FormTemplateOption[]>(formTemplates)
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>(initialData?.requiredFormTemplateId ?? '')
+
   // Form State
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [timeError, setTimeError] = useState('')
 
-  // Initialize with data if provided
-  useEffect(() => {
-    if (initialData) {
-        // Pre-fill logic could go here if needed, but standard defaultValue works for inputs
-        // For complex location logic, we might need more handling
-    }
-  }, [initialData])
-  
-  // Debounce Search
-  useEffect(() => {
-    const timer = setTimeout(async () => {
-      if (address.length > 2 && isNewLocation && !coords) {
-        setIsSearching(true)
-        try {
-          const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&addressdetails=1&limit=5`)
-          const data = await response.json()
-          setSuggestions(data)
-          setShowSuggestions(true)
-        } catch (e) {
-          console.error("Geocoding error", e)
-        } finally {
-          setIsSearching(false)
-        }
-      } else {
-        setSuggestions([])
-      }
-    }, 500)
-
-    return () => clearTimeout(timer)
-  }, [address, isNewLocation, coords])
-
-  const selectAddress = (item: any) => {
-    setAddress(item.display_name)
-    setCoords({ lat: parseFloat(item.lat), lng: parseFloat(item.lon) })
-    setSuggestions([])
-    setShowSuggestions(false)
-  }
-
   const clearAddress = () => {
     setAddress('')
     setCoords(null)
-    setSuggestions([])
   }
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -203,37 +178,24 @@ export function EventForm({ locations, initialData, currentUser }: { locations: 
                 placeholder="Location Name (e.g. Community Center)" 
               />
               
-              <div className="relative group">
-                <input 
-                  name="newLocationAddress" 
-                  required 
+              <div>
+                <AddressAutocomplete
+                  name="newLocationAddress"
                   value={address}
-                  onChange={(e) => {
-                    setAddress(e.target.value)
-                    setCoords(null) 
+                  onChange={(val, components) => {
+                    setAddress(val)
+                    if (components?.lat != null && components?.lng != null) {
+                      setCoords({ lat: components.lat, lng: components.lng })
+                    } else {
+                      setCoords(null)
+                    }
                   }}
-                  className={cn(STYLES.input, "pr-10 transition-shadow focus:ring-2 focus:ring-primary-100")} 
-                  placeholder="Start typing address..." 
-                  autoComplete="off"
+                  onCoords={(lat, lng) => setCoords({ lat, lng })}
+                  placeholder="Start typing address..."
+                  required
+                  countries={['ca']}
+                  className={STYLES.input}
                 />
-                <div className="absolute right-3 top-3 text-gray-400">
-                  {isSearching ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
-                </div>
-
-                {/* Address Suggestions Dropdown */}
-                {showSuggestions && suggestions.length > 0 && (
-                  <ul className="absolute z-50 w-full bg-white border border-gray-200 rounded-md shadow-lg mt-1 max-h-60 overflow-auto">
-                    {suggestions.map((item, i) => (
-                      <li 
-                        key={i}
-                        onClick={() => selectAddress(item)}
-                        className="px-4 py-2 hover:bg-gray-50 cursor-pointer text-sm text-gray-700 border-b border-gray-50 last:border-0"
-                      >
-                        {item.display_name}
-                      </li>
-                    ))}
-                  </ul>
-                )}
               </div>
 
               {/* Verification Status Feedback */}
@@ -242,10 +204,10 @@ export function EventForm({ locations, initialData, currentUser }: { locations: 
                   <CheckCircle className="w-4 h-4 flex-shrink-0" />
                   <span className="font-medium">Address verified & coordinates set.</span>
                 </div>
-              ) : address.length > 5 && !isSearching && (
+              ) : address.length > 5 && (
                  <div className="flex items-center gap-2 text-amber-700 text-xs bg-amber-50 p-2.5 rounded-md border border-amber-200 shadow-sm">
                    <AlertTriangle className="w-4 h-4 flex-shrink-0" />
-                   <span className="font-medium">Unverified address. Please select a suggestion if possible.</span>
+                   <span className="font-medium">Unverified address. Please select a suggestion from the dropdown if available.</span>
                  </div>
               )}
             </div>
@@ -282,6 +244,92 @@ export function EventForm({ locations, initialData, currentUser }: { locations: 
             className={cn(STYLES.input, "pt-2")}
           />
         </div>
+
+        {/* Sign-up form template */}
+        <div className="border-t border-gray-100 pt-4 mt-4 space-y-3">
+          <div className="flex items-center justify-between gap-2">
+            <label className="block text-sm font-semibold text-gray-700 flex items-center gap-2">
+              <FileText className="w-4 h-4 text-primary-500" />
+              Sign-up form template
+            </label>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setShowCreateTemplateModal(true)}
+                className="text-xs font-medium text-primary-600 hover:text-primary-700 hover:underline flex items-center gap-1"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                Create new template
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  const res = await getFormTemplates({ isActive: true })
+                  if (res.success && res.data) {
+                    const fillable = res.data.filter((t) => t.isFillable).map((t) => ({ id: t.id, title: t.title }))
+                    setTemplates(fillable)
+                  }
+                }}
+                className="text-xs font-medium text-gray-500 hover:text-gray-700 flex items-center gap-1"
+              >
+                Refresh list
+              </button>
+              <Link
+                href="/admin/form-templates"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs font-medium text-gray-500 hover:text-gray-700 flex items-center gap-1"
+              >
+                Manage templates
+                <ExternalLink className="w-3 h-3" />
+              </Link>
+            </div>
+          </div>
+          <select
+            name="requiredFormTemplateId"
+            value={selectedTemplateId}
+            onChange={(e) => setSelectedTemplateId(e.target.value)}
+            className={cn(STYLES.input, STYLES.select)}
+          >
+            <option value="">None – home admins request without a form</option>
+            {templates.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.title}
+              </option>
+            ))}
+          </select>
+          <p className="text-xs text-gray-500">
+            If set, home admins must fill this form when requesting to participate. Create a new template or choose from existing ones.
+          </p>
+        </div>
+
+        {/* Create template modal */}
+        {showCreateTemplateModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+            <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+              <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+                <h3 className="text-lg font-semibold text-gray-900">Create form template</h3>
+                <button
+                  type="button"
+                  onClick={() => setShowCreateTemplateModal(false)}
+                  className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg"
+                >
+                  ×
+                </button>
+              </div>
+              <div className="flex-1 overflow-y-auto p-6">
+                <FormTemplateBuilder
+                  initialCategory="EVENT_SIGNUP"
+                  onCreated={(template) => {
+                    setTemplates((prev) => [...prev, template])
+                    setSelectedTemplateId(template.id)
+                    setShowCreateTemplateModal(false)
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Organizer Information */}
         <div className="border-t border-gray-100 pt-4 mt-4 space-y-4">

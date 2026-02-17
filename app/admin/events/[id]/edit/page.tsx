@@ -1,18 +1,19 @@
 import { prisma } from "@/lib/prisma"
 import { EventForm } from "@/components/admin/EventForm"
-import { STYLES } from "@/lib/styles"
 import Link from "next/link"
 import { ArrowLeft } from "lucide-react"
 
 export default async function EditEventPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const event = await prisma.event.findUnique({
-    where: { id },
-  })
-  
-  const locations = await prisma.location.findMany({
-    orderBy: { name: 'asc' }
-  })
+  const [event, locations, formTemplates] = await Promise.all([
+    prisma.event.findUnique({ where: { id } }),
+    prisma.location.findMany({ orderBy: { name: 'asc' } }),
+    prisma.formTemplate.findMany({
+      where: { isActive: true, isFillable: true },
+      select: { id: true, title: true },
+      orderBy: { title: 'asc' },
+    }),
+  ])
 
   if (!event) return <div>Event not found</div>
 
@@ -22,7 +23,11 @@ export default async function EditEventPage({ params }: { params: Promise<{ id: 
           <ArrowLeft className="w-4 h-4" /> Back to Events
        </Link>
        
-       <EventForm locations={locations} initialData={event} />
+       <EventForm
+         locations={locations}
+         initialData={event}
+         formTemplates={formTemplates}
+       />
     </div>
   )
 }

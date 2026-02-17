@@ -1,8 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Star, User, Briefcase, Phone, Activity, ClipboardList, FileText, Mail } from 'lucide-react'
 import { updateStaffProfile } from '@/app/actions/staff'
+import { AddressAutocomplete } from '@/components/ui/AddressAutocomplete'
 import { DocumentManager } from './DocumentManager'
 import { useRouter } from 'next/navigation'
 
@@ -30,6 +31,8 @@ type UserData = {
 export function ProfileForm({ user, documents, isAdmin = false, visibleTabs, embedded = false, flat = false }: { user: UserData, documents?: any[], isAdmin?: boolean, visibleTabs?: string[], embedded?: boolean, flat?: boolean }) {
   const [activeTab, setActiveTab] = useState('personal')
   const [isPending, setIsPending] = useState(false)
+  const [statusMessage, setStatusMessage] = useState<string | null>(null)
+  const [address, setAddress] = useState(user.address || '')
   const router = useRouter()
 
   const ec = user.emergencyContact ? JSON.parse(user.emergencyContact) : {}
@@ -42,6 +45,20 @@ export function ProfileForm({ user, documents, isAdmin = false, visibleTabs, emb
   const [tasks, setTasks] = useState<{name: string, rating: number}[]>(Array.isArray(intake.tasks) ? intake.tasks : [])
   const [newTask, setNewTask] = useState('')
   const [newTaskRating, setNewTaskRating] = useState(5)
+
+  // Sync state when user data changes (after refresh)
+  useEffect(() => {
+    const updatedIntake = user.intakeAnswers ? JSON.parse(user.intakeAnswers) : {}
+    if (Array.isArray(updatedIntake.skills)) {
+      setSkills(updatedIntake.skills)
+    }
+    if (Array.isArray(updatedIntake.tasks)) {
+      setTasks(updatedIntake.tasks)
+    }
+  }, [user.intakeAnswers])
+  useEffect(() => {
+    setAddress(user.address || '')
+  }, [user.address])
 
   function addSkill() {
     if (newSkill.trim()) {
@@ -70,14 +87,30 @@ export function ProfileForm({ user, documents, isAdmin = false, visibleTabs, emb
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
+    setStatusMessage(null)
     setIsPending(true)
 
     try {
       const formData = new FormData(e.currentTarget)
 
+      // Ensure any text still in the input is captured as a task
+      let effectiveTasks = tasks
+      if (newTask.trim()) {
+        effectiveTasks = [
+          ...tasks,
+          { name: newTask.trim(), rating: newTaskRating }
+        ]
+      }
+
       // Serialize dynamic fields
-      formData.set('intake_skills', JSON.stringify(skills))
-      formData.set('intake_tasks', JSON.stringify(tasks))
+      const skillsJson = JSON.stringify(skills)
+      const tasksJson = JSON.stringify(effectiveTasks)
+      formData.set('intake_skills', skillsJson)
+      formData.set('intake_tasks', tasksJson)
+      
+      // Debug logging
+      console.log('[ProfileForm] Submitting tasks:', effectiveTasks)
+      console.log('[ProfileForm] Tasks JSON:', tasksJson)
 
       // Handle Health Info JSON
       const healthData = {
@@ -90,14 +123,14 @@ export function ProfileForm({ user, documents, isAdmin = false, visibleTabs, emb
 
       const result = await updateStaffProfile(formData)
       if (result?.error) {
-        alert('Error: ' + result.error)
+        setStatusMessage(result.error)
       } else {
-        alert('Profile Updated')
+        setStatusMessage('Profile saved.')
         router.refresh() // Sync sidebar and other UI
       }
     } catch (err) {
       console.error('Form submission error:', err)
-      alert('Error saving profile. Check console for details.')
+      setStatusMessage('Error saving profile. Please try again.')
     } finally {
       setIsPending(false)
     }
@@ -150,7 +183,7 @@ export function ProfileForm({ user, documents, isAdmin = false, visibleTabs, emb
                   </div>
                   <div className="md:col-span-2">
                     <label className="block text-sm font-medium text-gray-700 mb-1">Mailing Address</label>
-                    <input name="address" defaultValue={user.address || ''} placeholder="Full mailing address" className="w-full rounded-lg border-gray-300" />
+                    <AddressAutocomplete name="address" value={address} onChange={setAddress} placeholder="Full mailing address" countries={['ca']} className="w-full rounded-lg border-gray-300" />
                   </div>
                 </div>
               </div>
@@ -286,7 +319,7 @@ export function ProfileForm({ user, documents, isAdmin = false, visibleTabs, emb
                 </div>
                 <div className="md:col-span-2">
                     <label className="block text-sm font-medium text-gray-700 mb-1">Full Address</label>
-                    <input name="address" defaultValue={user.address || ''} className="w-full rounded-lg border-gray-300" />
+                    <AddressAutocomplete name="address" value={address} onChange={setAddress} placeholder="Full address" countries={['ca']} className="w-full rounded-lg border-gray-300" />
                 </div>
                 <div className="md:col-span-2">
                     <label className="block text-sm font-medium text-gray-700 mb-1">Short Bio</label>
@@ -483,14 +516,17 @@ export function ProfileForm({ user, documents, isAdmin = false, visibleTabs, emb
             </div>
         </div>
 
-        <div className="pt-4 border-t border-gray-100 flex justify-end">
-            <button
-                type="submit"
-                disabled={isPending}
-                className="bg-primary-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-primary-700 disabled:opacity-50 transition-colors"
-            >
-                {isPending ? 'Saving...' : 'Save Changes'}
-            </button>
+        <div className="pt-4 border-t border-gray-100 flex items-center justify-between">
+          <div className="text-sm text-gray-500 h-5">
+            {statusMessage}
+          </div>
+          <button
+            type="submit"
+            disabled={isPending}
+            className="bg-primary-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-primary-700 disabled:opacity-50 transition-colors"
+          >
+            {isPending ? 'Saving...' : 'Save Changes'}
+          </button>
         </div>
       </form>
       )}
