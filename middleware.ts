@@ -115,6 +115,13 @@ export default auth((req) => {
 })
 
 export const config = {
-  // Exclude api, static files, favicon, and login (avoid redirect loop on /login)
-  matcher: ['/((?!api|_next/static|_next/image|favicon.ico|login).*)'],
+  // Only run on protected paths; skip / and /login to avoid redirect loop
+  matcher: [
+    '/admin/:path*',
+    '/dashboard/:path*',
+    '/payroll/:path*',
+    '/staff/:path*',
+    '/events/:path*',
+    '/notifications/:path*',
+  ],
 }
