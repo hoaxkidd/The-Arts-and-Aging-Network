@@ -7,35 +7,46 @@ import type { User } from "@prisma/client"
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   trustHost: true, // Required for Vercel – uses request host for redirects
+  secret: process.env.AUTH_SECRET, // Required: use a fixed secret so sessions stay valid across restarts
   providers: [
     Credentials({
       async authorize(credentials) {
         try {
-            const parsedCredentials = z
+          const parsedCredentials = z
             .object({ email: z.string().email(), password: z.string().min(6) })
             .safeParse(credentials)
 
-            if (parsedCredentials.success) {
-            const { email, password } = parsedCredentials.data
-            const user = await prisma.user.findUnique({ where: { email } })
-            if (!user) return null
-            if (!user.password) return null
-            if (user.status !== 'ACTIVE') return null
-
-            const passwordsMatch = await bcrypt.compare(password, user.password)
-            if (passwordsMatch) {
-              // Update last login timestamp
-              await prisma.user.update({
-                where: { id: user.id },
-                data: { lastLoginAt: new Date() }
-              })
-              return user
-            }
-            }
+          if (!parsedCredentials.success) {
+            console.error('[Auth] Invalid credentials shape:', parsedCredentials.error.flatten())
             return null
+          }
+          const { email, password } = parsedCredentials.data
+          const user = await prisma.user.findUnique({ where: { email } })
+          if (!user) {
+            console.error('[Auth] User not found:', email)
+            return null
+          }
+          if (!user.password) {
+            console.error('[Auth] User has no password set:', email)
+            return null
+          }
+          if (user.status !== 'ACTIVE') {
+            console.error('[Auth] User not active:', email, 'status=', user.status)
+            return null
+          }
+          const passwordsMatch = await bcrypt.compare(password, user.password)
+          if (!passwordsMatch) {
+            console.error('[Auth] Password mismatch for:', email)
+            return null
+          }
+          await prisma.user.update({
+            where: { id: user.id },
+            data: { lastLoginAt: new Date() }
+          })
+          return user
         } catch (error) {
-            console.error('Auth Error:', error)
-            return null
+          console.error('[Auth] Error:', error)
+          return null
         }
       },
     }),
@@ -44,6 +55,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     signIn: '/login',
   },
   callbacks: {
+    async redirect({ url, baseUrl }) {
+      // Allow relative callbackUrl from signIn
+      if (url.startsWith('/')) return `${baseUrl}${url}`
+      if (new URL(url).origin === baseUrl) return url
+      return baseUrl
+    },
     async jwt({ token, user }) {
       if (user) {
         token.role = user.role

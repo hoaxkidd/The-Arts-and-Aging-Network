@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useActionState, useEffect } from 'react'
 import { useFormStatus } from 'react-dom'
 import { authenticate } from '@/app/actions/auth'
 import { AlertCircle } from 'lucide-react'
@@ -20,7 +20,14 @@ function LoginButton() {
 }
 
 export default function LoginPage() {
-  const [errorMessage, dispatch, isPending] = useActionState(authenticate, undefined)
+  const [state, dispatch] = useActionState(authenticate, undefined as { error?: string; redirect?: string } | undefined)
+
+  // Full-page redirect after successful login so the session cookie is sent on the next request
+  useEffect(() => {
+    if (state?.redirect) {
+      window.location.href = state.redirect
+    }
+  }, [state?.redirect])
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4 relative overflow-hidden">
@@ -59,10 +66,10 @@ export default function LoginPage() {
               />
             </div>
             
-            {errorMessage && (
+            {state?.error && (
               <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm flex items-center gap-2 border border-red-100">
                 <AlertCircle className="w-4 h-4" />
-                {errorMessage}
+                {state.error}
               </div>
             )}
             
