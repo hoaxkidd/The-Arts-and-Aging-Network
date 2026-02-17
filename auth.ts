@@ -6,6 +6,7 @@ import bcrypt from "bcryptjs"
 import type { User } from "@prisma/client"
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
+  trustHost: true, // Required for Vercel – uses request host for redirects
   providers: [
     Credentials({
       async authorize(credentials) {
