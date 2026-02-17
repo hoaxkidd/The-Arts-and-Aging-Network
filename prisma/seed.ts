@@ -1,7 +1,10 @@
 import { PrismaClient } from '@prisma/client'
 import { hash } from 'bcryptjs'
 import dotenv from 'dotenv'
+import path from 'path'
 
+// Load .env.local first (Neon/Prod URLs), then .env
+dotenv.config({ path: path.resolve(process.cwd(), '.env.local') })
 dotenv.config()
 
 const prisma = new PrismaClient()

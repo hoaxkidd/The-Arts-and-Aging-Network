@@ -9,7 +9,7 @@ import { hash } from 'bcryptjs'
 
 const inviteSchema = z.object({
   email: z.string().email(),
-  role: z.enum(['ADMIN', 'PAYROLL', 'CONTRACTOR', 'FACILITATOR', 'PARTNER', 'VOLUNTEER', 'BOARD']),
+  role: z.enum(['ADMIN', 'PAYROLL', 'CONTRACTOR', 'FACILITATOR', 'PARTNER', 'VOLUNTEER', 'BOARD', 'HOME_ADMIN']),
 })
 
 export async function createInvitation(formData: FormData) {

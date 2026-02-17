@@ -1,8 +1,13 @@
 import { prisma } from "@/lib/prisma"
 import { createInvitation, cancelInvitation } from "@/app/actions/invitation"
-import { Mail, Send, Calendar, User, Clock, Trash2 } from "lucide-react"
+import { Mail, Send, Calendar, User, Clock, Trash2, Link2 } from "lucide-react"
 import { STYLES } from "@/lib/styles"
 import { cn } from "@/lib/utils"
+
+function inviteUrl(token: string) {
+  const base = (process.env.NEXTAUTH_URL ?? '').replace(/\/$/, '')
+  return base ? `${base}/invite/${token}` : `/invite/${token}`
+}
 
 export default async function InvitationsPage() {
   const invitations = await prisma.invitation.findMany({
@@ -74,6 +79,7 @@ export default async function InvitationsPage() {
                 <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Recipient</th>
                 <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Role</th>
                 <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Invite link</th>
                 <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Expires</th>
                 <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Sent By</th>
               </tr>
@@ -105,6 +111,24 @@ export default async function InvitationsPage() {
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
+                    {inv.status === 'PENDING' ? (
+                      <div className="flex items-center gap-1.5">
+                        <Link2 className="w-4 h-4 text-gray-400 shrink-0" />
+                        <a
+                          href={inviteUrl(inv.token)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs text-primary-600 hover:underline truncate max-w-[180px]"
+                          title="Copy link"
+                        >
+                          Open invite link
+                        </a>
+                      </div>
+                    ) : (
+                      <span className="text-xs text-gray-400">—</span>
+                    )}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center gap-2 text-sm text-gray-500">
                       <Clock className="w-4 h-4" />
                       {inv.expiresAt.toLocaleDateString()}
@@ -129,7 +153,7 @@ export default async function InvitationsPage() {
               ))}
               {invitations.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-6 py-8 text-center text-gray-500">
+                  <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
                     No invitations sent yet.
                   </td>
                 </tr>
