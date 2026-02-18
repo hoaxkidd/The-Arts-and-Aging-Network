@@ -2,7 +2,7 @@
 
 import { useActionState, useEffect } from 'react'
 import { useFormStatus } from 'react-dom'
-import { authenticate } from '@/app/actions/auth'
+import { authenticate, type AuthState } from '@/app/actions/auth'
 import { AlertCircle } from 'lucide-react'
 import { STYLES } from "@/lib/styles"
 import { cn } from "@/lib/utils"
@@ -20,7 +20,7 @@ function LoginButton() {
 }
 
 export default function LoginPage() {
-  const [state, dispatch] = useActionState(authenticate, undefined as { error?: string; redirect?: string } | undefined)
+  const [state, dispatch] = useActionState(authenticate, undefined as AuthState)
 
   // Full-page redirect after successful login so the session cookie is sent on the next request
   useEffect(() => {

@@ -5,10 +5,12 @@ import { AuthError } from 'next-auth'
 import { rateLimit } from '@/lib/rate-limit'
 import { headers } from 'next/headers'
 
+export type AuthState = { error?: string; redirect?: string } | undefined
+
 export async function authenticate(
-  prevState: string | undefined,
+  _prevState: AuthState,
   formData: FormData,
-) {
+): Promise<AuthState> {
   const headersList = await headers()
   const ip = headersList.get('x-forwarded-for') || 'unknown'
   if (!rateLimit(ip, 5, 60000)) {
