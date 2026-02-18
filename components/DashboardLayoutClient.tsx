@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { usePathname } from 'next/navigation'
 import Link from "next/link"
 import { LogOut, Menu, ChevronRight, X } from "lucide-react"
@@ -24,6 +24,7 @@ const PAGE_TITLES: Record<string, string> = {
   '/admin/form-templates': 'Form Templates',
   '/admin/testimonials': 'Testimonials',
   '/admin/inventory': 'Inventory Management',
+  '/admin/communication': 'Communication Hub',
   '/admin/donors': 'Donor Management',
   '/admin/messaging': 'Group Messaging',
   '/admin/messaging/requests': 'Access Requests',
@@ -110,6 +111,24 @@ export function DashboardLayoutClient({ children, role, title = "Arts & Aging", 
 
   const portal = portalConfig[role as keyof typeof portalConfig] || { label: 'Portal', bg: 'bg-gray-400', text: 'text-gray-900' }
 
+  // Lock body scroll when mobile sidebar is open (prevents content behind overlay from scrolling)
+  useEffect(() => {
+    if (sidebarOpen) {
+      document.body.style.overflow = 'hidden'
+      document.body.style.position = 'fixed'
+      document.body.style.width = '100%'
+    } else {
+      document.body.style.overflow = ''
+      document.body.style.position = ''
+      document.body.style.width = ''
+    }
+    return () => {
+      document.body.style.overflow = ''
+      document.body.style.position = ''
+      document.body.style.width = ''
+    }
+  }, [sidebarOpen])
+
   return (
     <div className="flex h-screen bg-background">
       {/* Sidebar */}
@@ -180,12 +199,13 @@ export function DashboardLayoutClient({ children, role, title = "Arts & Aging", 
         </div>
       </aside>
 
-      {/* Mobile sidebar overlay */}
+      {/* Mobile sidebar overlay - lock body scroll when open */}
       {sidebarOpen && (
         <>
           <button
             onClick={() => setSidebarOpen(false)}
-            className="md:hidden fixed inset-0 z-40 bg-black/50"
+            className="md:hidden fixed inset-0 z-40 bg-black/50 touch-none"
+            style={{ touchAction: 'none' }}
             aria-label="Close menu"
           />
           <aside className="md:hidden fixed inset-y-0 left-0 z-50 w-64 flex flex-col bg-primary-800 text-white shadow-xl">
@@ -265,10 +285,10 @@ export function DashboardLayoutClient({ children, role, title = "Arts & Aging", 
             <Menu className="w-5 h-5" />
           </button>
 
-          {/* Breadcrumb / Title - show on mobile for inbox (layout has its own header), md+ for all */}
+          {/* Breadcrumb / Title - show on mobile for non-inbox; staff inbox has its own header */}
           <div className={cn(
-            "flex items-center gap-2",
-            pathname.startsWith('/staff/inbox') ? "hidden" : "hidden md:flex"
+            "flex items-center gap-2 flex-1 min-w-0 truncate",
+            pathname.startsWith('/staff/inbox') ? "hidden md:flex" : "flex"
           )}>
             <span className="text-lg font-semibold text-gray-800">{currentTitle}</span>
           </div>
@@ -287,7 +307,8 @@ export function DashboardLayoutClient({ children, role, title = "Arts & Aging", 
           "flex-1 flex flex-col min-h-0 bg-gray-50/50",
           pathname.startsWith('/staff/inbox')
             ? "overflow-hidden p-0"
-            : "overflow-y-auto p-4 md:p-6"
+            : "p-4 md:p-6",
+          sidebarOpen ? "overflow-hidden" : pathname.startsWith('/staff/inbox') ? "" : "overflow-y-auto"
         )}>
           <div className={cn(
             pathname.startsWith('/staff/inbox') ? "flex-1 flex flex-col min-h-0 w-full" : "max-w-7xl mx-auto"
