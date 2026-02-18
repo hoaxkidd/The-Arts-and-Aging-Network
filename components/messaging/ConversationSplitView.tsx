@@ -2,6 +2,7 @@
 
 import { UnifiedInbox } from './UnifiedInbox'
 import { ChatInterface } from './ChatInterface'
+import { cn } from '@/lib/utils'
 
 type Conversation = {
   partnerId: string
