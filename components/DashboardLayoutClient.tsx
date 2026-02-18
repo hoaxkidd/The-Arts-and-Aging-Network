@@ -285,7 +285,7 @@ export function DashboardLayoutClient({ children, role, title = "Arts & Aging", 
             <Menu className="w-5 h-5" />
           </button>
 
-          {/* Breadcrumb / Title - show on mobile for non-inbox; staff inbox has its own header */}
+          {/* Breadcrumb / Title - show on mobile for most pages; staff inbox has its own header */}
           <div className={cn(
             "flex items-center gap-2 flex-1 min-w-0 truncate",
             pathname.startsWith('/staff/inbox') ? "hidden md:flex" : "flex"
@@ -305,13 +305,13 @@ export function DashboardLayoutClient({ children, role, title = "Arts & Aging", 
 
         <main className={cn(
           "flex-1 flex flex-col min-h-0 bg-gray-50/50",
-          pathname.startsWith('/staff/inbox')
+          pathname.startsWith('/staff/inbox') || pathname.startsWith('/admin/communication')
             ? "overflow-hidden p-0"
             : "p-4 md:p-6",
-          sidebarOpen ? "overflow-hidden" : pathname.startsWith('/staff/inbox') ? "" : "overflow-y-auto"
+          sidebarOpen ? "overflow-hidden" : (pathname.startsWith('/staff/inbox') || pathname.startsWith('/admin/communication')) ? "" : "overflow-y-auto"
         )}>
           <div className={cn(
-            pathname.startsWith('/staff/inbox') ? "flex-1 flex flex-col min-h-0 w-full" : "max-w-7xl mx-auto"
+            pathname.startsWith('/staff/inbox') || pathname.startsWith('/admin/communication') ? "flex-1 flex flex-col min-h-0 w-full" : "max-w-7xl mx-auto"
           )}>
             {children}
           </div>

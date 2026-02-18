@@ -202,7 +202,7 @@ export function CommunicationHubClient({ groups, pendingGroupRequests, pendingCo
                 onChange={setActiveTab}
             />
 
-            <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden overscroll-contain">
+            <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden overscroll-contain flex flex-col">
                 {activeTab === 'groups' && <GroupsList groups={groups} />}
                 {activeTab === 'messages' && <AdminMessagingPanel groups={groups} currentUserId={currentUserId} />}
                 {activeTab === 'requests' && (

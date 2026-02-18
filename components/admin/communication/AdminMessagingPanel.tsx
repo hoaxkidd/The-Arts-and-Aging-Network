@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { MessageThread } from "@/components/messaging/MessageThread"
 import { ChatInterface } from "@/components/messaging/ChatInterface"
-import { Plus, Users, MessageSquare, Loader2, Search, X, Send, Mail } from "lucide-react"
+import { Plus, Users, MessageSquare, Loader2, Search, X, Send, Mail, ArrowLeft } from "lucide-react"
 import { STYLES } from "@/lib/styles"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
@@ -278,7 +278,7 @@ function AdminGroupChat({ groupId, currentUserId }: { groupId: string, currentUs
 }
 
 // Wrapper to fetch DM conversation
-function AdminDMChat({ partnerId, currentUserId }: { partnerId: string, currentUserId: string }) {
+function AdminDMChat({ partnerId, currentUserId, onBack }: { partnerId: string, currentUserId: string, onBack?: () => void }) {
     const [partner, setPartner] = useState<any>(null)
     const [messages, setMessages] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
@@ -327,6 +327,7 @@ function AdminDMChat({ partnerId, currentUserId }: { partnerId: string, currentU
             partner={partner}
             messages={messages}
             currentUserId={currentUserId}
+            onBack={onBack}
         />
     )
 }
@@ -411,24 +412,29 @@ export function AdminMessagingPanel({ groups, currentUserId }: { groups: any[], 
         }
     }
 
+    const hasSelection = selectedId && ((selectedType === 'GROUP' && selectedGroup) || (selectedType === 'DM' && selectedDM?.partnerId))
+
     return (
         <>
-            <div className="flex h-[calc(100vh-200px)] bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm">
-                {/* Sidebar */}
-                <div className="w-80 border-r border-gray-200 flex flex-col bg-gray-50">
+            <div className="flex flex-col lg:flex-row flex-1 min-h-[320px] lg:min-h-[400px] bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm">
+                {/* Sidebar - full width on mobile when no selection, hidden when chat shown */}
+                <div className={cn(
+                    "flex flex-col bg-gray-50 min-h-0",
+                    hasSelection ? "hidden lg:flex lg:w-80 lg:flex-shrink-0 lg:border-r lg:border-gray-200" : "flex-1 w-full lg:w-80 lg:border-r lg:border-gray-200"
+                )}>
                     <div className="flex-shrink-0 p-4 border-b border-gray-200 bg-gray-50">
-                        <div className="flex items-center justify-between mb-3">
-                            <h2 className="font-semibold text-gray-900">Messages</h2>
+                        <div className="flex items-center justify-between gap-2 mb-3">
+                            <h2 className="font-semibold text-gray-900 text-base sm:text-lg">Messages</h2>
                             <div className="flex gap-1">
                                 <Link
                                     href="/admin/messaging/new"
-                                    className="p-2 text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
+                                    className="min-w-[44px] min-h-[44px] flex items-center justify-center -m-2 text-primary-600 hover:bg-primary-50 rounded-lg transition-colors touch-manipulation"
                                     title="New Group"
                                 >
                                     <Users className="w-4 h-4" />
                                 </Link>
                                 <button
-                                    className="p-2 text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
+                                    className="min-w-[44px] min-h-[44px] flex items-center justify-center -m-2 text-primary-600 hover:bg-primary-50 rounded-lg transition-colors touch-manipulation"
                                     title="New Direct Message"
                                     onClick={() => setShowDMModal(true)}
                                 >
@@ -439,7 +445,7 @@ export function AdminMessagingPanel({ groups, currentUserId }: { groups: any[], 
                         <input
                             type="text"
                             placeholder="Search conversations..."
-                            className={STYLES.input}
+                            className={cn(STYLES.input, "min-h-[44px] text-base")}
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                         />
@@ -460,7 +466,7 @@ export function AdminMessagingPanel({ groups, currentUserId }: { groups: any[], 
                                             setSelectedType('DM')
                                         }}
                                         className={cn(
-                                            "w-full text-left px-4 py-3 border-b border-gray-100 hover:bg-white transition-colors flex items-center gap-3",
+                                            "w-full text-left px-4 py-3 min-h-[56px] border-b border-gray-100 hover:bg-white active:bg-gray-50 transition-colors flex items-center gap-3 touch-manipulation",
                                             selectedId === item.id ? "bg-white border-l-4 border-l-primary-500" : "border-l-4 border-l-transparent"
                                         )}
                                     >
@@ -495,7 +501,7 @@ export function AdminMessagingPanel({ groups, currentUserId }: { groups: any[], 
                                     setSelectedType('GROUP')
                                 }}
                                 className={cn(
-                                    "w-full text-left px-4 py-3 border-b border-gray-100 hover:bg-white transition-colors flex items-center gap-3",
+                                    "w-full text-left px-4 py-3 min-h-[56px] border-b border-gray-100 hover:bg-white active:bg-gray-50 transition-colors flex items-center gap-3 touch-manipulation",
                                     selectedId === item.id ? "bg-white border-l-4 border-l-primary-500" : "border-l-4 border-l-transparent"
                                 )}
                             >
@@ -516,25 +522,46 @@ export function AdminMessagingPanel({ groups, currentUserId }: { groups: any[], 
                     </div>
                 </div>
 
-                {/* Main Chat Area */}
-                <div className="flex-1 flex flex-col bg-white overflow-hidden">
+                {/* Main Chat Area - full width on mobile when selected */}
+                <div className={cn(
+                    "flex flex-col bg-white overflow-hidden min-h-0",
+                    hasSelection ? "flex-1 flex" : "hidden lg:flex lg:flex-1"
+                )}>
                     {selectedType === 'GROUP' && selectedId && selectedGroup ? (
-                        <AdminGroupChat
-                            groupId={selectedId}
-                            currentUserId={currentUserId}
-                        />
+                        <div className="flex flex-col flex-1 min-h-0">
+                            {/* Mobile back button */}
+                            <div className="lg:hidden flex items-center gap-2 px-4 py-3 border-b border-gray-200 bg-white shrink-0">
+                                <button
+                                    onClick={() => { setSelectedId(null); setSelectedType('GROUP') }}
+                                    className="p-2 -ml-2 text-gray-600 hover:bg-gray-100 rounded-lg touch-manipulation"
+                                    aria-label="Back to conversations"
+                                >
+                                    <ArrowLeft className="w-5 h-5" />
+                                </button>
+                                <span className="font-medium text-gray-900 truncate">{selectedGroup.name}</span>
+                            </div>
+                            <div className="flex-1 min-h-0 overflow-hidden">
+                                <AdminGroupChat
+                                    groupId={selectedId}
+                                    currentUserId={currentUserId}
+                                />
+                            </div>
+                        </div>
                     ) : selectedType === 'DM' && selectedDM?.partnerId ? (
-                        <AdminDMChat
-                            partnerId={selectedDM.partnerId}
-                            currentUserId={currentUserId}
-                        />
+                        <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
+                            <AdminDMChat
+                                partnerId={selectedDM.partnerId}
+                                currentUserId={currentUserId}
+                                onBack={() => { setSelectedId(null); setSelectedType('DM') }}
+                            />
+                        </div>
                     ) : (
-                        <div className="flex-1 flex flex-col items-center justify-center text-gray-400">
+                        <div className="flex-1 flex flex-col items-center justify-center text-gray-400 p-6">
                             <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mb-4">
                                 <MessageSquare className="w-8 h-8 text-gray-300" />
                             </div>
                             <p className="text-lg font-medium text-gray-900">Select a conversation</p>
-                            <p className="text-sm">Choose a group or person from the sidebar</p>
+                            <p className="text-sm text-center">Choose a group or person from the sidebar</p>
                         </div>
                     )}
                 </div>

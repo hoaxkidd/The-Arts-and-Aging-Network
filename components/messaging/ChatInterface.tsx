@@ -34,9 +34,11 @@ type Props = {
   partner: Partner
   messages: Message[]
   currentUserId: string
+  /** When provided (e.g. admin context), use this instead of Link to /staff/inbox */
+  onBack?: () => void
 }
 
-export function ChatInterface({ partner, messages, currentUserId }: Props) {
+export function ChatInterface({ partner, messages, currentUserId, onBack }: Props) {
   const [newMessage, setNewMessage] = useState('')
   const [isSending, setIsSending] = useState(false)
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null)
@@ -121,13 +123,23 @@ export function ChatInterface({ partner, messages, currentUserId }: Props) {
     <div className="flex flex-col flex-1 min-h-0 bg-white">
       {/* Header */}
       <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-200 bg-white shadow-sm shrink-0 safe-area-top">
-        <Link
-          href="/staff/inbox"
-          className="min-w-[44px] min-h-[44px] flex items-center justify-center -ml-2 text-gray-600 hover:bg-gray-100 active:bg-gray-200 rounded-lg lg:hidden touch-manipulation"
-          aria-label="Back to inbox"
-        >
-          <ArrowLeft className="w-5 h-5" />
-        </Link>
+        {onBack ? (
+          <button
+            onClick={onBack}
+            className="min-w-[44px] min-h-[44px] flex items-center justify-center -ml-2 text-gray-600 hover:bg-gray-100 active:bg-gray-200 rounded-lg lg:hidden touch-manipulation"
+            aria-label="Back"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+        ) : (
+          <Link
+            href="/staff/inbox"
+            className="min-w-[44px] min-h-[44px] flex items-center justify-center -ml-2 text-gray-600 hover:bg-gray-100 active:bg-gray-200 rounded-lg lg:hidden touch-manipulation"
+            aria-label="Back to inbox"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </Link>
+        )}
 
         <Link
           href={`/staff/directory/${partner.id}`}
