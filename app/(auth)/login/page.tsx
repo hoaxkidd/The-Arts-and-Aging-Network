@@ -1,9 +1,9 @@
 'use client'
 
-import { useActionState, useEffect } from 'react'
+import { useActionState, useEffect, useState } from 'react'
 import { useFormStatus } from 'react-dom'
 import { authenticate, type AuthState } from '@/app/actions/auth'
-import { AlertCircle } from 'lucide-react'
+import { AlertCircle, Eye, EyeOff } from 'lucide-react'
 import { STYLES } from "@/lib/styles"
 import { cn } from "@/lib/utils"
 
@@ -21,6 +21,7 @@ function LoginButton() {
 
 export default function LoginPage() {
   const [state, dispatch] = useActionState(authenticate, undefined as AuthState)
+  const [showPassword, setShowPassword] = useState(false)
 
   // Full-page redirect after successful login so the session cookie is sent on the next request
   useEffect(() => {
@@ -56,14 +57,24 @@ export default function LoginPage() {
             </div>
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">Password</label>
-              <input
-                type="password"
-                name="password"
-                required
-                minLength={6}
-                className={cn(STYLES.input, "py-3")}
-                placeholder="••••••"
-              />
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  name="password"
+                  required
+                  minLength={6}
+                  className={cn(STYLES.input, "py-3 pr-12")}
+                  placeholder="••••••"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500/50 rounded p-1"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
+              </div>
             </div>
             
             {state?.error && (
