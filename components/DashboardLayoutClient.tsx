@@ -265,8 +265,11 @@ export function DashboardLayoutClient({ children, role, title = "Arts & Aging", 
             <Menu className="w-5 h-5" />
           </button>
 
-          {/* Breadcrumb / Title */}
-          <div className="hidden md:flex items-center gap-2">
+          {/* Breadcrumb / Title - show on mobile for inbox (layout has its own header), md+ for all */}
+          <div className={cn(
+            "flex items-center gap-2",
+            pathname.startsWith('/staff/inbox') ? "hidden" : "hidden md:flex"
+          )}>
             <span className="text-lg font-semibold text-gray-800">{currentTitle}</span>
           </div>
 
@@ -280,8 +283,15 @@ export function DashboardLayoutClient({ children, role, title = "Arts & Aging", 
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-gray-50/50">
-          <div className="max-w-7xl mx-auto">
+        <main className={cn(
+          "flex-1 flex flex-col min-h-0 bg-gray-50/50",
+          pathname.startsWith('/staff/inbox')
+            ? "overflow-hidden p-0"
+            : "overflow-y-auto p-4 md:p-6"
+        )}>
+          <div className={cn(
+            pathname.startsWith('/staff/inbox') ? "flex-1 flex flex-col min-h-0 w-full" : "max-w-7xl mx-auto"
+          )}>
             {children}
           </div>
         </main>

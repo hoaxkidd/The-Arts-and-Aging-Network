@@ -118,19 +118,20 @@ export function ChatInterface({ partner, messages, currentUserId }: Props) {
   }
 
   return (
-    <div className="flex flex-col h-full bg-white">
+    <div className="flex flex-col flex-1 min-h-0 bg-white">
       {/* Header */}
-      <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-200 bg-white shadow-sm">
+      <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-200 bg-white shadow-sm shrink-0 safe-area-top">
         <Link
           href="/staff/inbox"
-          className="p-2 -ml-2 text-gray-600 hover:bg-gray-100 rounded-lg lg:hidden"
+          className="min-w-[44px] min-h-[44px] flex items-center justify-center -ml-2 text-gray-600 hover:bg-gray-100 active:bg-gray-200 rounded-lg lg:hidden touch-manipulation"
+          aria-label="Back to inbox"
         >
           <ArrowLeft className="w-5 h-5" />
         </Link>
 
         <Link
           href={`/staff/directory/${partner.id}`}
-          className="flex items-center gap-3 flex-1 hover:bg-gray-50 -mx-2 px-2 py-1 rounded-lg transition-colors"
+          className="flex items-center gap-3 flex-1 min-h-[44px] hover:bg-gray-50 active:bg-gray-100 -mx-2 px-2 py-2 rounded-lg transition-colors touch-manipulation"
         >
           <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 text-white flex items-center justify-center font-semibold text-lg flex-shrink-0">
             {displayName?.[0]?.toUpperCase() || 'U'}
@@ -143,7 +144,7 @@ export function ChatInterface({ partner, messages, currentUserId }: Props) {
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
+      <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4 bg-gray-50 overscroll-contain">
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center">
             <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 text-white flex items-center justify-center font-bold text-2xl mb-3">
@@ -170,7 +171,7 @@ export function ChatInterface({ partner, messages, currentUserId }: Props) {
 
                   {editingMessageId === message.id ? (
                     // Edit Mode
-                    <div className="flex flex-col gap-2 max-w-[70%] ml-auto">
+                    <div className="flex flex-col gap-2 max-w-[85%] sm:max-w-[70%] ml-auto">
                       <textarea
                         value={editContent}
                         onChange={(e) => setEditContent(e.target.value)}
@@ -207,9 +208,9 @@ export function ChatInterface({ partner, messages, currentUserId }: Props) {
                         </div>
                       )}
 
-                      <div className={cn(
-                        "max-w-[70%] px-4 py-2 rounded-2xl relative",
-                        isCurrentUser
+                  <div className={cn(
+                    "max-w-[85%] sm:max-w-[70%] px-4 py-2 rounded-2xl relative",
+                    isCurrentUser
                           ? "bg-primary-600 text-white rounded-br-sm"
                           : "bg-white border border-gray-200 text-gray-900 rounded-bl-sm"
                       )}>
@@ -227,7 +228,7 @@ export function ChatInterface({ partner, messages, currentUserId }: Props) {
                         <div className="relative flex-shrink-0">
                           <button
                             onClick={() => setActiveMenu(activeMenu === message.id ? null : message.id)}
-                            className="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-full transition-colors"
+                            className="min-w-[44px] min-h-[44px] flex items-center justify-center -m-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 active:bg-gray-200 rounded-full transition-colors touch-manipulation"
                           >
                             <MoreVertical className="w-4 h-4" />
                           </button>
@@ -268,7 +269,7 @@ export function ChatInterface({ partner, messages, currentUserId }: Props) {
       </div>
 
       {/* Input */}
-      <form onSubmit={handleSend} className="p-4 border-t border-gray-200 bg-white">
+      <form onSubmit={handleSend} className="p-4 border-t border-gray-200 bg-white shrink-0 safe-area-bottom safe-area-x">
         <div className="flex items-end gap-2">
           <textarea
             value={newMessage}
@@ -281,13 +282,12 @@ export function ChatInterface({ partner, messages, currentUserId }: Props) {
             }}
             placeholder={`Message ${displayName}...`}
             rows={1}
-            className="flex-1 px-4 py-2.5 bg-gray-100 border-0 rounded-full focus:ring-2 focus:ring-primary-500 focus:bg-white resize-none text-sm"
-            style={{ minHeight: '42px', maxHeight: '120px' }}
+            className="flex-1 px-4 py-3 text-base bg-gray-100 border-0 rounded-full focus:ring-2 focus:ring-primary-500 focus:bg-white resize-none min-h-[44px] max-h-[120px] touch-manipulation"
           />
           <button
             type="submit"
             disabled={!newMessage.trim() || isSending}
-            className="w-10 h-10 bg-primary-600 text-white rounded-full hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center flex-shrink-0 transition-colors"
+            className="min-w-[44px] min-h-[44px] bg-primary-600 text-white rounded-full hover:bg-primary-700 active:bg-primary-800 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center flex-shrink-0 transition-colors touch-manipulation"
           >
             {isSending ? (
               <Loader2 className="w-5 h-5 animate-spin" />
@@ -296,7 +296,7 @@ export function ChatInterface({ partner, messages, currentUserId }: Props) {
             )}
           </button>
         </div>
-        <p className="text-xs text-gray-500 mt-2 px-2">
+        <p className="hidden sm:block text-xs text-gray-500 mt-2 px-2">
           Press Enter to send, Shift+Enter for new line
         </p>
       </form>

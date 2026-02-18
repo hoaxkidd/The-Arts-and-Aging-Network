@@ -39,9 +39,9 @@ export function ConversationsList({ conversations, currentUserId, activeConversa
   })
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col flex-1 min-h-0">
       {/* Search */}
-      <div className="p-3 border-b border-gray-200">
+      <div className="p-3 border-b border-gray-200 shrink-0">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <input
@@ -49,13 +49,13 @@ export function ConversationsList({ conversations, currentUserId, activeConversa
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search conversations..."
-            className="w-full pl-10 pr-3 py-2 bg-gray-100 border-0 rounded-lg focus:ring-2 focus:ring-primary-500 focus:bg-white text-sm"
+            className="w-full pl-10 pr-3 py-2.5 min-h-[44px] text-base bg-gray-100 border-0 rounded-lg focus:ring-2 focus:ring-primary-500 focus:bg-white touch-manipulation"
           />
         </div>
       </div>
 
       {/* Conversations List */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain">
         {filteredConversations.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full p-8 text-center">
             <MessageSquare className="w-16 h-16 text-gray-300 mb-3" />
@@ -81,8 +81,8 @@ export function ConversationsList({ conversations, currentUserId, activeConversa
                   key={conversation.partnerId}
                   href={`/staff/inbox/${conversation.partnerId}`}
                   className={cn(
-                    "flex items-center gap-3 p-3 hover:bg-gray-50 transition-colors",
-                    isActive && "bg-primary-50 hover:bg-primary-50",
+                    "flex items-center gap-3 p-4 min-h-[72px] hover:bg-gray-50 active:bg-gray-100 transition-colors touch-manipulation",
+                    isActive && "bg-primary-50 hover:bg-primary-50 active:bg-primary-100",
                     isUnread && !isActive && "bg-blue-50/30"
                   )}
                 >

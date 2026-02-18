@@ -91,15 +91,16 @@ export function UnifiedInbox({ conversations, groupMemberships, currentUserId, c
   }
 
   return (
-    <div className="flex flex-col h-full bg-white">
+    <div className="flex flex-col flex-1 min-h-0 bg-white">
       {/* Header */}
-      <div className="p-4 border-b border-gray-200">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-xl font-bold text-gray-900">Messages</h2>
+      <div className="p-4 sm:p-4 border-b border-gray-200 shrink-0 safe-area-top">
+        <div className="flex items-center justify-between gap-2 mb-3">
+          <h2 className="text-lg sm:text-xl font-bold text-gray-900 truncate">Messages</h2>
           <button
             onClick={() => setShowNewMessageModal(true)}
-            className="p-2 text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
+            className="min-w-[44px] min-h-[44px] flex items-center justify-center -m-2 text-primary-600 hover:bg-primary-50 active:bg-primary-100 rounded-lg transition-colors touch-manipulation"
             title="New Message"
+            aria-label="New message"
           >
             <Edit className="w-5 h-5" />
           </button>
@@ -110,10 +111,10 @@ export function UnifiedInbox({ conversations, groupMemberships, currentUserId, c
           <button
             onClick={() => setActiveTab('direct')}
             className={cn(
-              "flex-1 px-4 py-2 text-sm font-medium rounded-lg transition-colors",
+              "flex-1 min-h-[44px] px-4 py-2 text-sm font-medium rounded-lg transition-colors touch-manipulation",
               activeTab === 'direct'
                 ? "bg-primary-600 text-white"
-                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                : "bg-gray-100 text-gray-600 hover:bg-gray-200 active:bg-gray-300"
             )}
           >
             <MessageSquare className="w-4 h-4 inline mr-1.5" />
@@ -127,10 +128,10 @@ export function UnifiedInbox({ conversations, groupMemberships, currentUserId, c
           <button
             onClick={() => setActiveTab('groups')}
             className={cn(
-              "flex-1 px-4 py-2 text-sm font-medium rounded-lg transition-colors",
+              "flex-1 min-h-[44px] px-4 py-2 text-sm font-medium rounded-lg transition-colors touch-manipulation",
               activeTab === 'groups'
                 ? "bg-primary-600 text-white"
-                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                : "bg-gray-100 text-gray-600 hover:bg-gray-200 active:bg-gray-300"
             )}
           >
             <Users className="w-4 h-4 inline mr-1.5" />
@@ -141,7 +142,7 @@ export function UnifiedInbox({ conversations, groupMemberships, currentUserId, c
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain">
         {activeTab === 'direct' ? (
           <ConversationsList
             conversations={conversations}
@@ -163,7 +164,7 @@ export function UnifiedInbox({ conversations, groupMemberships, currentUserId, c
                       <Link
                         key={membership.id}
                         href={`/staff/groups/${membership.groupId}`}
-                        className="block bg-white border border-gray-200 rounded-lg p-3 hover:border-primary-400 transition-colors"
+                        className="block bg-white border border-gray-200 rounded-lg p-3 sm:p-3 hover:border-primary-400 active:bg-gray-50 transition-colors min-h-[64px] touch-manipulation"
                       >
                         <div className="flex items-start gap-3">
                           <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary-400 to-primary-600 text-white flex items-center justify-center text-base font-bold flex-shrink-0">
@@ -215,7 +216,7 @@ export function UnifiedInbox({ conversations, groupMemberships, currentUserId, c
                 {currentUserRole === 'ADMIN' && (
                   <Link
                     href="/admin/messaging/new"
-                    className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 text-sm font-medium"
+                    className="inline-flex items-center justify-center min-h-[44px] px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 active:bg-primary-800 text-sm font-medium touch-manipulation"
                   >
                     Create Group
                   </Link>
@@ -236,9 +237,9 @@ export function UnifiedInbox({ conversations, groupMemberships, currentUserId, c
                     return (
                       <div
                         key={membership.id}
-                        className="bg-gray-50 border border-gray-200 rounded-lg p-3 transition-all"
+                        className="bg-gray-50 border border-gray-200 rounded-lg p-3 sm:p-3 transition-all"
                       >
-                        <div className="flex items-start gap-3">
+                        <div className="flex items-center gap-3">
                           <div className={cn(
                             "w-10 h-10 rounded-lg flex items-center justify-center text-base font-bold flex-shrink-0",
                             isOpen
@@ -276,10 +277,10 @@ export function UnifiedInbox({ conversations, groupMemberships, currentUserId, c
                                 onClick={() => handleJoinGroup(membership.groupId, !!isOpen)}
                                 disabled={isJoining}
                                 className={cn(
-                                  "inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium rounded-lg transition-colors disabled:opacity-50",
+                                  "inline-flex items-center justify-center gap-1 min-h-[44px] min-w-[44px] px-3 py-2 text-xs font-medium rounded-lg transition-colors disabled:opacity-50 touch-manipulation",
                                   isOpen
-                                    ? "bg-green-600 text-white hover:bg-green-700"
-                                    : "bg-primary-600 text-white hover:bg-primary-700"
+                                    ? "bg-green-600 text-white hover:bg-green-700 active:bg-green-800"
+                                    : "bg-primary-600 text-white hover:bg-primary-700 active:bg-primary-800"
                                 )}
                               >
                                 {isJoining ? (
@@ -304,7 +305,7 @@ export function UnifiedInbox({ conversations, groupMemberships, currentUserId, c
             {currentUserRole === 'ADMIN' && myGroups.length > 0 && (
               <Link
                 href="/admin/messaging/new"
-                className="flex items-center justify-center gap-2 p-3 border-2 border-dashed border-gray-300 rounded-lg text-sm text-gray-500 hover:border-primary-400 hover:text-primary-600 transition-colors"
+                className="flex items-center justify-center gap-2 min-h-[48px] p-4 border-2 border-dashed border-gray-300 rounded-lg text-sm text-gray-500 hover:border-primary-400 hover:text-primary-600 active:bg-gray-50 transition-colors touch-manipulation"
               >
                 <Plus className="w-4 h-4" />
                 Create New Group

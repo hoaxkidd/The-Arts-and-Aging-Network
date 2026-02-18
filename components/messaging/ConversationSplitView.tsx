@@ -89,13 +89,14 @@ export function ConversationSplitView({
   activeConversation
 }: Props) {
   return (
-    <div className="h-full flex bg-gray-50">
-      {/* Unified Inbox */}
-      <div className={`
-        ${activeConversation ? 'hidden lg:flex' : 'flex'}
-        w-full lg:w-96 lg:border-r lg:border-gray-200 bg-white lg:flex-shrink-0
-      `}>
-        <div className="w-full h-full">
+    <div className="flex-1 flex flex-col lg:flex-row min-h-0 bg-gray-50">
+      {/* Unified Inbox - full width on mobile, sidebar on desktop */}
+      <div className={cn(
+        "flex flex-col min-h-0",
+        activeConversation ? "hidden lg:flex lg:w-96 lg:flex-shrink-0 lg:border-r lg:border-gray-200" : "flex-1 w-full",
+        "bg-white"
+      )}>
+        <div className="w-full flex-1 min-h-0 flex flex-col">
           <UnifiedInbox
             conversations={conversations}
             groupMemberships={groupMemberships}
@@ -106,13 +107,14 @@ export function ConversationSplitView({
         </div>
       </div>
 
-      {/* Chat Area */}
-      <div className={`
-        ${activeConversation ? 'flex' : 'hidden lg:flex'}
-        flex-1 bg-white
-      `}>
+      {/* Chat Area - shown when conversation selected; on mobile replaces list */}
+      <div className={cn(
+        "flex flex-col min-h-0",
+        activeConversation ? "flex-1 flex" : "hidden lg:flex lg:flex-1",
+        "bg-white"
+      )}>
         {activeConversation ? (
-          <div className="w-full h-full">
+          <div className="w-full flex-1 min-h-0 flex flex-col">
             <ChatInterface
               partner={activeConversation.partner}
               messages={activeConversation.messages}
@@ -120,7 +122,7 @@ export function ConversationSplitView({
             />
           </div>
         ) : (
-          <div className="w-full h-full flex items-center justify-center p-8 text-center bg-gray-50">
+          <div className="w-full flex-1 flex items-center justify-center p-6 sm:p-8 text-center bg-gray-50">
             <div>
               <div className="w-24 h-24 rounded-full bg-gray-100 text-gray-400 flex items-center justify-center mx-auto mb-4 text-4xl">
                 💬
