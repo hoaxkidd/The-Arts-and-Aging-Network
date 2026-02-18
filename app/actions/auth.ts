@@ -18,29 +18,44 @@ export async function authenticate(
   try {
     const email = formData.get('email') as string | null
     const password = formData.get('password') as string | null
-    const callbackUrl = (formData.get('callbackUrl') as string) || '/admin'
+    const redirectTo = (formData.get('callbackUrl') as string) || '/admin'
     const result = await signIn('credentials', {
       email: email ?? '',
       password: password ?? '',
-      callbackUrl,
+      redirectTo, // NextAuth uses redirectTo (not callbackUrl) for the post-login redirect
       redirect: false,
     })
+
+    // Server-side signIn with redirect: false returns the redirect URL as a string (not { ok, url })
+    if (typeof result === 'string') {
+      const isErrorUrl = result.includes('error=') || result.includes('/signin')
+      if (isErrorUrl) {
+        try {
+          const err = new URL(result).searchParams.get('error')
+          return { error: err === 'CredentialsSignin' ? 'Invalid credentials.' : 'Something went wrong.' }
+        } catch {
+          return { error: 'Invalid credentials.' }
+        }
+      }
+      // Use absolute URL so the browser does a full navigation and sends the session cookie
+      const base = process.env.NEXTAUTH_URL ?? 'http://localhost:3000'
+      const path = result.startsWith('http') ? new URL(result).pathname : result
+      const redirectUrl = path.startsWith('/') ? `${base}${path}` : `${base}/${path}`
+      return { redirect: redirectUrl }
+    }
+
+    // Client-style response shape (some setups return { ok, url, error })
     if (result?.ok && result.url) {
       return { redirect: result.url }
     }
-    // Log so you can see the real reason in the server terminal
     if (!result) {
-      console.error('[Auth] signIn returned no result (check NextAuth config / redirect: false support)')
       return { error: 'Sign-in failed. Check the server terminal for errors.' }
     }
     if (!result.ok) {
-      console.error('[Auth] signIn result:', JSON.stringify({ ok: result.ok, error: result.error, status: result.status, url: result.url }))
+      console.error('[Auth] signIn result:', { ok: result.ok, error: result.error, status: result.status, url: result.url })
     }
     const isInvalidCredentials = result.error === 'CredentialsSignin' || result.status === 401
-    if (result.error) {
-      return { error: isInvalidCredentials ? 'Invalid credentials.' : (result.error === 'Callback' ? 'Sign-in failed. Try again.' : 'Something went wrong.') }
-    }
-    return { error: isInvalidCredentials ? 'Invalid credentials.' : 'Something went wrong.' }
+    return { error: isInvalidCredentials ? 'Invalid credentials.' : (result.error === 'Callback' ? 'Sign-in failed. Try again.' : 'Something went wrong.') }
   } catch (error) {
     console.error('[Auth] Exception:', error)
     if (error instanceof AuthError) {
