@@ -20,21 +20,49 @@ export default async function StaffDashboard() {
   if (!session?.user?.id) redirect('/login')
 
   // Get my confirmed events
-  const myAttendances = await db.eventAttendance.findMany({
-    where: {
-      userId: session.user.id,
-      status: 'YES'
-    },
-    include: {
-      event: {
-        include: {
-          location: true,
-          geriatricHome: { select: { name: true } }
+  let myAttendances: any[] = []
+  try {
+    const rows = await db.eventAttendance.findMany({
+      where: {
+        userId: session.user.id,
+        status: 'YES'
+      },
+      include: {
+        event: {
+          include: {
+            location: true,
+            geriatricHome: { select: { name: true } }
+          }
         }
-      }
-    },
-    orderBy: { event: { startDateTime: 'asc' } }
-  })
+      },
+      orderBy: { event: { startDateTime: 'asc' } }
+    })
+    myAttendances = rows
+  } catch (err) {
+    // Fallback: query without relation orderBy (more compatible with some DB/Prisma setups)
+    try {
+      const rows = await db.eventAttendance.findMany({
+        where: {
+          userId: session.user.id,
+          status: 'YES'
+        },
+        include: {
+          event: {
+            include: {
+              location: true,
+              geriatricHome: { select: { name: true } }
+            }
+          }
+        }
+      })
+      myAttendances = rows.sort(
+        (a: any, b: any) =>
+          new Date(a.event.startDateTime).getTime() - new Date(b.event.startDateTime).getTime()
+      )
+    } catch {
+      // DB error: show empty state
+    }
+  }
 
   const now = new Date()
 
@@ -59,7 +87,7 @@ export default async function StaffDashboard() {
           </div>
           <div>
             <h1 className="text-lg font-bold text-gray-900">Staff Dashboard</h1>
-            <p className="text-xs text-gray-500">Welcome back, {session.user.name}</p>
+            <p className="text-xs text-gray-500">Welcome back, {session.user?.name ?? 'User'}</p>
           </div>
         </div>
       </header>
