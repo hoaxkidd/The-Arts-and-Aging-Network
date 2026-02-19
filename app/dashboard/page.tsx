@@ -60,11 +60,11 @@ export default async function HomeAdminDashboard() {
             </div>
           </div>
           <Link
-            href="/events"
+            href="/dashboard/events"
             className="px-3 py-1.5 text-xs font-medium bg-primary-600 text-white rounded-lg hover:bg-primary-700 flex items-center gap-1.5"
           >
             <CalendarCheck className="w-3.5 h-3.5" />
-            View Calendar
+            View Events
           </Link>
         </div>
       </header>
@@ -98,7 +98,7 @@ export default async function HomeAdminDashboard() {
               Upcoming Schedule
             </h3>
             <Link
-              href="/events"
+              href="/dashboard/events"
               className="text-xs font-medium text-primary-500 hover:text-primary-600 flex items-center gap-1"
             >
               View all <ArrowUpRight className="w-3 h-3" />
@@ -155,7 +155,7 @@ export default async function HomeAdminDashboard() {
                 <p className="text-sm font-medium text-gray-900">No upcoming events</p>
                 <p className="text-xs text-gray-500 mt-1">Check the calendar to find and request new events.</p>
                 <Link
-                  href="/events"
+                  href="/dashboard/events"
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 mt-3 text-xs font-medium bg-primary-600 text-white rounded-lg hover:bg-primary-700"
                 >
                   Browse Events

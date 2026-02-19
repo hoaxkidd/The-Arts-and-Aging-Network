@@ -79,12 +79,7 @@ export const homeAdminMenu = [
     icon: LayoutDashboard,
   },
   {
-    label: "Events Calendar",
-    href: "/dashboard/calendar",
-    icon: Calendar,
-  },
-  {
-    label: "Browse Events",
+    label: "Events",
     href: "/dashboard/events",
     icon: Calendar,
   },

@@ -67,6 +67,28 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
   const isFull = yesCount >= event.maxAttendees
   const canManage = session?.user?.role === 'ADMIN' || session?.user?.role === 'PAYROLL'
 
+  // Home admin: check if their facility is participating (approved request)
+  let homeIsParticipating = false
+  if (session?.user?.role === 'HOME_ADMIN' && session.user.id) {
+    const home = await prisma.geriatricHome.findUnique({
+      where: { userId: session.user.id },
+      select: { id: true }
+    })
+    if (home) {
+      const approvedRequest = await prisma.eventRequest.findFirst({
+        where: {
+          geriatricHomeId: home.id,
+          status: 'APPROVED',
+          OR: [
+            { existingEventId: event.id },
+            { approvedEventId: event.id }
+          ]
+        }
+      })
+      homeIsParticipating = !!approvedRequest
+    }
+  }
+
   const now = new Date()
   const isPast = event.endDateTime < now
   const isEventDay = now.toDateString() === event.startDateTime.toDateString()
@@ -77,15 +99,15 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
   const checkInOpenTime = new Date(event.startDateTime.getTime() - 24 * 60 * 60 * 1000)
   const canCheckIn = isConfirmed && !isCheckedIn && !isPast && now >= checkInOpenTime
 
-  // Full content only after check-in or for admins
-  const showFullContent = canManage || isCheckedIn
+  // Full content: admins, checked-in users, or home admins whose facility is participating
+  const showFullContent = canManage || isCheckedIn || homeIsParticipating
 
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
       <header className="flex-shrink-0 pb-3">
         <Link
-          href="/events"
+          href={session?.user?.role === 'HOME_ADMIN' ? '/dashboard/events' : '/events'}
           className="inline-flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-700 mb-2"
         >
           <ArrowLeft className="w-3 h-3" /> Back to Events

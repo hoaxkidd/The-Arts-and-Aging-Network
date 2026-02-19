@@ -90,7 +90,7 @@ export async function requestExistingEvent(
     })
 
     revalidatePath('/dashboard/requests')
-    revalidatePath('/dashboard/calendar')
+    revalidatePath('/dashboard/events')
     revalidatePath('/admin/event-requests')
 
     return { success: true, data: request }
@@ -192,7 +192,7 @@ export async function submitEventSignUpForm(
     })
 
     revalidatePath('/dashboard/requests')
-    revalidatePath('/dashboard/calendar')
+    revalidatePath('/dashboard/events')
     revalidatePath('/admin/event-requests')
 
     return { success: true, data: { request, submission } }
@@ -318,7 +318,7 @@ export async function createCustomEventRequest(data: {
     })
 
     revalidatePath('/dashboard/requests')
-    revalidatePath('/dashboard/calendar')
+    revalidatePath('/dashboard/events')
     revalidatePath('/admin/event-requests')
     revalidatePath('/staff/event-requests')
 

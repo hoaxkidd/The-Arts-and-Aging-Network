@@ -32,7 +32,7 @@ export default async function EventSignUpPage({
   if (!event) notFound()
   if (event.status !== 'PUBLISHED') notFound()
   if (!event.requiredFormTemplateId || !event.requiredFormTemplate) {
-    redirect(`/dashboard/calendar`)
+    redirect(`/dashboard/events`)
   }
 
   const existingRequest = await prisma.eventRequest.findFirst({

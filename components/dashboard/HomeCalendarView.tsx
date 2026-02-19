@@ -290,9 +290,11 @@ function RequestEventModal({
 }
 
 export function HomeCalendarView({
-  events
+  events,
+  hideSearch = false
 }: {
   events: CalendarEvent[]
+  hideSearch?: boolean
 }) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
@@ -376,9 +378,9 @@ export function HomeCalendarView({
     const eventEnd = new Date(event.endDateTime)
     const isPastEvent = eventEnd < new Date()
 
-    // For approved events, navigate to my-events detail (view only)
+    // For approved events, navigate to full event page (messages, photos, comments)
     if (event.myRequestStatus === 'APPROVED') {
-      router.push(`/dashboard/my-events/${event.id}`)
+      router.push(`/events/${event.id}`)
       return
     }
 
@@ -430,6 +432,7 @@ export function HomeCalendarView({
   return (
     <div className="h-full flex flex-col gap-3">
       {/* Search and Filters */}
+      {!hideSearch && (
       <div className="flex-shrink-0 bg-white rounded-lg border border-gray-200 p-3">
         <div className="flex flex-col sm:flex-row gap-3 items-center">
           <div className="relative flex-1 w-full">
@@ -468,6 +471,7 @@ export function HomeCalendarView({
           </div>
         </div>
       </div>
+      )}
 
       {/* Calendar */}
       <div className="flex-1 min-h-0 bg-white rounded-lg border border-gray-200 shadow-sm flex flex-col overflow-hidden">
