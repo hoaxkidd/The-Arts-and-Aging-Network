@@ -1,51 +1,70 @@
 'use client'
 
-import { Suspense, useActionState, useEffect, useState } from 'react'
-import { useFormStatus } from 'react-dom'
+import { Suspense, useEffect, useState } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
-import { authenticate, type AuthState } from '@/app/actions/auth'
+import { signIn } from 'next-auth/react'
 import { AlertCircle, Eye, EyeOff, LogIn, Building2 } from 'lucide-react'
 import { STYLES } from "@/lib/styles"
 import { cn } from "@/lib/utils"
 import { HomeRegistrationForm } from '@/components/forms/HomeRegistrationForm'
-
-function LoginButton() {
-  const { pending } = useFormStatus()
-  return (
-    <button 
-      className={cn(STYLES.btn, STYLES.btnPrimary, "w-full py-3 min-h-[48px] text-base sm:text-lg shadow-lg hover:shadow-xl active:scale-[0.99] sm:hover:-translate-y-0.5 transition-all touch-manipulation")}
-      disabled={pending}
-    >
-      {pending ? 'Logging in...' : 'Sign In'}
-    </button>
-  )
-}
 
 function LoginPageContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const tabParam = searchParams.get('tab')
   const [activeTab, setActiveTab] = useState<'login' | 'register'>(tabParam === 'register' ? 'register' : 'login')
+  const [error, setError] = useState<string | null>(null)
+  const [pending, setPending] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
 
   const setTab = (tab: 'login' | 'register') => {
     setActiveTab(tab)
+    setError(null)
     const url = tab === 'register' ? '/login?tab=register' : '/login'
     router.replace(url, { scroll: false })
   }
-  const [state, dispatch] = useActionState(authenticate, undefined as AuthState)
-  const [showPassword, setShowPassword] = useState(false)
 
   // Sync tab with URL on mount/navigation
   useEffect(() => {
     setActiveTab(tabParam === 'register' ? 'register' : 'login')
   }, [tabParam])
 
-  // Full-page redirect after successful login so the session cookie is sent on the next request
-  useEffect(() => {
-    if (state?.redirect) {
-      window.location.href = state.redirect
+  const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    setError(null)
+    const form = e.currentTarget
+    const email = (form.querySelector<HTMLInputElement>('[name="email"]')?.value ?? '').trim()
+    const password = form.querySelector<HTMLInputElement>('[name="password"]')?.value ?? ''
+    const callbackUrl = (form.querySelector<HTMLInputElement>('[name="callbackUrl"]')?.value) || '/'
+    if (!email || !password) {
+      setError('Please enter email and password.')
+      return
     }
-  }, [state?.redirect])
+    setPending(true)
+    try {
+      const result = await signIn('credentials', {
+        email,
+        password,
+        callbackUrl,
+        redirect: false,
+      })
+      if (result?.ok && result.url) {
+        const url = result.url
+        if (url.includes('/api/auth/error') || url.includes('error=')) {
+          setError(result.error === 'CredentialsSignin' ? 'Invalid credentials.' : 'Something went wrong.')
+          setPending(false)
+          return
+        }
+        window.location.href = url
+        return
+      }
+      setError(result?.error === 'CredentialsSignin' ? 'Invalid credentials.' : result?.error ?? 'Sign-in failed.')
+    } catch (err) {
+      setError('Something went wrong. Please try again.')
+    } finally {
+      setPending(false)
+    }
+  }
 
   return (
     <div className="flex min-h-screen min-h-[100dvh] items-center justify-center bg-background p-4 sm:p-6 relative overflow-hidden safe-area-x safe-area-top safe-area-bottom">
@@ -93,7 +112,8 @@ function LoginPageContent() {
                 <p className="text-gray-600 mt-1 sm:mt-2 text-sm sm:text-base">Admin Portal Access</p>
               </div>
               
-              <form action={dispatch} className="space-y-5 sm:space-y-6">
+              <form onSubmit={handleLogin} className="space-y-5 sm:space-y-6">
+                <input type="hidden" name="callbackUrl" value={searchParams.get('callbackUrl') || '/'} />
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-1.5 sm:mb-2">Email Address</label>
                   <input
@@ -129,14 +149,20 @@ function LoginPageContent() {
                   </div>
                 </div>
                 
-                {state?.error && (
+                {error && (
                   <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm flex items-center gap-2 border border-red-100">
                     <AlertCircle className="w-4 h-4 shrink-0" />
-                    {state.error}
+                    {error}
                   </div>
                 )}
                 
-                <LoginButton />
+                <button
+                  type="submit"
+                  disabled={pending}
+                  className={cn(STYLES.btn, STYLES.btnPrimary, "w-full py-3 min-h-[48px] text-base sm:text-lg shadow-lg hover:shadow-xl active:scale-[0.99] sm:hover:-translate-y-0.5 transition-all touch-manipulation")}
+                >
+                  {pending ? 'Logging in...' : 'Sign In'}
+                </button>
               </form>
             </div>
           ) : (
