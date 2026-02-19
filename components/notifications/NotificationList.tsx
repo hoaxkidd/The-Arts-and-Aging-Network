@@ -18,12 +18,13 @@ type Notification = {
   message: string
   link: string | null
   read: boolean
-  createdAt: Date
+  createdAt: Date | string
 }
 
 type NotificationListProps = {
   initialNotifications: Notification[]
   compact?: boolean
+  onNotificationClick?: (note: Notification) => void
 }
 
 function getNotificationStyle(type: string) {
@@ -77,7 +78,7 @@ function getNotificationStyle(type: string) {
   }
 }
 
-function formatTime(date: Date) {
+function formatTime(date: Date | string) {
   const now = new Date()
   const d = new Date(date)
   const diff = now.getTime() - d.getTime()
@@ -93,7 +94,7 @@ function formatTime(date: Date) {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }
 
-export function NotificationList({ initialNotifications, compact = false }: NotificationListProps) {
+export function NotificationList({ initialNotifications, compact = false, onNotificationClick }: NotificationListProps) {
   const [notifications, setNotifications] = useState(initialNotifications)
 
   const refetch = useCallback(async () => {
@@ -217,11 +218,13 @@ export function NotificationList({ initialNotifications, compact = false }: Noti
               const Icon = style.icon
 
               return compact ? (
-                // Compact View (Dropdown)
-                <div
+                // Compact View (Dropdown) - clickable row navigates to link
+                <button
                   key={note.id}
+                  type="button"
+                  onClick={() => onNotificationClick?.(note)}
                   className={cn(
-                    "group flex gap-3 px-4 py-3.5 transition-colors cursor-pointer",
+                    "group flex gap-3 px-4 py-3.5 transition-colors cursor-pointer w-full text-left",
                     note.read ? "bg-white hover:bg-gray-50" : "bg-primary-50/40 hover:bg-primary-50/60"
                   )}
                 >
@@ -242,12 +245,12 @@ export function NotificationList({ initialNotifications, compact = false }: Noti
                     </div>
                     <p className="text-xs text-gray-500 line-clamp-1 mt-0.5">{note.message}</p>
                     {note.link && (
-                      <Link href={note.link} className="text-xs font-medium text-primary-600 hover:text-primary-700 mt-1.5 inline-block">
+                      <span className="text-xs font-medium text-primary-600 group-hover:text-primary-700 mt-1.5 inline-block">
                         View details →
-                      </Link>
+                      </span>
                     )}
                   </div>
-                </div>
+                </button>
               ) : (
                 // Full View (Page)
                 <div

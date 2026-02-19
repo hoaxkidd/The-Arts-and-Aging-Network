@@ -1,8 +1,9 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 import { Bell, Zap, X, ExternalLink } from 'lucide-react'
-import { getMyNotifications, getMyUnreadCount, createTestNotification } from '@/app/actions/notifications'
+import { getMyNotifications, getMyUnreadCount, createTestNotification, markAsRead } from '@/app/actions/notifications'
 import { NotificationList } from './NotificationList'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
@@ -15,7 +16,7 @@ type Notification = {
   message: string
   link: string | null
   read: boolean
-  createdAt: Date
+  createdAt: Date | string
 }
 
 type NotificationBellProps = {
@@ -25,6 +26,7 @@ type NotificationBellProps = {
 }
 
 export function NotificationBell({ initialNotifications, initialUnreadCount }: NotificationBellProps) {
+  const router = useRouter()
   const [isOpen, setIsOpen] = useState(false)
   const [notifications, setNotifications] = useState(initialNotifications)
   const [unreadCount, setUnreadCount] = useState(initialUnreadCount)
@@ -49,24 +51,68 @@ export function NotificationBell({ initialNotifications, initialUnreadCount }: N
     setUnreadCount(initialUnreadCount)
   }, [initialNotifications, initialUnreadCount])
 
-  // Poll every 5s, refetch on tab focus, listen for refresh events
+  // Real-time: SSE stream when tab visible, fallback to 2s polling on error
   useEffect(() => {
     const handleRefresh = () => refetch()
-
     const onVisibilityChange = () => {
       if (document.visibilityState === 'visible') refetch()
     }
 
-    const interval = setInterval(refetch, 5000)
+    let eventSource: EventSource | null = null
+    let pollInterval: ReturnType<typeof setInterval> | null = null
+
+    const startPolling = () => {
+      if (pollInterval) return
+      pollInterval = setInterval(refetch, 2000)
+    }
+
+    const stopPolling = () => {
+      if (pollInterval) {
+        clearInterval(pollInterval)
+        pollInterval = null
+      }
+    }
+
+    const url = new URL('/api/notifications/stream', window.location.origin)
+    eventSource = new EventSource(url.toString())
+
+    eventSource.onmessage = (e) => {
+      try {
+        const { notifications: data, unreadCount: count } = JSON.parse(e.data)
+        setNotifications(data)
+        setUnreadCount(count)
+      } catch {
+        // ignore parse errors
+      }
+    }
+
+    eventSource.onerror = () => {
+      eventSource?.close()
+      eventSource = null
+      startPolling()
+    }
+
     document.addEventListener('visibilitychange', onVisibilityChange)
     window.addEventListener(NOTIFICATION_REFRESH_EVENT, handleRefresh)
 
     return () => {
-      clearInterval(interval)
+      eventSource?.close()
+      stopPolling()
       document.removeEventListener('visibilitychange', onVisibilityChange)
       window.removeEventListener(NOTIFICATION_REFRESH_EVENT, handleRefresh)
     }
   }, [refetch])
+
+  const handleNotificationClick = useCallback(async (note: Notification) => {
+    if (!note.read) {
+      await markAsRead(note.id)
+      setNotifications((prev) => prev.map((n) => (n.id === note.id ? { ...n, read: true } : n)))
+      setUnreadCount((c) => Math.max(0, c - 1))
+    }
+    setIsOpen(false)
+    const target = note.link || '/notifications'
+    router.push(target)
+  }, [router])
 
   const handleTestNotification = async () => {
     setLoading(true)
@@ -143,7 +189,11 @@ export function NotificationBell({ initialNotifications, initialUnreadCount }: N
 
             {/* Notifications List */}
             <div className="max-h-[400px] overflow-y-auto overscroll-contain">
-              <NotificationList initialNotifications={notifications} compact />
+              <NotificationList
+                initialNotifications={notifications}
+                compact
+                onNotificationClick={handleNotificationClick}
+              />
             </div>
 
             {/* Footer */}

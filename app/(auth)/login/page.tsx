@@ -60,6 +60,9 @@ function LoginPageContent() {
       }
       setError(result?.error === 'CredentialsSignin' ? 'Invalid credentials.' : result?.error ?? 'Sign-in failed.')
     } catch (err) {
+      if (process.env.NODE_ENV === 'development') {
+        console.error('[Login]', err)
+      }
       setError('Something went wrong. Please try again.')
     } finally {
       setPending(false)

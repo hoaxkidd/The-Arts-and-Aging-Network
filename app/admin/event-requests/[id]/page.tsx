@@ -1,7 +1,7 @@
 import { auth } from "@/auth"
 import { redirect, notFound } from "next/navigation"
 import { getEventRequestDetail } from "@/app/actions/event-requests"
-import { AdminRequestList } from "@/components/event-requests/AdminRequestList"
+import { EventRequestDetail } from "@/components/event-requests/EventRequestDetail"
 import Link from "next/link"
 import { ArrowLeft } from "lucide-react"
 
@@ -20,27 +20,24 @@ export default async function AdminEventRequestDetailPage({
     notFound()
   }
 
-  const request = result.data as any
+  const request = result.data
 
   return (
-    <div className="h-full flex flex-col">
-      <header className="flex-shrink-0 pb-4">
+    <div className="space-y-4">
+      <div>
         <Link
           href="/admin/events?tab=requests"
-          className="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 mb-3"
+          className="text-gray-500 hover:text-gray-700 flex items-center gap-2 mb-3 text-sm"
         >
-          <ArrowLeft className="w-4 h-4" />
-          Back to Event Requests
+          <ArrowLeft className="w-4 h-4" /> Back to Event Requests
         </Link>
-        <h1 className="text-lg font-bold text-gray-900">Event Request Details</h1>
-        <p className="text-xs text-gray-500">
+        <h1 className="text-xl font-bold text-gray-900">Event Request Details</h1>
+        <p className="text-gray-500 text-sm">
           Review and approve or decline this request
         </p>
-      </header>
-
-      <div className="flex-1 min-h-0 overflow-auto">
-        <AdminRequestList requests={[request]} />
       </div>
+
+      <EventRequestDetail request={request} />
     </div>
   )
 }

@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma"
 import Link from "next/link"
-import { Users, UserCheck, UserX, Mail } from "lucide-react"
+import { Mail } from "lucide-react"
 import { STYLES } from "@/lib/styles"
 import { cn } from "@/lib/utils"
 import UsersTable from "@/components/admin/UsersTable"
@@ -14,20 +14,17 @@ export default async function UsersPage() {
   })
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-center">
+    <div className="space-y-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">User Management</h1>
-          <p className="text-gray-500 text-sm">Manage access and roles for all members</p>
+          <p className="text-sm text-gray-500 mt-0.5">Manage access and roles for all members</p>
         </div>
-        <Link href="/admin/invitations" className={cn(STYLES.btn, STYLES.btnPrimary)}>
+        <Link href="/admin/invitations" className={cn(STYLES.btn, STYLES.btnPrimary, "self-start sm:self-auto")}>
           <Mail className="w-4 h-4" />
           Invite New User
         </Link>
       </div>
-
-      {/* Users Table with Search and Filters */}
       <UsersTable users={users} />
     </div>
   )

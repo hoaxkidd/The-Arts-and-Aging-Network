@@ -44,11 +44,11 @@ export function EventManagementHubClient({ events, requests }: EventManagementHu
   ]
 
   return (
-    <div className="h-full flex flex-col p-4 md:p-6">
-      <div className="flex-shrink-0 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+    <div className="h-full flex flex-col px-4 sm:px-6 py-5">
+      <div className="flex-shrink-0 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-5">
         <div>
-          <h1 className="text-xl md:text-2xl font-bold text-gray-900">Event Management</h1>
-          <p className="text-sm text-gray-500">Events, calendar, and request approvals</p>
+          <h1 className="text-2xl font-bold text-gray-900">Event Management</h1>
+          <p className="text-sm text-gray-500 mt-0.5">Events, calendar, and request approvals</p>
         </div>
         {activeTab === 'list' && (
           <Link href="/admin/events/new" className={cn(STYLES.btn, STYLES.btnPrimary, "self-start sm:self-auto")}>
@@ -64,7 +64,7 @@ export function EventManagementHubClient({ events, requests }: EventManagementHu
         onChange={setActiveTab}
       />
 
-      <div className="flex-1 min-h-0 overflow-auto mt-4">
+      <div className="flex-1 min-h-0 overflow-auto mt-5">
         {activeTab === 'list' && <EventListTable events={events} />}
         {activeTab === 'calendar' && <AdminCalendarView events={events} />}
         {activeTab === 'requests' && <AdminRequestList requests={requests} />}
