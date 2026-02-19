@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState, useEffect, useState } from 'react'
+import { Suspense, useActionState, useEffect, useState } from 'react'
 import { useFormStatus } from 'react-dom'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { authenticate, type AuthState } from '@/app/actions/auth'
@@ -21,7 +21,7 @@ function LoginButton() {
   )
 }
 
-export default function LoginPage() {
+function LoginPageContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const tabParam = searchParams.get('tab')
@@ -152,5 +152,25 @@ export default function LoginPage() {
         </p>
       </div>
     </div>
+  )
+}
+
+function LoginPageFallback() {
+  return (
+    <div className="flex min-h-screen min-h-[100dvh] items-center justify-center bg-background p-4 sm:p-6 relative overflow-hidden">
+      <div className="w-full max-w-md">
+        <div className="bg-white/90 sm:bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl overflow-hidden border border-white/50 p-12 flex items-center justify-center">
+          <div className="animate-pulse text-gray-400">Loading...</div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<LoginPageFallback />}>
+      <LoginPageContent />
+    </Suspense>
   )
 }
