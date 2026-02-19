@@ -7,7 +7,7 @@ import type { User } from "@prisma/client"
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   trustHost: true, // Required for Vercel – uses request host for redirects
-  secret: process.env.AUTH_SECRET, // Required: use a fixed secret so sessions stay valid across restarts
+  secret: process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET, // Required on Vercel; use AUTH_SECRET or NEXTAUTH_SECRET
   providers: [
     Credentials({
       credentials: {

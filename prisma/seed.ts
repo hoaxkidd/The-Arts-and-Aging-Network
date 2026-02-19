@@ -8,7 +8,7 @@ dotenv.config({ path: path.resolve(process.cwd(), '.env.local') })
 dotenv.config()
 
 // Use direct (unpooled) URL for seed so Neon scale-to-zero can wake; allow 30s connect timeout
-const rawUrl = process.env.STORAGE_URL_UNPOOLED || process.env.STORAGE_URL || ''
+const rawUrl = process.env.DATABASE_URL_UNPOOLED || process.env.DATABASE_URL || process.env.STORAGE_URL_UNPOOLED || process.env.STORAGE_URL || ''
 const separator = rawUrl.includes('?') ? '&' : '?'
 const urlWithTimeout = `${rawUrl}${separator}connect_timeout=30`
 const prisma = new PrismaClient(
@@ -139,7 +139,7 @@ async function main() {
   console.log('  Home Admin:  home@artsandaging.com')
   console.log('  Staff:       staff@artsandaging.com')
   console.log('  Payroll:     payroll@artsandaging.com')
-  console.log('\nTo use on Vercel: ensure STORAGE_URL matches Vercel env, then run: npm run db:seed')
+  console.log('\nTo use on Vercel: ensure DATABASE_URL (and DATABASE_URL_UNPOOLED) are set, then run: npm run db:seed')
 }
 
 main()

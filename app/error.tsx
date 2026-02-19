@@ -44,8 +44,8 @@ export default function Error({
             <ul className="list-disc list-inside space-y-0.5">
               <li>AUTH_SECRET (required)</li>
               <li>NEXTAUTH_URL (e.g. https://your-app.vercel.app)</li>
-              <li>STORAGE_URL (Neon pooled)</li>
-              <li>STORAGE_URL_UNPOOLED (Neon direct)</li>
+              <li>DATABASE_URL (Neon pooled)</li>
+              <li>DATABASE_URL_UNPOOLED (Neon direct)</li>
             </ul>
           </div>
         )}
