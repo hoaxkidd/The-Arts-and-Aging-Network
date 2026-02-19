@@ -1,25 +1,31 @@
-import { PrismaClient } from "@prisma/client"
 import { auth } from "@/auth"
+import { prisma } from "@/lib/prisma"
 import { submitRequest } from "@/app/actions/requests"
 import { FileText, PlusCircle, DollarSign, Calendar } from "lucide-react"
 import { RequestFilters } from "@/components/RequestFilters"
 import { STYLES } from "@/lib/styles"
 import { cn } from "@/lib/utils"
-
-const prisma = new PrismaClient()
+import { redirect } from "next/navigation"
 
 export default async function RequestsPage(props: { searchParams: Promise<{ category?: string, status?: string }> }) {
   const session = await auth()
+  const userId = session?.user?.id
+  if (!userId) redirect("/login")
+
   const searchParams = await props.searchParams
-  
-  const where: any = { userId: session?.user?.id }
+  const where: Record<string, unknown> = { userId }
   if (searchParams.category) where.category = searchParams.category
   if (searchParams.status) where.status = searchParams.status
 
-  const requests = await prisma.expenseRequest.findMany({
-    where,
-    orderBy: { createdAt: 'desc' },
-  })
+  let requests: Awaited<ReturnType<typeof prisma.expenseRequest.findMany>> = []
+  try {
+    requests = await prisma.expenseRequest.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+    })
+  } catch (err) {
+    console.error("[Payroll requests] DB error:", err instanceof Error ? err.message : err)
+  }
 
   return (
     <div className="space-y-8">

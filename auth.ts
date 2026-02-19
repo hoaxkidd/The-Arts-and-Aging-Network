@@ -10,6 +10,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   secret: process.env.AUTH_SECRET, // Required: use a fixed secret so sessions stay valid across restarts
   providers: [
     Credentials({
+      credentials: {
+        email: { label: 'Email', type: 'email' },
+        password: { label: 'Password', type: 'password' },
+      },
       async authorize(credentials) {
         try {
           const parsedCredentials = z

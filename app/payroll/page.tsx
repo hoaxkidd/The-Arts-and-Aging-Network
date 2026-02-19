@@ -1,5 +1,5 @@
-import { PrismaClient } from "@prisma/client"
 import { auth } from "@/auth"
+import { prisma } from "@/lib/prisma"
 import {
   Clock,
   AlertCircle,
@@ -12,66 +12,62 @@ import {
   ArrowUpRight
 } from "lucide-react"
 import Link from "next/link"
+import { redirect } from "next/navigation"
 import { QuickActionHandler } from "@/components/QuickActionHandler"
 import { cn } from "@/lib/utils"
-
-const prisma = new PrismaClient()
 
 export default async function PayrollDashboard() {
   const session = await auth()
   const userId = session?.user?.id
 
-  // Fetch Data
-  const pendingRequests = await prisma.expenseRequest.count({
-    where: { userId, status: 'PENDING' }
-  })
+  if (!userId) redirect("/login")
 
-  // Calculate hours for current month
-  const startOfMonth = new Date()
-  startOfMonth.setDate(1)
-  startOfMonth.setHours(0,0,0,0)
+  let pendingRequests = 0
+  let monthlyHours = 0
+  let weeklyHours = 0
+  let recentActivity: { type: string; date: Date; [key: string]: unknown }[] = []
 
-  const monthlyEntries = await prisma.timeEntry.findMany({
-    where: {
-      userId,
-      date: { gte: startOfMonth }
-    }
-  })
+  try {
+    pendingRequests = await prisma.expenseRequest.count({
+      where: { userId, status: 'PENDING' }
+    })
 
-  const monthlyHours = monthlyEntries.reduce((acc, entry) => acc + entry.hours, 0)
+    const startOfMonth = new Date()
+    startOfMonth.setDate(1)
+    startOfMonth.setHours(0, 0, 0, 0)
+    const monthlyEntries = await prisma.timeEntry.findMany({
+      where: { userId, date: { gte: startOfMonth } }
+    })
+    monthlyHours = monthlyEntries.reduce((acc, entry) => acc + entry.hours, 0)
 
-  // Calculate hours for current week
-  const startOfWeek = new Date()
-  startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay())
-  startOfWeek.setHours(0,0,0,0)
+    const startOfWeek = new Date()
+    startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay())
+    startOfWeek.setHours(0, 0, 0, 0)
+    const weeklyEntries = await prisma.timeEntry.findMany({
+      where: { userId, date: { gte: startOfWeek } }
+    })
+    weeklyHours = weeklyEntries.reduce((acc, entry) => acc + entry.hours, 0)
 
-  const weeklyEntries = await prisma.timeEntry.findMany({
-    where: {
-      userId,
-      date: { gte: startOfWeek }
-    }
-  })
+    const [recentTimeEntries, recentExpenses] = await Promise.all([
+      prisma.timeEntry.findMany({
+        where: { userId },
+        orderBy: { date: 'desc' },
+        take: 3
+      }),
+      prisma.expenseRequest.findMany({
+        where: { userId },
+        orderBy: { createdAt: 'desc' },
+        take: 3
+      })
+    ])
 
-  const weeklyHours = weeklyEntries.reduce((acc, entry) => acc + entry.hours, 0)
-
-  // Get recent mixed activity
-  const recentTimeEntries = await prisma.timeEntry.findMany({
-    where: { userId },
-    orderBy: { date: 'desc' },
-    take: 3
-  })
-
-  const recentExpenses = await prisma.expenseRequest.findMany({
-    where: { userId },
-    orderBy: { createdAt: 'desc' },
-    take: 3
-  })
-
-  // Combine and sort recent activity
-  const recentActivity = [
-    ...recentTimeEntries.map(e => ({ type: 'TIME', ...e, date: new Date(e.date) })),
-    ...recentExpenses.map(e => ({ type: 'EXPENSE', ...e, date: new Date(e.createdAt) }))
-  ].sort((a, b) => b.date.getTime() - a.date.getTime()).slice(0, 5)
+    recentActivity = [
+      ...recentTimeEntries.map(e => ({ type: 'TIME', ...e, date: new Date(e.date) })),
+      ...recentExpenses.map(e => ({ type: 'EXPENSE', ...e, date: new Date(e.createdAt) }))
+    ].sort((a, b) => b.date.getTime() - a.date.getTime()).slice(0, 5)
+  } catch (err) {
+    console.error("[PayrollDashboard] DB error:", err instanceof Error ? err.message : err)
+  }
 
   return (
     <div className="h-full flex flex-col">

@@ -7,6 +7,16 @@ import { headers } from 'next/headers'
 
 export type AuthState = { error?: string; redirect?: string } | undefined
 
+/** Base URL for redirects: prefer request host (Vercel) then NEXTAUTH_URL, then localhost. */
+function getBaseUrl(headersList: Headers): string {
+  const envUrl = process.env.NEXTAUTH_URL ?? process.env.AUTH_URL
+  if (envUrl) return envUrl.replace(/\/$/, '')
+  const host = headersList.get('x-forwarded-host') ?? headersList.get('host')
+  const proto = headersList.get('x-forwarded-proto') ?? 'https'
+  if (host) return `${proto === 'https' ? 'https' : 'http'}://${host}`
+  return 'http://localhost:3000'
+}
+
 export async function authenticate(
   _prevState: AuthState,
   formData: FormData,
@@ -16,6 +26,8 @@ export async function authenticate(
   if (!rateLimit(ip, 5, 60000)) {
     return { error: 'Too many login attempts. Please try again later.' }
   }
+
+  const baseUrl = getBaseUrl(headersList)
 
   try {
     const email = formData.get('email') as string | null
@@ -39,16 +51,23 @@ export async function authenticate(
           return { error: 'Invalid credentials.' }
         }
       }
-      // Use absolute URL so the browser does a full navigation and sends the session cookie
-      const base = process.env.NEXTAUTH_URL ?? 'http://localhost:3000'
+      // Never send the client to the auth callback URL (credentials only accept POST; GET triggers InvalidProvider)
       const path = result.startsWith('http') ? new URL(result).pathname : result
-      const redirectUrl = path.startsWith('/') ? `${base}${path}` : `${base}/${path}`
+      const isAuthCallback = path.includes('/api/auth/callback/') || path.includes('/api/auth/signin')
+      const destination = isAuthCallback ? redirectTo : (path.startsWith('/') ? path : `/${path}`)
+      // Use request-based base so Vercel never redirects to localhost
+      const redirectUrl = destination.startsWith('http') ? destination : `${baseUrl}${destination.startsWith('/') ? '' : '/'}${destination}`
       return { redirect: redirectUrl }
     }
 
     // Client-style response shape (some setups return { ok, url, error })
     if (result?.ok && result.url) {
-      return { redirect: result.url }
+      const url = result.url
+      const path = url.startsWith('http') ? new URL(url).pathname : url
+      const isAuthCallback = path.includes('/api/auth/callback/') || path.includes('/api/auth/signin')
+      const destination = isAuthCallback ? redirectTo : url
+      const redirectUrl = destination.startsWith('http') ? destination : `${baseUrl}${destination.startsWith('/') ? '' : '/'}${destination}`
+      return { redirect: redirectUrl }
     }
     if (!result) {
       return { error: 'Sign-in failed. Check the server terminal for errors.' }
