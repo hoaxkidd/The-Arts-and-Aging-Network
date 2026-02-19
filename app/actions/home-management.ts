@@ -184,11 +184,14 @@ export async function updateHomeDetails(formData: FormData) {
     notes: formData.get("acc_notes") as string || ''
   })
 
-  // Photo Permissions (JSON)
-  const photoPermissions = JSON.stringify({
-    formReceived: formData.get("photo_formReceived") === 'on',
-    restrictions: formData.get("photo_restrictions") as string || ''
-  })
+  // Photo Permissions: plain text (admin form) or JSON (profile form)
+  const photoPermissionsPlain = (formData.get("photoPermissions") as string)?.trim()
+  const photoPermissions = photoPermissionsPlain
+    ? photoPermissionsPlain
+    : JSON.stringify({
+        formReceived: formData.get("photo_formReceived") === 'on',
+        restrictions: (formData.get("photo_restrictions") as string) || ''
+      })
 
   if (!id || !name) {
     return { error: "Missing required fields" }

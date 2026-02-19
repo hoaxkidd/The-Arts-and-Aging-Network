@@ -73,16 +73,16 @@ export function MileageList({ entries }: { entries: MileageEntry[] }) {
         </div>
 
         {/* Table */}
-        <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
+        <div className="table-scroll-wrapper max-h-[calc(100vh-360px)]">
+            <table className={STYLES.table}>
                 <thead className="bg-gray-50">
                     <tr>
-                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Staff Member</th>
-                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Date</th>
-                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Route</th>
-                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Distance</th>
-                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
-                        <th className="px-6 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
+                        <th className={STYLES.tableHeader}>Staff Member</th>
+                        <th className={STYLES.tableHeader}>Date</th>
+                        <th className={STYLES.tableHeader}>Route</th>
+                        <th className={STYLES.tableHeader}>Distance</th>
+                        <th className={STYLES.tableHeader}>Status</th>
+                        <th className={cn(STYLES.tableHeader, "text-right")}>Actions</th>
                     </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">

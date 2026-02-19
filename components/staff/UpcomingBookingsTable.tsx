@@ -42,20 +42,20 @@ export function UpcomingBookingsTable({ bookings }: { bookings: Booking[] }) {
   }
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full">
-        <thead>
-          <tr className="border-b border-gray-200">
-            <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+    <div className="table-scroll-wrapper max-h-[400px] rounded-lg border border-gray-200 overflow-hidden">
+      <table className="min-w-full divide-y divide-gray-200 text-sm">
+        <thead className="bg-gray-50">
+          <tr>
+            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
               Program
             </th>
-            <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
               Place
             </th>
-            <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
               Date
             </th>
-            <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
               Time
             </th>
           </tr>

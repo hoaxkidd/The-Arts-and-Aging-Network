@@ -159,14 +159,15 @@ export function InventoryHubClient({ items: initialItems }: Props) {
       </div>
 
       {/* Table */}
-      <div className="flex-1 min-h-0 overflow-auto border border-gray-200 rounded-lg">
-        <table className="min-w-full divide-y divide-gray-200">
+      <div className="flex-1 min-h-0 border border-gray-200 rounded-lg overflow-hidden">
+        <div className="table-scroll-wrapper h-full max-h-[calc(100vh-360px)]">
+        <table className="min-w-full divide-y divide-gray-200 text-sm">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
                 Item
               </th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
                 Category
               </th>
               <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">
@@ -335,6 +336,7 @@ export function InventoryHubClient({ items: initialItems }: Props) {
             )}
           </tbody>
         </table>
+        </div>
       </div>
 
       {showAddModal && (

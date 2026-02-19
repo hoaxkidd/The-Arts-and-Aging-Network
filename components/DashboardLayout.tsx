@@ -24,11 +24,16 @@ export default async function DashboardLayout({ children, role, title = "Arts & 
   let unreadCount = 0
 
   if (session?.user?.id) {
-    notifications = await prisma.notification.findMany({
-      where: { userId: session.user.id },
-      orderBy: { createdAt: 'desc' }
-    })
-    unreadCount = notifications.filter(n => !n.read).length
+    try {
+      notifications = await prisma.notification.findMany({
+        where: { userId: session.user.id },
+        orderBy: { createdAt: 'desc' }
+      })
+      unreadCount = notifications.filter(n => !n.read).length
+    } catch (err) {
+      // Notification table may not exist yet — run `npm run db:push`
+      console.warn('Could not load notifications:', err instanceof Error ? err.message : err)
+    }
   }
 
   return (

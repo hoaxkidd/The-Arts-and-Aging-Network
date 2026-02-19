@@ -21,7 +21,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             return null
           }
           const { email, password } = parsedCredentials.data
-          const user = await prisma.user.findUnique({ where: { email } })
+          const emailNorm = email.trim().toLowerCase()
+          const user = await prisma.user.findUnique({ where: { email: emailNorm } })
           if (!user) {
             console.error('[Auth] User not found:', email)
             return null

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import {
   Bell, Calendar, UserCheck, AlertCircle, Info, Trash2, CheckCheck,
   ThumbsUp, Reply, Heart, Clock, MessageSquare, Users, UserPlus,
@@ -8,6 +8,7 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { markAsRead, deleteNotification, getMyNotifications, markAllAsRead, clearAllNotifications } from '@/app/actions/notifications'
+import { NOTIFICATION_REFRESH_EVENT } from '@/lib/notification-refresh'
 import Link from 'next/link'
 
 type Notification = {
@@ -95,19 +96,31 @@ function formatTime(date: Date) {
 export function NotificationList({ initialNotifications, compact = false }: NotificationListProps) {
   const [notifications, setNotifications] = useState(initialNotifications)
 
-  // Real-time polling
-  useEffect(() => {
-    const poll = async () => {
-      try {
-        const latest = await getMyNotifications()
-        setNotifications(latest as Notification[])
-      } catch (e) {
-        console.error(e)
-      }
+  const refetch = useCallback(async () => {
+    try {
+      const latest = await getMyNotifications()
+      setNotifications(latest as Notification[])
+    } catch (e) {
+      console.error(e)
     }
-    const interval = setInterval(poll, 10000)
-    return () => clearInterval(interval)
   }, [])
+
+  // Sync when parent passes new data (compact mode: NotificationBell provides data)
+  useEffect(() => {
+    setNotifications(initialNotifications)
+  }, [initialNotifications])
+
+  // Full page: poll every 5s and listen for refresh events
+  useEffect(() => {
+    if (compact) return // Parent NotificationBell handles polling
+    const handleRefresh = () => refetch()
+    const interval = setInterval(refetch, 5000)
+    window.addEventListener(NOTIFICATION_REFRESH_EVENT, handleRefresh)
+    return () => {
+      clearInterval(interval)
+      window.removeEventListener(NOTIFICATION_REFRESH_EVENT, handleRefresh)
+    }
+  }, [compact, refetch])
 
   const handleMarkRead = async (id: string, e: React.MouseEvent) => {
     e.preventDefault()

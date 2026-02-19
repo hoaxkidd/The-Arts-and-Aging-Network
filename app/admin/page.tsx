@@ -48,7 +48,7 @@ export default async function AdminDashboard() {
 
       <div className="flex-1 min-h-0 overflow-auto space-y-4">
         {/* Compact Stats */}
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           <div className="bg-white rounded-lg border border-gray-200 p-3">
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 bg-primary-100 rounded-lg flex items-center justify-center">

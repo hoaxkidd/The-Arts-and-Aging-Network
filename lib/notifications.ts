@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma"
+import { revalidatePath } from "next/cache"
 
 type NotificationType =
   | 'EVENT_CREATED'
@@ -74,6 +75,11 @@ export async function createNotification(params: CreateNotificationParams) {
         link: params.link,
       }
     })
+    revalidatePath('/admin')
+    revalidatePath('/staff')
+    revalidatePath('/payroll')
+    revalidatePath('/dashboard')
+    revalidatePath('/notifications')
   }
 
   // Email Notification

@@ -128,19 +128,20 @@ export function DonorsHubClient({ donors: initialDonors }: Props) {
         </select>
       </div>
 
-      <div className="flex-1 min-h-0 overflow-auto border border-gray-200 rounded-lg">
-        <table className="min-w-full divide-y divide-gray-200">
+      <div className="flex-1 min-h-0 border border-gray-200 rounded-lg overflow-hidden">
+        <div className="table-scroll-wrapper h-full max-h-[calc(100vh-360px)]">
+        <table className="min-w-full divide-y divide-gray-200 text-sm">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Donor / Organization</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Type</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Tier</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Payment method</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Campaign / Event</th>
-              <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase">Total donated</th>
-              <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase">Donations</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Last donation</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Status</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Donor / Organization</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Type</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Tier</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Payment method</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Campaign / Event</th>
+              <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Total donated</th>
+              <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Donations</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Last donation</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-100">
@@ -205,6 +206,7 @@ export function DonorsHubClient({ donors: initialDonors }: Props) {
             )}
           </tbody>
         </table>
+        </div>
       </div>
 
       {donationHistoryDonor && (

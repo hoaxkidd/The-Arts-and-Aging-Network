@@ -53,7 +53,7 @@ export default async function HomeRequestsPage() {
       </header>
 
       {/* Compact Stats */}
-      <div className="flex-shrink-0 grid grid-cols-3 gap-2 pb-3">
+      <div className="flex-shrink-0 grid grid-cols-2 sm:grid-cols-3 gap-2 pb-3">
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-2.5 flex items-center gap-2">
           <div className="w-7 h-7 rounded-lg bg-yellow-100 flex items-center justify-center">
             <Clock className="w-3.5 h-3.5 text-yellow-600" />

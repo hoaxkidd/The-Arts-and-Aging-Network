@@ -26,7 +26,7 @@ export default async function AdminEventRequestDetailPage({
     <div className="h-full flex flex-col">
       <header className="flex-shrink-0 pb-4">
         <Link
-          href="/admin/event-requests"
+          href="/admin/events?tab=requests"
           className="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 mb-3"
         >
           <ArrowLeft className="w-4 h-4" />

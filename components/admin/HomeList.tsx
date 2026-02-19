@@ -52,15 +52,15 @@ export function HomeList({ initialHomes }: { initialHomes: Home[] }) {
 
       {/* List */}
       <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
+        <div className="table-scroll-wrapper max-h-[calc(100vh-320px)]">
+          <table className="w-full text-left text-sm min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50 border-b border-gray-100">
               <tr>
-                <th className="px-6 py-3 font-semibold text-gray-900">Facility Name</th>
-                <th className="px-6 py-3 font-semibold text-gray-900">Location</th>
-                <th className="px-6 py-3 font-semibold text-gray-900">Capacity</th>
-                <th className="px-6 py-3 font-semibold text-gray-900">Contact</th>
-                <th className="px-6 py-3 font-semibold text-gray-900 text-right">Actions</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Facility Name</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Location</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Capacity</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Contact</th>
+                <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">

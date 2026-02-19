@@ -41,7 +41,7 @@ export default async function HomeMyEventsPage() {
       </header>
 
       {/* Compact Stats */}
-      <div className="flex-shrink-0 grid grid-cols-3 gap-3 pb-3">
+      <div className="flex-shrink-0 grid grid-cols-2 sm:grid-cols-3 gap-3 pb-3">
         <div className="bg-white rounded-lg border border-gray-200 p-3 flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center">
             <Calendar className="w-4 h-4 text-gray-600" />

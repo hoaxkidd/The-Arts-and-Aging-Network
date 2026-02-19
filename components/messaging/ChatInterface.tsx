@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { Send, ArrowLeft, Loader2, MoreVertical, Edit2, Trash2, X, Check } from 'lucide-react'
 import { sendMessage } from '@/app/actions/conversations'
+import { triggerNotificationRefresh } from '@/lib/notification-refresh'
 import { editDirectMessage, deleteDirectMessage } from '@/app/actions/message-features'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -76,6 +77,7 @@ export function ChatInterface({ partner, messages, currentUserId, onBack }: Prop
       alert(result.error)
       setNewMessage(content) // Restore message on error
     } else {
+      triggerNotificationRefresh()
       router.refresh()
     }
 

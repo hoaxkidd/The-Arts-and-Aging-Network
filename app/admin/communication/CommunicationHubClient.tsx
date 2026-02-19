@@ -93,10 +93,15 @@ function AccessRequestsList({ groupRequests, convoRequests }: { groupRequests: a
 
 function InvitationsList({ invitations }: { invitations: any[] }) {
     return (
-        <div className="space-y-4 sm:space-y-0">
-            {/* Mobile: card layout */}
-            <div className="sm:hidden space-y-3">
-                {invitations.map(inv => (
+        <div className="space-y-4 sm:space-y-0 w-full min-w-0">
+            {/* Mobile: card layout - only below sm breakpoint */}
+            <div className="sm:hidden space-y-3 w-full min-w-0">
+                {invitations.length === 0 ? (
+                    <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
+                        <Mail className="w-10 h-10 mx-auto text-gray-300 mb-3" />
+                        <p className="text-gray-500">No invitations sent yet</p>
+                    </div>
+                ) : invitations.map(inv => (
                     <div key={inv.id} className="bg-white rounded-lg border border-gray-200 p-4">
                         <div className="flex justify-between items-start gap-2 mb-2">
                             <p className="text-sm font-medium text-gray-900 truncate">{inv.email}</p>
@@ -117,36 +122,47 @@ function InvitationsList({ invitations }: { invitations: any[] }) {
                     </div>
                 ))}
             </div>
-            {/* Desktop: table */}
-            <div className="hidden sm:block bg-white rounded-lg border border-gray-200 overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                        <tr>
-                            <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Email</th>
-                            <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Role</th>
-                            <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Status</th>
-                            <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Sent By</th>
-                        </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                        {invitations.map(inv => (
-                            <tr key={inv.id}>
-                                <td className="px-6 py-4 text-sm text-gray-900">{inv.email}</td>
-                                <td className="px-6 py-4 text-sm text-gray-600">{inv.role}</td>
-                                <td className="px-6 py-4">
-                                    <span className={cn("px-2 py-0.5 text-xs rounded-full",
-                                        inv.status === 'ACCEPTED' ? "bg-green-100 text-green-800" :
-                                        inv.status === 'PENDING' ? "bg-yellow-100 text-yellow-800" :
-                                        "bg-red-100 text-red-800"
-                                    )}>
-                                        {inv.status}
-                                    </span>
-                                </td>
-                                <td className="px-6 py-4 text-sm text-gray-500">{inv.createdBy?.name}</td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
+            {/* Desktop: table - only from sm breakpoint up */}
+            <div className="hidden sm:block w-full min-w-0">
+                {invitations.length === 0 ? (
+                    <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
+                        <Mail className="w-10 h-10 mx-auto text-gray-300 mb-3" />
+                        <p className="text-gray-500">No invitations sent yet</p>
+                    </div>
+                ) : (
+                    <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                        <div className="table-scroll-wrapper max-h-[400px]">
+                            <table className="min-w-full divide-y divide-gray-200 text-sm">
+                                <thead className="bg-gray-50">
+                                    <tr>
+                                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Email</th>
+                                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Role</th>
+                                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
+                                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Sent By</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="bg-white divide-y divide-gray-200">
+                                    {invitations.map(inv => (
+                                        <tr key={inv.id}>
+                                            <td className="px-6 py-4 text-sm text-gray-900">{inv.email}</td>
+                                            <td className="px-6 py-4 text-sm text-gray-600">{inv.role}</td>
+                                            <td className="px-6 py-4">
+                                                <span className={cn("px-2 py-0.5 text-xs rounded-full",
+                                                    inv.status === 'ACCEPTED' ? "bg-green-100 text-green-800" :
+                                                    inv.status === 'PENDING' ? "bg-yellow-100 text-yellow-800" :
+                                                    "bg-red-100 text-red-800"
+                                                )}>
+                                                    {inv.status}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4 text-sm text-gray-500">{inv.createdBy?.name}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     )
@@ -190,7 +206,7 @@ export function CommunicationHubClient({ groups, pendingGroupRequests, pendingCo
     ]
 
     return (
-        <div className="min-h-0 flex flex-col p-4 sm:p-6">
+        <div className="min-h-0 flex flex-col p-4 sm:p-6 w-full max-w-full min-w-0 overflow-x-hidden">
             <div className="flex-shrink-0 mb-4">
                 <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Communication Hub</h1>
                 <p className="text-sm text-gray-500 mt-0.5">Manage chat groups, permissions, and user invitations</p>
@@ -202,7 +218,7 @@ export function CommunicationHubClient({ groups, pendingGroupRequests, pendingCo
                 onChange={setActiveTab}
             />
 
-            <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden overscroll-contain flex flex-col">
+            <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden overscroll-contain flex flex-col w-full min-w-0">
                 {activeTab === 'groups' && <GroupsList groups={groups} />}
                 {activeTab === 'messages' && <AdminMessagingPanel groups={groups} currentUserId={currentUserId} />}
                 {activeTab === 'requests' && (

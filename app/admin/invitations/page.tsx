@@ -72,16 +72,16 @@ export default async function InvitationsPage() {
 
       {/* Invitations List */}
       <div className={cn(STYLES.card, "p-0 overflow-hidden")}>
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
+        <div className="table-scroll-wrapper max-h-[calc(100vh-400px)]">
+          <table className={STYLES.table}>
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Recipient</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Role</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Invite link</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Expires</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Sent By</th>
+                <th className={STYLES.tableHeader}>Recipient</th>
+                <th className={STYLES.tableHeader}>Role</th>
+                <th className={STYLES.tableHeader}>Status</th>
+                <th className={STYLES.tableHeader}>Invite link</th>
+                <th className={STYLES.tableHeader}>Expires</th>
+                <th className={STYLES.tableHeader}>Sent By</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">

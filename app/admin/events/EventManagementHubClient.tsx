@@ -1,9 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { Calendar, List, ClipboardList, Plus } from "lucide-react"
 import { TabNavigation } from "@/components/admin/shared/TabNavigation"
-import { EventAdminCard } from "@/components/admin/EventAdminCard"
+import { EventListTable } from "@/components/admin/events/EventListTable"
 import { AdminRequestList } from "@/components/event-requests/AdminRequestList"
 import Link from "next/link"
 import { STYLES } from "@/lib/styles"
@@ -11,79 +12,63 @@ import { cn } from "@/lib/utils"
 
 import { AdminCalendarView } from "@/components/admin/events/AdminCalendarView"
 
-function EventListView({ events }: { events: any[] }) {
-    return (
-        <div className="space-y-4">
-             <div className="flex justify-end mb-4">
-                <Link
-                    href="/admin/events/new"
-                    className={cn(STYLES.btn, STYLES.btnPrimary)}
-                >
-                    <Plus className="w-4 h-4" />
-                    Create Event
-                </Link>
-            </div>
-            
-            {events.length === 0 ? (
-                <div className="text-center py-12 text-gray-500 bg-gray-50 rounded-lg">
-                    No events found.
-                </div>
-            ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {events.map(event => (
-                        <EventAdminCard key={event.id} event={event} />
-                    ))}
-                </div>
-            )}
-        </div>
-    )
-}
-
 type EventManagementHubClientProps = {
-    events: any[]
-    requests: any[]
+  events: any[]
+  requests: any[]
 }
 
 export function EventManagementHubClient({ events, requests }: EventManagementHubClientProps) {
-    const [activeTab, setActiveTab] = useState('list')
+  const searchParams = useSearchParams()
+  const tabParam = searchParams.get('tab')
+  const initialTab = tabParam === 'requests' || tabParam === 'list' || tabParam === 'calendar'
+    ? tabParam
+    : 'list'
 
-    const tabs = [
-        { 
-            id: 'list', 
-            label: 'All Events', 
-            icon: List 
-        },
-        { 
-            id: 'calendar', 
-            label: 'Calendar', 
-            icon: Calendar 
-        },
-        { 
-            id: 'requests', 
-            label: 'Event Requests', 
-            icon: ClipboardList,
-            count: requests.filter((r: any) => r.status === 'PENDING').length
-        }
-    ]
+  const [activeTab, setActiveTab] = useState(initialTab)
 
-    return (
-        <div className="h-full flex flex-col p-6">
-            <div className="flex-shrink-0 mb-2">
-                <h1 className="text-2xl font-bold text-gray-900">Event Management</h1>
-                <p className="text-sm text-gray-500">Manage schedule, approvals, and logistics</p>
-            </div>
+  useEffect(() => {
+    if (tabParam === 'requests' || tabParam === 'list' || tabParam === 'calendar') {
+      setActiveTab(tabParam)
+    }
+  }, [tabParam])
 
-            <TabNavigation 
-                tabs={tabs}
-                activeTab={activeTab}
-                onChange={setActiveTab}
-            />
+  const tabs = [
+    { id: 'list', label: 'All Events', icon: List },
+    { id: 'calendar', label: 'Calendar', icon: Calendar },
+    {
+      id: 'requests',
+      label: 'Event Requests',
+      icon: ClipboardList,
+      count: requests.filter((r: any) => r.status === 'PENDING').length
+    }
+  ]
 
-            <div className="flex-1 min-h-0 overflow-auto">
-                {activeTab === 'list' && <EventListView events={events} />}
-                {activeTab === 'calendar' && <AdminCalendarView events={events} />}
-                {activeTab === 'requests' && <AdminRequestList requests={requests} />}
-            </div>
+  return (
+    <div className="h-full flex flex-col p-4 md:p-6">
+      <div className="flex-shrink-0 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+        <div>
+          <h1 className="text-xl md:text-2xl font-bold text-gray-900">Event Management</h1>
+          <p className="text-sm text-gray-500">Events, calendar, and request approvals</p>
         </div>
-    )
+        {activeTab === 'list' && (
+          <Link href="/admin/events/new" className={cn(STYLES.btn, STYLES.btnPrimary, "self-start sm:self-auto")}>
+            <Plus className="w-4 h-4" />
+            Create Event
+          </Link>
+        )}
+      </div>
+
+      <TabNavigation
+        tabs={tabs}
+        activeTab={activeTab}
+        onChange={setActiveTab}
+      />
+
+      <div className="flex-1 min-h-0 overflow-auto mt-4">
+        {activeTab === 'list' && <EventListTable events={events} />}
+        {activeTab === 'calendar' && <AdminCalendarView events={events} />}
+        {activeTab === 'requests' && <AdminRequestList requests={requests} />}
+      </div>
+    </div>
+  )
 }

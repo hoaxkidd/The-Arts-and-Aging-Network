@@ -128,15 +128,15 @@ export default function UsersTable({ users: initialUsers }: { users: UserWithCou
 
       {/* Table */}
       <div className={cn(STYLES.card, "overflow-hidden p-0")}>
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
+        <div className={cn("table-scroll-wrapper", "max-h-[calc(100vh-320px)]")}>
+          <table className={STYLES.table}>
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">User</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Role</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Last Login</th>
-                <th className="px-6 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
+                <th className={STYLES.tableHeader}>User</th>
+                <th className={STYLES.tableHeader}>Role</th>
+                <th className={STYLES.tableHeader}>Status</th>
+                <th className={STYLES.tableHeader}>Last Login</th>
+                <th className={cn(STYLES.tableHeader, "text-right")}>Actions</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">

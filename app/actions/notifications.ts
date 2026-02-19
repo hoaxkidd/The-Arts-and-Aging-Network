@@ -29,6 +29,7 @@ export async function createNotification(data: {
     revalidatePath('/staff')
     revalidatePath('/payroll')
     revalidatePath('/dashboard')
+    revalidatePath('/notifications')
 
     return { success: true, notification }
   } catch (error) {
@@ -68,6 +69,7 @@ export async function createTestNotification() {
   revalidatePath('/admin')
   revalidatePath('/staff')
   revalidatePath('/dashboard')
+  revalidatePath('/notifications')
   return { success: true }
 }
 
@@ -95,6 +97,7 @@ export async function markAsRead(notificationId: string) {
   revalidatePath('/admin')
   revalidatePath('/staff')
   revalidatePath('/dashboard')
+  revalidatePath('/notifications')
   return { success: true }
 }
 
@@ -112,6 +115,7 @@ export async function markAllAsRead() {
   revalidatePath('/admin')
   revalidatePath('/staff')
   revalidatePath('/dashboard')
+  revalidatePath('/notifications')
   return { success: true }
 }
 
@@ -128,6 +132,7 @@ export async function deleteNotification(notificationId: string) {
   revalidatePath('/admin')
   revalidatePath('/staff')
   revalidatePath('/dashboard')
+  revalidatePath('/notifications')
   return { success: true }
 }
 
@@ -144,5 +149,6 @@ export async function clearAllNotifications() {
   revalidatePath('/admin')
   revalidatePath('/staff')
   revalidatePath('/dashboard')
+  revalidatePath('/notifications')
   return { success: true }
 }

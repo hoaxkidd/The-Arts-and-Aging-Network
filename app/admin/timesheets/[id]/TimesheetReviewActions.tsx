@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { CheckCircle, XCircle, Loader2 } from 'lucide-react'
 import { approveTimesheet, rejectTimesheet } from '@/app/actions/timesheet'
 import { useRouter } from 'next/navigation'
+import { triggerNotificationRefresh } from '@/lib/notification-refresh'
 
 type Props = {
   timesheetId: string
@@ -23,6 +24,7 @@ export function TimesheetReviewActions({ timesheetId }: Props) {
       alert(result.error)
       setIsPending(false)
     } else {
+      triggerNotificationRefresh()
       router.push('/admin/financials')
       router.refresh()
     }
@@ -39,6 +41,7 @@ export function TimesheetReviewActions({ timesheetId }: Props) {
       alert(result.error)
       setIsPending(false)
     } else {
+      triggerNotificationRefresh()
       router.push('/admin/financials')
       router.refresh()
     }

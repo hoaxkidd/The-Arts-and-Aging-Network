@@ -19,7 +19,6 @@ const PAGE_TITLES: Record<string, string> = {
   '/admin/homes': 'Facility Management',
   '/admin/financials': 'Financial Overview',
   '/admin/events': 'Event Management',
-  '/admin/event-requests': 'Event Requests',
   '/admin/email-reminders': 'Email Reminders',
   '/admin/form-templates': 'Form Templates',
   '/admin/testimonials': 'Testimonials',
@@ -66,7 +65,7 @@ const PAGE_TITLES: Record<string, string> = {
 function getPageTitle(pathname: string) {
     if (PAGE_TITLES[pathname]) return PAGE_TITLES[pathname]
     // Fallback logic for dynamic routes if needed
-    if (pathname.startsWith('/admin/event-requests/')) return 'Event Request Details'
+    if (pathname.startsWith('/admin/event-requests/')) return 'Event Management'
     if (pathname.startsWith('/admin/homes/')) return 'Facility Details'
     if (pathname.startsWith('/admin/users/')) return 'User Details'
     if (pathname.startsWith('/admin/timesheets/')) return 'Timesheet Review'
@@ -311,7 +310,9 @@ export function DashboardLayoutClient({ children, role, title = "Arts & Aging", 
           sidebarOpen ? "overflow-hidden" : (pathname.startsWith('/staff/inbox') || pathname.startsWith('/admin/communication')) ? "" : "overflow-y-auto"
         )}>
           <div className={cn(
-            pathname.startsWith('/staff/inbox') || pathname.startsWith('/admin/communication') ? "flex-1 flex flex-col min-h-0 w-full" : "max-w-7xl mx-auto"
+            pathname.startsWith('/staff/inbox') || pathname.startsWith('/admin/communication')
+              ? "flex-1 flex flex-col min-h-0 w-full max-w-full min-w-0 overflow-x-hidden"
+              : "max-w-7xl mx-auto w-full min-w-0 overflow-x-hidden"
           )}>
             {children}
           </div>

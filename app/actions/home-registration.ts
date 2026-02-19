@@ -13,27 +13,34 @@ export async function registerGeriatricHome(formData: FormData) {
       return { error: "Too many registration attempts. Please try again later." }
   }
 
-  const name = formData.get("name") as string
-  const email = formData.get("email") as string
+  const name = (formData.get("name") as string)?.trim()
+  const email = (formData.get("email") as string)?.trim().toLowerCase()
   const password = formData.get("password") as string
-  
+
   // Home Details
-  const homeName = formData.get("homeName") as string
-  const address = formData.get("address") as string
+  const homeName = (formData.get("homeName") as string)?.trim()
+  const address = (formData.get("address") as string)?.trim()
   const residentCount = parseInt(formData.get("residentCount") as string) || 0
   const maxCapacity = parseInt(formData.get("maxCapacity") as string) || 0
-  const specialNeeds = formData.get("specialNeeds") as string
-  const emergencyProtocol = formData.get("emergencyProtocol") as string
-  
-  // Contact
-  const contactName = formData.get("contactName") as string
-  const contactEmail = formData.get("contactEmail") as string
-  const contactPhone = formData.get("contactPhone") as string
-  const contactPosition = formData.get("contactPosition") as string
+  const facilityType = (formData.get("facilityType") as string)?.trim() || null
+  const region = (formData.get("region") as string)?.trim() || null
+  const specialNeeds = (formData.get("specialNeeds") as string)?.trim() || null
+  const emergencyProtocol = (formData.get("emergencyProtocol") as string)?.trim() || null
+  const triggerWarnings = (formData.get("triggerWarnings") as string)?.trim() || null
+  const photoPermissions = (formData.get("photoPermissions") as string)?.trim() || null
 
-  // Simple validation
-  if (!email || !password || !homeName || !address) {
-    return { error: "Missing required fields" }
+  // Contact
+  const contactName = (formData.get("contactName") as string)?.trim()
+  const contactEmail = (formData.get("contactEmail") as string)?.trim()
+  const contactPhone = (formData.get("contactPhone") as string)?.trim()
+  const contactPosition = (formData.get("contactPosition") as string)?.trim()
+
+  // Validation
+  if (!email || !password || !homeName || !address || !contactName || !contactEmail || !contactPhone || !contactPosition) {
+    return { error: "Please complete all required fields." }
+  }
+  if (password.length < 8) {
+    return { error: "Password must be at least 8 characters." }
   }
 
   try {
@@ -68,15 +75,18 @@ export async function registerGeriatricHome(formData: FormData) {
           address,
           residentCount,
           maxCapacity,
+          type: facilityType,
+          region,
           specialNeeds,
           emergencyProtocol,
+          triggerWarnings,
+          photoPermissions,
           contactName,
           contactEmail,
           contactPhone,
           contactPosition,
           userId: user.id,
-          // Placeholder lat/long - in production use Google Maps API or similar
-          latitude: 0, 
+          latitude: 0,
           longitude: 0,
         }
       })

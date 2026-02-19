@@ -36,8 +36,12 @@ type HomeData = {
   longitude: number | null
   residentCount: number
   maxCapacity: number
+  type: string | null
+  region: string | null
   specialNeeds: string | null
   emergencyProtocol: string | null
+  triggerWarnings: string | null
+  photoPermissions: string | null
   contactName: string
   contactEmail: string
   contactPhone: string
@@ -350,9 +354,17 @@ export function HomeDetailsClient({ home }: { home: HomeData }) {
               </div>
               {home.name}
             </h1>
-            <div className="flex items-center gap-2 mt-2 text-gray-600 ml-1">
-              <MapPin className="w-4 h-4" />
-              <span>{home.address}</span>
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-gray-600 ml-1">
+              <span className="flex items-center gap-1">
+                <MapPin className="w-4 h-4" />
+                {home.address}
+              </span>
+              {home.type && (
+                <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-700 rounded">{home.type}</span>
+              )}
+              {home.region && (
+                <span className="text-xs text-gray-500">{home.region}</span>
+              )}
               <a
                 href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(home.address)}`}
                 target="_blank"
@@ -433,12 +445,38 @@ export function HomeDetailsClient({ home }: { home: HomeData }) {
                   />
                 </div>
                 <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Facility Type</label>
+                  <input name="type" defaultValue={home.type ?? ''} placeholder="e.g. PCH, LTC, Retirement" className={cn(STYLES.input)} />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Region / Area</label>
+                  <input name="region" defaultValue={home.region ?? ''} placeholder="e.g. Winnipeg, Rural Manitoba" className={cn(STYLES.input)} />
+                </div>
+                <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">Max Capacity</label>
                   <input type="number" name="maxCapacity" defaultValue={home.maxCapacity} className={cn(STYLES.input)} />
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">Current Residents</label>
                   <input type="number" name="residentCount" defaultValue={home.residentCount} className={cn(STYLES.input)} />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Special Needs & Accessibility</label>
+                  <textarea name="specialNeeds" defaultValue={home.specialNeeds ?? ''} rows={3} placeholder="Special considerations for events..." className={cn(STYLES.input)} />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Emergency Protocol</label>
+                  <textarea name="emergencyProtocol" defaultValue={home.emergencyProtocol ?? ''} rows={3} placeholder="Fire, medical, evacuation..." className={cn(STYLES.input)} />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Content / Trigger Warnings</label>
+                  <textarea name="triggerWarnings" defaultValue={home.triggerWarnings ?? ''} rows={2} placeholder="Topics to avoid, sensitivities..." className={cn(STYLES.input)} />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Photo & Media Permissions</label>
+                  <textarea name="photoPermissions" defaultValue={typeof home.photoPermissions === 'string' ? home.photoPermissions : ''} rows={2} placeholder="Consent notes, restrictions..." className={cn(STYLES.input)} />
                 </div>
               </div>
               <div className="flex justify-end pt-2">
@@ -551,12 +589,12 @@ export function HomeDetailsClient({ home }: { home: HomeData }) {
             </div>
           </div>
 
-          {/* Special Information */}
+          {/* Operational Information */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="bg-amber-50 rounded-lg border border-amber-200 p-5">
               <h4 className="font-semibold text-amber-900 mb-3 flex items-center gap-2">
                 <Activity className="w-5 h-5 text-amber-600" />
-                Special Needs
+                Special Needs & Accessibility
               </h4>
               <p className="text-sm text-amber-800 leading-relaxed">
                 {home.specialNeeds || 'No special needs documented.'}
@@ -571,6 +609,38 @@ export function HomeDetailsClient({ home }: { home: HomeData }) {
                 {home.emergencyProtocol || 'No emergency protocol documented.'}
               </p>
             </div>
+            {home.triggerWarnings && (
+              <div className="bg-purple-50 rounded-lg border border-purple-200 p-5">
+                <h4 className="font-semibold text-purple-900 mb-3 flex items-center gap-2">
+                  <AlertTriangle className="w-5 h-5 text-purple-600" />
+                  Content / Trigger Warnings
+                </h4>
+                <p className="text-sm text-purple-800 leading-relaxed">{home.triggerWarnings}</p>
+              </div>
+            )}
+            {home.photoPermissions && (
+              <div className="bg-blue-50 rounded-lg border border-blue-200 p-5">
+                <h4 className="font-semibold text-blue-900 mb-3 flex items-center gap-2">
+                  <Activity className="w-5 h-5 text-blue-600" />
+                  Photo & Media Permissions
+                </h4>
+                <p className="text-sm text-blue-800 leading-relaxed">
+                  {home.photoPermissions.startsWith('{')
+                    ? (() => {
+                        try {
+                          const p = JSON.parse(home.photoPermissions!)
+                          const parts = []
+                          if (p.formReceived) parts.push('Consent form on file')
+                          if (p.restrictions) parts.push(`Restrictions: ${p.restrictions}`)
+                          return parts.length ? parts.join('. ') : home.photoPermissions
+                        } catch {
+                          return home.photoPermissions
+                        }
+                      })()
+                    : home.photoPermissions}
+                </p>
+              </div>
+            )}
           </div>
         </div>
 

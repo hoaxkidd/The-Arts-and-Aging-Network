@@ -416,11 +416,11 @@ export function AdminMessagingPanel({ groups, currentUserId }: { groups: any[], 
 
     return (
         <>
-            <div className="flex flex-col lg:flex-row flex-1 min-h-[320px] lg:min-h-[400px] bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm">
+            <div className="flex flex-col md:flex-row flex-1 min-h-[320px] md:min-h-[400px] w-full max-w-full min-w-0 bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm">
                 {/* Sidebar - full width on mobile when no selection, hidden when chat shown */}
                 <div className={cn(
-                    "flex flex-col bg-gray-50 min-h-0",
-                    hasSelection ? "hidden lg:flex lg:w-80 lg:flex-shrink-0 lg:border-r lg:border-gray-200" : "flex-1 w-full lg:w-80 lg:border-r lg:border-gray-200"
+                    "flex flex-col bg-gray-50 min-h-0 min-w-0 shrink-0",
+                    hasSelection ? "hidden md:flex md:w-80 md:border-r md:border-gray-200" : "flex-1 w-full max-w-full md:w-80 md:flex-shrink-0 md:border-r md:border-gray-200"
                 )}>
                     <div className="flex-shrink-0 p-4 border-b border-gray-200 bg-gray-50">
                         <div className="flex items-center justify-between gap-2 mb-3">
@@ -522,15 +522,15 @@ export function AdminMessagingPanel({ groups, currentUserId }: { groups: any[], 
                     </div>
                 </div>
 
-                {/* Main Chat Area - full width on mobile when selected */}
+                {/* Main Chat Area - full width on mobile when selected; do not render empty state on mobile */}
                 <div className={cn(
-                    "flex flex-col bg-white overflow-hidden min-h-0",
-                    hasSelection ? "flex-1 flex" : "hidden lg:flex lg:flex-1"
+                    "flex flex-col bg-white overflow-hidden min-h-0 min-w-0 flex-1",
+                    !hasSelection && "hidden md:flex"
                 )}>
                     {selectedType === 'GROUP' && selectedId && selectedGroup ? (
                         <div className="flex flex-col flex-1 min-h-0">
                             {/* Mobile back button */}
-                            <div className="lg:hidden flex items-center gap-2 px-4 py-3 border-b border-gray-200 bg-white shrink-0">
+                            <div className="md:hidden flex items-center gap-2 px-4 py-3 border-b border-gray-200 bg-white shrink-0">
                                 <button
                                     onClick={() => { setSelectedId(null); setSelectedType('GROUP') }}
                                     className="p-2 -ml-2 text-gray-600 hover:bg-gray-100 rounded-lg touch-manipulation"

@@ -1,11 +1,12 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Bell, Zap, X, ExternalLink } from 'lucide-react'
 import { getMyNotifications, getMyUnreadCount, createTestNotification } from '@/app/actions/notifications'
 import { NotificationList } from './NotificationList'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
+import { NOTIFICATION_REFRESH_EVENT } from '@/lib/notification-refresh'
 
 type Notification = {
   id: string
@@ -29,34 +30,48 @@ export function NotificationBell({ initialNotifications, initialUnreadCount }: N
   const [unreadCount, setUnreadCount] = useState(initialUnreadCount)
   const [loading, setLoading] = useState(false)
 
-  // Real-time polling
+  const refetch = useCallback(async () => {
+    try {
+      const [latestNotifications, count] = await Promise.all([
+        getMyNotifications(),
+        getMyUnreadCount()
+      ])
+      setNotifications(latestNotifications as Notification[])
+      setUnreadCount(count)
+    } catch (error) {
+      console.error('Failed to fetch notifications:', error)
+    }
+  }, [])
+
+  // Sync when parent passes new data (e.g. after router.refresh())
   useEffect(() => {
-    const pollNotifications = async () => {
-      try {
-        const [latestNotifications, count] = await Promise.all([
-          getMyNotifications(),
-          getMyUnreadCount()
-        ])
-        setNotifications(latestNotifications as Notification[])
-        setUnreadCount(count)
-      } catch (error) {
-        console.error('Failed to poll notifications:', error)
-      }
+    setNotifications(initialNotifications)
+    setUnreadCount(initialUnreadCount)
+  }, [initialNotifications, initialUnreadCount])
+
+  // Poll every 5s, refetch on tab focus, listen for refresh events
+  useEffect(() => {
+    const handleRefresh = () => refetch()
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') refetch()
     }
 
-    const interval = setInterval(pollNotifications, 10000)
-    return () => clearInterval(interval)
-  }, [])
+    const interval = setInterval(refetch, 5000)
+    document.addEventListener('visibilitychange', onVisibilityChange)
+    window.addEventListener(NOTIFICATION_REFRESH_EVENT, handleRefresh)
+
+    return () => {
+      clearInterval(interval)
+      document.removeEventListener('visibilitychange', onVisibilityChange)
+      window.removeEventListener(NOTIFICATION_REFRESH_EVENT, handleRefresh)
+    }
+  }, [refetch])
 
   const handleTestNotification = async () => {
     setLoading(true)
     await createTestNotification()
-    const [latestNotifications, count] = await Promise.all([
-      getMyNotifications(),
-      getMyUnreadCount()
-    ])
-    setNotifications(latestNotifications as Notification[])
-    setUnreadCount(count)
+    await refetch()
     setLoading(false)
   }
 

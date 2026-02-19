@@ -5,68 +5,37 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
   Calendar,
-  Clock,
-  MapPin,
   Building2,
   Search,
   CheckCircle,
   XCircle,
   Loader2,
-  AlertCircle,
-  Users,
   Eye,
-  X,
   FileText
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { STYLES } from '@/lib/styles'
 import { approveEventRequest, rejectEventRequest } from '@/app/actions/event-requests'
+import { triggerNotificationRefresh } from '@/lib/notification-refresh'
 
 type Request = {
   id: string
   type: 'REQUEST_EXISTING' | 'CREATE_CUSTOM'
   status: 'PENDING' | 'APPROVED' | 'REJECTED'
   requestedAt: string
-  reviewedAt: string | null
   rejectionReason: string | null
   notes: string | null
-  expectedAttendees: number | null
   customTitle: string | null
   customDescription: string | null
   customStartDateTime: string | null
-  customEndDateTime: string | null
   customLocationName: string | null
-  customLocationAddress: string | null
-  geriatricHome: {
-    id: string
-    name: string
-    address: string
-  }
-  existingEvent: {
-    id: string
-    title: string
-    startDateTime: string
-    endDateTime: string
-    location: { name: string } | null
-  } | null
-  approvedEvent: {
-    id: string
-    title: string
-  } | null
-  formSubmission?: {
-    id: string
-    formData: string
-    template: { title: string }
-  } | null
+  expectedAttendees: number | null
+  existingEvent: { id: string; title: string; startDateTime: string; location: { name: string } | null } | null
+  approvedEvent: { id: string; title: string } | null
+  geriatricHome: { id: string; name: string }
+  formSubmission?: { id: string; formData: string; template: { title: string } } | null
 }
 
-const statusStyles = {
-  PENDING: 'bg-yellow-100 text-yellow-700 border-yellow-200',
-  APPROVED: 'bg-green-100 text-green-700 border-green-200',
-  REJECTED: 'bg-red-100 text-red-700 border-red-200'
-}
-
-// Rejection Modal
 function RejectModal({
   isOpen,
   onClose,
@@ -81,51 +50,32 @@ function RejectModal({
   requestTitle: string
 }) {
   const [reason, setReason] = useState('')
-
   if (!isOpen) return null
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
-        <div className="p-6">
-          <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <XCircle className="w-6 h-6 text-red-600" />
-          </div>
-          <h3 className="text-lg font-semibold text-gray-900 text-center mb-2">
-            Decline Request
-          </h3>
-          <p className="text-sm text-gray-600 text-center mb-4">
-            Please provide a reason for declining "{requestTitle}".
-          </p>
-          <textarea
-            value={reason}
-            onChange={(e) => setReason(e.target.value)}
-            className={cn(STYLES.input, "h-24 resize-none")}
-            placeholder="Enter reason for declining..."
-            autoFocus
-          />
-          <div className="flex items-center gap-3 mt-4">
-            <button
-              onClick={onClose}
-              disabled={isPending}
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={() => onConfirm(reason)}
-              disabled={isPending || !reason.trim()}
-              className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 disabled:opacity-50 flex items-center justify-center gap-2"
-            >
-              {isPending ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <XCircle className="w-4 h-4" />
-              )}
-              Decline
-            </button>
-          </div>
+      <div className="relative bg-white rounded-lg shadow-xl w-full max-w-md p-6">
+        <h3 className="font-semibold text-gray-900 mb-2">Decline Request</h3>
+        <p className="text-sm text-gray-600 mb-4">Reason for declining "{requestTitle}"</p>
+        <textarea
+          value={reason}
+          onChange={(e) => setReason(e.target.value)}
+          className={cn(STYLES.input, "h-24 resize-none")}
+          placeholder="Enter reason..."
+          autoFocus
+        />
+        <div className="flex gap-3 mt-4">
+          <button onClick={onClose} disabled={isPending} className={cn(STYLES.btn, STYLES.btnSecondary, "flex-1")}>
+            Cancel
+          </button>
+          <button
+            onClick={() => onConfirm(reason)}
+            disabled={isPending || !reason.trim()}
+            className={cn(STYLES.btn, STYLES.btnDanger, "flex-1 flex items-center justify-center gap-2")}
+          >
+            {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <XCircle className="w-4 h-4" />}
+            Decline
+          </button>
         </div>
       </div>
     </div>
@@ -139,29 +89,24 @@ export function AdminRequestList({ requests }: { requests: Request[] }) {
   const [rejectingRequest, setRejectingRequest] = useState<Request | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [filterStatus, setFilterStatus] = useState<'ALL' | 'PENDING' | 'APPROVED' | 'REJECTED'>('PENDING')
-  const [filterType, setFilterType] = useState<'ALL' | 'REQUEST_EXISTING' | 'CREATE_CUSTOM'>('ALL')
 
-  const filteredRequests = useMemo(() => {
+  const filtered = useMemo(() => {
     return requests.filter(req => {
       const title = req.type === 'CREATE_CUSTOM' ? req.customTitle : req.existingEvent?.title
-      const matchesSearch = !searchQuery ||
+      const matchSearch = !searchQuery ||
         title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         req.geriatricHome.name.toLowerCase().includes(searchQuery.toLowerCase())
-
-      const matchesStatus = filterStatus === 'ALL' || req.status === filterStatus
-      const matchesType = filterType === 'ALL' || req.type === filterType
-
-      return matchesSearch && matchesStatus && matchesType
+      const matchStatus = filterStatus === 'ALL' || req.status === filterStatus
+      return matchSearch && matchStatus
     })
-  }, [requests, searchQuery, filterStatus, filterType])
+  }, [requests, searchQuery, filterStatus])
 
   const handleApprove = (requestId: string) => {
     setActionId(requestId)
     startTransition(async () => {
       const result = await approveEventRequest(requestId)
-      if (result.error) {
-        alert(result.error)
-      }
+      if (result.error) alert(result.error)
+      else triggerNotificationRefresh()
       router.refresh()
       setActionId(null)
     })
@@ -169,289 +114,304 @@ export function AdminRequestList({ requests }: { requests: Request[] }) {
 
   const handleReject = (reason: string) => {
     if (!rejectingRequest) return
-
     setActionId(rejectingRequest.id)
     startTransition(async () => {
       const result = await rejectEventRequest(rejectingRequest.id, reason)
-      if (result.error) {
-        alert(result.error)
-      }
+      if (result.error) alert(result.error)
+      else triggerNotificationRefresh()
       setRejectingRequest(null)
       router.refresh()
       setActionId(null)
     })
   }
 
-  return (
-    <div className="space-y-4">
-      {/* Filters */}
-      <div className="bg-white rounded-lg border border-gray-200 p-4 space-y-4">
-        <div className="flex flex-col lg:flex-row gap-4">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search by event or home..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className={cn(STYLES.input, "pl-10")}
-            />
+  const isDetailView = requests.length === 1
+  const req = filtered[0]
+
+  // Detail view: single request, full info
+  if (isDetailView && req) {
+    const isCustom = req.type === 'CREATE_CUSTOM'
+    const title = isCustom ? req.customTitle : req.existingEvent?.title
+    const date = isCustom ? req.customStartDateTime : req.existingEvent?.startDateTime
+    const location = isCustom ? req.customLocationName : req.existingEvent?.location?.name
+
+    return (
+      <div className="space-y-4">
+        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+          <div className="p-4 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
+            <span className={cn(
+              "px-2 py-0.5 rounded text-xs font-medium",
+              req.status === 'PENDING' && "bg-yellow-100 text-yellow-700",
+              req.status === 'APPROVED' && "bg-green-100 text-green-700",
+              req.status === 'REJECTED' && "bg-red-100 text-red-700"
+            )}>
+              {req.status}
+            </span>
+            <span className="text-xs text-gray-500">{new Date(req.requestedAt).toLocaleDateString()}</span>
           </div>
-          <div className="flex flex-wrap gap-2">
-            {(['ALL', 'PENDING', 'APPROVED', 'REJECTED'] as const).map((status) => (
-              <button
-                key={status}
-                onClick={() => setFilterStatus(status)}
-                className={cn(
-                  "px-3 py-2 rounded-lg text-sm font-medium transition-colors",
-                  filterStatus === status
-                    ? status === 'PENDING' ? "bg-yellow-500 text-white" :
-                      status === 'APPROVED' ? "bg-green-500 text-white" :
-                      status === 'REJECTED' ? "bg-red-500 text-white" :
-                      "bg-primary-600 text-white"
-                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                )}
-              >
-                {status === 'ALL' ? 'All' : status.charAt(0) + status.slice(1).toLowerCase()}
-              </button>
-            ))}
+          <div className="p-4 space-y-4">
+            <div>
+              <div className="flex items-center gap-2 text-sm text-gray-500 mb-1">
+                <Building2 className="w-4 h-4" />
+                <Link href={`/admin/homes/${req.geriatricHome.id}`} className="hover:text-primary-600">{req.geriatricHome.name}</Link>
+              </div>
+              <h3 className="font-semibold text-gray-900">{title}</h3>
+              <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-sm text-gray-600">
+                {date && <span>{new Date(date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</span>}
+                {location && <span>{location}</span>}
+                {req.expectedAttendees != null && <span>{req.expectedAttendees} expected</span>}
+              </div>
+            </div>
+            {req.notes && (
+              <div className="text-sm text-gray-600 bg-gray-50 rounded-lg p-3">
+                <span className="font-medium">Note: </span>{req.notes}
+              </div>
+            )}
+            {req.formSubmission && (
+              <div className="text-sm bg-primary-50/50 border border-primary-100 rounded-lg p-3">
+                <div className="flex items-center gap-2 font-medium text-gray-900 mb-2">
+                  <FileText className="w-4 h-4 text-primary-600" />
+                  {req.formSubmission.template.title}
+                </div>
+                <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                  {(() => {
+                    try {
+                      const data = JSON.parse(req.formSubmission.formData) as Record<string, unknown>
+                      return Object.entries(data)
+                        .filter(([, val]) => val !== undefined && val !== null && val !== '')
+                        .map(([key, val]) => {
+                          const raw = Array.isArray(val) ? val.join(', ')
+                            : typeof val === 'object' && val !== null && '_value' in val
+                              ? String((val as Record<string, unknown>)._value) +
+                                ((val as Record<string, unknown>)._other ? ` (Other: ${(val as Record<string, unknown>)._other})` : '')
+                              : typeof val === 'object' && val !== null && '_options' in val
+                                ? ((val as Record<string, unknown>)._options as string[])?.join(', ') +
+                                  ((val as Record<string, unknown>)._other ? ` (Other: ${(val as Record<string, unknown>)._other})` : '')
+                                : String(val)
+                          const display = raw.startsWith('data:') ? '(file uploaded)' : raw
+                          return (
+                            <div key={key} className="flex gap-2">
+                              <span className="text-gray-500 shrink-0">{key}:</span>
+                              <span className="text-gray-900 break-words">{display}</span>
+                            </div>
+                          )
+                        })
+                    } catch {
+                      return <span className="text-gray-500">Unable to parse form data</span>
+                    }
+                  })()}
+                </div>
+              </div>
+            )}
+            {isCustom && req.customDescription && (
+              <div className="text-sm text-gray-600">
+                <span className="font-medium">Description: </span>{req.customDescription}
+              </div>
+            )}
+            {req.status === 'REJECTED' && req.rejectionReason && (
+              <div className="flex items-start gap-2 text-sm text-red-600 bg-red-50 rounded-lg p-3">
+                {req.rejectionReason}
+              </div>
+            )}
+            <div className="flex gap-2 pt-2">
+              {req.status === 'PENDING' && (
+                <>
+                  <button
+                    onClick={() => handleApprove(req.id)}
+                    disabled={isPending && actionId === req.id}
+                    className={cn(STYLES.btn, "bg-green-600 text-white hover:bg-green-700 flex items-center gap-2")}
+                  >
+                    {isPending && actionId === req.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
+                    Approve
+                  </button>
+                  <button
+                    onClick={() => setRejectingRequest(req)}
+                    disabled={isPending}
+                    className={cn(STYLES.btn, "bg-red-50 text-red-600 border border-red-200 hover:bg-red-100")}
+                  >
+                    <XCircle className="w-4 h-4" /> Decline
+                  </button>
+                </>
+              )}
+              {req.status === 'APPROVED' && req.approvedEvent && (
+                <Link href={`/events/${req.approvedEvent.id}`} className={cn(STYLES.btn, STYLES.btnSecondary, "flex items-center gap-2")}>
+                  <Eye className="w-4 h-4" /> View Event
+                </Link>
+              )}
+            </div>
           </div>
         </div>
-        <div className="flex gap-2">
-          <span className="text-sm text-gray-500 py-1">Type:</span>
-          {(['ALL', 'REQUEST_EXISTING', 'CREATE_CUSTOM'] as const).map((type) => (
+        <RejectModal
+          isOpen={!!rejectingRequest}
+          onClose={() => setRejectingRequest(null)}
+          onConfirm={handleReject}
+          isPending={isPending}
+          requestTitle={isCustom ? req.customTitle || '' : req.existingEvent?.title || ''}
+        />
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Filters - compact */}
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Search by event or home..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className={cn(STYLES.input, "pl-9")}
+          />
+        </div>
+        <div className="flex flex-wrap gap-1">
+          {(['PENDING', 'APPROVED', 'REJECTED', 'ALL'] as const).map((s) => (
             <button
-              key={type}
-              onClick={() => setFilterType(type)}
+              key={s}
+              onClick={() => setFilterStatus(s)}
               className={cn(
-                "px-3 py-1 rounded text-xs font-medium transition-colors",
-                filterType === type
-                  ? "bg-gray-800 text-white"
+                "px-3 py-1.5 rounded-lg text-sm font-medium",
+                filterStatus === s
+                  ? s === 'PENDING' ? "bg-yellow-500 text-white" :
+                    s === 'APPROVED' ? "bg-green-500 text-white" :
+                    s === 'REJECTED' ? "bg-red-500 text-white" : "bg-primary-600 text-white"
                   : "bg-gray-100 text-gray-600 hover:bg-gray-200"
               )}
             >
-              {type === 'ALL' ? 'All' : type === 'REQUEST_EXISTING' ? 'Existing' : 'Custom'}
+              {s === 'ALL' ? 'All' : s.charAt(0) + s.slice(1).toLowerCase()}
             </button>
           ))}
         </div>
       </div>
 
-      {/* Count */}
       <p className="text-sm text-gray-500">
-        Showing {filteredRequests.length} request{filteredRequests.length !== 1 ? 's' : ''}
+        {filtered.length} request{filtered.length !== 1 ? 's' : ''}
       </p>
 
-      {/* Request Cards */}
-      {filteredRequests.length > 0 ? (
-        <div className="space-y-4">
-          {filteredRequests.map((request) => {
-            const isCustom = request.type === 'CREATE_CUSTOM'
-            const title = isCustom ? request.customTitle : request.existingEvent?.title
-            const eventDate = isCustom
-              ? request.customStartDateTime
-              : request.existingEvent?.startDateTime
-            const location = isCustom
-              ? request.customLocationName
-              : request.existingEvent?.location?.name
-            const isLoading = isPending && actionId === request.id
-
-            return (
-              <div
-                key={request.id}
-                className={cn(
-                  "bg-white rounded-lg border overflow-hidden",
-                  request.status === 'PENDING' ? "border-yellow-300 shadow-sm" : "border-gray-200"
-                )}
-              >
-                {/* Header */}
-                <div className={cn(
-                  "px-5 py-3 flex items-center justify-between",
-                  request.status === 'PENDING' ? "bg-yellow-50" : "bg-gray-50"
-                )}>
-                  <div className="flex items-center gap-3">
-                    <span className={cn(
-                      "px-2 py-0.5 rounded border text-xs font-medium",
-                      statusStyles[request.status]
-                    )}>
-                      {request.status}
-                    </span>
-                    <span className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded text-xs font-medium">
-                      {isCustom ? 'Custom Event' : 'Existing Event'}
-                    </span>
-                  </div>
-                  <span className="text-xs text-gray-500">
-                    {new Date(request.requestedAt).toLocaleDateString()}
-                  </span>
-                </div>
-
-                {/* Body */}
-                <div className="p-5">
-                  <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
-                    <div className="flex-1 min-w-0">
-                      {/* Home Info */}
-                      <div className="flex items-center gap-2 text-sm text-gray-500 mb-2">
-                        <Building2 className="w-4 h-4" />
+      {/* Table */}
+      {filtered.length > 0 ? (
+        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+          <div className="table-scroll-wrapper max-h-[calc(100vh-360px)]">
+            <table className={STYLES.table}>
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className={STYLES.tableHeader}>Home</th>
+                  <th className={STYLES.tableHeader}>Event / Title</th>
+                  <th className={STYLES.tableHeader}>Type</th>
+                  <th className={STYLES.tableHeader}>Date</th>
+                  <th className={STYLES.tableHeader}>Status</th>
+                  <th className={cn(STYLES.tableHeader, "text-right")}>Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {filtered.map((req) => {
+                  const isCustom = req.type === 'CREATE_CUSTOM'
+                  const title = isCustom ? req.customTitle : req.existingEvent?.title
+                  const date = isCustom ? req.customStartDateTime : req.existingEvent?.startDateTime
+                  const loading = isPending && actionId === req.id
+                  return (
+                    <tr key={req.id} className="hover:bg-gray-50/50">
+                      <td className="px-4 py-3">
                         <Link
-                          href={`/admin/homes/${request.geriatricHome.id}`}
-                          className="hover:text-primary-600 hover:underline"
+                          href={`/admin/homes/${req.geriatricHome.id}`}
+                          className="flex items-center gap-2 text-sm font-medium text-gray-900 hover:text-primary-600"
                         >
-                          {request.geriatricHome.name}
+                          <Building2 className="w-3.5 h-3.5 text-gray-400" />
+                          {req.geriatricHome.name}
                         </Link>
-                      </div>
-
-                      {/* Title */}
-                      <h3 className="font-semibold text-gray-900 text-lg">{title}</h3>
-
-                      {/* Details */}
-                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-sm text-gray-500">
-                        {eventDate && (
-                          <span className="flex items-center gap-1">
-                            <Calendar className="w-3 h-3" />
-                            {new Date(eventDate).toLocaleDateString('en-US', {
-                              weekday: 'short',
-                              month: 'short',
-                              day: 'numeric'
-                            })}
-                          </span>
-                        )}
-                        {location && (
-                          <span className="flex items-center gap-1">
-                            <MapPin className="w-3 h-3" />
-                            {location}
-                          </span>
-                        )}
-                        {request.expectedAttendees && (
-                          <span className="flex items-center gap-1">
-                            <Users className="w-3 h-3" />
-                            {request.expectedAttendees} expected
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Notes */}
-                      {request.notes && (
-                        <div className="mt-3 text-sm text-gray-600 bg-gray-50 rounded-lg p-3">
-                          <span className="font-medium">Note: </span>
-                          {request.notes}
-                        </div>
-                      )}
-
-                      {/* Sign-up form responses */}
-                      {request.formSubmission && (
-                        <div className="mt-3 text-sm bg-primary-50/50 border border-primary-100 rounded-lg p-3">
-                          <div className="flex items-center gap-2 font-medium text-gray-900 mb-2">
-                            <FileText className="w-4 h-4 text-primary-600" />
-                            Sign-up form: {request.formSubmission.template.title}
-                          </div>
-                          <div className="space-y-1.5 max-h-48 overflow-y-auto">
-                            {(() => {
-                              try {
-                                const data = JSON.parse(request.formSubmission.formData) as Record<string, unknown>
-                                return Object.entries(data)
-                                  .filter(([, val]) => val !== undefined && val !== null && val !== '')
-                                  .map(([key, val]) => {
-                                    const raw = Array.isArray(val)
-                                      ? val.join(', ')
-                                      : typeof val === 'object' && val !== null && '_value' in val
-                                        ? String((val as Record<string, unknown>)._value) +
-                                          ((val as Record<string, unknown>)._other ? ` (Other: ${(val as Record<string, unknown>)._other})` : '')
-                                        : typeof val === 'object' && val !== null && '_options' in val
-                                          ? ((val as Record<string, unknown>)._options as string[])?.join(', ') +
-                                            ((val as Record<string, unknown>)._other ? ` (Other: ${(val as Record<string, unknown>)._other})` : '')
-                                          : String(val)
-                                    const display = raw.startsWith('data:') ? '(file uploaded)' : raw
-                                    return (
-                                      <div key={key} className="flex gap-2">
-                                        <span className="text-gray-500 shrink-0">{key}:</span>
-                                        <span className="text-gray-900 break-words">{display}</span>
-                                      </div>
-                                    )
-                                  })
-                              } catch {
-                                return <span className="text-gray-500">Unable to parse form data</span>
-                              }
-                            })()}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Custom Event Description */}
-                      {isCustom && request.customDescription && (
-                        <div className="mt-3 text-sm text-gray-600">
-                          <span className="font-medium">Description: </span>
-                          {request.customDescription}
-                        </div>
-                      )}
-
-                      {/* Rejection Reason */}
-                      {request.status === 'REJECTED' && request.rejectionReason && (
-                        <div className="mt-3 flex items-start gap-2 text-sm text-red-600 bg-red-50 rounded-lg p-3">
-                          <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                          <div>
-                            <span className="font-medium">Declined: </span>
-                            {request.rejectionReason}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Actions */}
-                    <div className="flex lg:flex-col gap-2">
-                      {request.status === 'PENDING' && (
-                        <>
-                          <button
-                            onClick={() => handleApprove(request.id)}
-                            disabled={isLoading}
-                            className="px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 disabled:opacity-50 flex items-center gap-2"
-                          >
-                            {isLoading ? (
-                              <Loader2 className="w-4 h-4 animate-spin" />
-                            ) : (
-                              <CheckCircle className="w-4 h-4" />
-                            )}
-                            Approve
-                          </button>
-                          <button
-                            onClick={() => setRejectingRequest(request)}
-                            disabled={isLoading}
-                            className="px-4 py-2 bg-red-50 text-red-600 border border-red-200 rounded-lg font-medium hover:bg-red-100 disabled:opacity-50 flex items-center gap-2"
-                          >
-                            <XCircle className="w-4 h-4" />
-                            Decline
-                          </button>
-                        </>
-                      )}
-                      {request.status === 'APPROVED' && request.approvedEvent && (
+                      </td>
+                      <td className="px-4 py-3">
                         <Link
-                          href={`/events/${request.approvedEvent.id}`}
-                          className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 flex items-center gap-2"
+                          href={`/admin/event-requests/${req.id}`}
+                          className="font-medium text-primary-600 hover:underline"
                         >
-                          <Eye className="w-4 h-4" />
-                          View Event
+                          {title}
                         </Link>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )
-          })}
+                        {req.formSubmission && (
+                          <div className="flex items-center gap-1 mt-0.5 text-xs text-gray-500">
+                            <FileText className="w-3 h-3" />
+                            {req.formSubmission.template.title}
+                          </div>
+                        )}
+                        {req.notes && (
+                          <p className="text-xs text-gray-500 mt-0.5 truncate max-w-xs" title={req.notes}>{req.notes}</p>
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className="text-xs font-medium text-gray-600">
+                          {isCustom ? 'Custom' : 'Existing'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-600">
+                        {date ? (
+                          <span className="flex items-center gap-1">
+                            <Calendar className="w-3.5 h-3.5 text-gray-400" />
+                            {new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                          </span>
+                        ) : '—'}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className={cn(
+                          "inline-flex px-2 py-0.5 rounded text-xs font-medium",
+                          req.status === 'PENDING' && "bg-yellow-100 text-yellow-700",
+                          req.status === 'APPROVED' && "bg-green-100 text-green-700",
+                          req.status === 'REJECTED' && "bg-red-100 text-red-700"
+                        )}>
+                          {req.status}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          {req.status === 'PENDING' && (
+                            <>
+                              <button
+                                onClick={() => handleApprove(req.id)}
+                                disabled={loading}
+                                className="p-2 text-green-600 hover:bg-green-50 rounded-lg disabled:opacity-50"
+                                title="Approve"
+                              >
+                                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
+                              </button>
+                              <button
+                                onClick={() => setRejectingRequest(req)}
+                                disabled={loading}
+                                className="p-2 text-red-600 hover:bg-red-50 rounded-lg disabled:opacity-50"
+                                title="Decline"
+                              >
+                                <XCircle className="w-4 h-4" />
+                              </button>
+                            </>
+                          )}
+                          {req.status === 'APPROVED' && req.approvedEvent && (
+                            <Link
+                              href={`/events/${req.approvedEvent.id}`}
+                              className="p-2 text-gray-500 hover:text-primary-600 hover:bg-gray-100 rounded-lg"
+                              title="View Event"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </Link>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
       ) : (
         <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
-          <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Clock className="w-6 h-6 text-gray-400" />
-          </div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No Requests Found</h3>
           <p className="text-gray-500">
-            {searchQuery || filterStatus !== 'ALL' || filterType !== 'ALL'
-              ? "Try adjusting your filters."
-              : "There are no event requests to review."}
+            {searchQuery || filterStatus !== 'ALL'
+              ? "No matching requests. Try different filters."
+              : "No event requests to review."}
           </p>
         </div>
       )}
 
-      {/* Reject Modal */}
       <RejectModal
         isOpen={!!rejectingRequest}
         onClose={() => setRejectingRequest(null)}

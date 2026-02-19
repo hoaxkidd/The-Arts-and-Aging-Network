@@ -71,7 +71,7 @@ export default async function HomeAdminDashboard() {
 
       <div className="flex-1 min-h-0 overflow-auto space-y-4">
         {/* Compact Stats */}
-        <div className="grid grid-cols-4 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           <div className="bg-white rounded-lg border border-gray-200 p-2.5 text-center">
             <p className="text-xl font-bold text-gray-900">{events.length}</p>
             <p className="text-[10px] text-gray-500">Total</p>
