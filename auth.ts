@@ -104,8 +104,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         session.user.role = token.role as string
         session.user.id = token.id as string
         session.user.name = token.name as string
-        session.user.onboardingCompletedAt = token.onboardingCompletedAt ?? null
-        session.user.onboardingSkipCount = token.onboardingSkipCount ?? 0
+        // Cast the token property to the expected type
+        session.user.onboardingCompletedAt = (token.onboardingCompletedAt as string | null) ?? null
+        session.user.onboardingSkipCount = (token.onboardingSkipCount as number | undefined) ?? 0
       }
       return session
     },

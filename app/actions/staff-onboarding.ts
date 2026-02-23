@@ -64,7 +64,7 @@ function parseFormBool(value: FormDataEntryValue | null): boolean {
   return s === 'true' || s === '1' || s === 'yes' || s === 'on' || s === 'y'
 }
 
-function parseFormDate(value: FormDataEntryValue | null): Date | undefined {
+function parseFormDate(value: FormDataEntryValue | null | undefined): Date | undefined {
   if (!value || typeof value !== 'string' || !value.trim()) return undefined
   const d = new Date(value)
   return isNaN(d.getTime()) ? undefined : d
@@ -173,7 +173,7 @@ export async function createPlaceholderStaffUser(formData: FormData) {
         role: data.role,
         preferredName: data.preferredName ?? null,
         pronouns: data.pronouns ?? null,
-        birthDate: parseFormDate(data.birthDate) ?? null,
+        birthDate: parseFormDate(data.birthDate ?? null) ?? null,
         phone: data.phone ?? null,
         address: data.address ?? null,
         teamId: data.teamId ?? null,
