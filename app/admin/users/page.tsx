@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma"
 import Link from "next/link"
-import { Mail } from "lucide-react"
+import { Mail, UserPlus } from "lucide-react"
 import { STYLES } from "@/lib/styles"
 import { cn } from "@/lib/utils"
 import UsersTable from "@/components/admin/UsersTable"
@@ -23,6 +23,10 @@ export default async function UsersPage() {
         <Link href="/admin/invitations" className={cn(STYLES.btn, STYLES.btnPrimary, "self-start sm:self-auto")}>
           <Mail className="w-4 h-4" />
           Invite New User
+        </Link>
+        <Link href="/admin/users/new" className={cn(STYLES.btn, STYLES.btnSecondary, "self-start sm:self-auto")}>
+          <UserPlus className="w-4 h-4" />
+          Create Staff Profile
         </Link>
       </div>
       <UsersTable users={users} />

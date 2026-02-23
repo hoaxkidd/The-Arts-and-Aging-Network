@@ -438,8 +438,11 @@ export function HomeCalendarView({
           <div className="relative flex-1 w-full">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
-              type="text"
+              id="home-calendar-search"
+              name="searchEvents"
+              type="search"
               placeholder="Search events..."
+              aria-label="Search events"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className={cn(STYLES.input, "pl-10 py-2")}
@@ -496,17 +499,18 @@ export function HomeCalendarView({
           </div>
         </div>
 
-        {/* Days Header */}
+        {/* Days Header - shorter labels on mobile */}
         <div className="flex-shrink-0 grid grid-cols-7 border-b border-gray-200 bg-gray-50">
           {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
             <div key={day} className="py-2 text-center text-[10px] font-semibold text-gray-500 uppercase tracking-wider">
-              {day}
+              <span className="hidden sm:inline">{day}</span>
+              <span className="sm:hidden">{day.charAt(0)}</span>
             </div>
           ))}
         </div>
 
-        {/* Calendar Grid */}
-        <div className="flex-1 grid grid-cols-7 grid-rows-6 divide-x divide-y divide-gray-100">
+        {/* Calendar Grid - constrained height on desktop, min height on mobile */}
+        <div className="flex-1 min-h-[280px] max-h-[min(480px,55vh)] grid grid-cols-7 grid-rows-6 divide-x divide-y divide-gray-100 overflow-auto">
           {days.map((date, index) => {
             const dateEvents = date ? getEventsForDate(date) : []
             const isToday = date?.toDateString() === new Date().toDateString()
@@ -515,7 +519,6 @@ export function HomeCalendarView({
             const dateStatus = date ? getDateStatus(date) : null
             const hasEvents = dateEvents.length > 0
 
-            // Get cell background color based on status
             const getCellBackground = () => {
               if (!date) return 'bg-gray-50/30'
               if (!hasEvents) return isPast ? 'bg-gray-50/50' : 'bg-white hover:bg-gray-50'
@@ -530,18 +533,18 @@ export function HomeCalendarView({
                 key={index}
                 onClick={() => date && (hasEvents || isFuture) && handleDateClick(date)}
                 className={cn(
-                  "p-1.5 overflow-hidden transition-all relative",
+                  "min-h-[44px] sm:min-h-[64px] p-1.5 overflow-hidden transition-all relative",
                   getCellBackground(),
                   date && (hasEvents || isFuture) ? 'cursor-pointer' : 'cursor-default'
                 )}
               >
                 {date && (
                   <div className="h-full flex flex-col">
-                    <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center justify-between mb-0.5 sm:mb-1">
                       <div className={cn(
-                        "text-xs font-semibold flex-shrink-0",
+                        "text-xs font-semibold flex-shrink-0 w-6 h-6 flex items-center justify-center",
                         isToday
-                          ? 'bg-primary-600 text-white w-6 h-6 rounded-full flex items-center justify-center'
+                          ? 'bg-primary-600 text-white rounded-full'
                           : dateStatus === 'approved'
                           ? 'text-green-700'
                           : dateStatus === 'pending'
@@ -554,10 +557,9 @@ export function HomeCalendarView({
                       )}>
                         {date.getDate()}
                       </div>
-                      {/* Event count badge */}
                       {hasEvents && (
                         <div className={cn(
-                          "text-[9px] font-bold px-1.5 py-0.5 rounded-full",
+                          "text-[9px] font-bold px-1.5 py-0.5 rounded-full shrink-0",
                           dateStatus === 'approved' && 'bg-green-200 text-green-800',
                           dateStatus === 'pending' && 'bg-yellow-200 text-yellow-800',
                           dateStatus === 'available' && 'bg-blue-200 text-blue-800',
@@ -567,7 +569,8 @@ export function HomeCalendarView({
                         </div>
                       )}
                     </div>
-                    <div className="flex-1 min-h-0 space-y-0.5 overflow-hidden">
+                    {/* Event pills: hidden on mobile (tap to see full list in popup), shown on sm+ */}
+                    <div className="hidden sm:block flex-1 min-h-0 space-y-0.5 overflow-hidden">
                       {dateEvents.slice(0, 2).map(event => (
                         <div
                           key={event.id}
@@ -581,6 +584,7 @@ export function HomeCalendarView({
                               ? 'bg-gray-200/80 text-gray-700'
                               : 'bg-blue-200/80 text-blue-900'
                           )}
+                          title={event.title}
                         >
                           <span className="flex items-center gap-0.5">
                             {event.myRequestStatus === 'APPROVED' && <CheckCircle className="w-2.5 h-2.5 flex-shrink-0" />}

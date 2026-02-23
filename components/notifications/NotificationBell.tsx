@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { Bell, Zap, X, ExternalLink } from 'lucide-react'
-import { getMyNotifications, getMyUnreadCount, createTestNotification, markAsRead } from '@/app/actions/notifications'
+import { createTestNotification, markAsRead } from '@/app/actions/notifications'
 import { NotificationList } from './NotificationList'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
@@ -34,11 +34,10 @@ export function NotificationBell({ initialNotifications, initialUnreadCount }: N
 
   const refetch = useCallback(async () => {
     try {
-      const [latestNotifications, count] = await Promise.all([
-        getMyNotifications(),
-        getMyUnreadCount()
-      ])
-      setNotifications(latestNotifications as Notification[])
+      const res = await fetch('/api/notifications')
+      if (!res.ok) return
+      const { notifications: data, unreadCount: count } = await res.json()
+      setNotifications(data)
       setUnreadCount(count)
     } catch (error) {
       console.error('Failed to fetch notifications:', error)

@@ -31,7 +31,10 @@ export async function createInvitation(formData: FormData) {
 
   // Check if user already exists
   const existingUser = await prisma.user.findUnique({ where: { email } })
-  if (existingUser) {
+
+  // If there's an ACTIVE user (or any user with a password set), do not allow a new invitation.
+  // This prevents accidentally overwriting real accounts.
+  if (existingUser && (existingUser.password || existingUser.status === 'ACTIVE')) {
     return { error: 'User already exists' }
   }
 
@@ -49,6 +52,11 @@ export async function createInvitation(formData: FormData) {
         token,
         expiresAt,
         createdById: session.user.id,
+        // If an existing placeholder user exists (no password and non-ACTIVE),
+        // link this invitation to that user so we can activate it on acceptance.
+        userId: existingUser && !existingUser.password && existingUser.status !== 'ACTIVE'
+          ? existingUser.id
+          : undefined,
       },
     })
     
@@ -113,23 +121,46 @@ export async function acceptInvitation(token: string, formData: FormData) {
   const hashedPassword = await hash(password, 12)
 
   try {
-    const user = await prisma.user.create({
-      data: {
-        email: invitation.email,
-        name,
-        password: hashedPassword,
-        role: invitation.role,
-        status: 'ACTIVE',
-      },
-    })
-
-    await prisma.invitation.update({
-      where: { id: invitation.id },
-      data: { status: 'ACCEPTED' },
-    })
+    if (invitation.userId) {
+      // Activate an existing placeholder user linked to this invitation
+      await prisma.$transaction([
+        prisma.user.update({
+          where: { id: invitation.userId },
+          data: {
+            email: invitation.email,
+            name,
+            password: hashedPassword,
+            role: invitation.role,
+            status: 'ACTIVE',
+          },
+        }),
+        prisma.invitation.update({
+          where: { id: invitation.id },
+          data: { status: 'ACCEPTED' },
+        }),
+      ])
+    } else {
+      // Create a brand new user as before
+      await prisma.$transaction([
+        prisma.user.create({
+          data: {
+            email: invitation.email,
+            name,
+            password: hashedPassword,
+            role: invitation.role,
+            status: 'ACTIVE',
+          },
+        }),
+        prisma.invitation.update({
+          where: { id: invitation.id },
+          data: { status: 'ACCEPTED' },
+        }),
+      ])
+    }
 
     return { success: true }
   } catch (error) {
-    return { error: 'Failed to create user' }
+    console.error('acceptInvitation error:', error)
+    return { error: 'Failed to create or activate user' }
   }
 }

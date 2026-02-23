@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { X, Users, MessageCircle, Search, Loader2, Send } from 'lucide-react'
-import { searchUsers } from '@/app/actions/direct-messages'
+import { searchUsers, searchFacilitatorsWithSharedEvents } from '@/app/actions/direct-messages'
 import { requestConversation, canMessageUser } from '@/app/actions/conversation-requests'
 import { sendMessage } from '@/app/actions/conversations'
 import { useRouter } from 'next/navigation'
@@ -14,6 +14,7 @@ type User = {
   preferredName: string | null
   email: string
   role: string
+  image?: string | null
 }
 
 type Props = {
@@ -31,9 +32,26 @@ export function NewMessageModal({ isOpen, onClose, currentUserRole }: Props) {
   const [isSearching, setIsSearching] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [facilitatorsFromEvents, setFacilitatorsFromEvents] = useState<User[]>([])
   const router = useRouter()
 
   const isAdmin = currentUserRole === 'ADMIN'
+  const isHomeAdmin = currentUserRole === 'HOME_ADMIN'
+
+  // Load facilitators from shared events for HOME_ADMIN
+  useEffect(() => {
+    if (isHomeAdmin && view === 'browse') {
+      searchFacilitatorsWithSharedEvents().then((result) => {
+        if ('data' in result && result.data) {
+          setFacilitatorsFromEvents(result.data as User[])
+        } else {
+          setFacilitatorsFromEvents([])
+        }
+      })
+    } else {
+      setFacilitatorsFromEvents([])
+    }
+  }, [isHomeAdmin, view])
 
   // Debounced search with useEffect
   useEffect(() => {
@@ -191,20 +209,55 @@ export function NewMessageModal({ isOpen, onClose, currentUserRole }: Props) {
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <input
+                  id="new-message-search"
+                  name="search"
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search by name or email..."
+                  aria-label="Search users by name or email"
                   className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                   autoFocus
                 />
               </div>
 
+              {/* Facilitators from your events (HOME_ADMIN only) */}
+              {isHomeAdmin && facilitatorsFromEvents.length > 0 && searchQuery.length < 2 && (
+                <div className="space-y-2">
+                  <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+                    Facilitators from your events
+                  </p>
+                  {facilitatorsFromEvents.map((user) => (
+                    <button
+                      key={user.id}
+                      onClick={() => handleSelectUser(user)}
+                      className="w-full flex items-center gap-3 p-3 bg-white border border-gray-200 rounded-lg hover:border-primary-500 hover:bg-primary-50 transition-all"
+                    >
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 text-white flex items-center justify-center font-semibold">
+                        {(user.preferredName || user.name)?.[0]?.toUpperCase() || 'U'}
+                      </div>
+                      <div className="flex-1 text-left">
+                        <p className="font-medium text-gray-900">
+                          {user.preferredName || user.name}
+                        </p>
+                        <p className="text-xs text-gray-500">{user.role}</p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+
               {/* Results */}
               {searchQuery.length < 2 ? (
-                <div className="text-center py-8 text-sm text-gray-500">
-                  Type at least 2 characters to search
-                </div>
+                !isHomeAdmin || facilitatorsFromEvents.length === 0 ? (
+                  <div className="text-center py-8 text-sm text-gray-500">
+                    Type at least 2 characters to search
+                  </div>
+                ) : (
+                  <div className="text-center py-4 text-sm text-gray-500">
+                    Or type at least 2 characters to search for more
+                  </div>
+                )
               ) : isSearching ? (
                 <div className="text-center py-8">
                   <Loader2 className="w-6 h-6 animate-spin mx-auto text-primary-600 mb-2" />
@@ -275,7 +328,7 @@ export function NewMessageModal({ isOpen, onClose, currentUserRole }: Props) {
                 {isAdmin
                   ? 'As an admin, you can message anyone directly.'
                   : currentUserRole === 'HOME_ADMIN'
-                    ? 'You can only start conversations with administrators.'
+                    ? 'Message an admin directly, or request to connect with facilitators from your events.'
                     : 'Your request will be sent to an admin for approval.'}
               </p>
             </div>

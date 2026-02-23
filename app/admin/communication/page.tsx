@@ -30,8 +30,8 @@ export default async function CommunicationHubPage() {
     prisma.directMessageRequest.findMany({
         where: { status: 'PENDING' },
         include: {
-            requester: { select: { id: true, name: true, image: true, role: true } },
-            requested: { select: { id: true, name: true, image: true, role: true } }
+            requester: { select: { id: true, name: true, preferredName: true, image: true, role: true } },
+            requested: { select: { id: true, name: true, preferredName: true, image: true, role: true } }
         }
     }).catch(() => []), // Fallback if table doesn't exist yet
     // Invitations

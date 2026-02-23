@@ -13,7 +13,7 @@ const PrefsSchema = z.object({
   inApp: z.boolean(),
 })
 
-const VALID_STATUSES = ['ACTIVE', 'INACTIVE', 'SUSPENDED'] as const
+const VALID_STATUSES = ['ACTIVE', 'PENDING', 'INACTIVE', 'SUSPENDED'] as const
 
 const UpdateUserSchema = z.object({
   role: z.enum(VALID_ROLES),

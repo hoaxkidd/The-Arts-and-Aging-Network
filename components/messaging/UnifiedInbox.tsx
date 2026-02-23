@@ -1,8 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import { MessageSquare, Users, Edit, Plus, Lock, Clock, LogIn } from 'lucide-react'
+import { MessageSquare, Users, Plus, Lock, Clock, LogIn } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { STYLES } from '@/lib/styles'
 import { ConversationsList } from './ConversationsList'
 import { NewMessageModal } from './NewMessageModal'
 import { requestGroupAccess } from '@/app/actions/messaging'
@@ -95,14 +96,14 @@ export function UnifiedInbox({ conversations, groupMemberships, currentUserId, c
       {/* Header */}
       <div className="p-4 sm:p-4 border-b border-gray-200 shrink-0 safe-area-top">
         <div className="flex items-center justify-between gap-2 mb-3">
-          <h2 className="text-lg sm:text-xl font-bold text-gray-900 truncate">Messages</h2>
+          <h2 className="text-lg sm:text-xl font-bold text-gray-900 truncate">Inbox</h2>
           <button
             onClick={() => setShowNewMessageModal(true)}
             className="min-w-[44px] min-h-[44px] flex items-center justify-center -m-2 text-primary-600 hover:bg-primary-50 active:bg-primary-100 rounded-lg transition-colors touch-manipulation"
             title="New Message"
             aria-label="New message"
           >
-            <Edit className="w-5 h-5" />
+            <Plus className="w-5 h-5" />
           </button>
         </div>
 
@@ -205,18 +206,20 @@ export function UnifiedInbox({ conversations, groupMemberships, currentUserId, c
             )}
 
             {myGroups.length === 0 && discoverableGroups.length === 0 && (
-              <div className="flex flex-col items-center justify-center py-12 text-center">
-                <Users className="w-16 h-16 text-gray-300 mb-3" />
-                <p className="text-sm font-medium text-gray-900 mb-1">No groups yet</p>
-                <p className="text-xs text-gray-500 mb-4">
+              <div className={cn(STYLES.emptyState, "py-12")}>
+                <div className={STYLES.emptyIcon}>
+                  <Users className="w-10 h-10 text-gray-300" />
+                </div>
+                <p className={STYLES.emptyTitle}>No groups yet</p>
+                <p className={STYLES.emptyDescription}>
                   {currentUserRole === 'ADMIN'
                     ? 'Create a group to get started'
-                    : 'You\'ll see groups you\'re added to here'}
+                    : "You'll see groups you're added to here"}
                 </p>
                 {currentUserRole === 'ADMIN' && (
                   <Link
                     href="/admin/messaging/new"
-                    className="inline-flex items-center justify-center min-h-[44px] px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 active:bg-primary-800 text-sm font-medium touch-manipulation"
+                    className={cn(STYLES.btn, STYLES.btnPrimary, "mt-6 text-sm")}
                   >
                     Create Group
                   </Link>

@@ -42,16 +42,16 @@ export default async function NewMessageGroupPage() {
   })
 
   return (
-    <div className="h-full flex flex-col p-6">
-      <div className="flex-shrink-0 mb-6">
+    <div className="h-full flex flex-col p-4 sm:p-6">
+      <div className="flex-shrink-0 mb-4 sm:mb-6">
         <Link
           href="/admin/communication"
-          className="inline-flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-700 mb-2"
+          className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 mb-3 touch-manipulation"
         >
-          <ArrowLeft className="w-3 h-3" /> Back to Communication Hub
+          <ArrowLeft className="w-4 h-4" /> Back to Communication Hub
         </Link>
-        <h1 className="text-2xl font-bold text-gray-900">Create Message Group</h1>
-        <p className="text-sm text-gray-500">Set up a new group for team communication</p>
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Create Message Group</h1>
+        <p className="text-sm text-gray-500 mt-0.5">Set up a new group for team communication</p>
       </div>
 
       <div className="flex-1 min-h-0 overflow-auto">

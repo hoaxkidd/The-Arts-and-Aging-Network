@@ -142,8 +142,11 @@ export function AdminRequestList({ requests }: { requests: Request[] }) {
         <div className="flex-1 relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
           <input
-            type="text"
+            id="search-event-requests"
+            name="searchEventRequests"
+            type="search"
             placeholder="Search by event or home..."
+            aria-label="Search event requests by event or home"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className={cn(STYLES.input, "pl-10")}

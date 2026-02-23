@@ -77,8 +77,11 @@ export default function UsersTable({ users: initialUsers }: { users: UserWithCou
         <div className="flex-1 relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
           <input
-            type="text"
+            id="search-users"
+            name="searchUsers"
+            type="search"
             placeholder="Search by name or email..."
+            aria-label="Search users by name or email"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className={cn(STYLES.input, "pl-10")}
@@ -105,6 +108,7 @@ export default function UsersTable({ users: initialUsers }: { users: UserWithCou
         >
           <option value="ALL">All Statuses</option>
           <option value="ACTIVE">Active</option>
+          <option value="PENDING">Pending signup</option>
           <option value="INACTIVE">Inactive</option>
           <option value="SUSPENDED">Suspended</option>
         </select>
@@ -174,6 +178,8 @@ export default function UsersTable({ users: initialUsers }: { users: UserWithCou
                     <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
                       user.status === 'ACTIVE'
                         ? 'bg-green-100 text-green-800 border border-green-200'
+                        : user.status === 'PENDING'
+                        ? 'bg-amber-100 text-amber-800 border border-amber-200'
                         : 'bg-red-100 text-red-800 border border-red-200'
                     }`}>
                       {user.status}
@@ -202,13 +208,14 @@ export default function UsersTable({ users: initialUsers }: { users: UserWithCou
                       </button>
                       <button
                         onClick={() => handleToggleStatus(user.id)}
-                        disabled={togglingStatus === user.id}
+                        disabled={togglingStatus === user.id || user.status === 'PENDING'}
                         className={cn(
                           "inline-flex items-center gap-1 px-2 py-1 rounded hover:bg-gray-100 transition-colors",
                           togglingStatus === user.id ? "opacity-50 cursor-not-allowed" : "",
+                          user.status === 'PENDING' ? "opacity-50 cursor-not-allowed" : "",
                           user.status === 'ACTIVE' ? "text-orange-600 hover:bg-orange-50" : "text-green-600 hover:bg-green-50"
                         )}
-                        title={user.status === 'ACTIVE' ? 'Deactivate user' : 'Activate user'}
+                        title={user.status === 'PENDING' ? 'Send invitation to activate' : user.status === 'ACTIVE' ? 'Deactivate user' : 'Activate user'}
                       >
                         {user.status === 'ACTIVE' ? (
                           <PowerOff className="w-4 h-4" />

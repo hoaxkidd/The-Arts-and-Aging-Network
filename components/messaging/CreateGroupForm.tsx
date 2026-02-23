@@ -4,7 +4,6 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createMessageGroup } from '@/app/actions/messaging'
-import { Users, Calendar } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 type Staff = {
@@ -34,12 +33,12 @@ const GROUP_TYPES = [
 ]
 
 const COLORS = [
-  { value: 'blue', label: 'Blue' },
-  { value: 'green', label: 'Green' },
-  { value: 'purple', label: 'Purple' },
-  { value: 'red', label: 'Red' },
-  { value: 'yellow', label: 'Yellow' },
-  { value: 'pink', label: 'Pink' }
+  { value: 'blue', label: 'Blue', active: 'bg-blue-600 text-white ring-2 ring-blue-500 ring-offset-2', inactive: 'bg-blue-100 text-blue-700 hover:bg-blue-200' },
+  { value: 'green', label: 'Green', active: 'bg-green-600 text-white ring-2 ring-green-500 ring-offset-2', inactive: 'bg-green-100 text-green-700 hover:bg-green-200' },
+  { value: 'purple', label: 'Purple', active: 'bg-purple-600 text-white ring-2 ring-purple-500 ring-offset-2', inactive: 'bg-purple-100 text-purple-700 hover:bg-purple-200' },
+  { value: 'red', label: 'Red', active: 'bg-red-600 text-white ring-2 ring-red-500 ring-offset-2', inactive: 'bg-red-100 text-red-700 hover:bg-red-200' },
+  { value: 'yellow', label: 'Yellow', active: 'bg-yellow-500 text-white ring-2 ring-yellow-500 ring-offset-2', inactive: 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200' },
+  { value: 'pink', label: 'Pink', active: 'bg-pink-600 text-white ring-2 ring-pink-500 ring-offset-2', inactive: 'bg-pink-100 text-pink-700 hover:bg-pink-200' }
 ]
 
 const EMOJIS = ['💬', '👥', '📢', '🎯', '⭐', '🎨', '🎭', '🎪', '🎵', '📚', '🏆', '💡']
@@ -85,17 +84,19 @@ export function CreateGroupForm({ staff, events }: CreateGroupFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="max-w-3xl">
-      <div className="bg-white rounded-lg border border-gray-200 divide-y divide-gray-200">
+    <form onSubmit={handleSubmit} className="max-w-3xl w-full">
+      <div className="bg-white rounded-xl border border-gray-200 divide-y divide-gray-200 shadow-sm">
         {/* Basic Info */}
-        <div className="p-6 space-y-4">
+        <div className="p-4 sm:p-6 space-y-4">
           <h2 className="text-lg font-semibold text-gray-900">Basic Information</h2>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="group-name" className="block text-sm font-medium text-gray-700 mb-1">
               Group Name <span className="text-red-500">*</span>
             </label>
             <input
+              id="group-name"
+              name="name"
               type="text"
               required
               value={formData.name}
@@ -106,10 +107,12 @@ export function CreateGroupForm({ staff, events }: CreateGroupFormProps) {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="group-description" className="block text-sm font-medium text-gray-700 mb-1">
               Description
             </label>
             <textarea
+              id="group-description"
+              name="description"
               value={formData.description}
               onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
               rows={3}
@@ -118,7 +121,7 @@ export function CreateGroupForm({ staff, events }: CreateGroupFormProps) {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Icon
@@ -130,9 +133,9 @@ export function CreateGroupForm({ staff, events }: CreateGroupFormProps) {
                     type="button"
                     onClick={() => setFormData(prev => ({ ...prev, iconEmoji: emoji }))}
                     className={cn(
-                      "w-10 h-10 rounded-lg flex items-center justify-center text-2xl transition-colors",
+                      "min-w-[44px] min-h-[44px] sm:w-10 sm:h-10 rounded-lg flex items-center justify-center text-2xl transition-colors touch-manipulation",
                       formData.iconEmoji === emoji
-                        ? "bg-primary-100 ring-2 ring-primary-500"
+                        ? "bg-primary-100 ring-2 ring-primary-500 ring-offset-2"
                         : "bg-gray-100 hover:bg-gray-200"
                     )}
                   >
@@ -153,10 +156,8 @@ export function CreateGroupForm({ staff, events }: CreateGroupFormProps) {
                     type="button"
                     onClick={() => setFormData(prev => ({ ...prev, color: color.value }))}
                     className={cn(
-                      "px-3 py-2 rounded-lg text-xs font-medium transition-colors",
-                      `bg-${color.value}-100 text-${color.value}-700`,
-                      formData.color === color.value && "ring-2 ring-offset-2",
-                      formData.color === color.value && `ring-${color.value}-500`
+                      "min-h-[44px] sm:min-h-0 px-3 py-2.5 sm:py-2 rounded-lg text-xs font-medium transition-colors touch-manipulation",
+                      formData.color === color.value ? color.active : color.inactive
                     )}
                   >
                     {color.label}
@@ -168,7 +169,7 @@ export function CreateGroupForm({ staff, events }: CreateGroupFormProps) {
         </div>
 
         {/* Group Type */}
-        <div className="p-6 space-y-4">
+        <div className="p-4 sm:p-6 space-y-4">
           <h2 className="text-lg font-semibold text-gray-900">Group Type</h2>
 
           <div className="space-y-3">
@@ -176,7 +177,7 @@ export function CreateGroupForm({ staff, events }: CreateGroupFormProps) {
               <label
                 key={type.value}
                 className={cn(
-                  "flex items-start gap-3 p-4 border-2 rounded-lg cursor-pointer transition-colors",
+                  "flex items-start gap-3 p-4 sm:p-5 min-h-[56px] border-2 rounded-xl cursor-pointer transition-colors touch-manipulation",
                   formData.type === type.value
                     ? "border-primary-500 bg-primary-50"
                     : "border-gray-200 hover:border-gray-300"
@@ -188,7 +189,7 @@ export function CreateGroupForm({ staff, events }: CreateGroupFormProps) {
                   value={type.value}
                   checked={formData.type === type.value}
                   onChange={(e) => setFormData(prev => ({ ...prev, type: e.target.value }))}
-                  className="mt-1"
+                  className="mt-1.5 w-4 h-4"
                 />
                 <div>
                   <p className="font-medium text-gray-900">{type.label}</p>
@@ -200,10 +201,12 @@ export function CreateGroupForm({ staff, events }: CreateGroupFormProps) {
 
           {formData.type === 'EVENT_BASED' && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="group-event" className="block text-sm font-medium text-gray-700 mb-1">
                 Select Event
               </label>
               <select
+                id="group-event"
+                name="eventId"
                 value={formData.eventId}
                 onChange={(e) => setFormData(prev => ({ ...prev, eventId: e.target.value }))}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
@@ -220,11 +223,13 @@ export function CreateGroupForm({ staff, events }: CreateGroupFormProps) {
         </div>
 
         {/* Access Settings */}
-        <div className="p-6 space-y-4">
+        <div className="p-4 sm:p-6 space-y-4">
           <h2 className="text-lg font-semibold text-gray-900">Access Settings</h2>
 
-          <label className="flex items-start gap-3 p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
+          <label htmlFor="allow-all-staff" className="flex items-start gap-3 p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
             <input
+              id="allow-all-staff"
+              name="allowAllStaff"
               type="checkbox"
               checked={formData.allowAllStaff}
               onChange={(e) => setFormData(prev => ({ ...prev, allowAllStaff: e.target.checked }))}
@@ -241,7 +246,7 @@ export function CreateGroupForm({ staff, events }: CreateGroupFormProps) {
 
         {/* Initial Members */}
         {!formData.allowAllStaff && (
-          <div className="p-6 space-y-4">
+          <div className="p-4 sm:p-6 space-y-4">
             <h2 className="text-lg font-semibold text-gray-900">Initial Members</h2>
             <p className="text-sm text-gray-600">Select staff to add to this group</p>
 
@@ -249,10 +254,14 @@ export function CreateGroupForm({ staff, events }: CreateGroupFormProps) {
               {staff.map(member => (
                 <label
                   key={member.id}
+                  htmlFor={`member-${member.id}`}
                   className="flex items-center gap-3 p-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-0"
                 >
                   <input
+                    id={`member-${member.id}`}
+                    name="initialMembers"
                     type="checkbox"
+                    value={member.id}
                     checked={formData.initialMembers.includes(member.id)}
                     onChange={() => toggleMember(member.id)}
                   />
@@ -287,17 +296,17 @@ export function CreateGroupForm({ staff, events }: CreateGroupFormProps) {
       )}
 
       {/* Actions */}
-      <div className="mt-6 flex items-center gap-3">
+      <div className="mt-6 flex flex-col-reverse sm:flex-row items-stretch sm:items-center gap-3">
         <button
           type="submit"
           disabled={loading}
-          className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+          className="px-6 py-3 min-h-[48px] bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium touch-manipulation"
         >
           {loading ? 'Creating...' : 'Create Group'}
         </button>
         <Link
           href="/admin/messaging"
-          className="px-4 py-2 text-gray-700 hover:text-gray-900"
+          className="px-6 py-3 min-h-[48px] flex items-center justify-center text-gray-700 hover:text-gray-900 rounded-lg border border-gray-300 hover:bg-gray-50 touch-manipulation"
         >
           Cancel
         </Link>

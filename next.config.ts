@@ -1,6 +1,9 @@
 import type { NextConfig } from "next";
+import path from "path";
 
 const nextConfig: NextConfig = {
+  // Fix chunk loading: use project root for file tracing (resolves multiple lockfiles warning)
+  outputFileTracingRoot: path.resolve(process.cwd()),
   /* config options here */
   images: {
     remotePatterns: [

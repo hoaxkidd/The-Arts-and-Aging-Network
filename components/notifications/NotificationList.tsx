@@ -7,7 +7,7 @@ import {
   UserMinus, FileText, MapPin, Phone, Video
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { markAsRead, deleteNotification, getMyNotifications, markAllAsRead, clearAllNotifications } from '@/app/actions/notifications'
+import { markAsRead, deleteNotification, markAllAsRead, clearAllNotifications } from '@/app/actions/notifications'
 import { NOTIFICATION_REFRESH_EVENT } from '@/lib/notification-refresh'
 import Link from 'next/link'
 
@@ -99,8 +99,10 @@ export function NotificationList({ initialNotifications, compact = false, onNoti
 
   const refetch = useCallback(async () => {
     try {
-      const latest = await getMyNotifications()
-      setNotifications(latest as Notification[])
+      const res = await fetch('/api/notifications')
+      if (!res.ok) return
+      const { notifications: latest } = await res.json()
+      setNotifications(latest)
     } catch (e) {
       console.error(e)
     }

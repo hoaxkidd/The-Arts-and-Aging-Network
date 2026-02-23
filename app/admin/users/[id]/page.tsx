@@ -53,6 +53,20 @@ export default async function EditUserPage({ params }: { params: Promise<{ id: s
         </div>
       </div>
 
+      {/* PENDING placeholder banner */}
+      {user.status === 'PENDING' && (
+        <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 flex items-start gap-3">
+          <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+          <div>
+            <h3 className="text-sm font-semibold text-amber-900">Pending signup</h3>
+            <p className="text-sm text-amber-800 mt-0.5">
+              This user has not signed up yet. They cannot log in until they accept an invitation and set a password.
+              Send an invitation from the <Link href="/admin/invitations" className="font-medium underline hover:no-underline">Invitations</Link> page using their email to allow them to activate their account.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Account Settings Bar */}
       <div className="bg-white rounded-lg border border-gray-200 px-4 py-3">
         <form action={async (formData) => {
@@ -84,6 +98,7 @@ export default async function EditUserPage({ params }: { params: Promise<{ id: s
           <div className="flex items-center gap-2">
             <label className="text-xs text-gray-500">Status</label>
             <select name="status" defaultValue={user.status} className="text-sm rounded-md border-gray-300 py-1.5 pr-8 pl-2">
+              <option value="PENDING">Pending signup</option>
               <option value="ACTIVE">Active</option>
               <option value="INACTIVE">Inactive</option>
               <option value="SUSPENDED">Suspended</option>

@@ -70,17 +70,28 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (user) {
         token.role = user.role
         token.id = user.id
+        const fullUser = user as User
+        if (fullUser.onboardingCompletedAt) {
+          token.onboardingCompletedAt = fullUser.onboardingCompletedAt instanceof Date
+            ? fullUser.onboardingCompletedAt.toISOString()
+            : fullUser.onboardingCompletedAt
+        } else {
+          token.onboardingCompletedAt = null
+        }
+        token.onboardingSkipCount = fullUser.onboardingSkipCount ?? 0
       }
       // Refresh name and role from DB to keep session in sync with profile changes
       if (token.id) {
         try {
           const dbUser = await prisma.user.findUnique({
             where: { id: token.id as string },
-            select: { name: true, role: true }
+            select: { name: true, role: true, onboardingCompletedAt: true, onboardingSkipCount: true }
           })
           if (dbUser) {
             token.name = dbUser.name
             token.role = dbUser.role
+            token.onboardingCompletedAt = dbUser.onboardingCompletedAt?.toISOString() ?? null
+            token.onboardingSkipCount = dbUser.onboardingSkipCount ?? 0
           }
         } catch {
           // Silently continue with existing token data if DB query fails
@@ -93,6 +104,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         session.user.role = token.role as string
         session.user.id = token.id as string
         session.user.name = token.name as string
+        session.user.onboardingCompletedAt = token.onboardingCompletedAt ?? null
+        session.user.onboardingSkipCount = token.onboardingSkipCount ?? 0
       }
       return session
     },

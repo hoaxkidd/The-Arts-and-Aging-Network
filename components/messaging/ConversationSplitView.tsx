@@ -2,7 +2,9 @@
 
 import { UnifiedInbox } from './UnifiedInbox'
 import { ChatInterface } from './ChatInterface'
+import { MessageSquare } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { STYLES } from '@/lib/styles'
 
 type Conversation = {
   partnerId: string
@@ -123,16 +125,14 @@ export function ConversationSplitView({
             />
           </div>
         ) : (
-          <div className="w-full flex-1 flex items-center justify-center p-6 sm:p-8 text-center bg-gray-50">
-            <div>
-              <div className="w-24 h-24 rounded-full bg-gray-100 text-gray-400 flex items-center justify-center mx-auto mb-4 text-4xl">
-                💬
-              </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Select a conversation</h3>
-              <p className="text-sm text-gray-500">
-                Choose a conversation from the list to start messaging
-              </p>
+          <div className={cn(STYLES.emptyState, "flex-1 p-6 sm:p-8 bg-gray-50")}>
+            <div className={STYLES.emptyIcon}>
+              <MessageSquare className="w-10 h-10 text-gray-400" />
             </div>
+            <h3 className={STYLES.emptyTitle}>Select a conversation</h3>
+            <p className={STYLES.emptyDescription}>
+              Choose a conversation from the list to start messaging
+            </p>
           </div>
         )}
       </div>

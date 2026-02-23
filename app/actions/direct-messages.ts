@@ -23,9 +23,11 @@ export async function searchUsers(query: string) {
         ]
       }
     ]
-    // HOME_ADMIN can only message administrators; restrict search to ADMIN role only
+    // HOME_ADMIN can message admins directly, or request facilitators/staff (admin approval)
     if (session.user.role === 'HOME_ADMIN') {
-      andConditions.push({ role: 'ADMIN' })
+      andConditions.push({
+        role: { in: ['ADMIN', 'FACILITATOR', 'CONTRACTOR', 'PAYROLL'] }
+      })
     }
 
     const users = await prisma.user.findMany({
@@ -46,6 +48,75 @@ export async function searchUsers(query: string) {
   } catch (error) {
     console.error("Failed to search users:", error)
     return { error: "Failed to search users" }
+  }
+}
+
+// Search facilitators who share events with the current HOME_ADMIN's facility
+export async function searchFacilitatorsWithSharedEvents() {
+  const session = await auth()
+  if (!session?.user?.id) {
+    return { error: "Unauthorized" }
+  }
+  if (session.user.role !== "HOME_ADMIN") {
+    return { error: "Only home admins can use this search" }
+  }
+
+  try {
+    const home = await prisma.geriatricHome.findUnique({
+      where: { userId: session.user.id },
+      select: { id: true }
+    })
+    if (!home) {
+      return { success: true, data: [] }
+    }
+
+    const approvedRequests = await prisma.eventRequest.findMany({
+      where: {
+        geriatricHomeId: home.id,
+        status: "APPROVED",
+        approvedEventId: { not: null }
+      },
+      select: { approvedEventId: true }
+    })
+    const eventIds = approvedRequests
+      .map((r) => r.approvedEventId)
+      .filter((id): id is string => id != null)
+    if (eventIds.length === 0) {
+      return { success: true, data: [] }
+    }
+
+    const attendances = await prisma.eventAttendance.findMany({
+      where: {
+        eventId: { in: eventIds },
+        user: { role: "FACILITATOR", status: "ACTIVE", id: { not: session.user.id } }
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            preferredName: true,
+            email: true,
+            role: true,
+            image: true
+          }
+        }
+      }
+    })
+
+    const seen = new Set<string>()
+    const facilitators = attendances
+      .map((a) => a.user)
+      .filter((u) => {
+        if (seen.has(u.id)) return false
+        seen.add(u.id)
+        return true
+      })
+
+    return { success: true, data: facilitators }
+  } catch (error) {
+    console.error("Failed to search facilitators:", error)
+    return { error: "Failed to search facilitators" }
   }
 }
 

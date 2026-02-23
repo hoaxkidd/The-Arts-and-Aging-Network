@@ -1,10 +1,22 @@
 import { auth } from "@/auth"
 import { NextResponse } from "next/server"
+import { needsOnboarding, getOnboardingPath } from "@/lib/onboarding"
 
 export default auth((req) => {
   const isLoggedIn = !!req.auth
   const { pathname } = req.nextUrl
   const userRole = req.auth?.user?.role
+  const user = req.auth?.user
+
+  // Onboarding: redirect staff/dashboard users who haven't completed profile
+  if (isLoggedIn && user && needsOnboarding(user)) {
+    const onboardingPath = getOnboardingPath(userRole ?? '')
+    if (pathname !== onboardingPath && !pathname.startsWith('/login') && !pathname.startsWith('/invite')) {
+      if (pathname.startsWith('/staff') || pathname.startsWith('/dashboard')) {
+        return NextResponse.redirect(new URL(onboardingPath, req.nextUrl))
+      }
+    }
+  }
 
   // Add pathname to headers so layout can access it
   const requestHeaders = new Headers(req.headers)

@@ -25,12 +25,104 @@ type Event = {
   attendances: Attendee[]
 }
 
+function EventRowActions({
+  event,
+  onViewAttendance
+}: {
+  event: Event
+  onViewAttendance: () => void
+}) {
+  return (
+    <>
+      <button
+        onClick={onViewAttendance}
+        className="p-2 text-gray-500 hover:text-primary-600 hover:bg-gray-100 rounded-lg transition-colors"
+        title="View Attendees"
+      >
+        <Eye className="w-4 h-4" />
+      </button>
+      <Link
+        href={`/admin/events/${event.id}/edit`}
+        className="p-2 text-gray-500 hover:text-primary-600 hover:bg-gray-100 rounded-lg transition-colors"
+        title="Edit Event"
+      >
+        <Edit2 className="w-4 h-4" />
+      </Link>
+      <form action={async () => {
+        if (confirm('Delete this event?')) await deleteEvent(event.id)
+      }} className="inline">
+        <button
+          type="submit"
+          className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+          title="Delete Event"
+        >
+          <Trash2 className="w-4 h-4" />
+        </button>
+      </form>
+    </>
+  )
+}
+
 export function EventListTable({ events }: { events: Event[] }) {
   const [attendanceEvent, setAttendanceEvent] = useState<Event | null>(null)
 
   return (
     <>
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+      {/* Mobile: card list - full info, no truncation */}
+      <div className="md:hidden space-y-3">
+        {events.map((event) => {
+          const start = new Date(event.startDateTime)
+          const end = new Date(event.endDateTime)
+          const confirmed = event.attendances.filter(a => a.status === 'YES').length
+          return (
+            <div
+              key={event.id}
+              className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm"
+            >
+              <div className="flex items-start justify-between gap-3 mb-3">
+                <div>
+                  <h3 className="font-medium text-gray-900">{event.title}</h3>
+                  <span className={cn(
+                    "inline-flex mt-1.5 px-2 py-0.5 rounded text-xs font-medium",
+                    event.status === 'PUBLISHED' ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600"
+                  )}>
+                    {event.status}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1 shrink-0">
+                  <EventRowActions event={event} onViewAttendance={() => setAttendanceEvent(event)} />
+                </div>
+              </div>
+              <div className="space-y-2 text-sm text-gray-600">
+                <div className="flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-gray-400 shrink-0" />
+                  <span>{start.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Users className="w-4 h-4 text-gray-400 shrink-0" />
+                  <span>{start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} – {end.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                </div>
+                <a
+                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.location.address)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 text-gray-600 hover:text-primary-600 break-all"
+                >
+                  <MapPin className="w-4 h-4 text-gray-400 shrink-0" />
+                  <span>{event.location.name}</span>
+                </a>
+                <div className="flex items-center gap-2 pt-1">
+                  <span className="text-gray-500">Attendees:</span>
+                  <span className="font-medium">{confirmed} / {event.maxAttendees}</span>
+                </div>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
+      {/* Desktop: table */}
+      <div className="hidden md:block bg-white rounded-lg border border-gray-200 overflow-hidden">
         <div className="table-scroll-wrapper max-h-[calc(100vh-320px)]">
           <table className={STYLES.table}>
             <thead className="bg-gray-50">
@@ -86,31 +178,7 @@ export function EventListTable({ events }: { events: Event[] }) {
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center justify-end gap-1">
-                        <button
-                          onClick={() => setAttendanceEvent(event)}
-                          className="p-2 text-gray-500 hover:text-primary-600 hover:bg-gray-100 rounded-lg transition-colors"
-                          title="View Attendees"
-                        >
-                          <Eye className="w-4 h-4" />
-                        </button>
-                        <Link
-                          href={`/admin/events/${event.id}/edit`}
-                          className="p-2 text-gray-500 hover:text-primary-600 hover:bg-gray-100 rounded-lg transition-colors"
-                          title="Edit Event"
-                        >
-                          <Edit2 className="w-4 h-4" />
-                        </Link>
-                        <form action={async () => {
-                          if (confirm('Delete this event?')) await deleteEvent(event.id)
-                        }} className="inline">
-                          <button
-                            type="submit"
-                            className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                            title="Delete Event"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </form>
+                        <EventRowActions event={event} onViewAttendance={() => setAttendanceEvent(event)} />
                       </div>
                     </td>
                   </tr>

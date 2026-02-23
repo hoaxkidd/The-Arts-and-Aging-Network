@@ -242,10 +242,7 @@ export async function canMessageUser(userId: string) {
     return { canMessage: true }
   }
 
-  // HOME_ADMIN can only message admins (already handled above if target is ADMIN)
-  if (myRole === 'HOME_ADMIN') {
-    return { canMessage: false, reason: 'Home admins can only message administrators' }
-  }
+  // HOME_ADMIN → non-admin: can message if approved or existing thread; else must request
 
   // Same role can message each other (e.g. payroll ↔ payroll)
   if (myRole === targetRole) {

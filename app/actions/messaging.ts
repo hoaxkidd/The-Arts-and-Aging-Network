@@ -200,6 +200,7 @@ export async function approveGroupAccess(groupId: string, userId: string) {
     })
 
     revalidatePath('/admin/messaging/requests')
+    revalidatePath('/admin/communication')
     revalidatePath('/staff/groups')
 
     return { success: true }
@@ -243,6 +244,7 @@ export async function denyGroupAccess(groupId: string, userId: string) {
     })
 
     revalidatePath('/admin/messaging/requests')
+    revalidatePath('/admin/communication')
     revalidatePath('/staff/inbox')
 
     return { success: true }
