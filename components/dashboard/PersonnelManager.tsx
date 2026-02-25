@@ -331,6 +331,7 @@ function ContactCard({
 
         <div className="flex items-center gap-3 flex-shrink-0">
           <div className="hidden sm:flex items-center gap-3 text-xs text-gray-500">
+            {person.email && (
             <a
               href={`mailto:${person.email}`}
               className="flex items-center gap-1 hover:text-primary-600 transition-colors"
@@ -338,6 +339,7 @@ function ContactCard({
               <Mail className="w-3 h-3" />
               <span className="truncate max-w-[120px]">{person.email}</span>
             </a>
+            )}
             <a
               href={`tel:${person.phone}`}
               className="flex items-center gap-1 hover:text-primary-600 transition-colors"
@@ -373,10 +375,12 @@ function ContactCard({
 
       {/* Mobile contact info */}
       <div className="sm:hidden flex items-center gap-3 mt-2 text-xs text-gray-500 pl-13">
+        {person.email && (
         <a href={`mailto:${person.email}`} className="flex items-center gap-1 hover:text-primary-600">
           <Mail className="w-3 h-3" />
           <span className="truncate">{person.email}</span>
         </a>
+        )}
         <a href={`tel:${person.phone}`} className="flex items-center gap-1 hover:text-primary-600">
           <Phone className="w-3 h-3" />
           {person.phone}

@@ -9,7 +9,7 @@ import { AddressAutocomplete } from '@/components/ui/AddressAutocomplete'
 type Props = {
   userId: string
   userName: string | null
-  userEmail: string
+  userEmail: string | null
   action: (formData: FormData) => Promise<void>
 }
 
@@ -46,7 +46,7 @@ export function CreateFacilityForm({ userId, userName, userEmail, action }: Prop
         </div>
         <div>
           <label className="block text-xs font-medium text-gray-600 mb-1">Contact Email *</label>
-          <input name="contactEmail" type="email" required defaultValue={userEmail} className={STYLES.input} />
+          <input name="contactEmail" type="email" required defaultValue={userEmail || ''} className={STYLES.input} />
         </div>
         <div>
           <label className="block text-xs font-medium text-gray-600 mb-1">Contact Phone *</label>

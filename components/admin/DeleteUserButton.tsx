@@ -7,7 +7,7 @@ import { Trash2, Loader2, X } from 'lucide-react'
 import { STYLES } from '@/lib/styles'
 import { cn } from '@/lib/utils'
 
-export default function DeleteUserButton({ userId, userName }: { userId: string, userName: string }) {
+export default function DeleteUserButton({ userId, userName }: { userId: string, userName: string | null }) {
   const [isOpen, setIsOpen] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const [confirmText, setConfirmText] = useState('')
@@ -57,7 +57,7 @@ export default function DeleteUserButton({ userId, userName }: { userId: string,
             </div>
             <div>
               <h3 className="text-lg font-semibold text-gray-900">Delete User</h3>
-              <p className="text-sm text-gray-500">{userName}</p>
+              <p className="text-sm text-gray-500">{userName || 'Unknown User'}</p>
             </div>
           </div>
           <button

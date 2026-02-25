@@ -82,7 +82,7 @@ export function ExpenseRequestList({ requests }: { requests: ExpenseRequest[] })
                             </div>
                             <div className="ml-3">
                                 <div className="text-sm font-medium text-gray-900">{req.user.name}</div>
-                                <div className="text-xs text-gray-500">{req.user.email}</div>
+                                <div className="text-xs text-gray-500">{req.user.email || 'No email'}</div>
                             </div>
                             </div>
                         </td>

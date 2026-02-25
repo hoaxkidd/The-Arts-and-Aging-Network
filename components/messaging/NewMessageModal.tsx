@@ -12,7 +12,7 @@ type User = {
   id: string
   name: string | null
   preferredName: string | null
-  email: string
+  email: string | null
   role: string
   image?: string | null
 }

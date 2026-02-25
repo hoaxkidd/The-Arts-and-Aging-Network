@@ -5,6 +5,12 @@ import { auth } from "@/auth"
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
 
+function parseFormBool(value: FormDataEntryValue | null): boolean {
+  if (value === null || value === undefined) return false
+  const s = String(value).toLowerCase()
+  return s === 'true' || s === '1' || s === 'yes' || s === 'on' || s === 'y'
+}
+
 // Schemas
 const ProfileSchema = z.object({
   pronouns: z.string().optional(),
@@ -14,6 +20,7 @@ const ProfileSchema = z.object({
   bio: z.string().optional(),
   birthDate: z.string().optional(), // Receive as YYYY-MM-DD
   region: z.string().optional(), // Location/Region
+  alternateEmail: z.string().optional(),
   emergencyContact: z.object({
     name: z.string().optional(),
     phone: z.string().optional(),
@@ -22,6 +29,39 @@ const ProfileSchema = z.object({
   healthInfo: z.string().optional(),
   // Allow richer intake data (arrays/objects) like skills, tasks, etc.
   intakeAnswers: z.record(z.string(), z.unknown()).optional(),
+  // Team fields
+  teamId: z.string().optional(),
+  teamCode: z.string().optional(),
+  teamType: z.string().optional(),
+  tShirtSize: z.string().optional(),
+  supervisorId: z.string().optional(),
+  // Skills & Notes
+  strengthsSkills: z.string().optional(),
+  supportNotes: z.string().optional(),
+  funFacts: z.string().optional(),
+  // Skill ratings
+  facilitatingSkillRating: z.union([z.number(), z.string()]).optional(),
+  creativeArtsSkillRating: z.union([z.number(), z.string()]).optional(),
+  organizingSkillRating: z.union([z.number(), z.string()]).optional(),
+  communicatingSkillRating: z.union([z.number(), z.string()]).optional(),
+  mentoringSkillRating: z.union([z.number(), z.string()]).optional(),
+  // Accommodations
+  requiresAccommodation: z.boolean().optional(),
+  accommodationDetails: z.string().optional(),
+  // Compliance
+  workplaceSafetyFormReceived: z.boolean().optional(),
+  codeOfConductReceived: z.boolean().optional(),
+  travelPolicyAcknowledged: z.boolean().optional(),
+  policeCheckReceived: z.boolean().optional(),
+  vulnerableSectorCheckRequired: z.boolean().optional(),
+  dementiaTrainingCompleted: z.boolean().optional(),
+  dementiaTrainingDate: z.string().optional(),
+  dementiaTrainingTopupDate: z.string().optional(),
+  // Documents & Signatures
+  signatureOnFile: z.boolean().optional(),
+  signatureDate: z.string().optional(),
+  headshotReceived: z.boolean().optional(),
+  bioReceived: z.boolean().optional(),
 })
 
 export async function updateStaffProfile(formData: FormData) {
@@ -58,8 +98,13 @@ export async function updateStaffProfile(formData: FormData) {
       }
   }
 
+  // Handle pronouns: if "Other" is selected, use the custom value
+  const pronounsSelect = formData.get("pronouns") as string | null
+  const pronounsOther = formData.get("pronouns_other") as string | null
+  const pronouns = pronounsSelect === 'Other' && pronounsOther ? pronounsOther : (pronounsSelect || undefined)
+
   const rawData = {
-    pronouns: formData.get("pronouns") || undefined,
+    pronouns,
     preferredName: formData.get("preferredName") || undefined,
     phone: formData.get("phone") || undefined,
     address: formData.get("address") || undefined,
@@ -68,6 +113,7 @@ export async function updateStaffProfile(formData: FormData) {
     region: formData.get("region") || undefined,
     emergencyContact,
     healthInfo: formData.get("healthInfo") || undefined,
+    alternateEmail: formData.get("alternateEmail") || undefined,
   }
 
   // Load existing intake answers to merge with new values
@@ -138,7 +184,7 @@ export async function updateStaffProfile(formData: FormData) {
     }
 
     // Create update object
-    const updateData: any = {
+    const updateData: Record<string, unknown> = {
         pronouns: data.pronouns,
         preferredName: data.preferredName,
         phone: data.phone,
@@ -173,6 +219,88 @@ export async function updateStaffProfile(formData: FormData) {
         if (startDateRaw) {
              const [y, m, d] = (startDateRaw as string).split('-').map(Number)
              updateData.startDate = new Date(Date.UTC(y, m - 1, d))
+        }
+
+        // Team fields
+        const teamId = formData.get("teamId")
+        const teamCode = formData.get("teamCode")
+        const teamType = formData.get("teamType")
+        const tShirtSize = formData.get("tShirtSize")
+        const supervisorId = formData.get("supervisorId")
+        if (teamId) updateData.teamId = teamId
+        if (teamCode) updateData.teamCode = teamCode
+        if (teamType) updateData.teamType = teamType
+        if (tShirtSize) updateData.tShirtSize = tShirtSize
+        if (supervisorId) updateData.supervisorId = supervisorId
+
+        // Skills & Notes
+        const strengthsSkills = formData.get("strengthsSkills")
+        const supportNotes = formData.get("supportNotes")
+        const funFacts = formData.get("funFacts")
+        if (strengthsSkills) updateData.strengthsSkills = strengthsSkills
+        if (supportNotes) updateData.supportNotes = supportNotes
+        if (funFacts) updateData.funFacts = funFacts
+
+        // Skill ratings (convert to number)
+        const rating = (v: FormDataEntryValue | null): number | undefined => {
+            if (v === null || v === undefined || v === '') return undefined
+            const n = typeof v === 'number' ? v : parseInt(String(v), 10)
+            return isNaN(n) ? undefined : n
+        }
+        const facilitatingSkillRating = formData.get("facilitatingSkillRating")
+        const creativeArtsSkillRating = formData.get("creativeArtsSkillRating")
+        const organizingSkillRating = formData.get("organizingSkillRating")
+        const communicatingSkillRating = formData.get("communicatingSkillRating")
+        const mentoringSkillRating = formData.get("mentoringSkillRating")
+        if (rating(facilitatingSkillRating) !== undefined) updateData.facilitatingSkillRating = rating(facilitatingSkillRating)
+        if (rating(creativeArtsSkillRating) !== undefined) updateData.creativeArtsSkillRating = rating(creativeArtsSkillRating)
+        if (rating(organizingSkillRating) !== undefined) updateData.organizingSkillRating = rating(organizingSkillRating)
+        if (rating(communicatingSkillRating) !== undefined) updateData.communicatingSkillRating = rating(communicatingSkillRating)
+        if (rating(mentoringSkillRating) !== undefined) updateData.mentoringSkillRating = rating(mentoringSkillRating)
+
+        // Accommodations
+        const requiresAccommodation = formData.get("requiresAccommodation")
+        const accommodationDetails = formData.get("accommodationDetails")
+        if (requiresAccommodation !== null) updateData.requiresAccommodation = parseFormBool(requiresAccommodation)
+        if (accommodationDetails) updateData.accommodationDetails = accommodationDetails
+
+        // Compliance checkboxes
+        const workplaceSafetyFormReceived = formData.get("workplaceSafetyFormReceived")
+        const codeOfConductReceived = formData.get("codeOfConductReceived")
+        const travelPolicyAcknowledged = formData.get("travelPolicyAcknowledged")
+        const policeCheckReceived = formData.get("policeCheckReceived")
+        const vulnerableSectorCheckRequired = formData.get("vulnerableSectorCheckRequired")
+        const dementiaTrainingCompleted = formData.get("dementiaTrainingCompleted")
+        if (workplaceSafetyFormReceived !== null) updateData.workplaceSafetyFormReceived = parseFormBool(workplaceSafetyFormReceived)
+        if (codeOfConductReceived !== null) updateData.codeOfConductReceived = parseFormBool(codeOfConductReceived)
+        if (travelPolicyAcknowledged !== null) updateData.travelPolicyAcknowledged = parseFormBool(travelPolicyAcknowledged)
+        if (policeCheckReceived !== null) updateData.policeCheckReceived = parseFormBool(policeCheckReceived)
+        if (vulnerableSectorCheckRequired !== null) updateData.vulnerableSectorCheckRequired = parseFormBool(vulnerableSectorCheckRequired)
+        if (dementiaTrainingCompleted !== null) updateData.dementiaTrainingCompleted = parseFormBool(dementiaTrainingCompleted)
+
+        // Compliance dates
+        const dementiaTrainingDate = formData.get("dementiaTrainingDate")
+        const dementiaTrainingTopupDate = formData.get("dementiaTrainingTopupDate")
+        if (dementiaTrainingDate) {
+            const [y, m, d] = (dementiaTrainingDate as string).split('-').map(Number)
+            updateData.dementiaTrainingDate = new Date(Date.UTC(y, m - 1, d))
+        }
+        if (dementiaTrainingTopupDate) {
+            const [y, m, d] = (dementiaTrainingTopupDate as string).split('-').map(Number)
+            updateData.dementiaTrainingTopupDate = new Date(Date.UTC(y, m - 1, d))
+        }
+
+        // Documents & Signatures
+        const signatureOnFile = formData.get("signatureOnFile")
+        const headshotReceived = formData.get("headshotReceived")
+        const bioReceived = formData.get("bioReceived")
+        const signatureDate = formData.get("signatureDate")
+        if (signatureOnFile !== null) updateData.signatureOnFile = parseFormBool(signatureOnFile)
+        if (headshotReceived !== null) updateData.headshotReceived = parseFormBool(headshotReceived)
+        if (bioReceived !== null) updateData.bioReceived = parseFormBool(bioReceived)
+        if (signatureDate) {
+            const [y, m, d] = (signatureDate as string).split('-').map(Number)
+            updateData.signatureDate = new Date(Date.UTC(y, m - 1, d))
         }
     }
 
@@ -226,7 +354,7 @@ export async function uploadDocument(formData: FormData) {
 
         revalidatePath('/payroll/profile')
         return { success: true }
-    } catch (e) {
+    } catch {
         return { error: "Failed to upload document" }
     }
 }
@@ -242,7 +370,7 @@ export async function deleteDocument(docId: string) {
         await prisma.document.delete({ where: { id: docId } })
         revalidatePath('/payroll/profile')
         return { success: true }
-    } catch (e) {
+    } catch {
         return { error: "Failed to delete document" }
     }
 }

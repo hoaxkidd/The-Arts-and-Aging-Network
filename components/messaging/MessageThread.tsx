@@ -34,7 +34,7 @@ type Member = {
   user: {
     id: string
     name: string | null
-    email: string
+    email: string | null
     preferredName: string | null
     image: string | null
     role: string

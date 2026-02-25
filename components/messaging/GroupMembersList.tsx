@@ -17,7 +17,7 @@ type Member = {
   user: {
     id: string
     name: string | null
-    email: string
+    email: string | null
     preferredName: string | null
     image: string | null
     role: string
@@ -28,7 +28,7 @@ type Staff = {
   id: string
   name: string | null
   preferredName: string | null
-  email: string
+  email: string | null
   role: string
   image: string | null
 }
@@ -139,7 +139,7 @@ export function GroupMembersList({ groupId, members, availableStaff }: GroupMemb
                       </span>
                     )}
                   </div>
-                  <p className="text-xs text-gray-500">{member.user.email}</p>
+                  <p className="text-xs text-gray-500">{member.user.email || 'No email'}</p>
                   <p className="text-xs text-gray-400">
                     Joined {new Date(member.joinedAt).toLocaleDateString()}
                   </p>

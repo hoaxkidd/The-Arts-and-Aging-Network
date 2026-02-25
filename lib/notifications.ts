@@ -163,7 +163,7 @@ export async function notifyAllStaffAboutEvent(event: {
   for (const staff of staffMembers) {
     const prefs = parsePreferences(staff.notificationPreferences)
     
-    if (prefs.email) {
+    if (prefs.email && staff.email) {
       notificationPromises.push(
         sendEventNotificationEmail({
           to: staff.email,
@@ -239,7 +239,7 @@ export async function notifyAllStaffAboutEventUpdate(event: {
     for (const staff of staffMembers) {
       const prefs = parsePreferences(staff.notificationPreferences)
       
-      if (prefs.email) {
+      if (prefs.email && staff.email) {
         notificationPromises.push(
             sendEventNotificationEmail({
             to: staff.email,
@@ -310,7 +310,7 @@ export async function notifyAllStaffAboutEventCancellation(event: {
     for (const staff of staffMembers) {
       const prefs = parsePreferences(staff.notificationPreferences)
       
-      if (prefs.email) {
+      if (prefs.email && staff.email) {
         notificationPromises.push(
             sendEventNotificationEmail({
             to: staff.email,

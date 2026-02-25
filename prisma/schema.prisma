@@ -701,7 +701,8 @@ model TimesheetEntry {
 model User {
   id                      String                 @id @default(cuid())
   name                    String?
-  email                   String                 @unique
+  email                   String?                @unique
+  alternateEmail          String?
   password                String?
   image                   String?
   role                    String                 @default("VOLUNTEER")

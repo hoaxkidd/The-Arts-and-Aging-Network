@@ -74,7 +74,7 @@ export function HomeList({ initialHomes }: { initialHomes: Home[] }) {
                         </div>
                         <div>
                           <div className="font-medium text-gray-900">{home.name}</div>
-                          <div className="text-xs text-gray-500">{home.user.email}</div>
+                          <div className="text-xs text-gray-500">{home.user.email || 'No email'}</div>
                         </div>
                       </div>
                     </td>

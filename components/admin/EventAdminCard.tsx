@@ -168,11 +168,11 @@ export function EventAdminCard({ event }: EventAdminCardProps) {
                     <div key={record.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
                       <div className="flex items-center gap-3">
                         <div className="w-9 h-9 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center text-sm font-bold">
-                          {record.user.name?.[0]?.toUpperCase() || record.user.email[0].toUpperCase()}
+                          {record.user.name?.[0]?.toUpperCase() || (record.user.email?.[0]?.toUpperCase() || 'U')}
                         </div>
                         <div>
                           <div className="font-medium text-gray-900 text-sm">{record.user.name || 'Unknown'}</div>
-                          <div className="text-xs text-gray-500">{record.user.email}</div>
+                          <div className="text-xs text-gray-500">{record.user.email || 'No email'}</div>
                         </div>
                       </div>
                       <div className="flex items-center gap-3">

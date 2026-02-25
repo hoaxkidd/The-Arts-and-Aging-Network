@@ -104,9 +104,6 @@ export default async function EditUserPage({ params }: { params: Promise<{ id: s
               <option value="SUSPENDED">Suspended</option>
             </select>
           </div>
-          <button type="submit" className="ml-auto text-sm bg-primary-500 text-white px-3 py-1.5 rounded-md hover:bg-primary-600 flex items-center gap-1.5 font-medium">
-            <Save className="w-3.5 h-3.5" /> Save
-          </button>
         </form>
       </div>
 
@@ -185,6 +182,7 @@ export default async function EditUserPage({ params }: { params: Promise<{ id: s
                     isAdmin={true}
                     visibleTabs={['contact', 'emergency', 'documents']}
                     flat
+                    showSaveButton={true}
                   />
                 </div>
               )
@@ -196,6 +194,7 @@ export default async function EditUserPage({ params }: { params: Promise<{ id: s
           user={user}
           documents={user.documents}
           isAdmin={true}
+          showSaveButton={true}
         />
       )}
 

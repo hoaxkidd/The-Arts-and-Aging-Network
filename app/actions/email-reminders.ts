@@ -316,7 +316,7 @@ export async function processPendingReminders() {
 // Generate email content
 function generateReminderEmail(data: {
   reminder: any
-  recipient: { name: string | null, preferredName: string | null, email: string }
+  recipient: { name: string | null, preferredName: string | null, email: string | null }
   event: any
 }) {
   const { reminder, recipient, event } = data

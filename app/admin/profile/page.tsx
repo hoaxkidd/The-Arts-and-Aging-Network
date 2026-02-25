@@ -80,7 +80,7 @@ export default async function ProfilePage() {
                     <Mail className="w-5 h-5 text-gray-400 absolute left-3 top-3" />
                     <input 
                       type="email" 
-                      value={user.email} 
+                      value={user.email || ''} 
                       disabled 
                       className={cn(STYLES.input, "pl-10 bg-gray-50 text-gray-500 cursor-not-allowed")} 
                     />

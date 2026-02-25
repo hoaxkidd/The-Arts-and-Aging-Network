@@ -33,7 +33,7 @@ export default function UsersTable({ users: initialUsers }: { users: UserWithCou
     return users.filter(user => {
       const matchesSearch = searchQuery === '' ||
         user.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        user.email.toLowerCase().includes(searchQuery.toLowerCase())
+        (user.email?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false)
 
       const matchesRole = roleFilter === 'ALL' || user.role === roleFilter
       const matchesStatus = statusFilter === 'ALL' || user.status === statusFilter
@@ -164,8 +164,8 @@ export default function UsersTable({ users: initialUsers }: { users: UserWithCou
                         )}
                       </div>
                       <div className="ml-4">
-                        <div className="text-sm font-medium text-gray-900">{user.name}</div>
-                        <div className="text-sm text-gray-500">{user.email}</div>
+                        <div className="text-sm font-medium text-gray-900">{user.name || '—'}</div>
+                        <div className="text-sm text-gray-500">{user.email || 'No email'}</div>
                       </div>
                     </div>
                   </td>

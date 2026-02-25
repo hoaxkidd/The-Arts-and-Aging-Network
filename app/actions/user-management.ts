@@ -154,11 +154,17 @@ export async function searchUsers(query: string) {
   }
 
   try {
+    const normalizedQuery = query.toLowerCase()
     const users = await prisma.user.findMany({
       where: {
-        OR: [
-          { name: { contains: query } },
-          { email: { contains: query } }
+        AND: [
+          { email: { not: null } },
+          {
+            OR: [
+              { name: { contains: normalizedQuery } },
+              { email: { contains: normalizedQuery } }
+            ]
+          }
         ]
       },
       orderBy: { createdAt: 'desc' },

@@ -40,7 +40,7 @@ type SearchUser = {
     id: string
     name: string | null
     preferredName: string | null
-    email: string
+    email: string | null
     role: string
     image: string | null
 }
@@ -153,7 +153,7 @@ function NewDMModal({ onClose, onSent }: { onClose: () => void, onSent: () => vo
                                                 <p className="text-sm font-medium text-gray-900 truncate">
                                                     {user.preferredName || user.name}
                                                 </p>
-                                                <p className="text-xs text-gray-500 truncate">{user.email}</p>
+                                                <p className="text-xs text-gray-500 truncate">{user.email || 'No email'}</p>
                                             </div>
                                             <span className="ml-auto text-[10px] bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded-full shrink-0">
                                                 {user.role}
@@ -176,7 +176,7 @@ function NewDMModal({ onClose, onSent }: { onClose: () => void, onSent: () => vo
                                 <span className="text-sm font-medium text-gray-900">
                                     {selectedUser.preferredName || selectedUser.name}
                                 </span>
-                                <span className="text-xs text-gray-500">{selectedUser.email}</span>
+                                <span className="text-xs text-gray-500">{selectedUser.email || 'No email'}</span>
                                 <button
                                     onClick={() => setSelectedUser(null)}
                                     className="ml-auto p-0.5 hover:bg-gray-200 rounded"

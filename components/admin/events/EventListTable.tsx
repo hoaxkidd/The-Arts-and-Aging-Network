@@ -208,7 +208,7 @@ export function EventListTable({ events }: { events: Event[] }) {
                   <div key={r.id} className="flex items-center justify-between py-2 px-3 bg-gray-50 rounded-lg">
                     <div>
                       <div className="font-medium text-sm text-gray-900">{r.user.name || 'Unknown'}</div>
-                      <div className="text-xs text-gray-500">{r.user.email}</div>
+                      <div className="text-xs text-gray-500">{r.user.email || 'No email'}</div>
                     </div>
                     <div className="flex items-center gap-2">
                       {r.checkInTime && (

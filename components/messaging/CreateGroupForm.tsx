@@ -10,7 +10,7 @@ type Staff = {
   id: string
   name: string | null
   preferredName: string | null
-  email: string
+  email: string | null
   role: string
   image: string | null
 }
@@ -272,7 +272,7 @@ export function CreateGroupForm({ staff, events }: CreateGroupFormProps) {
                     <p className="text-sm font-medium text-gray-900">
                       {member.preferredName || member.name}
                     </p>
-                    <p className="text-xs text-gray-500">{member.email}</p>
+                    <p className="text-xs text-gray-500">{member.email || 'No email'}</p>
                   </div>
                   <span className="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded">
                     {member.role}

@@ -10,7 +10,8 @@ import { useRouter } from 'next/navigation'
 type UserData = {
   id: string
   name: string | null
-  email: string
+  email: string | null
+  alternateEmail?: string | null
   pronouns: string | null
   preferredName: string | null
   phone: string | null
@@ -18,6 +19,7 @@ type UserData = {
   bio: string | null
   birthDate: Date | null
   emergencyContact: string | null
+  emergencyAltPhone: string | null
   healthInfo: string | null
   intakeAnswers: string | null
   // Employment fields
@@ -26,9 +28,52 @@ type UserData = {
   employmentStatus: string | null
   startDate: Date | null
   region: string | null
+  // Team fields
+  teamId: string | null
+  teamCode: string | null
+  teamType: string | null
+  tShirtSize: string | null
+  supervisorId: string | null
+  // Skills & Notes
+  strengthsSkills: string | null
+  supportNotes: string | null
+  funFacts: string | null
+  // Skill ratings
+  facilitatingSkillRating: number | null
+  creativeArtsSkillRating: number | null
+  organizingSkillRating: number | null
+  communicatingSkillRating: number | null
+  mentoringSkillRating: number | null
+  // Accommodations
+  requiresAccommodation: boolean
+  accommodationDetails: string | null
+  // Compliance
+  workplaceSafetyFormReceived: boolean
+  codeOfConductReceived: boolean
+  travelPolicyAcknowledged: boolean
+  policeCheckReceived: boolean
+  vulnerableSectorCheckRequired: boolean
+  dementiaTrainingCompleted: boolean
+  dementiaTrainingDate: Date | null
+  dementiaTrainingTopupDate: Date | null
+  // Documents & Signatures
+  signatureOnFile: boolean
+  signatureDate: Date | null
+  headshotReceived: boolean
+  bioReceived: boolean
 }
 
-export function ProfileForm({ user, documents, isAdmin = false, visibleTabs, embedded = false, flat = false }: { user: UserData, documents?: any[], isAdmin?: boolean, visibleTabs?: string[], embedded?: boolean, flat?: boolean }) {
+type ProfileFormProps = {
+  user: UserData
+  documents?: { id: string; name: string; url: string; type: string; verified: boolean; createdAt: Date }[]
+  isAdmin?: boolean
+  visibleTabs?: string[]
+  embedded?: boolean
+  flat?: boolean
+  showSaveButton?: boolean
+}
+
+export function ProfileForm({ user, documents, isAdmin = false, visibleTabs, embedded = false, flat = false, showSaveButton = true }: ProfileFormProps) {
   const [activeTab, setActiveTab] = useState('personal')
   const [isPending, setIsPending] = useState(false)
   const [statusMessage, setStatusMessage] = useState<string | null>(null)
@@ -138,11 +183,12 @@ export function ProfileForm({ user, documents, isAdmin = false, visibleTabs, emb
 
   const allTabs = [
     { id: 'personal', label: 'Personal Info', icon: User },
-    { id: 'contact', label: 'Contact Details', icon: Mail },
-    { id: 'employment', label: 'Employment', icon: Briefcase },
-    { id: 'emergency', label: 'Emergency', icon: Phone },
+    { id: 'contact', label: 'Contact & Emergency', icon: Mail },
+    { id: 'employment', label: 'Employment & Team', icon: Briefcase },
+    { id: 'compliance', label: 'Compliance', icon: FileText },
+    { id: 'skills', label: 'Skills & Notes', icon: ClipboardList },
+    { id: 'intake', label: 'Intake', icon: Star },
     { id: 'health', label: 'Health Info', icon: Activity },
-    { id: 'intake', label: 'Intake Form', icon: ClipboardList },
     { id: 'documents', label: 'Documents', icon: FileText },
   ]
 
@@ -160,11 +206,11 @@ export function ProfileForm({ user, documents, isAdmin = false, visibleTabs, emb
   if (flat) {
     return (
       <div className={embedded ? '' : 'bg-white rounded-lg border border-gray-200 overflow-hidden'}>
-        <div className="p-6">
-          <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="p-4" style={{ maxHeight: '85vh', overflowY: 'auto' }}>
+          <form onSubmit={handleSubmit} className="space-y-4">
             <input type="hidden" name="userId" value={user.id} />
 
-            {/* Contact Details */}
+            {/* Contact & Emergency */}
             {showSection('contact') && (
               <div className="space-y-4">
                 <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2 pb-2 border-b border-gray-100">
@@ -174,9 +220,15 @@ export function ProfileForm({ user, documents, isAdmin = false, visibleTabs, emb
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
-                    <input name="email" type="email" disabled defaultValue={user.email} className="w-full rounded-lg border-gray-300 bg-gray-50 text-gray-500" />
+                    <input name="email" type="email" disabled defaultValue={user.email || ''} placeholder="No email on file" className="w-full rounded-lg border-gray-300 bg-gray-50 text-gray-500" />
                     <p className="text-xs text-gray-400 mt-1">Email cannot be changed here</p>
                   </div>
+                  {isAdmin && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Alternate Email</label>
+                    <input name="alternateEmail" type="email" defaultValue={user.alternateEmail || ''} placeholder="Alternate email address" className="w-full rounded-lg border-gray-300" />
+                  </div>
+                  )}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
                     <input name="phone" defaultValue={user.phone || ''} placeholder="(555) 123-4567" className="w-full rounded-lg border-gray-300" />
@@ -184,6 +236,23 @@ export function ProfileForm({ user, documents, isAdmin = false, visibleTabs, emb
                   <div className="md:col-span-2">
                     <label className="block text-sm font-medium text-gray-700 mb-1">Mailing Address</label>
                     <AddressAutocomplete name="address" value={address} onChange={setAddress} placeholder="Full mailing address" countries={['ca']} className="w-full rounded-lg border-gray-300" />
+                  </div>
+                  
+                  {/* Emergency Contact Section - merged */}
+                  <div className="md:col-span-2 border-t border-gray-200 pt-4 mt-2">
+                    <h4 className="text-sm font-semibold text-gray-900 mb-3">Emergency Contact</h4>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Contact Name</label>
+                    <input name="ec_name" defaultValue={ec.name || ''} className="w-full rounded-lg border-gray-300" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Relationship</label>
+                    <input name="ec_relation" defaultValue={ec.relation || ''} className="w-full rounded-lg border-gray-300" placeholder="e.g. Mother" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+                    <input name="ec_phone" defaultValue={ec.phone || ''} className="w-full rounded-lg border-gray-300" />
                   </div>
                 </div>
               </div>
@@ -214,15 +283,17 @@ export function ProfileForm({ user, documents, isAdmin = false, visibleTabs, emb
             )}
 
             {/* Save Button */}
+            {showSaveButton && (
             <div className="pt-4 border-t border-gray-100 flex justify-end">
               <button
                 type="submit"
                 disabled={isPending}
                 className="bg-primary-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-primary-700 disabled:opacity-50 transition-colors"
               >
-                {isPending ? 'Saving...' : 'Save Changes'}
+                {isPending ? 'Saving...' : 'Save'}
               </button>
             </div>
+            )}
           </form>
 
           {/* Documents (outside form since it has its own actions) */}
@@ -252,7 +323,7 @@ export function ProfileForm({ user, documents, isAdmin = false, visibleTabs, emb
                     type="button"
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`px-6 py-4 text-sm font-medium whitespace-nowrap flex items-center gap-2 transition-all ${
+                    className={`px-4 py-3 text-sm font-medium whitespace-nowrap flex items-center gap-2 transition-all ${
                         validActiveTab === tab.id
                         ? 'text-primary-600 border-b-2 border-primary-600 bg-primary-50/50'
                         : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
@@ -265,9 +336,9 @@ export function ProfileForm({ user, documents, isAdmin = false, visibleTabs, emb
         })}
       </div>
 
-      <div className="p-6 min-h-[400px]">
+        <div className="p-4" style={{ maxHeight: '85vh', overflowY: 'auto' }}>
         {validActiveTab === 'documents' ? (
-          <div className="space-y-6">
+          <div className="space-y-4">
              <div className="bg-blue-50 p-4 rounded-lg border border-blue-100 mb-4">
                 <h3 className="font-semibold text-blue-900 mb-2">My Documents</h3>
                 <p className="text-sm text-blue-800">
@@ -275,18 +346,53 @@ export function ProfileForm({ user, documents, isAdmin = false, visibleTabs, emb
                 </p>
              </div>
              <DocumentManager documents={documents || []} />
+             
+             {isAdmin && (
+                 <div className="border-t border-gray-200 pt-6 mt-6">
+                     <h3 className="font-semibold text-gray-900 mb-4">Document Tracking</h3>
+                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                         <div className="flex items-center gap-2">
+                             <input type="checkbox" name="signatureOnFile" id="signatureOnFile" defaultChecked={user.signatureOnFile} className="rounded border-gray-300" />
+                             <label htmlFor="signatureOnFile" className="text-sm text-gray-700">Signature on file</label>
+                         </div>
+                         <div>
+                             <label className="block text-sm font-medium text-gray-700 mb-1">Signature Date</label>
+                             <input 
+                                 type="date" 
+                                 name="signatureDate" 
+                                 defaultValue={user.signatureDate ? new Date(user.signatureDate).toISOString().split('T')[0] : ''} 
+                                 className="w-full rounded-lg border-gray-300" 
+                             />
+                         </div>
+                         <div className="flex items-center gap-2">
+                             <input type="checkbox" name="headshotReceived" id="headshotReceived" defaultChecked={user.headshotReceived} className="rounded border-gray-300" />
+                             <label htmlFor="headshotReceived" className="text-sm text-gray-700">Headshot received</label>
+                         </div>
+                         <div className="flex items-center gap-2">
+                             <input type="checkbox" name="bioReceived" id="bioReceived" defaultChecked={user.bioReceived} className="rounded border-gray-300" />
+                             <label htmlFor="bioReceived" className="text-sm text-gray-700">Bio received</label>
+                         </div>
+                     </div>
+                 </div>
+             )}
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-4">
             <input type="hidden" name="userId" value={user.id} />
-            {/* Contact Details Tab */}
+            {/* Contact & Emergency Tab */}
             <div className={validActiveTab === 'contact' ? 'block' : 'hidden'}>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
-                        <input name="email" type="email" disabled defaultValue={user.email} className="w-full rounded-lg border-gray-300 bg-gray-50 text-gray-500" />
+                        <input name="email" type="email" disabled defaultValue={user.email || ''} placeholder="No email on file" className="w-full rounded-lg border-gray-300 bg-gray-50 text-gray-500" />
                         <p className="text-xs text-gray-400 mt-1">Email cannot be changed here</p>
                     </div>
+                    {isAdmin && (
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Alternate Email</label>
+                        <input name="alternateEmail" type="email" defaultValue={user.alternateEmail || ''} placeholder="Alternate email address" className="w-full rounded-lg border-gray-300" />
+                    </div>
+                    )}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
                         <input name="phone" defaultValue={user.phone || ''} placeholder="(555) 123-4567" className="w-full rounded-lg border-gray-300" />
@@ -295,12 +401,49 @@ export function ProfileForm({ user, documents, isAdmin = false, visibleTabs, emb
                         <label className="block text-sm font-medium text-gray-700 mb-1">Mailing Address</label>
                         <input name="address" defaultValue={user.address || ''} placeholder="Full mailing address" className="w-full rounded-lg border-gray-300" />
                     </div>
+                    {isAdmin && (
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">T-Shirt Size</label>
+                            <select name="tShirtSize" defaultValue={user.tShirtSize || ''} className="w-full rounded-lg border-gray-300">
+                                <option value="">—</option>
+                                <option value="XS">XS</option>
+                                <option value="Small">Small</option>
+                                <option value="Medium">Medium</option>
+                                <option value="Large">Large</option>
+                                <option value="XL">XL</option>
+                                <option value="XXL">XXL</option>
+                            </select>
+                        </div>
+                    )}
+                    
+                    {/* Emergency Contact Section */}
+                    <div className="md:col-span-2 border-t border-gray-200 pt-4 mt-2">
+                        <h4 className="text-sm font-semibold text-gray-900 mb-3">Emergency Contact</h4>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Contact Name</label>
+                        <input name="ec_name" defaultValue={ec.name || ''} className="w-full rounded-lg border-gray-300" />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Relationship</label>
+                        <input name="ec_relation" defaultValue={ec.relation || ''} placeholder="e.g. Mother, Father, Spouse" className="w-full rounded-lg border-gray-300" />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+                        <input name="ec_phone" defaultValue={ec.phone || ''} className="w-full rounded-lg border-gray-300" />
+                    </div>
+                    {isAdmin && (
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Alternate Phone</label>
+                            <input name="ec_alt_phone" defaultValue={user.emergencyAltPhone || ''} className="w-full rounded-lg border-gray-300" />
+                        </div>
+                    )}
                 </div>
             </div>
 
             {/* Personal Tab */}
             <div className={validActiveTab === 'personal' ? 'block' : 'hidden'}>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Legal Name</label>
                     <input name="name" disabled={!isAdmin} defaultValue={user.name || ''} className={`w-full rounded-lg border-gray-300 ${!isAdmin && 'bg-gray-50 text-gray-500'}`} />
@@ -311,7 +454,31 @@ export function ProfileForm({ user, documents, isAdmin = false, visibleTabs, emb
                 </div>
                 <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Pronouns</label>
-                    <input name="pronouns" defaultValue={user.pronouns || ''} placeholder="she/her, they/them" className="w-full rounded-lg border-gray-300" />
+                    <select 
+                      name="pronouns" 
+                      defaultValue={user.pronouns || ''} 
+                      className="w-full rounded-lg border-gray-300"
+                      onChange={(e) => {
+                        const otherInput = document.getElementById('pronouns-other-input') as HTMLInputElement
+                        if (otherInput) {
+                          otherInput.style.display = e.target.value === 'Other' ? 'block' : 'none'
+                        }
+                      }}
+                    >
+                      <option value="">Prefer not to say</option>
+                      <option value="She/Her">She/Her</option>
+                      <option value="He/Him">He/Him</option>
+                      <option value="They/Them">They/Them</option>
+                      <option value="Other">Other</option>
+                    </select>
+                    <input 
+                      id="pronouns-other-input"
+                      name="pronouns_other" 
+                      defaultValue={!['She/Her', 'He/Him', 'They/Them', ''].includes(user.pronouns || '') ? (user.pronouns || '') : ''}
+                      placeholder="Enter your pronouns"
+                      style={{ display: !['She/Her', 'He/Him', 'They/Them', ''].includes(user.pronouns || '') ? 'block' : 'none' }}
+                      className="w-full rounded-lg border-gray-300 mt-2"
+                    />
                 </div>
                 <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Date of Birth</label>
@@ -328,9 +495,9 @@ export function ProfileForm({ user, documents, isAdmin = false, visibleTabs, emb
             </div>
         </div>
 
-        {/* Employment Tab */}
+        {/* Employment & Team Tab */}
         <div className={validActiveTab === 'employment' ? 'block' : 'hidden'}>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {!isAdmin && (
                     <div className="md:col-span-2 bg-blue-50 p-4 rounded-lg border border-blue-100 mb-2">
                         <p className="text-sm text-blue-800">
@@ -386,58 +553,56 @@ export function ProfileForm({ user, documents, isAdmin = false, visibleTabs, emb
                         className="w-full rounded-lg border-gray-300"
                     />
                 </div>
-            </div>
-        </div>
-
-        {/* Emergency Tab */}
-        <div className={validActiveTab === 'emergency' ? 'block' : 'hidden'}>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Contact Name</label>
-                    <input name="ec_name" defaultValue={ec.name || ''} className="w-full rounded-lg border-gray-300" />
-                </div>
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Relationship</label>
-                    <input name="ec_relation" defaultValue={ec.relation || ''} className="w-full rounded-lg border-gray-300" />
-                </div>
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
-                    <input name="ec_phone" defaultValue={ec.phone || ''} className="w-full rounded-lg border-gray-300" />
-                </div>
-            </div>
-        </div>
-
-        {/* Health Tab */}
-        <div className={validActiveTab === 'health' ? 'block' : 'hidden'}>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="md:col-span-2 bg-yellow-50 p-4 rounded-lg border border-yellow-100 mb-2">
-                    <p className="text-sm text-yellow-800">
-                        This information helps us ensure your safety and provide appropriate accommodations.
-                        It is kept confidential and shared only with relevant supervisors.
-                    </p>
-                </div>
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Allergies</label>
-                    <input name="health_allergies" defaultValue={health.allergies || ''} placeholder="Peanuts, Latex, Bees..." className="w-full rounded-lg border-gray-300" />
-                </div>
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Dietary Restrictions</label>
-                    <input name="health_dietary" defaultValue={health.dietary || ''} placeholder="Vegetarian, Gluten-free..." className="w-full rounded-lg border-gray-300" />
-                </div>
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Mobility / Accessibility Needs</label>
-                    <textarea name="health_mobility" rows={3} defaultValue={health.mobility || ''} placeholder="Ramp access required, etc." className="w-full rounded-lg border-gray-300" />
-                </div>
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Medical Conditions (Optional)</label>
-                    <textarea name="health_medical" rows={3} defaultValue={health.medical || ''} placeholder="Relevant medical info..." className="w-full rounded-lg border-gray-300" />
-                </div>
+                
+                {/* Team Section - Admin only */}
+                {isAdmin && (
+                    <>
+                        <div className="md:col-span-2 border-t border-gray-200 pt-4 mt-2">
+                            <h4 className="text-sm font-semibold text-gray-900 mb-3">Team Information</h4>
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Team ID</label>
+                            <input
+                                name="teamId"
+                                defaultValue={user.teamId || ''}
+                                placeholder="e.g., AAN-000001"
+                                className="w-full rounded-lg border-gray-300"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Team Code</label>
+                            <input
+                                name="teamCode"
+                                defaultValue={user.teamCode || ''}
+                                placeholder="e.g., NH-01"
+                                className="w-full rounded-lg border-gray-300"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Team Type</label>
+                            <select name="teamType" defaultValue={user.teamType || ''} className="w-full rounded-lg border-gray-300">
+                                <option value="">—</option>
+                                <option value="Employee">Employee</option>
+                                <option value="Contractor">Contractor</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Supervisor (User ID or Name)</label>
+                            <input
+                                name="supervisorId"
+                                defaultValue={user.supervisorId || ''}
+                                placeholder="Enter supervisor name or ID"
+                                className="w-full rounded-lg border-gray-300"
+                            />
+                        </div>
+                    </>
+                )}
             </div>
         </div>
 
         {/* Intake Tab */}
         <div className={validActiveTab === 'intake' ? 'block' : 'hidden'}>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Skills Section */}
                 <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Top Strengths & Skills</label>
@@ -465,27 +630,22 @@ export function ProfileForm({ user, documents, isAdmin = false, visibleTabs, emb
                 {/* Tasks Section */}
                 <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Preferred Tasks (Rated 1-5)</label>
-                    <div className="flex flex-wrap gap-2 mb-3">
+                    <div className="flex gap-2 mb-3">
                         <input
                             value={newTask}
                             onChange={(e) => setNewTask(e.target.value)}
                             onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addTask())}
-                            placeholder="Add task..."
-                            className="flex-grow min-w-[120px] rounded-lg border-gray-300 text-sm"
+                            placeholder="Add a task..."
+                            className="flex-1 rounded-lg border-gray-300 text-sm"
                         />
-                        <div className="flex items-center gap-0.5 bg-gray-50 rounded-lg px-2 border border-gray-300 flex-shrink-0">
-                            {[1, 2, 3, 4, 5].map((star) => (
-                                <button
-                                    key={star}
-                                    type="button"
-                                    onClick={() => setNewTaskRating(star)}
-                                    className={`p-1 ${star <= newTaskRating ? 'text-yellow-400' : 'text-gray-300 hover:text-yellow-200'}`}
-                                >
-                                    <Star className="w-4 h-4 fill-current" />
-                                </button>
-                            ))}
-                        </div>
-                        <button type="button" onClick={addTask} className="bg-gray-100 hover:bg-gray-200 px-3 py-2 rounded-lg text-sm font-medium flex-shrink-0">+</button>
+                        <select 
+                            value={newTaskRating}
+                            onChange={(e) => setNewTaskRating(Number(e.target.value))}
+                            className="rounded-lg border-gray-300 text-sm"
+                        >
+                            {[1,2,3,4,5].map(n => <option key={n} value={n}>{n}</option>)}
+                        </select>
+                        <button type="button" onClick={addTask} className="bg-gray-100 hover:bg-gray-200 px-3 py-2 rounded-lg text-sm font-medium">+</button>
                     </div>
                     <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
                         {tasks.map((task, i) => (
@@ -504,7 +664,7 @@ export function ProfileForm({ user, documents, isAdmin = false, visibleTabs, emb
                                 </div>
                             </div>
                         ))}
-                        {tasks.length === 0 && <span className="text-xs text-gray-400 italic">No preferred tasks added yet.</span>}
+                        {tasks.length === 0 && <span className="text-xs text-gray-400 italic">No preferred tasks listed yet.</span>}
                     </div>
                 </div>
 
@@ -515,7 +675,157 @@ export function ProfileForm({ user, documents, isAdmin = false, visibleTabs, emb
                 </div>
             </div>
         </div>
+        
 
+        {/* Compliance Tab */}
+        <div className={validActiveTab === 'compliance' ? 'block' : 'hidden'}>
+            {!isAdmin ? (
+                <div className="text-center py-8 text-gray-500">
+                    Compliance information is managed by administrators.
+                </div>
+            ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="md:col-span-2">
+                        <h4 className="text-sm font-semibold text-gray-900 mb-3">Compliance Checklist</h4>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <input type="checkbox" name="workplaceSafetyFormReceived" id="workplaceSafetyFormReceived" defaultChecked={user.workplaceSafetyFormReceived} className="rounded border-gray-300" />
+                        <label htmlFor="workplaceSafetyFormReceived" className="text-sm text-gray-700">Workplace safety form received</label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <input type="checkbox" name="codeOfConductReceived" id="codeOfConductReceived" defaultChecked={user.codeOfConductReceived} className="rounded border-gray-300" />
+                        <label htmlFor="codeOfConductReceived" className="text-sm text-gray-700">Code of conduct received</label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <input type="checkbox" name="travelPolicyAcknowledged" id="travelPolicyAcknowledged" defaultChecked={user.travelPolicyAcknowledged} className="rounded border-gray-300" />
+                        <label htmlFor="travelPolicyAcknowledged" className="text-sm text-gray-700">Internal controls & travel policy acknowledged</label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <input type="checkbox" name="policeCheckReceived" id="policeCheckReceived" defaultChecked={user.policeCheckReceived} className="rounded border-gray-300" />
+                        <label htmlFor="policeCheckReceived" className="text-sm text-gray-700">Police check received</label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <input type="checkbox" name="vulnerableSectorCheckRequired" id="vulnerableSectorCheckRequired" defaultChecked={user.vulnerableSectorCheckRequired} className="rounded border-gray-300" />
+                        <label htmlFor="vulnerableSectorCheckRequired" className="text-sm text-gray-700">Vulnerable sector check required</label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <input type="checkbox" name="dementiaTrainingCompleted" id="dementiaTrainingCompleted" defaultChecked={user.dementiaTrainingCompleted} className="rounded border-gray-300" />
+                        <label htmlFor="dementiaTrainingCompleted" className="text-sm text-gray-700">Dementia engagement training completed</label>
+                    </div>
+                    
+                    <div className="md:col-span-2 border-t border-gray-200 pt-4 mt-2">
+                        <h4 className="text-sm font-semibold text-gray-900 mb-3">Training Dates</h4>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Training Completion Date</label>
+                        <input 
+                            type="date" 
+                            name="dementiaTrainingDate" 
+                            defaultValue={user.dementiaTrainingDate ? new Date(user.dementiaTrainingDate).toISOString().split('T')[0] : ''} 
+                            className="w-full rounded-lg border-gray-300" 
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Training Top-up Renewal (2 yr)</label>
+                        <input 
+                            type="date" 
+                            name="dementiaTrainingTopupDate" 
+                            defaultValue={user.dementiaTrainingTopupDate ? new Date(user.dementiaTrainingTopupDate).toISOString().split('T')[0] : ''} 
+                            className="w-full rounded-lg border-gray-300" 
+                        />
+                    </div>
+                    
+                    <div className="md:col-span-2 border-t border-gray-200 pt-4 mt-2">
+                        <h4 className="text-sm font-semibold text-gray-900 mb-3">Accommodations</h4>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <input type="checkbox" name="requiresAccommodation" id="requiresAccommodation" defaultChecked={user.requiresAccommodation} className="rounded border-gray-300" />
+                        <label htmlFor="requiresAccommodation" className="text-sm text-gray-700">Requires accommodations</label>
+                    </div>
+                    <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Accommodation Details</label>
+                        <textarea name="accommodationDetails" rows={2} defaultValue={user.accommodationDetails || ''} className="w-full rounded-lg border-gray-300" />
+                    </div>
+                </div>
+            )}
+        </div>
+
+        {/* Health Tab */}
+        <div className={validActiveTab === 'health' ? 'block' : 'hidden'}>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="md:col-span-2 bg-yellow-50 p-4 rounded-lg border border-yellow-100 mb-2">
+                    <p className="text-sm text-yellow-800">
+                        This information helps us ensure your safety and provide appropriate accommodations.
+                        It is kept confidential and shared only with relevant supervisors.
+                    </p>
+                </div>
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Allergies</label>
+                    <input name="health_allergies" defaultValue={health.allergies || ''} placeholder="Peanuts, Latex, Bees..." className="w-full rounded-lg border-gray-300" />
+                </div>
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Dietary Restrictions</label>
+                    <input name="health_dietary" defaultValue={health.dietary || ''} placeholder="Vegetarian, Gluten-free..." className="w-full rounded-lg border-gray-300" />
+                </div>
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Mobility / Accessibility Needs</label>
+                    <textarea name="health_mobility" rows={3} defaultValue={health.mobility || ''} placeholder="Ramp access required, etc." className="w-full rounded-lg border-gray-300" />
+                </div>
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Medical Conditions (Optional)</label>
+                    <textarea name="health_medical" rows={3} defaultValue={health.medical || ''} placeholder="Relevant medical info..." className="w-full rounded-lg border-gray-300" />
+                </div>
+            </div>
+        </div>
+
+        {/* Skills & Notes Tab */}
+        <div className={validActiveTab === 'skills' ? 'block' : 'hidden'}>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {isAdmin && (
+                    <>
+                        <div className="md:col-span-2">
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Strengths / Skills</label>
+                            <textarea 
+                                name="strengthsSkills" 
+                                rows={2} 
+                                defaultValue={user.strengthsSkills || ''} 
+                                className="w-full rounded-lg border-gray-300" 
+                                placeholder="e.g. Musical instruments, vocals, amicable" 
+                            />
+                        </div>
+                        
+                        {/* Skill Ratings - Inline Layout */}
+                        <div className="md:col-span-2 flex items-center justify-between gap-4">
+                            <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Facilitating Groups (1-5)</label>
+                            <input type="number" name="facilitatingSkillRating" min="1" max="5" defaultValue={user.facilitatingSkillRating || ''} placeholder="1-5" className="w-20 rounded-lg border-gray-300" />
+                        </div>
+                        <div className="md:col-span-2 flex items-center justify-between gap-4">
+                            <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Creative Arts (1-5)</label>
+                            <input type="number" name="creativeArtsSkillRating" min="1" max="5" defaultValue={user.creativeArtsSkillRating || ''} placeholder="1-5" className="w-20 rounded-lg border-gray-300" />
+                        </div>
+                        <div className="md:col-span-2 flex items-center justify-between gap-4">
+                            <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Organizing (1-5)</label>
+                            <input type="number" name="organizingSkillRating" min="1" max="5" defaultValue={user.organizingSkillRating || ''} placeholder="1-5" className="w-20 rounded-lg border-gray-300" />
+                        </div>
+                        <div className="md:col-span-2 flex items-center justify-between gap-4">
+                            <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Communicating (1-5)</label>
+                            <input type="number" name="communicatingSkillRating" min="1" max="5" defaultValue={user.communicatingSkillRating || ''} placeholder="1-5" className="w-20 rounded-lg border-gray-300" />
+                        </div>
+                        <div className="md:col-span-2 flex items-center justify-between gap-4">
+                            <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Mentoring (1-5)</label>
+                            <input type="number" name="mentoringSkillRating" min="1" max="5" defaultValue={user.mentoringSkillRating || ''} placeholder="1-5" className="w-20 rounded-lg border-gray-300" />
+                        </div>
+                        
+                        <div className="md:col-span-2">
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Support Needs / Notes</label>
+                            <textarea name="supportNotes" rows={2} defaultValue={user.supportNotes || ''} className="w-full rounded-lg border-gray-300" />
+                        </div>
+                    </>
+                )}
+            </div>
+        </div>
+
+        {showSaveButton && (
         <div className="pt-4 border-t border-gray-100 flex items-center justify-between">
           <div className="text-sm text-gray-500 h-5">
             {statusMessage}
@@ -525,9 +835,10 @@ export function ProfileForm({ user, documents, isAdmin = false, visibleTabs, emb
             disabled={isPending}
             className="bg-primary-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-primary-700 disabled:opacity-50 transition-colors"
           >
-            {isPending ? 'Saving...' : 'Save Changes'}
+            {isPending ? 'Saving...' : 'Save'}
           </button>
         </div>
+        )}
       </form>
       )}
       </div>

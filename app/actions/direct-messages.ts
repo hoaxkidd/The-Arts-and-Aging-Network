@@ -15,6 +15,7 @@ export async function searchUsers(query: string) {
     const andConditions: object[] = [
       { id: { not: session.user.id } },
       { status: 'ACTIVE' },
+      { email: { not: null } },
       {
         OR: [
           { name: { contains: query } },

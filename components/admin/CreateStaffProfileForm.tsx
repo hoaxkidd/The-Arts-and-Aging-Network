@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, User, Mail, Phone, Activity, Briefcase, ClipboardList, FileCheck } from 'lucide-react'
+import { ArrowLeft, User, Mail, Phone, Briefcase, ClipboardList, FileCheck } from 'lucide-react'
 import { createPlaceholderStaffUser } from '@/app/actions/staff-onboarding'
 import { ROLE_ORDER, ROLE_LABELS } from '@/lib/roles'
 import { STYLES } from '@/lib/styles'
