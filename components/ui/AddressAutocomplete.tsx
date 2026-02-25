@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Loader2, MapPin } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useGoogleMaps } from '@/components/ui/GoogleMapsContext'
 
 export type AddressComponents = {
   streetNumber?: string
@@ -91,42 +92,17 @@ export function AddressAutocomplete({
 }: Props) {
   const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement>(null)
   const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null)
-  const [isLoaded, setIsLoaded] = useState(false)
-  const [isLoading, setIsLoading] = useState(true)
 
+  const { isLoaded, isLoading, loadError, google } = useGoogleMaps()
+
+  const hasGoogle = isLoaded && google?.maps
+
+  // Initialize autocomplete when Google Maps is loaded
   useEffect(() => {
-    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_PLACES_API_KEY
-    if (!apiKey) {
-      setIsLoading(false)
-      return
-    }
-
-    if (window.google?.maps?.places) {
-      setIsLoaded(true)
-      setIsLoading(false)
-      return
-    }
-
-    const script = document.createElement('script')
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`
-    script.async = true
-    script.defer = true
-    script.onload = () => {
-      setIsLoaded(true)
-      setIsLoading(false)
-    }
-    script.onerror = () => setIsLoading(false)
-    document.head.appendChild(script)
-    return () => {
-      script.remove()
-    }
-  }, [])
-
-  useEffect(() => {
-    if (!isLoaded || !inputRef.current || !window.google?.maps?.places) return
+    if (!hasGoogle || !inputRef.current || !google?.maps?.places) return
 
     const input = inputRef.current as HTMLInputElement
-    const autocomplete = new window.google.maps.places.Autocomplete(input, {
+    const autocomplete = new google.maps.places.Autocomplete(input, {
       types: ['address'],
       componentRestrictions: countries.length ? { country: countries } : undefined,
       fields: ['address_components', 'formatted_address', 'geometry'],
@@ -152,13 +128,10 @@ export function AddressAutocomplete({
     })
 
     return () => {
-      if (listener) window.google?.maps?.event?.removeListener(listener)
+      if (listener) google.maps.event.removeListener(listener)
       autocompleteRef.current = null
     }
-  }, [isLoaded, countries, onChange, onCoords])
-
-  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_PLACES_API_KEY
-  const hasGoogle = !!apiKey && isLoaded
+  }, [hasGoogle, google, countries, onChange, onCoords])
 
   const inputClasses = cn(
     'w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder:text-gray-400',

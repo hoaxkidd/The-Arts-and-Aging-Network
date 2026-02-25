@@ -3,13 +3,27 @@
 import { useState, useMemo } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { Edit2, Search, Filter, X, Power, PowerOff, Eye } from 'lucide-react'
+import { Edit2, Search, Filter, X, Power, PowerOff, Eye, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react'
 import { STYLES } from '@/lib/styles'
 import { cn } from '@/lib/utils'
 import { toggleUserStatus } from '@/app/actions/user-management'
 import { useRouter } from 'next/navigation'
 import type { User, GeriatricHome } from '@prisma/client'
 import { UserDetailModal } from './UserDetailModal'
+
+function formatDateTime(dateValue: string | Date): string {
+  const date = new Date(dateValue)
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+  const month = months[date.getUTCMonth()]
+  const day = date.getUTCDate()
+  const year = date.getUTCFullYear()
+  const hours = date.getUTCHours()
+  const minutes = date.getUTCMinutes()
+  const ampm = hours >= 12 ? 'PM' : 'AM'
+  const hour12 = hours % 12 || 12
+  const paddedMinutes = minutes.toString().padStart(2, '0')
+  return `${month} ${day}, ${year} at ${hour12}:${paddedMinutes} ${ampm}`
+}
 
 type UserWithCounts = User & {
   _count?: {
@@ -19,18 +33,23 @@ type UserWithCounts = User & {
   geriatricHome?: GeriatricHome | null
 }
 
+type SortField = 'name' | 'role' | 'status' | 'lastLoginAt'
+type SortDirection = 'asc' | 'desc'
+
 export default function UsersTable({ users: initialUsers }: { users: UserWithCounts[] }) {
   const [users, setUsers] = useState(initialUsers)
   const [searchQuery, setSearchQuery] = useState('')
   const [roleFilter, setRoleFilter] = useState<string>('ALL')
   const [statusFilter, setStatusFilter] = useState<string>('ALL')
+  const [sortField, setSortField] = useState<SortField>('name')
+  const [sortDirection, setSortDirection] = useState<SortDirection>('asc')
   const [togglingStatus, setTogglingStatus] = useState<string | null>(null)
   const [viewUser, setViewUser] = useState<UserWithCounts | null>(null)
   const router = useRouter()
 
   // Filter and search users
   const filteredUsers = useMemo(() => {
-    return users.filter(user => {
+    let result = users.filter(user => {
       const matchesSearch = searchQuery === '' ||
         user.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (user.email?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false)
@@ -40,7 +59,33 @@ export default function UsersTable({ users: initialUsers }: { users: UserWithCou
 
       return matchesSearch && matchesRole && matchesStatus
     })
-  }, [users, searchQuery, roleFilter, statusFilter])
+
+    // Sort users
+    result.sort((a, b) => {
+      let comparison = 0
+      
+      switch (sortField) {
+        case 'name':
+          comparison = (a.name || '').localeCompare(b.name || '')
+          break
+        case 'role':
+          comparison = a.role.localeCompare(b.role)
+          break
+        case 'status':
+          comparison = a.status.localeCompare(b.status)
+          break
+        case 'lastLoginAt':
+          const dateA = a.lastLoginAt ? new Date(a.lastLoginAt).getTime() : 0
+          const dateB = b.lastLoginAt ? new Date(b.lastLoginAt).getTime() : 0
+          comparison = dateA - dateB
+          break
+      }
+      
+      return sortDirection === 'asc' ? comparison : -comparison
+    })
+
+    return result
+  }, [users, searchQuery, roleFilter, statusFilter, sortField, sortDirection])
 
   // Get unique roles for filter
   const roles = useMemo(() => {
@@ -68,6 +113,22 @@ export default function UsersTable({ users: initialUsers }: { users: UserWithCou
   }
 
   const hasActiveFilters = searchQuery !== '' || roleFilter !== 'ALL' || statusFilter !== 'ALL'
+
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')
+    } else {
+      setSortField(field)
+      setSortDirection('asc')
+    }
+  }
+
+  const SortIcon = ({ field }: { field: SortField }) => {
+    if (sortField !== field) return <ArrowUpDown className="w-4 h-4 ml-1 text-gray-400" />
+    return sortDirection === 'asc' 
+      ? <ArrowUp className="w-4 h-4 ml-1 text-primary-600" />
+      : <ArrowDown className="w-4 h-4 ml-1 text-primary-600" />
+  }
 
   return (
     <div className="space-y-4">
@@ -136,10 +197,42 @@ export default function UsersTable({ users: initialUsers }: { users: UserWithCou
           <table className={STYLES.table}>
             <thead className="bg-gray-50">
               <tr>
-                <th className={STYLES.tableHeader}>User</th>
-                <th className={STYLES.tableHeader}>Role</th>
-                <th className={STYLES.tableHeader}>Status</th>
-                <th className={STYLES.tableHeader}>Last Login</th>
+                <th className={STYLES.tableHeader}>
+                  <button 
+                    onClick={() => handleSort('name')}
+                    className="flex items-center hover:text-primary-600"
+                  >
+                    User
+                    <SortIcon field="name" />
+                  </button>
+                </th>
+                <th className={STYLES.tableHeader}>
+                  <button 
+                    onClick={() => handleSort('role')}
+                    className="flex items-center hover:text-primary-600"
+                  >
+                    Role
+                    <SortIcon field="role" />
+                  </button>
+                </th>
+                <th className={STYLES.tableHeader}>
+                  <button 
+                    onClick={() => handleSort('status')}
+                    className="flex items-center hover:text-primary-600"
+                  >
+                    Status
+                    <SortIcon field="status" />
+                  </button>
+                </th>
+                <th className={STYLES.tableHeader}>
+                  <button 
+                    onClick={() => handleSort('lastLoginAt')}
+                    className="flex items-center hover:text-primary-600"
+                  >
+                    Last Login
+                    <SortIcon field="lastLoginAt" />
+                  </button>
+                </th>
                 <th className={cn(STYLES.tableHeader, "text-right")}>Actions</th>
               </tr>
             </thead>
@@ -187,12 +280,7 @@ export default function UsersTable({ users: initialUsers }: { users: UserWithCou
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {user.lastLoginAt ? (
-                      new Date(user.lastLoginAt).toLocaleDateString('en-US', {
-                        month: 'short',
-                        day: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      })
+                      formatDateTime(user.lastLoginAt)
                     ) : (
                       <span className="text-gray-400">Never</span>
                     )}
