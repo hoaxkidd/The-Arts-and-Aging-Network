@@ -50,7 +50,7 @@ export default async function ManageGroupPage({
   const existingMemberIds = group.members.map(m => m.userId)
   const availableStaff = await prisma.user.findMany({
     where: {
-      role: { in: ['FACILITATOR', 'CONTRACTOR', 'PAYROLL'] },
+      role: { in: ['FACILITATOR', 'PAYROLL'] },
       status: 'ACTIVE',
       id: { notIn: existingMemberIds }
     },

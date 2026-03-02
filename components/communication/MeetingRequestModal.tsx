@@ -1,8 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useId } from 'react'
 import { X, Calendar, Plus, Trash2, Loader2 } from 'lucide-react'
 import { createMeetingRequest } from '@/app/actions/communication'
+
+type DateOption = {
+  id: string
+  value: string
+}
 
 type Props = {
   staffId: string
@@ -12,7 +17,7 @@ type Props = {
 }
 
 export function MeetingRequestModal({ staffId, staffName, isOpen, onClose }: Props) {
-  const [proposedDates, setProposedDates] = useState<string[]>([''])
+  const [proposedDates, setProposedDates] = useState<DateOption[]>([{ id: useId(), value: '' }])
   const [notes, setNotes] = useState('')
   const [isPending, setIsPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -20,23 +25,21 @@ export function MeetingRequestModal({ staffId, staffName, isOpen, onClose }: Pro
   if (!isOpen) return null
 
   function addDate() {
-    setProposedDates([...proposedDates, ''])
+    setProposedDates([...proposedDates, { id: useId(), value: '' }])
   }
 
-  function removeDate(index: number) {
-    setProposedDates(proposedDates.filter((_, i) => i !== index))
+  function removeDate(id: string) {
+    setProposedDates(proposedDates.filter(d => d.id !== id))
   }
 
-  function updateDate(index: number, value: string) {
-    const updated = [...proposedDates]
-    updated[index] = value
-    setProposedDates(updated)
+  function updateDate(id: string, value: string) {
+    setProposedDates(proposedDates.map(d => d.id === id ? { ...d, value } : d))
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
 
-    const validDates = proposedDates.filter(d => d.trim())
+    const validDates = proposedDates.filter(d => d.value.trim())
     if (validDates.length === 0) {
       setError('Please select at least one date/time')
       return
@@ -45,13 +48,13 @@ export function MeetingRequestModal({ staffId, staffName, isOpen, onClose }: Pro
     setIsPending(true)
     setError(null)
 
-    const result = await createMeetingRequest(staffId, validDates, notes)
+    const result = await createMeetingRequest(staffId, validDates.map(d => d.value), notes)
 
     if (result.error) {
       setError(result.error)
       setIsPending(false)
     } else {
-      setProposedDates([''])
+      setProposedDates([{ id: useId(), value: '' }])
       setNotes('')
       setIsPending(false)
       onClose()
@@ -97,11 +100,11 @@ export function MeetingRequestModal({ staffId, staffName, isOpen, onClose }: Pro
             </label>
             <div className="space-y-2">
               {proposedDates.map((date, index) => (
-                <div key={index} className="flex items-center gap-2">
+                <div key={date.id} className="flex items-center gap-2">
                   <input
                     type="datetime-local"
-                    value={date}
-                    onChange={(e) => updateDate(index, e.target.value)}
+                    value={date.value}
+                    onChange={(e) => updateDate(date.id, e.target.value)}
                     min={minDateTime}
                     className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                     required={index === 0}
@@ -109,7 +112,7 @@ export function MeetingRequestModal({ staffId, staffName, isOpen, onClose }: Pro
                   {proposedDates.length > 1 && (
                     <button
                       type="button"
-                      onClick={() => removeDate(index)}
+                      onClick={() => removeDate(date.id)}
                       className="p-2 text-red-500 hover:bg-red-50 rounded-lg"
                     >
                       <Trash2 className="w-4 h-4" />

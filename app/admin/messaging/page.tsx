@@ -6,11 +6,14 @@ import { cn } from "@/lib/utils"
 import Link from "next/link"
 import { STYLES } from "@/lib/styles"
 
+export const revalidate = 30
+
 export default async function AdminMessagingPage() {
   const session = await auth()
   if (session?.user?.role !== 'ADMIN') redirect('/dashboard')
 
   const groups = await prisma.messageGroup.findMany({
+    take: 20,
     where: { isActive: true },
     include: {
       members: {

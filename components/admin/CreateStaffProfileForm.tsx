@@ -8,6 +8,7 @@ import { createPlaceholderStaffUser } from '@/app/actions/staff-onboarding'
 import { ROLE_ORDER, ROLE_LABELS } from '@/lib/roles'
 import { STYLES } from '@/lib/styles'
 import { cn } from '@/lib/utils'
+import { DateInput } from '@/components/ui/DateInput'
 
 const RATING_OPTIONS = [1, 2, 3, 4, 5]
 const TSHIRT_SIZES = ['XS', 'Small', 'Medium', 'Large', 'XL', 'XXL']
@@ -102,7 +103,7 @@ export function CreateStaffProfileForm() {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
-              <select name="role" className={cn(STYLES.input, STYLES.select)} defaultValue="CONTRACTOR">
+              <select name="role" className={cn(STYLES.input, STYLES.select)} defaultValue="FACILITATOR">
                 {ROLE_ORDER.map((role) => (
                   <option key={role} value={role}>{ROLE_LABELS[role]}</option>
                 ))}
@@ -144,7 +145,7 @@ export function CreateStaffProfileForm() {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Date of birth</label>
-              <input name="birthDate" type="date" className={STYLES.input} />
+              <DateInput name="birthDate" />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
@@ -229,7 +230,7 @@ export function CreateStaffProfileForm() {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Start date</label>
-              <input name="startDate" type="date" className={STYLES.input} />
+              <DateInput name="startDate" />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Supervisor (user ID or name)</label>
@@ -255,11 +256,11 @@ export function CreateStaffProfileForm() {
             ))}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Training completion date</label>
-              <input name="dementiaTrainingDate" type="date" className={STYLES.input} />
+              <DateInput name="dementiaTrainingDate" />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Training top-up renewal (2 yr)</label>
-              <input name="dementiaTrainingTopupDate" type="date" className={STYLES.input} />
+              <DateInput name="dementiaTrainingTopupDate" />
             </div>
           </div>
         </div>
@@ -344,7 +345,7 @@ export function CreateStaffProfileForm() {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Signature date</label>
-              <input name="signatureDate" type="date" className={STYLES.input} />
+              <DateInput name="signatureDate" />
             </div>
             <div className="flex items-center gap-2">
               <input type="checkbox" name="headshotReceived" id="headshotReceived" value="yes" className="rounded border-gray-300" />

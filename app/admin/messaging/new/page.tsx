@@ -12,7 +12,7 @@ export default async function NewMessageGroupPage() {
   // Get all staff users for initial members selection
   const staff = await prisma.user.findMany({
     where: {
-      role: { in: ['FACILITATOR', 'CONTRACTOR', 'PAYROLL'] },
+      role: { in: ['FACILITATOR', 'PAYROLL'] },
       status: 'ACTIVE'
     },
     select: {

@@ -1,11 +1,14 @@
 import { prisma } from "@/lib/prisma"
 import { auth } from "@/auth"
 import { redirect } from "next/navigation"
-import { FileText, Download, Eye, Edit2, Trash2, Plus, Archive } from "lucide-react"
+import { FileText, Plus, Upload } from "lucide-react"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
 import { STYLES } from "@/lib/styles"
 import { FormTemplateFilters } from "@/components/admin/FormTemplateFilters"
+import { FormTemplateCard } from "@/components/admin/FormTemplateCard"
+
+export const revalidate = 60
 
 export default async function FormTemplatesAdminPage({
   searchParams
@@ -46,6 +49,13 @@ export default async function FormTemplatesAdminPage({
     ]
   })
 
+  // Serialize for client component
+  const serializedTemplates = templates.map(t => ({
+    ...t,
+    createdAt: t.createdAt.toISOString(),
+    updatedAt: t.updatedAt.toISOString()
+  }))
+
   const categories = [
     { value: 'INCIDENT', label: 'Incident Reports', color: 'red' },
     { value: 'FEEDBACK', label: 'Feedback Forms', color: 'blue' },
@@ -63,43 +73,53 @@ export default async function FormTemplatesAdminPage({
   }
 
   return (
-    <div className="h-full flex flex-col p-6">
-      <div className="flex-shrink-0 mb-6">
-        <div className="flex items-center justify-between mb-2">
-          <h1 className="text-2xl font-bold text-gray-900">Form Templates</h1>
+    <div className="h-full flex flex-col">
+      {/* Header */}
+      <header className="flex-shrink-0 pb-4 border-b border-gray-200">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-md bg-primary-100 text-primary-600 flex items-center justify-center">
+              <FileText className="w-4 h-4" />
+            </div>
+            <div>
+              <h1 className="text-base font-semibold text-gray-900">Form Templates</h1>
+              <p className="text-xs text-gray-500">
+                Manage form templates for staff use
+              </p>
+            </div>
+          </div>
           <Link
             href="/admin/form-templates/new"
-            className={cn(STYLES.btn, STYLES.btnPrimary)}
+            className={cn(STYLES.btn, STYLES.btnSecondary)}
           >
             <Plus className="w-4 h-4" />
             New Template
           </Link>
         </div>
-        <p className="text-sm text-gray-500">Manage form templates for staff use</p>
-      </div>
+      </header>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <p className="text-xs text-gray-500 uppercase">Total Templates</p>
-          <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-4">
+        <div className="bg-white rounded-lg border border-gray-200 p-2.5 text-center">
+          <p className="text-xl font-bold text-gray-900">{stats.total}</p>
+          <p className="text-[10px] text-gray-500">Total</p>
         </div>
-        <div className="bg-white rounded-lg border border-green-200 p-4">
-          <p className="text-xs text-green-600 uppercase">Active</p>
-          <p className="text-2xl font-bold text-green-600">{stats.active}</p>
+        <div className="bg-green-50 border border-green-200 rounded-lg p-2.5 text-center">
+          <p className="text-xl font-bold text-green-700">{stats.active}</p>
+          <p className="text-[10px] text-green-600">Active</p>
         </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <p className="text-xs text-gray-500 uppercase">Archived</p>
-          <p className="text-2xl font-bold text-gray-500">{stats.archived}</p>
+        <div className="bg-gray-50 border border-gray-200 rounded-lg p-2.5 text-center">
+          <p className="text-xl font-bold text-gray-500">{stats.archived}</p>
+          <p className="text-[10px] text-gray-500">Archived</p>
         </div>
-        <div className="bg-white rounded-lg border border-blue-200 p-4">
-          <p className="text-xs text-blue-600 uppercase">Total Submissions</p>
-          <p className="text-2xl font-bold text-blue-600">{stats.totalSubmissions}</p>
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-2.5 text-center">
+          <p className="text-xl font-bold text-blue-700">{stats.totalSubmissions}</p>
+          <p className="text-[10px] text-blue-600">Submissions</p>
         </div>
       </div>
 
       {/* Filters */}
-      <div className="flex-shrink-0 mb-4">
+      <div className="flex-shrink-0 mt-4">
         <FormTemplateFilters
           categories={categories}
           currentCategory={categoryFilter}
@@ -108,7 +128,7 @@ export default async function FormTemplatesAdminPage({
       </div>
 
       {/* Templates Grid */}
-      <div className="flex-1 min-h-0 overflow-auto">
+      <div className="flex-1 min-h-0 overflow-auto mt-4">
         {templates.length === 0 ? (
           <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
             <FileText className="w-12 h-12 text-gray-300 mx-auto mb-3" />
@@ -122,77 +142,13 @@ export default async function FormTemplatesAdminPage({
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {templates.map((template) => {
-              const category = categories.find(c => c.value === template.category)
-              return (
-                <div
-                  key={template.id}
-                  className="bg-white rounded-lg border border-gray-200 p-4 transition-colors"
-                >
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex items-center gap-2">
-                      <div className="w-10 h-10 rounded-lg bg-primary-100 text-primary-600 flex items-center justify-center">
-                        <FileText className="w-5 h-5" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h3 className="text-sm font-semibold text-gray-900 truncate">
-                          {template.title}
-                        </h3>
-                        <span className={cn(
-                          "text-xs px-2 py-0.5 rounded-full inline-block mt-1",
-                          `bg-${category?.color || 'gray'}-100 text-${category?.color || 'gray'}-700`
-                        )}>
-                          {category?.label || template.category}
-                        </span>
-                      </div>
-                    </div>
-                    {!template.isActive && (
-                      <Archive className="w-4 h-4 text-gray-400" />
-                    )}
-                  </div>
-
-                  {template.description && (
-                    <p className="text-xs text-gray-600 mb-3 line-clamp-2">
-                      {template.description}
-                    </p>
-                  )}
-
-                  <div className="flex items-center gap-4 text-xs text-gray-500 mb-3">
-                    <div className="flex items-center gap-1">
-                      <Download className="w-3 h-3" />
-                      {template.downloadCount}
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <FileText className="w-3 h-3" />
-                      {template._count.submissions} submitted
-                    </div>
-                  </div>
-
-                  {template.fileType && (
-                    <p className="text-xs text-gray-400 mb-3">
-                      Format: {template.fileType}
-                    </p>
-                  )}
-
-                  <div className="flex items-center gap-2 pt-3 border-t border-gray-100">
-                    <Link
-                      href={`/staff/forms/${template.id}`}
-                      className="flex-1 text-center px-3 py-1.5 text-xs font-medium text-primary-600 bg-primary-50 rounded hover:bg-primary-100"
-                    >
-                      <Eye className="w-3 h-3 inline mr-1" />
-                      View
-                    </Link>
-                    <Link
-                      href={`/admin/form-templates/${template.id}/edit`}
-                      className="flex-1 text-center px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-50 rounded hover:bg-gray-100"
-                    >
-                      <Edit2 className="w-3 h-3 inline mr-1" />
-                      Edit
-                    </Link>
-                  </div>
-                </div>
-              )
-            })}
+            {serializedTemplates.map((template) => (
+              <FormTemplateCard
+                key={template.id}
+                template={template}
+                categories={categories}
+              />
+            ))}
           </div>
         )}
       </div>

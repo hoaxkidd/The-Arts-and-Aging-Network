@@ -6,6 +6,8 @@ import { updateStaffProfile } from '@/app/actions/staff'
 import { AddressAutocomplete } from '@/components/ui/AddressAutocomplete'
 import { DocumentManager } from './DocumentManager'
 import { useRouter } from 'next/navigation'
+import { DateInput } from '@/components/ui/DateInput'
+import { toInputDate } from '@/lib/date-utils'
 
 type UserData = {
   id: string
@@ -152,11 +154,7 @@ export function ProfileForm({ user, documents, isAdmin = false, visibleTabs, emb
       const tasksJson = JSON.stringify(effectiveTasks)
       formData.set('intake_skills', skillsJson)
       formData.set('intake_tasks', tasksJson)
-      
-      // Debug logging
-      console.log('[ProfileForm] Submitting tasks:', effectiveTasks)
-      console.log('[ProfileForm] Tasks JSON:', tasksJson)
-
+       
       // Handle Health Info JSON
       const healthData = {
           allergies: formData.get('health_allergies'),
@@ -355,15 +353,13 @@ export function ProfileForm({ user, documents, isAdmin = false, visibleTabs, emb
                              <input type="checkbox" name="signatureOnFile" id="signatureOnFile" defaultChecked={user.signatureOnFile} className="rounded border-gray-300" />
                              <label htmlFor="signatureOnFile" className="text-sm text-gray-700">Signature on file</label>
                          </div>
-                         <div>
-                             <label className="block text-sm font-medium text-gray-700 mb-1">Signature Date</label>
-                             <input 
-                                 type="date" 
-                                 name="signatureDate" 
-                                 defaultValue={user.signatureDate ? new Date(user.signatureDate).toISOString().split('T')[0] : ''} 
-                                 className="w-full rounded-lg border-gray-300" 
-                             />
-                         </div>
+                          <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">Signature Date</label>
+                              <DateInput 
+                                  name="signatureDate" 
+                                  value={user.signatureDate ? toInputDate(user.signatureDate) : ''}
+                              />
+                          </div>
                          <div className="flex items-center gap-2">
                              <input type="checkbox" name="headshotReceived" id="headshotReceived" defaultChecked={user.headshotReceived} className="rounded border-gray-300" />
                              <label htmlFor="headshotReceived" className="text-sm text-gray-700">Headshot received</label>
@@ -482,7 +478,7 @@ export function ProfileForm({ user, documents, isAdmin = false, visibleTabs, emb
                 </div>
                 <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Date of Birth</label>
-                    <input type="date" name="birthDate" defaultValue={user.birthDate ? new Date(user.birthDate).toISOString().split('T')[0] : ''} className="w-full rounded-lg border-gray-300" />
+                    <DateInput name="birthDate" value={user.birthDate ? toInputDate(user.birthDate) : ''} />
                 </div>
                 <div className="md:col-span-2">
                     <label className="block text-sm font-medium text-gray-700 mb-1">Full Address</label>
@@ -536,12 +532,10 @@ export function ProfileForm({ user, documents, isAdmin = false, visibleTabs, emb
                 </div>
                 <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
-                    <input
-                        type={isAdmin ? "date" : "text"}
+                    <DateInput
                         name="startDate"
+                        value={user.startDate ? toInputDate(user.startDate) : null}
                         disabled={!isAdmin}
-                        defaultValue={user.startDate ? new Date(user.startDate).toISOString().split('T')[0] : ''}
-                        className={`w-full rounded-lg border-gray-300 ${!isAdmin && 'bg-gray-50 text-gray-500'}`}
                     />
                 </div>
                 <div>
@@ -718,20 +712,16 @@ export function ProfileForm({ user, documents, isAdmin = false, visibleTabs, emb
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Training Completion Date</label>
-                        <input 
-                            type="date" 
+                        <DateInput 
                             name="dementiaTrainingDate" 
-                            defaultValue={user.dementiaTrainingDate ? new Date(user.dementiaTrainingDate).toISOString().split('T')[0] : ''} 
-                            className="w-full rounded-lg border-gray-300" 
+                            value={user.dementiaTrainingDate ? toInputDate(user.dementiaTrainingDate) : ''}
                         />
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Training Top-up Renewal (2 yr)</label>
-                        <input 
-                            type="date" 
+                        <DateInput 
                             name="dementiaTrainingTopupDate" 
-                            defaultValue={user.dementiaTrainingTopupDate ? new Date(user.dementiaTrainingTopupDate).toISOString().split('T')[0] : ''} 
-                            className="w-full rounded-lg border-gray-300" 
+                            value={user.dementiaTrainingTopupDate ? toInputDate(user.dementiaTrainingTopupDate) : ''}
                         />
                     </div>
                     

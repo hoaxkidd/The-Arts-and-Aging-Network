@@ -4,6 +4,26 @@ import path from "path";
 const nextConfig: NextConfig = {
   // Fix chunk loading: use project root for file tracing (resolves multiple lockfiles warning)
   outputFileTracingRoot: path.resolve(process.cwd()),
+  
+  // Optimize package imports for faster builds and runtime
+  transpilePackages: [
+    'lucide-react', 
+    'zod',
+    '@prisma/client',
+    'date-fns',
+    'bcryptjs',
+    'next-auth'
+  ],
+  
+  experimental: {
+    optimizePackageImports: [
+      'lucide-react', 
+      'zod',
+      'date-fns',
+      '@prisma/client'
+    ],
+  },
+  
   /* config options here */
   images: {
     remotePatterns: [

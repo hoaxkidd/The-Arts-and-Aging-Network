@@ -9,7 +9,6 @@ export const VALID_ROLES = [
   'PAYROLL',
   'HOME_ADMIN',
   'FACILITATOR',
-  'CONTRACTOR',
   'VOLUNTEER',
   'PARTNER',
 ] as const
@@ -23,7 +22,6 @@ export const ROLE_ORDER: UserRole[] = [
   'PAYROLL',
   'HOME_ADMIN',
   'FACILITATOR',
-  'CONTRACTOR',
   'VOLUNTEER',
   'PARTNER',
 ]
@@ -35,7 +33,6 @@ export const ROLE_LABELS: Record<UserRole, string> = {
   PAYROLL: 'Payroll Staff',
   HOME_ADMIN: 'Home Administrator',
   FACILITATOR: 'Facilitator',
-  CONTRACTOR: 'Contractor',
   VOLUNTEER: 'Volunteer',
   PARTNER: 'Community Partner',
 }
@@ -47,7 +44,6 @@ export const ROLE_LABELS_SHORT: Record<UserRole, string> = {
   PAYROLL: 'Payroll',
   HOME_ADMIN: 'Home Admins',
   FACILITATOR: 'Facilitators',
-  CONTRACTOR: 'Contractors',
   VOLUNTEER: 'Volunteers',
   PARTNER: 'Partners',
 }

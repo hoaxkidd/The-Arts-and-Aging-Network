@@ -6,6 +6,8 @@ import { StaffEventsClient } from "./StaffEventsClient"
 
 const db = prisma as any
 
+export const revalidate = 30
+
 export default async function StaffEventsPage() {
   const session = await auth()
   if (!session?.user?.id) redirect('/login')

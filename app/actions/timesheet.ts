@@ -4,6 +4,26 @@ import { prisma } from "@/lib/prisma"
 import { auth } from "@/auth"
 import { revalidatePath } from "next/cache"
 
+// Helper to parse date string in YYYY-MM-DD or DD-MM-YYYY format
+function parseDateString(dateStr: string): Date | null {
+  if (!dateStr) return null
+  
+  // Handle DD-MM-YYYY format
+  if (dateStr.match(/^\d{2}-\d{2}-\d{4}$/)) {
+    const [day, month, year] = dateStr.split('-')
+    return new Date(`${year}-${month}-${day}T00:00:00`)
+  }
+  
+  // Handle YYYY-MM-DD format
+  if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+    return new Date(`${dateStr}T00:00:00`)
+  }
+  
+  // Fallback to default parsing
+  const date = new Date(dateStr)
+  return isNaN(date.getTime()) ? null : date
+}
+
 // Get the Monday of a given week
 function getWeekStart(date: Date): Date {
   const d = new Date(date)
@@ -113,7 +133,12 @@ export async function saveTimesheetEntry(
     if (timesheet.userId !== session.user.id) return { error: "Unauthorized" }
     if (timesheet.status !== 'DRAFT') return { error: "Timesheet is not editable" }
 
-    const date = new Date(entryData.date)
+    const parsedDate = parseDateString(entryData.date)
+    if (!parsedDate || isNaN(parsedDate.getTime())) {
+      return { error: "Invalid date format" }
+    }
+    
+    const date = parsedDate
 
     // Calculate hours if check-in and check-out provided
     let hoursWorked = entryData.hoursWorked || 0

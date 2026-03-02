@@ -24,7 +24,6 @@ const avatarColors: Record<string, string> = {
   PAYROLL: 'bg-amber-500',
   HOME_ADMIN: 'bg-emerald-500',
   FACILITATOR: 'bg-blue-500',
-  CONTRACTOR: 'bg-sky-500',
   VOLUNTEER: 'bg-teal-500',
   PARTNER: 'bg-indigo-500',
 }

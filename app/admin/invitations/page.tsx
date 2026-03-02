@@ -3,6 +3,9 @@ import { createInvitation, cancelInvitation } from "@/app/actions/invitation"
 import { Mail, Send, Calendar, User, Clock, Trash2, Link2 } from "lucide-react"
 import { STYLES } from "@/lib/styles"
 import { cn } from "@/lib/utils"
+import { formatDateShort } from "@/lib/date-utils"
+
+export const revalidate = 30
 
 function inviteUrl(token: string) {
   const base = (process.env.NEXTAUTH_URL ?? '').replace(/\/$/, '')
@@ -12,6 +15,7 @@ function inviteUrl(token: string) {
 export default async function InvitationsPage() {
   const invitations = await prisma.invitation.findMany({
     orderBy: { createdAt: 'desc' },
+    take: 50,
     include: { createdBy: true }
   })
 
@@ -54,7 +58,6 @@ export default async function InvitationsPage() {
               <option value="ADMIN">Admin</option>
               <option value="BOARD">Board Member</option>
               <option value="PAYROLL">Payroll Staff</option>
-              <option value="CONTRACTOR">Contractor</option>
               <option value="VOLUNTEER">Volunteer</option>
               <option value="HOME_ADMIN">Geriatric Home</option>
               <option value="FACILITATOR">Facilitator</option>
@@ -131,7 +134,7 @@ export default async function InvitationsPage() {
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center gap-2 text-sm text-gray-500">
                       <Clock className="w-4 h-4" />
-                      {inv.expiresAt.toLocaleDateString()}
+                      {formatDateShort(new Date(inv.expiresAt))}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">

@@ -5,6 +5,8 @@ import { STYLES } from "@/lib/styles"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
 
+export const revalidate = 60
+
 export default async function HistoryPage() {
   const session = await auth()
   const prismaClient = prisma as any

@@ -64,7 +64,7 @@ export default async function HomeEventDetailPage({
 
   // Calculate stats
   const confirmedStaff = event.attendances.filter(
-    (a: any) => a.status === 'YES' && ['FACILITATOR', 'CONTRACTOR'].includes(a.user.role)
+    (a: any) => a.status === 'YES' && ['FACILITATOR'].includes(a.user.role)
   )
   const checkedInStaff = confirmedStaff.filter((a: any) => a.checkInTime)
   const feedbackRatings = event.attendances

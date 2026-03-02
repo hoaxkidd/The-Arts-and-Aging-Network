@@ -112,13 +112,7 @@ export function ChatInterface({ partner, messages, currentUserId, onBack }: Prop
   function canEditOrDelete(messageCreatedAt: Date): boolean {
     const messageAge = Date.now() - new Date(messageCreatedAt).getTime()
     const fifteenMinutes = 15 * 60 * 1000
-    const canEdit = messageAge < fifteenMinutes
-    console.log('Can edit/delete message?', {
-      messageAge: Math.floor(messageAge / 1000) + 's',
-      fifteenMinutes: '900s',
-      canEdit
-    })
-    return canEdit
+    return messageAge < fifteenMinutes
   }
 
   return (

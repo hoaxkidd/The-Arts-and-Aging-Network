@@ -18,18 +18,54 @@ export default async function HomeEventsPage() {
 
   if (!home) redirect('/dashboard')
 
-  // Get home's event requests to determine request status
-  const homeRequests = await db.eventRequest.findMany({
-    where: {
-      geriatricHomeId: home.id,
-      status: { in: ['PENDING', 'APPROVED'] }
-    },
-    select: {
-      existingEventId: true,
-      approvedEventId: true,
-      status: true
-    }
-  })
+  // Parallel fetch for better performance
+  const [homeRequests, allEvents, homeEvents] = await Promise.all([
+    db.eventRequest.findMany({
+      where: {
+        geriatricHomeId: home.id,
+        status: { in: ['PENDING', 'APPROVED'] }
+      },
+      select: {
+        existingEventId: true,
+        approvedEventId: true,
+        status: true
+      }
+    }),
+    db.event.findMany({
+      where: {
+        status: 'PUBLISHED',
+        startDateTime: {
+          gte: new Date(new Date().setMonth(new Date().getMonth() - 1))
+        }
+      },
+      take: 50,
+      select: {
+        id: true,
+        title: true,
+        startDateTime: true,
+        endDateTime: true,
+        status: true,
+        requiredFormTemplateId: true,
+        location: { select: { name: true } }
+      },
+      orderBy: { startDateTime: 'asc' }
+    }),
+    db.event.findMany({
+      take: 20,
+      where: {
+        geriatricHomeId: home.id
+      },
+      select: {
+        id: true,
+        title: true,
+        startDateTime: true,
+        endDateTime: true,
+        status: true,
+        requiredFormTemplateId: true,
+        location: { select: { name: true } }
+      }
+    })
+  ])
 
   // Map of eventId -> request status
   const requestStatusMap = new Map<string, 'PENDING' | 'APPROVED'>()
@@ -41,42 +77,6 @@ export default async function HomeEventsPage() {
       requestStatusMap.set(req.approvedEventId, req.status)
     }
   }
-
-  // Fetch all published events (from admin templates + home's own)
-  const allEvents = await db.event.findMany({
-    where: {
-      status: 'PUBLISHED',
-      startDateTime: {
-        gte: new Date(new Date().setMonth(new Date().getMonth() - 1))
-      }
-    },
-    select: {
-      id: true,
-      title: true,
-      startDateTime: true,
-      endDateTime: true,
-      status: true,
-      requiredFormTemplateId: true,
-      location: { select: { name: true } }
-    },
-    orderBy: { startDateTime: 'asc' }
-  })
-
-  // Also fetch events linked to this home (their own events)
-  const homeEvents = await db.event.findMany({
-    where: {
-      geriatricHomeId: home.id
-    },
-    select: {
-      id: true,
-      title: true,
-      startDateTime: true,
-      endDateTime: true,
-      status: true,
-      requiredFormTemplateId: true,
-      location: { select: { name: true } }
-    }
-  })
 
   // Combine and dedupe
   const eventMap = new Map()

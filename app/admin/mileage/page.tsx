@@ -5,6 +5,9 @@ import { MapPin, CheckCircle, XCircle, AlertCircle, Car } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { STYLES } from "@/lib/styles"
 import { MileageApprovalActions } from "./MileageApprovalActions"
+import { formatDateShort } from "@/lib/date-utils"
+
+export const revalidate = 30
 
 export default async function AdminMileagePage() {
   const session = await auth()
@@ -128,7 +131,7 @@ export default async function AdminMileagePage() {
                           <span className="font-medium text-gray-900">{displayName}</span>
                           <span className="text-gray-400">•</span>
                           <span className="text-sm text-gray-500">
-                            {new Date(entry.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                            {formatDateShort(new Date(entry.date))}
                           </span>
                         </div>
                         <div className="flex items-center gap-2 mt-1">

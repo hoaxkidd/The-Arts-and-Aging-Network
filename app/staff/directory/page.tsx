@@ -37,7 +37,7 @@ export default async function StaffDirectoryPage({
     <div className="max-w-3xl mx-auto space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h1 className="text-lg font-semibold text-gray-900">Staff Directory</h1>
+          <h1 className="text-lg font-semibold text-gray-900">Team Directory</h1>
           <p className="text-gray-500 text-xs mt-0.5">
             {staff.length} member{staff.length !== 1 ? 's' : ''} · {groups.length} group{groups.length !== 1 ? 's' : ''}
           </p>

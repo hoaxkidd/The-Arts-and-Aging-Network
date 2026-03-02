@@ -8,7 +8,6 @@ import { importStaffFromCSV, previewCSV } from '@/app/actions/staff-import'
 
 const ROLES = [
   { value: 'FACILITATOR', label: 'Facilitator' },
-  { value: 'CONTRACTOR', label: 'Contractor' },
   { value: 'EMPLOYEE', label: 'Employee' },
   { value: 'ADMIN', label: 'Admin' },
   { value: 'PAYROLL', label: 'Payroll' },

@@ -157,7 +157,7 @@ export async function scheduleEventReminders(eventId: string) {
 
     // Schedule reminders for STAFF (3-4 days before)
     const confirmedStaff = event.attendances.filter(a =>
-      a.user.role && ['FACILITATOR', 'CONTRACTOR'].includes(a.user.role)
+      a.user.role && ['FACILITATOR'].includes(a.user.role)
     )
 
     for (const attendance of confirmedStaff) {

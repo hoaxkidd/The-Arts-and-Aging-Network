@@ -156,6 +156,7 @@ model Event {
   organizerPhone          String?
   maxAttendees            Int                 @default(20)
   autoAcceptLimit         Int                 @default(4)
+  checkInWindowMinutes    Int                 @default(120) // 2 hours before event by default
   status                  String              @default("DRAFT")
   origin                  String              @default("ADMIN")
   geriatricHomeId         String?
@@ -338,19 +339,17 @@ model FormTemplate {
   title         String
   description   String?
   category      String
-  fileUrl       String?
   fileName      String?
-  fileType      String?
   fileSize      Int?
   isFillable    Boolean          @default(false)
   formFields    String?
   version       String           @default("1.0")
   tags          String?
   requiredFor   String?
-  downloadCount Int              @default(0)
   usageCount    Int              @default(0)
   isActive      Boolean          @default(true)
   isPublic      Boolean          @default(true)
+  allowedRoles  String?          // Comma-separated roles: "ADMIN" or "ADMIN,FACILITATOR" or null = all
   uploadedBy    String
   createdAt     DateTime         @default(now())
   updatedAt     DateTime         @updatedAt
@@ -360,6 +359,47 @@ model FormTemplate {
 
   @@index([isActive, createdAt])
   @@index([category, isActive])
+}
+
+model PayrollForm {
+  id            String                  @id @default(cuid())
+  title         String
+  description   String?
+  formType      String                  // COMPLIANCE, TAX, POLICE_CHECK, HR, OTHER
+  fileUrl       String
+  fileName      String
+  fileType      String?
+  fileSize      Int?
+  isRequired    Boolean                 @default(false)
+  roles         String[]                // Roles that must complete this form
+  expiresAt     DateTime?               // Optional expiration date
+  isActive      Boolean                 @default(true)
+  uploadedBy    String
+  createdAt     DateTime                @default(now())
+  updatedAt     DateTime                @updatedAt
+  submissions   PayrollFormSubmission[]
+  uploader      User                    @relation(fields: [uploadedBy], references: [id])
+
+  @@index([formType, isActive])
+  @@index([roles])
+}
+
+model PayrollFormSubmission {
+  id            String        @id @default(cuid())
+  formId        String
+  userId        String
+  signature     String?       // Base64 signature image
+  signedAt      DateTime?
+  status        String        @default("PENDING") // PENDING, COMPLETED
+  notes         String?
+  submittedAt   DateTime      @default(now())
+  reviewedBy    String?
+  reviewedAt    DateTime?
+  form          PayrollForm   @relation(fields: [formId], references: [id], onDelete: Cascade)
+  user          User          @relation(fields: [userId], references: [id])
+
+  @@unique([formId, userId])
+  @@index([userId, status])
 }
 
 model GeriatricHome {
@@ -774,6 +814,8 @@ model User {
   reviewedSubmissions     FormSubmission[]       @relation("FormSubmission_reviewer")
   submittedForms          FormSubmission[]       @relation("FormSubmission_submitter")
   formTemplates           FormTemplate[]
+  payrollForms            PayrollForm[]
+  payrollFormSubmissions  PayrollFormSubmission[]
   geriatricHome           GeriatricHome?
   groupMemberships        GroupMember[]
   groupMessages           GroupMessage[]

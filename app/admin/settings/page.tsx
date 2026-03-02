@@ -4,6 +4,8 @@ import { prisma } from "@/lib/prisma"
 import { getNotificationPreferences } from "@/app/actions/user"
 import { SettingsPage } from "@/components/settings/SettingsPage"
 
+export const revalidate = 60
+
 export default async function AdminSettingsPage() {
   const session = await auth()
   if (!session?.user) redirect('/login')

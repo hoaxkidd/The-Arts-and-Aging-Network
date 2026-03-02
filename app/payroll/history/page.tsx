@@ -2,6 +2,8 @@ import { prisma } from "@/lib/prisma"
 import { auth } from "@/auth"
 import { HistoryTabs } from "./HistoryTabs"
 
+export const revalidate = 60
+
 export default async function HistoryPage() {
   const session = await auth()
   const userId = session?.user?.id

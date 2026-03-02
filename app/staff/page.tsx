@@ -13,6 +13,8 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
+export const revalidate = 60
+
 const db = prisma as any
 
 export default async function StaffDashboard() {

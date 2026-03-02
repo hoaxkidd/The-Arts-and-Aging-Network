@@ -115,12 +115,6 @@ export async function getFormTemplate(id: string) {
       return { error: "Template not accessible" }
     }
 
-    // Increment download count
-    await prisma.formTemplate.update({
-      where: { id },
-      data: { downloadCount: { increment: 1 } }
-    })
-
     return { success: true, data: template }
   } catch (error) {
     console.error("Failed to fetch template:", error)
@@ -133,9 +127,7 @@ export async function createFormTemplate(data: {
   title: string
   description?: string
   category: string
-  fileUrl?: string
   fileName?: string
-  fileType?: string
   fileSize?: number
   isFillable?: boolean
   formFields?: string
@@ -162,9 +154,7 @@ export async function createFormTemplate(data: {
         title: data.title,
         description: data.description || null,
         category: data.category,
-        fileUrl: data.fileUrl || null,
         fileName: data.fileName || null,
-        fileType: data.fileType || null,
         fileSize: data.fileSize || null,
         isFillable: data.isFillable || false,
         formFields: data.formFields || null,
@@ -224,9 +214,7 @@ export async function updateFormTemplate(
     if (data.title !== undefined) updates.title = data.title
     if (data.description !== undefined) updates.description = data.description
     if (data.category !== undefined) updates.category = data.category
-    if (data.fileUrl !== undefined) updates.fileUrl = data.fileUrl
     if (data.fileName !== undefined) updates.fileName = data.fileName
-    if (data.fileType !== undefined) updates.fileType = data.fileType
     if (data.fileSize !== undefined) updates.fileSize = data.fileSize
     if (data.isFillable !== undefined) updates.isFillable = data.isFillable
     if (data.formFields !== undefined) updates.formFields = data.formFields
@@ -540,5 +528,38 @@ export async function reviewFormSubmission(
   } catch (error) {
     console.error("Failed to review submission:", error)
     return { error: "Failed to review submission" }
+  }
+}
+
+// Update allowed roles for a form template
+export async function updateFormTemplateRoles(templateId: string, allowedRoles: string[]) {
+  const session = await auth()
+  if (session?.user?.role !== 'ADMIN') {
+    return { error: "Unauthorized" }
+  }
+
+  try {
+    const allowedRolesStr = allowedRoles.length > 0 ? allowedRoles.join(',') : null
+
+    const template = await prisma.formTemplate.update({
+      where: { id: templateId },
+      data: { allowedRoles: allowedRolesStr }
+    })
+
+    await prisma.auditLog.create({
+      data: {
+        action: 'FORM_TEMPLATE_ROLES_UPDATED',
+        details: JSON.stringify({ templateId, allowedRoles: allowedRolesStr }),
+        userId: session.user.id
+      }
+    })
+
+    revalidatePath('/admin/form-templates')
+    revalidatePath('/staff/forms')
+
+    return { success: true, data: template }
+  } catch (error) {
+    console.error("Failed to update form template roles:", error)
+    return { error: "Failed to update roles" }
   }
 }

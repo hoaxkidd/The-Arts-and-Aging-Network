@@ -4,6 +4,8 @@ import { redirect } from "next/navigation"
 import { InventoryHubClient } from "./InventoryHubClient"
 import { Package } from "lucide-react"
 
+export const revalidate = 60
+
 export default async function AdminInventoryPage() {
   const session = await auth()
   if (session?.user?.role !== 'ADMIN' && session?.user?.role !== 'PAYROLL') {

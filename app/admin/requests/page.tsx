@@ -3,6 +3,9 @@ import { updateRequestStatus } from "@/app/actions/admin"
 import { CheckCircle, XCircle, Clock, FileText, DollarSign, Calendar } from "lucide-react"
 import { STYLES } from "@/lib/styles"
 import { cn } from "@/lib/utils"
+import { formatDateShort } from "@/lib/date-utils"
+
+export const revalidate = 30
 
 export default async function AdminRequestsPage() {
   const requests = await prisma.expenseRequest.findMany({
@@ -67,7 +70,7 @@ export default async function AdminRequestsPage() {
                     {req.amount ? `$${req.amount.toFixed(2)}` : '-'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {req.createdAt.toLocaleDateString()}
+                    {formatDateShort(new Date(req.createdAt))}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={cn(STYLES.badge, 

@@ -19,6 +19,7 @@ const PAGE_TITLES: Record<string, string> = {
   '/admin/homes': 'Facility Management',
   '/admin/financials': 'Financial Overview',
   '/admin/events': 'Event Management',
+  '/admin/events/new': 'Create Event',
   '/admin/email-reminders': 'Email Reminders',
   '/admin/form-templates': 'Form Templates',
   '/admin/testimonials': 'Testimonials',
@@ -48,9 +49,10 @@ const PAGE_TITLES: Record<string, string> = {
   '/dashboard/history': 'Event History',
   '/dashboard/my-events': 'My Events',
   '/dashboard/requests': 'My Event Requests',
+  '/dashboard/requests/new': 'Custom Event Request',
   '/dashboard/settings': 'System Settings',
   '/staff': 'Staff Dashboard',
-  '/staff/directory': 'Staff Directory',
+  '/staff/directory': 'Team Directory',
   '/staff/events': 'Browse Events',
   '/staff/inbox': 'Inbox',
   '/staff/forms': 'Form Templates',
@@ -59,6 +61,53 @@ const PAGE_TITLES: Record<string, string> = {
   '/staff/profile': 'My Profile',
   '/staff/settings': 'Settings',
   '/notifications': 'Notifications',
+}
+
+// Page type detection for layout consistency
+// Forms: narrow width (max-w-3xl) for focused input
+// Tables: full width (max-w-full) for data-heavy displays
+// Mixed: default width (max-w-7xl) for dashboards and mixed content
+const FORM_PAGES = [
+  '/admin/events/new',
+  '/admin/form-templates/new',
+  '/admin/users/new',
+  '/dashboard/requests/new',
+]
+
+const TABLE_PAGES = [
+  '/admin/users',
+  '/admin/homes',
+  '/admin/invitations',
+  '/admin/timesheets',
+  '/admin/mileage',
+  '/admin/donors',
+  '/admin/inventory',
+  '/admin/event-requests',
+  '/staff/directory',
+  '/payroll/timesheet',
+  '/payroll/mileage',
+  '/payroll/history',
+  '/dashboard/events',
+  '/dashboard/my-events',
+  '/dashboard/history',
+  '/dashboard/contacts',
+  '/dashboard/requests',
+]
+
+// Helper function to determine if a page is a form, table, or mixed page
+function getPageLayoutType(pathname: string): 'form' | 'table' | 'mixed' {
+  // Form pages (narrow width for focused input)
+  if (FORM_PAGES.some(p => pathname === p)) return 'form'
+  // Check form pages with dynamic IDs (edit pages)
+  if (pathname.startsWith('/admin/events/') && pathname !== '/admin/events' && pathname !== '/admin/events/new') return 'form'
+  if (pathname.startsWith('/admin/form-templates/') && pathname !== '/admin/form-templates' && pathname !== '/admin/form-templates/new') return 'form'
+  if (pathname.startsWith('/admin/users/') && pathname !== '/admin/users' && pathname !== '/admin/users/new') return 'form'
+  
+  // Table pages (full width for data displays)
+  if (TABLE_PAGES.some(p => pathname.startsWith(p))) return 'table'
+  
+  // Default: mixed content (dashboard, etc.)
+  return 'mixed'
 }
 
 // Client-side helper for title
@@ -94,14 +143,13 @@ export function DashboardLayoutClient({ children, role, title = "Arts & Aging", 
 
   const menuItems = role === 'ADMIN' ? adminMenu
     : role === 'HOME_ADMIN' ? homeAdminMenu
-    : (role === 'FACILITATOR' || role === 'CONTRACTOR') ? staffMenu
+    : role === 'FACILITATOR' ? staffMenu
     : MENU_ITEMS[role] || []
 
   const portalConfig = {
     ADMIN: { label: 'Admin Portal', bg: 'bg-secondary-400', text: 'text-primary-900' },
     HOME_ADMIN: { label: 'Home Portal', bg: 'bg-accent-400', text: 'text-primary-900' },
     FACILITATOR: { label: 'Staff Portal', bg: 'bg-accent-300', text: 'text-primary-900' },
-    CONTRACTOR: { label: 'Staff Portal', bg: 'bg-accent-300', text: 'text-primary-900' },
     VOLUNTEER: { label: 'Staff Portal', bg: 'bg-accent-300', text: 'text-primary-900' },
     BOARD: { label: 'Board Portal', bg: 'bg-purple-400', text: 'text-purple-900' },
     PARTNER: { label: 'Partner Portal', bg: 'bg-blue-400', text: 'text-blue-900' },
@@ -302,20 +350,27 @@ export function DashboardLayoutClient({ children, role, title = "Arts & Aging", 
           </div>
         </header>
 
-        <main className={cn(
-          "flex-1 flex flex-col min-h-0 bg-gray-50/50",
-          pathname.startsWith('/staff/inbox') || pathname.startsWith('/admin/communication')
-            ? "overflow-hidden p-0"
-            : "p-4 md:p-6",
-          sidebarOpen ? "overflow-hidden" : (pathname.startsWith('/staff/inbox') || pathname.startsWith('/admin/communication')) ? "" : "overflow-y-auto"
-        )}>
-          <div className={cn(
-            pathname.startsWith('/staff/inbox') || pathname.startsWith('/admin/communication')
-              ? "flex-1 flex flex-col min-h-0 w-full max-w-full min-w-0 overflow-x-hidden"
-              : "max-w-7xl mx-auto w-full min-w-0 overflow-x-hidden"
-          )}>
-            {children}
-          </div>
+        <main className="flex-1 flex flex-col min-h-0 bg-gray-50/50 overflow-y-auto p-4 md:p-6">
+          {(() => {
+            const layoutType = getPageLayoutType(pathname)
+            const maxWidthClass = layoutType === 'form' ? 'max-w-5xl' : 
+                                 layoutType === 'table' ? 'max-w-full' : 
+                                 'max-w-7xl'
+            
+            if (pathname.startsWith('/staff/inbox') || pathname.startsWith('/admin/communication')) {
+              return (
+                <div className="flex-1 flex flex-col min-h-0 w-full max-w-full min-w-0 overflow-x-hidden">
+                  {children}
+                </div>
+              )
+            }
+            
+            return (
+              <div className={cn(maxWidthClass, "mx-auto w-full min-w-0 overflow-x-hidden")}>
+                {children}
+              </div>
+            )
+          })()}
         </main>
       </div>
     </div>

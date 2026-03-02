@@ -209,7 +209,7 @@ async function main() {
           name,
           password: null,
           status,
-          role: 'CONTRACTOR',
+          role: 'FACILITATOR',
           preferredName: get('preferred name') ?? null,
           pronouns: get('pronouns') ?? null,
           birthDate: parseDate(get('date of birth')) ?? null,

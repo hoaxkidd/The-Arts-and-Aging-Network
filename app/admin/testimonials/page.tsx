@@ -5,6 +5,8 @@ import { Quote, Star, CheckCircle, Clock, XCircle } from "lucide-react"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
 
+export const revalidate = 60
+
 export default async function TestimonialsPage() {
   const session = await auth()
   if (session?.user?.role !== 'ADMIN') redirect('/dashboard')

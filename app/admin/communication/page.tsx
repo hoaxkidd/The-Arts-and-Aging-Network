@@ -3,6 +3,8 @@ import { auth } from "@/auth"
 import { redirect } from "next/navigation"
 import { CommunicationHubClient } from "./CommunicationHubClient"
 
+export const revalidate = 30
+
 export default async function CommunicationHubPage() {
   const session = await auth()
   if (session?.user?.role !== 'ADMIN') redirect('/dashboard')
@@ -10,6 +12,7 @@ export default async function CommunicationHubPage() {
   const [groups, pendingGroupRequests, pendingConversationRequests, invitations] = await Promise.all([
     // Groups
     prisma.messageGroup.findMany({
+      take: 20,
       where: { isActive: true },
       include: {
         members: { where: { isActive: true }, include: { user: { select: { id: true, name: true, role: true } } } },
@@ -19,6 +22,7 @@ export default async function CommunicationHubPage() {
     }),
     // Pending Group Requests
     prisma.groupMember.findMany({
+      take: 20,
       where: { isActive: false },
       include: {
         group: { select: { id: true, name: true, iconEmoji: true, type: true } },
@@ -28,6 +32,7 @@ export default async function CommunicationHubPage() {
     }),
     // Pending Conversation Requests (Using a mock or actual query depending on implementation)
     prisma.directMessageRequest.findMany({
+        take: 20,
         where: { status: 'PENDING' },
         include: {
             requester: { select: { id: true, name: true, preferredName: true, image: true, role: true } },
@@ -36,6 +41,7 @@ export default async function CommunicationHubPage() {
     }).catch(() => []), // Fallback if table doesn't exist yet
     // Invitations
     prisma.invitation.findMany({
+        take: 20,
         orderBy: { createdAt: 'desc' },
         include: { createdBy: { select: { name: true } } }
     })

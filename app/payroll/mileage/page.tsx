@@ -5,6 +5,7 @@ import { MapPin, Trash2, ChevronLeft, ChevronRight, Car } from 'lucide-react'
 import { MileageEntryForm } from '@/components/expense/MileageEntryForm'
 import { getMyMileageEntries, deleteMileageEntry } from '@/app/actions/mileage'
 import { cn } from '@/lib/utils'
+import { formatDateWords } from '@/lib/date-utils'
 
 type MileageEntry = {
   id: string
@@ -90,7 +91,7 @@ export default function MileagePage() {
           </button>
           <div className="text-center">
             <h2 className="font-semibold text-gray-900">
-              {currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+              {formatDateWords(currentMonth).split(' ').slice(0, 2).join(' ')} {currentMonth.getFullYear()}
             </h2>
             <div className="flex items-center justify-center gap-4 mt-1 text-sm">
               <span className="text-gray-500">{totalKm.toFixed(1)} km total</span>
@@ -143,7 +144,7 @@ export default function MileagePage() {
                           </span>
                         </div>
                         <div className="flex items-center gap-3 mt-1 text-sm text-gray-500">
-                          <span>{new Date(entry.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</span>
+                          <span>{formatDateWords(new Date(entry.date))}</span>
                           <span className="font-medium text-gray-700">{entry.kilometers} km</span>
                           {entry.fundingClass && (
                             <span className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded text-xs">

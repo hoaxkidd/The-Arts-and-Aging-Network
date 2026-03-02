@@ -18,27 +18,55 @@ export default async function StaffFormsPage({
   const activeTab = params.tab || 'browse'
 
   // Get active templates
-  const where: any = {
-    isActive: true,
-    isPublic: true
+  const userRole = session.user.role || ''
+  const isAdmin = session.user.role === 'ADMIN'
+
+  // Build query based on user role
+  let templates
+  const categoryFilterObj = categoryFilter !== 'ALL' ? { category: categoryFilter } : {}
+
+  if (isAdmin) {
+    // Admin sees all active forms
+    templates = await prisma.formTemplate.findMany({
+      where: {
+        isActive: true,
+        ...categoryFilterObj
+      },
+      include: {
+        _count: {
+          select: { submissions: true }
+        }
+      },
+      orderBy: [
+        { createdAt: 'desc' }
+      ]
+    })
+  } else {
+    // Non-admin: show public forms OR forms where their role has access
+    templates = await prisma.formTemplate.findMany({
+      where: {
+        isActive: true,
+        ...categoryFilterObj,
+        OR: [
+          { isPublic: true },  // Public forms
+          { allowedRoles: { contains: userRole } }  // Role-restricted forms
+        ]
+      },
+      include: {
+        _count: {
+          select: { submissions: true }
+        }
+      },
+      orderBy: [
+        { createdAt: 'desc' }
+      ]
+    })
   }
 
-  if (categoryFilter !== 'ALL') {
-    where.category = categoryFilter
-  }
-
-  const templates = await prisma.formTemplate.findMany({
-    where,
-    include: {
-      _count: {
-        select: { submissions: true }
-      }
-    },
-    orderBy: [
-      { downloadCount: 'desc' },
-      { createdAt: 'desc' }
-    ]
-  })
+  // DEBUG: Remove these after testing
+  console.log('[StaffForms] User role:', userRole)
+  console.log('[StaffForms] Is admin:', isAdmin)
+  console.log('[StaffForms] Templates found:', templates?.length || 0)
 
   // Get user's submissions
   const mySubmissions = await prisma.formSubmission.findMany({
@@ -182,13 +210,6 @@ export default async function StaffFormsPage({
                           <div className="flex items-center gap-3 text-xs text-gray-500">
                             <span className="px-2 py-0.5 bg-gray-100 rounded">
                               {category?.icon} {category?.label}
-                            </span>
-                            {template.fileType && (
-                              <span>{template.fileType}</span>
-                            )}
-                            <span className="flex items-center gap-1">
-                              <Download className="w-3 h-3" />
-                              {template.downloadCount} downloads
                             </span>
                           </div>
                         </div>

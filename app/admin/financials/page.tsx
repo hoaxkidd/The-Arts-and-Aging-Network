@@ -7,6 +7,8 @@ import { TimesheetList } from "@/components/admin/financials/TimesheetList"
 import { MileageList } from "@/components/admin/financials/MileageList"
 import { ExpenseRequestList } from "@/components/admin/financials/ExpenseRequestList"
 
+export const revalidate = 30
+
 // Client Wrapper Component
 import { FinancialsHubClient } from "./FinancialsHubClient"
 
@@ -17,6 +19,7 @@ export default async function FinancialsHubPage() {
   // Fetch all data in parallel
   const [timesheets, mileageEntries, expenseRequests] = await Promise.all([
     prisma.timesheet.findMany({
+        take: 50,
         orderBy: { weekStart: 'desc' },
         include: { 
           user: { select: { id: true, name: true, preferredName: true, image: true } },
@@ -24,10 +27,12 @@ export default async function FinancialsHubPage() {
         }
     }),
     prisma.mileageEntry.findMany({
+        take: 50,
         orderBy: [{ status: 'asc' }, { date: 'desc' }],
         include: { user: { select: { id: true, name: true, preferredName: true, image: true } } }
     }),
     prisma.expenseRequest.findMany({
+        take: 50,
         orderBy: { createdAt: 'desc' },
         include: { user: { select: { id: true, name: true, email: true } } }
     })

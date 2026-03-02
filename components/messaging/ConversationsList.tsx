@@ -67,13 +67,13 @@ export function ConversationsList({ conversations, currentUserId, activeConversa
             </div>
             <p className={STYLES.emptyTitle}>No conversations yet</p>
             <p className={STYLES.emptyDescription}>
-              Use New Message above or browse the Staff Directory to start a conversation
+              Use New Message above or browse the Team Directory to start a conversation
             </p>
             <Link
               href="/staff/directory"
               className={cn(STYLES.btn, STYLES.btnPrimary, "mt-6 text-sm")}
             >
-              Browse Staff
+              Browse Team
             </Link>
           </div>
         ) : (

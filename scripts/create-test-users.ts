@@ -43,13 +43,6 @@ async function main() {
       status: 'ACTIVE'
     },
     {
-      email: 'contractor@test.com',
-      name: 'Contract Worker',
-      password,
-      role: 'CONTRACTOR',
-      status: 'ACTIVE'
-    },
-    {
       email: 'volunteer@test.com',
       name: 'Volunteer User',
       password,

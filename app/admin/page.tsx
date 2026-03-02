@@ -3,6 +3,9 @@ import { Users, Mail, Activity, ShieldCheck, LayoutDashboard, ArrowUpRight } fro
 import { prisma } from "@/lib/prisma"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
+import { formatDateShort, getRelativeTime } from "@/lib/date-utils"
+
+export const revalidate = 60
 
 export default async function AdminDashboard() {
   const session = await auth()
@@ -22,13 +25,7 @@ export default async function AdminDashboard() {
   }
 
   function getTimeAgo(date: Date) {
-    const seconds = Math.floor((new Date().getTime() - date.getTime()) / 1000)
-    if (seconds < 60) return 'Just now'
-    const minutes = Math.floor(seconds / 60)
-    if (minutes < 60) return `${minutes}m ago`
-    const hours = Math.floor(minutes / 60)
-    if (hours < 24) return `${hours}h ago`
-    return date.toLocaleDateString()
+    return getRelativeTime(date)
   }
 
   return (

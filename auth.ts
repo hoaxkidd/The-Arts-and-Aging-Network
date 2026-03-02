@@ -3,17 +3,12 @@ import Credentials from "next-auth/providers/credentials"
 import { z } from "zod"
 import { prisma } from "@/lib/prisma"
 import bcrypt from "bcryptjs"
-import type { User } from "@prisma/client"
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
-  trustHost: true, // Required for Vercel – uses request host for redirects
-  secret: process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET, // Required on Vercel; use AUTH_SECRET or NEXTAUTH_SECRET
+  trustHost: true,
+  secret: process.env.AUTH_SECRET,
   providers: [
     Credentials({
-      credentials: {
-        email: { label: 'Email', type: 'email' },
-        password: { label: 'Password', type: 'password' },
-      },
       async authorize(credentials) {
         try {
           const parsedCredentials = z
@@ -25,8 +20,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             return null
           }
           const { email, password } = parsedCredentials.data
-          const emailNorm = email.trim().toLowerCase()
-          const user = await prisma.user.findUnique({ where: { email: emailNorm } })
+          const user = await prisma.user.findUnique({ where: { email } })
           if (!user) {
             console.error('[Auth] User not found:', email)
             return null
@@ -61,7 +55,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   },
   callbacks: {
     async redirect({ url, baseUrl }) {
-      // Allow relative callbackUrl from signIn
       if (url.startsWith('/')) return `${baseUrl}${url}`
       if (new URL(url).origin === baseUrl) return url
       return baseUrl
@@ -70,31 +63,18 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (user) {
         token.role = user.role
         token.id = user.id
-        const fullUser = user as User
-        if (fullUser.onboardingCompletedAt) {
-          token.onboardingCompletedAt = fullUser.onboardingCompletedAt instanceof Date
-            ? fullUser.onboardingCompletedAt.toISOString()
-            : fullUser.onboardingCompletedAt
-        } else {
-          token.onboardingCompletedAt = null
-        }
-        token.onboardingSkipCount = fullUser.onboardingSkipCount ?? 0
       }
-      // Refresh name and role from DB to keep session in sync with profile changes
       if (token.id) {
         try {
           const dbUser = await prisma.user.findUnique({
             where: { id: token.id as string },
-            select: { name: true, role: true, onboardingCompletedAt: true, onboardingSkipCount: true }
+            select: { name: true, role: true }
           })
           if (dbUser) {
             token.name = dbUser.name
             token.role = dbUser.role
-            token.onboardingCompletedAt = dbUser.onboardingCompletedAt?.toISOString() ?? null
-            token.onboardingSkipCount = dbUser.onboardingSkipCount ?? 0
           }
         } catch {
-          // Silently continue with existing token data if DB query fails
         }
       }
       return token
@@ -104,9 +84,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         session.user.role = token.role as string
         session.user.id = token.id as string
         session.user.name = token.name as string
-        // Cast the token property to the expected type
-        session.user.onboardingCompletedAt = (token.onboardingCompletedAt as string | null) ?? null
-        session.user.onboardingSkipCount = (token.onboardingSkipCount as number | undefined) ?? 0
       }
       return session
     },

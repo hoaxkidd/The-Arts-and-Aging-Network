@@ -12,7 +12,7 @@ const optionalNumber = z.union([z.number(), z.string().transform(Number)]).optio
 const createPlaceholderSchema = z.object({
   email: z.string().email(),
   name: z.string().min(1, 'Full legal name required'),
-  role: z.enum(['ADMIN', 'PAYROLL', 'CONTRACTOR', 'FACILITATOR', 'PARTNER', 'VOLUNTEER', 'BOARD', 'HOME_ADMIN']),
+  role: z.enum(['ADMIN', 'PAYROLL', 'FACILITATOR', 'PARTNER', 'VOLUNTEER', 'BOARD', 'HOME_ADMIN']),
   preferredName: optionalString,
   pronouns: optionalString,
   birthDate: optionalDate,

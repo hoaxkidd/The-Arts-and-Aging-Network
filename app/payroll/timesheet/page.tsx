@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { Clock, FileText, Plus } from 'lucide-react'
 import { WeeklyTimesheetForm } from '@/components/timesheet/WeeklyTimesheetForm'
 import { getWeeklyTimesheet, createWeeklyTimesheet } from '@/app/actions/timesheet'
+import { getWeekRange } from '@/lib/date-utils'
 
 type TimesheetEntry = {
   id: string
@@ -34,9 +35,7 @@ function getWeekStart(date: Date): Date {
 }
 
 function formatWeekRange(weekStart: Date): string {
-  const end = new Date(weekStart)
-  end.setDate(end.getDate() + 6)
-  return `${weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${end.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
+  return getWeekRange(weekStart)
 }
 
 export default function TimesheetPage() {

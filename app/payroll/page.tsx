@@ -15,6 +15,9 @@ import Link from "next/link"
 import { redirect } from "next/navigation"
 import { QuickActionHandler } from "@/components/QuickActionHandler"
 import { cn } from "@/lib/utils"
+import { formatDateWords, formatDateShort } from "@/lib/date-utils"
+
+export const revalidate = 60
 
 export default async function PayrollDashboard() {
   const session = await auth()
@@ -135,7 +138,7 @@ export default async function PayrollDashboard() {
               <div>
                 <h2 className="text-sm font-bold">Log Today&apos;s Hours</h2>
                 <p className="text-primary-100 text-xs">
-                  {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
+                  {formatDateWords(new Date())}
                 </p>
               </div>
             </div>
@@ -218,7 +221,7 @@ export default async function PayrollDashboard() {
                        item.category === 'SICK_DAY' ? 'Sick Day' : 'Expense'}
                     </p>
                     <p className="text-[10px] text-gray-500">
-                      {new Date(item.date).toLocaleDateString()}
+                      {formatDateShort(new Date(item.date))}
                     </p>
                   </div>
                   <span className={cn(

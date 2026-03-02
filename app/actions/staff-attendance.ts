@@ -9,7 +9,7 @@ import type { PrismaClient } from "@prisma/client"
 const db = prisma as PrismaClient & Record<string, unknown>
 
 // ============================================
-// STAFF ATTENDANCE ACTIONS (FACILITATOR/CONTRACTOR)
+// STAFF ATTENDANCE ACTIONS (FACILITATOR)
 // ============================================
 
 // Confirm attendance to an approved event
@@ -18,7 +18,7 @@ export async function confirmStaffAttendance(eventId: string, notes?: string) {
   if (!session?.user?.id) return { error: "Unauthorized" }
 
   const role = session.user.role
-  if (role !== 'FACILITATOR' && role !== 'CONTRACTOR' && role !== 'ADMIN') {
+  if (role !== 'FACILITATOR' && role !== 'ADMIN') {
     return { error: "Only staff can confirm attendance" }
   }
 
@@ -157,7 +157,7 @@ export async function getAvailableEventsForStaff() {
   if (!session?.user?.id) return { error: "Unauthorized" }
 
   const role = session.user.role
-  if (role !== 'FACILITATOR' && role !== 'CONTRACTOR' && role !== 'ADMIN') {
+  if (role !== 'FACILITATOR' && role !== 'ADMIN') {
     return { error: "Unauthorized" }
   }
 
@@ -249,7 +249,7 @@ export async function getMyConfirmedEvents() {
           myCheckInTime: a.checkInTime,
           eventStatus,
           confirmedStaff: a.event.attendances.filter(
-            (att: any) => ['FACILITATOR', 'CONTRACTOR'].includes(att.user.role)
+            (att: any) => ['FACILITATOR'].includes(att.user.role)
           )
         }
       })
@@ -273,14 +273,19 @@ export async function staffCheckIn(eventId: string) {
 
     if (!event) return { error: "Event not found" }
 
-    // Validate check-in window (2 hours before event start)
+    // Validate check-in window based on event setting
     const now = new Date()
     const eventStart = new Date(event.startDateTime)
-    const checkInWindowStart = new Date(eventStart.getTime() - 2 * 60 * 60 * 1000)
+    const checkInWindowMinutes = event.checkInWindowMinutes || 120 // default 2 hours
+    const checkInWindowStart = new Date(eventStart.getTime() - checkInWindowMinutes * 60 * 1000)
     const eventEnd = new Date(event.endDateTime)
 
     if (now < checkInWindowStart) {
-      return { error: "Check-in opens 2 hours before the event" }
+      const hoursBefore = Math.floor(checkInWindowMinutes / 60)
+      const message = hoursBefore > 0 
+        ? `Check-in opens ${hoursBefore} hour${hoursBefore > 1 ? 's' : ''} before the event`
+        : 'Check-in opens at the event start time'
+      return { error: message }
     }
 
     if (now > eventEnd) {
@@ -401,17 +406,18 @@ export async function getStaffEventDetail(eventId: string) {
 
     // Calculate stats
     const confirmedStaff = event.attendances.filter(
-      (a: any) => a.status === 'YES' && ['FACILITATOR', 'CONTRACTOR'].includes(a.user.role)
+      (a: any) => a.status === 'YES' && ['FACILITATOR'].includes(a.user.role)
     )
     const checkedInStaff = event.attendances.filter(
-      (a: any) => a.checkInTime && ['FACILITATOR', 'CONTRACTOR'].includes(a.user.role)
+      (a: any) => a.checkInTime && ['FACILITATOR'].includes(a.user.role)
     )
 
     // Determine event status
     const now = new Date()
     const eventStart = new Date(event.startDateTime)
     const eventEnd = new Date(event.endDateTime)
-    const checkInWindowStart = new Date(eventStart.getTime() - 2 * 60 * 60 * 1000)
+    const checkInWindowMinutes = event.checkInWindowMinutes || 120
+    const checkInWindowStart = new Date(eventStart.getTime() - checkInWindowMinutes * 60 * 1000)
 
     let eventStatus: 'upcoming' | 'check-in-open' | 'in-progress' | 'past'
     let canCheckIn = false

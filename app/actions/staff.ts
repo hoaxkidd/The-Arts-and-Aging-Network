@@ -64,6 +64,23 @@ const ProfileSchema = z.object({
   bioReceived: z.boolean().optional(),
 })
 
+// Helper to convert YYYY-MM-DD string to valid Date for Prisma
+function toValidDate(value: string | undefined): Date | undefined {
+  if (!value || value === '') return undefined
+  // Handle YYYY-MM-DD format from date inputs
+  if (value.match(/^\d{4}-\d{2}-\d{2}$/)) {
+    const date = new Date(value + 'T00:00:00')
+    if (!isNaN(date.getTime())) return date
+  }
+  // Handle DD-MM-YYYY format from custom DateInput
+  if (value.match(/^\d{2}-\d{2}-\d{4}$/)) {
+    const [day, month, year] = value.split('-')
+    const date = new Date(`${year}-${month}-${day}T00:00:00`)
+    if (!isNaN(date.getTime())) return date
+  }
+  return undefined
+}
+
 export async function updateStaffProfile(formData: FormData) {
   const session = await auth()
   if (!session?.user?.id) return { error: "Unauthorized" }
@@ -114,6 +131,20 @@ export async function updateStaffProfile(formData: FormData) {
     emergencyContact,
     healthInfo: formData.get("healthInfo") || undefined,
     alternateEmail: formData.get("alternateEmail") || undefined,
+  }
+
+  // Validate alternateEmail is not already in use by another user
+  if (rawData.alternateEmail) {
+    const alternateEmailStr = String(rawData.alternateEmail).toLowerCase().trim()
+    const existingWithEmail = await prisma.user.findFirst({
+      where: {
+        email: { equals: alternateEmailStr, mode: 'insensitive' },
+        NOT: { id: targetUserId }
+      }
+    })
+    if (existingWithEmail) {
+      return { error: "This alternate email is already in use by another user" }
+    }
   }
 
   // Load existing intake answers to merge with new values
@@ -174,13 +205,13 @@ export async function updateStaffProfile(formData: FormData) {
   try {
     const data = validated.data
     
-    // Robust date handling: Ensure YYYY-MM-DD string is parsed as UTC midnight
+    // Robust date handling: Accept both YYYY-MM-DD and DD-MM-YYYY formats
+    const isValidDateFormat = (dateStr: string) => 
+      dateStr.match(/^\d{4}-\d{2}-\d{2}$/) || dateStr.match(/^\d{2}-\d{2}-\d{4}$/)
+    
     let birthDate: Date | undefined
-    if (data.birthDate) {
-        // Append time to force local/UTC consistency or split manually
-        const [y, m, d] = data.birthDate.split('-').map(Number)
-        // Create UTC date: new Date(Date.UTC(y, m-1, d))
-        birthDate = new Date(Date.UTC(y, m - 1, d))
+    if (data.birthDate && isValidDateFormat(data.birthDate)) {
+        birthDate = toValidDate(data.birthDate)
     }
 
     // Create update object
@@ -216,9 +247,8 @@ export async function updateStaffProfile(formData: FormData) {
         if (employmentType) updateData.employmentType = employmentType
         if (employmentStatus) updateData.employmentStatus = employmentStatus
 
-        if (startDateRaw) {
-             const [y, m, d] = (startDateRaw as string).split('-').map(Number)
-             updateData.startDate = new Date(Date.UTC(y, m - 1, d))
+        if (startDateRaw && typeof startDateRaw === 'string' && isValidDateFormat(startDateRaw)) {
+             updateData.startDate = toValidDate(startDateRaw)
         }
 
         // Team fields
@@ -281,13 +311,11 @@ export async function updateStaffProfile(formData: FormData) {
         // Compliance dates
         const dementiaTrainingDate = formData.get("dementiaTrainingDate")
         const dementiaTrainingTopupDate = formData.get("dementiaTrainingTopupDate")
-        if (dementiaTrainingDate) {
-            const [y, m, d] = (dementiaTrainingDate as string).split('-').map(Number)
-            updateData.dementiaTrainingDate = new Date(Date.UTC(y, m - 1, d))
+        if (dementiaTrainingDate && typeof dementiaTrainingDate === 'string' && isValidDateFormat(dementiaTrainingDate)) {
+            updateData.dementiaTrainingDate = toValidDate(dementiaTrainingDate)
         }
-        if (dementiaTrainingTopupDate) {
-            const [y, m, d] = (dementiaTrainingTopupDate as string).split('-').map(Number)
-            updateData.dementiaTrainingTopupDate = new Date(Date.UTC(y, m - 1, d))
+        if (dementiaTrainingTopupDate && typeof dementiaTrainingTopupDate === 'string' && isValidDateFormat(dementiaTrainingTopupDate)) {
+            updateData.dementiaTrainingTopupDate = toValidDate(dementiaTrainingTopupDate)
         }
 
         // Documents & Signatures
@@ -298,9 +326,8 @@ export async function updateStaffProfile(formData: FormData) {
         if (signatureOnFile !== null) updateData.signatureOnFile = parseFormBool(signatureOnFile)
         if (headshotReceived !== null) updateData.headshotReceived = parseFormBool(headshotReceived)
         if (bioReceived !== null) updateData.bioReceived = parseFormBool(bioReceived)
-        if (signatureDate) {
-            const [y, m, d] = (signatureDate as string).split('-').map(Number)
-            updateData.signatureDate = new Date(Date.UTC(y, m - 1, d))
+        if (signatureDate && typeof signatureDate === 'string' && isValidDateFormat(signatureDate)) {
+            updateData.signatureDate = toValidDate(signatureDate)
         }
     }
 

@@ -323,13 +323,19 @@ export function HomeCalendarView({
   const daysInMonth = getDaysInMonth(currentDate.getFullYear(), currentDate.getMonth())
   const firstDay = getFirstDayOfMonth(currentDate.getFullYear(), currentDate.getMonth())
 
-  // Generate calendar grid
-  const days = []
+  // Generate calendar grid with unique keys
+  const days: { date: Date | null; key: string }[] = []
+  const currentMonth = currentDate.getMonth()
+  const currentYear = currentDate.getFullYear()
+  
   for (let i = 0; i < firstDay; i++) {
-    days.push(null)
+    days.push({ date: null, key: `empty-${i}` })
   }
   for (let i = 1; i <= daysInMonth; i++) {
-    days.push(new Date(currentDate.getFullYear(), currentDate.getMonth(), i))
+    days.push({ 
+      date: new Date(currentYear, currentMonth, i),
+      key: `day-${currentYear}-${currentMonth}-${i}`
+    })
   }
 
   const handlePrevMonth = () => {
@@ -511,7 +517,8 @@ export function HomeCalendarView({
 
         {/* Calendar Grid - constrained height on desktop, min height on mobile */}
         <div className="flex-1 min-h-[280px] max-h-[min(480px,55vh)] grid grid-cols-7 grid-rows-6 divide-x divide-y divide-gray-100 overflow-auto">
-          {days.map((date, index) => {
+          {days.map((day) => {
+            const date = day.date
             const dateEvents = date ? getEventsForDate(date) : []
             const isToday = date?.toDateString() === new Date().toDateString()
             const isPast = date ? date < new Date(new Date().setHours(0, 0, 0, 0)) : false
@@ -530,7 +537,7 @@ export function HomeCalendarView({
 
             return (
               <div
-                key={index}
+                key={day.key}
                 onClick={() => date && (hasEvents || isFuture) && handleDateClick(date)}
                 className={cn(
                   "min-h-[44px] sm:min-h-[64px] p-1.5 overflow-hidden transition-all relative",

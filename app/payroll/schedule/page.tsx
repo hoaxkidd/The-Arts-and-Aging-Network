@@ -2,6 +2,9 @@ import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
 import { Calendar } from "lucide-react"
 import { HomeCalendarView } from "@/components/dashboard/HomeCalendarView"
+import { formatDateTimeWords } from "@/lib/date-utils"
+
+export const revalidate = 30
 
 export default async function SchedulePage() {
   const session = await auth()
@@ -54,7 +57,7 @@ export default async function SchedulePage() {
                         <div>
                             <h3 className="font-medium text-gray-900">{event.title}</h3>
                             <p className="text-sm text-gray-500">
-                                {new Date(event.startDateTime).toLocaleDateString()} @ {new Date(event.startDateTime).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}
+                                {formatDateTimeWords(new Date(event.startDateTime))}
                             </p>
                             <p className="text-xs text-gray-400 mt-1">{event.location?.address}</p>
                         </div>

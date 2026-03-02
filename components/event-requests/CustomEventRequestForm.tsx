@@ -16,6 +16,8 @@ import { cn } from '@/lib/utils'
 import { STYLES } from '@/lib/styles'
 import { createCustomEventRequest } from '@/app/actions/event-requests'
 import { AddressAutocomplete } from '@/components/ui/AddressAutocomplete'
+import { DateTimeInput } from '@/components/ui/DateTimeInput'
+import { toInputDateTime } from '@/lib/date-utils'
 
 export function CustomEventRequestForm() {
   const router = useRouter()
@@ -27,13 +29,23 @@ export function CustomEventRequestForm() {
   // Get pre-filled date from URL params (from calendar click)
   const prefilledDate = searchParams.get('date')
 
+  // Convert prefilled date to ISO datetime format for DateTimeInput
+  const getPrefilledStartDateTime = () => {
+    if (!prefilledDate) return null
+    // prefilledDate is YYYY-MM-DD, add default time
+    return `${prefilledDate}T10:00`
+  }
+
+  const getPrefilledEndDateTime = () => {
+    if (!prefilledDate) return null
+    return `${prefilledDate}T12:00`
+  }
+
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    startDate: prefilledDate || '',
-    startTime: '10:00',
-    endDate: prefilledDate || '',
-    endTime: '12:00',
+    startDateTime: getPrefilledStartDateTime(),
+    endDateTime: getPrefilledEndDateTime(),
     locationName: '',
     locationAddress: '',
     notes: '',
@@ -42,14 +54,36 @@ export function CustomEventRequestForm() {
 
   // Update form if URL date changes
   useEffect(() => {
-    if (prefilledDate && !formData.startDate) {
+    if (prefilledDate && !formData.startDateTime) {
       setFormData(prev => ({
         ...prev,
-        startDate: prefilledDate,
-        endDate: prefilledDate
+        startDateTime: `${prefilledDate}T10:00`,
+        endDateTime: `${prefilledDate}T12:00`
       }))
     }
-  }, [prefilledDate, formData.startDate])
+  }, [prefilledDate, formData.startDateTime])
+
+  // Convert YYYY-MM-DD to DD-MM-YYYY for display
+  const toDisplayDate = (dateStr: string): string => {
+    if (!dateStr) return ''
+    if (dateStr.match(/^\d{2}-\d{2}-\d{4}$/)) return dateStr
+    if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      const [year, month, day] = dateStr.split('-')
+      return `${day}-${month}-${year}`
+    }
+    return ''
+  }
+
+  // Convert DD-MM-YYYY to YYYY-MM-DD for storage
+  const toStorageDate = (dateStr: string): string => {
+    if (!dateStr) return ''
+    if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) return dateStr
+    if (dateStr.match(/^\d{2}-\d{2}-\d{4}$/)) {
+      const [day, month, year] = dateStr.split('-')
+      return `${year}-${month}-${day}`
+    }
+    return ''
+  }
 
   const validate = () => {
     const newErrors: Record<string, string> = {}
@@ -57,30 +91,24 @@ export function CustomEventRequestForm() {
     if (!formData.title.trim()) {
       newErrors.title = 'Event title is required'
     }
-    if (!formData.startDate) {
-      newErrors.startDate = 'Start date is required'
+    if (!formData.startDateTime) {
+      newErrors.startDateTime = 'Start date and time is required'
     }
-    if (!formData.startTime) {
-      newErrors.startTime = 'Start time is required'
-    }
-    if (!formData.endDate) {
-      newErrors.endDate = 'End date is required'
-    }
-    if (!formData.endTime) {
-      newErrors.endTime = 'End time is required'
+    if (!formData.endDateTime) {
+      newErrors.endDateTime = 'End date and time is required'
     }
 
     // Validate date/time logic
-    if (formData.startDate && formData.endDate && formData.startTime && formData.endTime) {
-      const start = new Date(`${formData.startDate}T${formData.startTime}`)
-      const end = new Date(`${formData.endDate}T${formData.endTime}`)
+    if (formData.startDateTime && formData.endDateTime) {
+      const start = new Date(formData.startDateTime)
+      const end = new Date(formData.endDateTime)
 
       if (start >= end) {
-        newErrors.endTime = 'End time must be after start time'
+        newErrors.endDateTime = 'End time must be after start time'
       }
 
       if (start < new Date()) {
-        newErrors.startDate = 'Event must be in the future'
+        newErrors.startDateTime = 'Event must be in the future'
       }
     }
 
@@ -94,21 +122,28 @@ export function CustomEventRequestForm() {
     if (!validate()) return
 
     startTransition(async () => {
-      const startDateTime = `${formData.startDate}T${formData.startTime}:00`
-      const endDateTime = `${formData.endDate}T${formData.endTime}:00`
+      // Convert ISO string to the format expected by server (YYYY-MM-DDTHH:MM:SS)
+      const startDateTimeStr = formData.startDateTime 
+        ? new Date(formData.startDateTime).toISOString()
+        : ''
+      const endDateTimeStr = formData.endDateTime
+        ? new Date(formData.endDateTime).toISOString()
+        : ''
 
-      const result = await createCustomEventRequest({
+      const requestData = {
         title: formData.title,
         description: formData.description || undefined,
-        startDateTime,
-        endDateTime,
+        startDateTime: startDateTimeStr,
+        endDateTime: endDateTimeStr,
         locationName: formData.locationName || undefined,
         locationAddress: formData.locationAddress || undefined,
         notes: formData.notes || undefined,
         expectedAttendees: formData.expectedAttendees
           ? parseInt(formData.expectedAttendees)
           : undefined
-      })
+      }
+
+      const result = await createCustomEventRequest(requestData)
 
       if (result.error) {
         setErrors({ submit: result.error })
@@ -195,67 +230,34 @@ export function CustomEventRequestForm() {
           </div>
 
           {/* Date/Time */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="w-full">
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Start Date <span className="text-red-500">*</span>
+                Start Date/Time <span className="text-red-500">*</span>
               </label>
-              <input
-                type="date"
-                value={formData.startDate}
-                onChange={(e) => setFormData({
-                  ...formData,
-                  startDate: e.target.value,
-                  endDate: formData.endDate || e.target.value
-                })}
-                min={new Date().toISOString().split('T')[0]}
-                className={cn(STYLES.input, errors.startDate && "border-red-300")}
+              <DateTimeInput
+                name="startDateTime"
+                value={formData.startDateTime}
+                onChange={(val) => setFormData({ ...formData, startDateTime: val })}
+                required
+                className="w-full"
               />
-              {errors.startDate && (
-                <p className="mt-1 text-xs text-red-500">{errors.startDate}</p>
+              {errors.startDateTime && (
+                <p className="mt-1 text-xs text-red-500">{errors.startDateTime}</p>
               )}
             </div>
-            <div>
+            <div className="w-full">
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Start Time <span className="text-red-500">*</span>
+                End Date/Time <span className="text-red-500">*</span>
               </label>
-              <input
-                type="time"
-                value={formData.startTime}
-                onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
-                className={cn(STYLES.input, errors.startTime && "border-red-300")}
+              <DateTimeInput
+                name="endDateTime"
+                value={formData.endDateTime}
+                onChange={(val) => setFormData({ ...formData, endDateTime: val })}
+                required
               />
-              {errors.startTime && (
-                <p className="mt-1 text-xs text-red-500">{errors.startTime}</p>
-              )}
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                End Date <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="date"
-                value={formData.endDate}
-                onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-                min={formData.startDate || new Date().toISOString().split('T')[0]}
-                className={cn(STYLES.input, errors.endDate && "border-red-300")}
-              />
-              {errors.endDate && (
-                <p className="mt-1 text-xs text-red-500">{errors.endDate}</p>
-              )}
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                End Time <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="time"
-                value={formData.endTime}
-                onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
-                className={cn(STYLES.input, errors.endTime && "border-red-300")}
-              />
-              {errors.endTime && (
-                <p className="mt-1 text-xs text-red-500">{errors.endTime}</p>
+              {errors.endDateTime && (
+                <p className="mt-1 text-xs text-red-500">{errors.endDateTime}</p>
               )}
             </div>
           </div>

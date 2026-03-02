@@ -27,7 +27,7 @@ export async function searchUsers(query: string) {
     // HOME_ADMIN can message admins directly, or request facilitators/staff (admin approval)
     if (session.user.role === 'HOME_ADMIN') {
       andConditions.push({
-        role: { in: ['ADMIN', 'FACILITATOR', 'CONTRACTOR', 'PAYROLL'] }
+        role: { in: ['ADMIN', 'FACILITATOR', 'PAYROLL'] }
       })
     }
 

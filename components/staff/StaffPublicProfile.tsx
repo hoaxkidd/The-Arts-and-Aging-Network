@@ -41,7 +41,6 @@ const roleLabels: Record<string, string> = {
   ADMIN: 'Administrator',
   HOME_ADMIN: 'Home Administrator',
   FACILITATOR: 'Facilitator',
-  CONTRACTOR: 'Contractor',
   VOLUNTEER: 'Volunteer'
 }
 

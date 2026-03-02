@@ -6,6 +6,7 @@ import { RequestFilters } from "@/components/RequestFilters"
 import { STYLES } from "@/lib/styles"
 import { cn } from "@/lib/utils"
 import { redirect } from "next/navigation"
+import { formatDateShort } from "@/lib/date-utils"
 
 export default async function RequestsPage(props: { searchParams: Promise<{ category?: string, status?: string }> }) {
   const session = await auth()
@@ -123,7 +124,7 @@ export default async function RequestsPage(props: { searchParams: Promise<{ cate
                   </h3>
                   <p className="text-gray-600 text-sm mt-1">{req.description}</p>
                   <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
-                    <span>{new Date(req.createdAt).toLocaleDateString()}</span>
+                    <span>{formatDateShort(new Date(req.createdAt))}</span>
                     {req.amount && <span>${req.amount.toFixed(2)}</span>}
                     {req.receiptUrl && (
                       <a href={req.receiptUrl} target="_blank" className="text-secondary-600 hover:underline">

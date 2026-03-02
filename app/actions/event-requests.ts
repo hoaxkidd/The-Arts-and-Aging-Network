@@ -273,7 +273,7 @@ export async function createCustomEventRequest(data: {
     if (status === 'GATHERING_AVAILABILITY') {
       const staff = await db.user.findMany({
         where: {
-          role: { in: ['FACILITATOR', 'CONTRACTOR'] },
+          role: { in: ['FACILITATOR'] },
           status: 'ACTIVE'
         }
       })
@@ -661,7 +661,7 @@ export async function approveEventRequest(
     // Notify staff about new approved event
     const staff = await db.user.findMany({
       where: {
-        role: { in: ['FACILITATOR', 'CONTRACTOR'] },
+        role: { in: ['FACILITATOR'] },
         status: 'ACTIVE'
       }
     })
@@ -857,7 +857,7 @@ export async function getHomeEventHistory(homeId?: string) {
       if (event && !eventsMap.has(event.id)) {
         // Calculate stats
         const confirmedStaff = event.attendances.filter(
-          (a: any) => a.status === 'YES' && ['FACILITATOR', 'CONTRACTOR'].includes(a.user.role)
+          (a: any) => a.status === 'YES' && ['FACILITATOR'].includes(a.user.role)
         )
         const checkedIn = event.attendances.filter((a: any) => a.checkInTime)
         const feedbackRatings = event.attendances
@@ -886,7 +886,7 @@ export async function getHomeEventHistory(homeId?: string) {
     for (const event of directEvents) {
       if (!eventsMap.has(event.id)) {
         const confirmedStaff = event.attendances.filter(
-          (a: any) => a.status === 'YES' && ['FACILITATOR', 'CONTRACTOR'].includes(a.user.role)
+          (a: any) => a.status === 'YES' && ['FACILITATOR'].includes(a.user.role)
         )
         const checkedIn = event.attendances.filter((a: any) => a.checkInTime)
         const feedbackRatings = event.attendances

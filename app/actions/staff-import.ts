@@ -335,7 +335,7 @@ export async function importStaffFromCSV(
       
       // Set role based on Team Type, fallback to default
       const teamType = getRawValue(idx.teamType)
-      userData.role = teamType === 'Contractor' ? 'CONTRACTOR' : defaultRole
+      userData.role = defaultRole
       
       userData.status = 'PENDING'
       

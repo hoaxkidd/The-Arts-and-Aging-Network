@@ -14,7 +14,7 @@ export default async function NotificationsLayout({
   }
 
   // Determine user role for the layout
-  const role = session.user.role as "ADMIN" | "PAYROLL" | "HOME_ADMIN" | "FACILITATOR" | "CONTRACTOR"
+  const role = session.user.role as "ADMIN" | "PAYROLL" | "HOME_ADMIN" | "FACILITATOR"
 
   return (
     <DashboardLayout role={role}>

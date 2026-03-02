@@ -5,25 +5,27 @@ import { auth } from "@/auth"
 import { ROLE_ORDER, isValidRole } from "@/lib/roles"
 
 // Get all active staff for directory listing. Only includes users with a valid assigned role.
-export async function getStaffDirectory(search?: string) {
+export async function getStaffDirectory(search?: string, limit = 100) {
   const session = await auth()
   if (!session?.user?.id) return { error: "Unauthorized" }
 
-  const where: any = {
+  const where = {
     status: 'ACTIVE',
-  }
+  } as const
 
-  if (search) {
-    where.OR = [
+  const searchCondition = search ? {
+    OR: [
       { name: { contains: search } },
       { preferredName: { contains: search } },
       { position: { contains: search } },
       { region: { contains: search } }
     ]
-  }
+  } : {}
+
+  const whereClause = { ...where, ...searchCondition }
 
   const staff = await prisma.user.findMany({
-    where,
+    where: whereClause,
     select: {
       id: true,
       name: true,
@@ -35,7 +37,8 @@ export async function getStaffDirectory(search?: string) {
       region: true,
       bio: true,
     },
-    orderBy: { name: 'asc' }
+    orderBy: { name: 'asc' },
+    take: limit
   })
 
   // Only include users with a valid role; exclude HOME_ADMIN (not listed in staff directory)

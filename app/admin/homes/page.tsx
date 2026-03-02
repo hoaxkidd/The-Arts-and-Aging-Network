@@ -3,6 +3,8 @@ import { auth } from "@/auth"
 import { HomeList } from "@/components/admin/HomeList"
 import { Building } from "lucide-react"
 
+export const revalidate = 60
+
 export default async function AdminHomesPage() {
   const session = await auth()
   if (session?.user?.role !== 'ADMIN') return <div>Unauthorized</div>
@@ -17,6 +19,7 @@ export default async function AdminHomesPage() {
     }
 
     const homes = await prismaClient.geriatricHome.findMany({
+        take: 100,
         include: {
             user: {
                 select: { email: true }

@@ -2,7 +2,7 @@ import { prisma } from "@/lib/prisma"
 import { auth } from "@/auth"
 import { redirect } from "next/navigation"
 import { notFound } from "next/navigation"
-import { FileText, Download, Calendar, ArrowLeft, ExternalLink, FileType, Edit } from "lucide-react"
+import { FileText, Calendar, ArrowLeft, Edit } from "lucide-react"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
 import { STYLES } from "@/lib/styles"
@@ -104,12 +104,6 @@ export default async function FormTemplateDetailPage({
                 )}>
                   {category?.icon} {category?.label}
                 </span>
-                {template.fileType && (
-                  <span className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded text-xs font-medium flex items-center gap-1">
-                    <FileType className="w-3 h-3" />
-                    {template.fileType}
-                  </span>
-                )}
                 {template.isFillable && (
                   <span className="px-2 py-0.5 bg-green-100 text-green-700 rounded text-xs font-medium">
                     Fillable Form
@@ -157,18 +151,6 @@ export default async function FormTemplateDetailPage({
         <div className="bg-white rounded-lg border border-gray-200 p-4">
           <h2 className="text-sm font-semibold text-gray-900 mb-3">Actions</h2>
           <div className="flex flex-col gap-2">
-            {template.fileUrl && (
-              <a
-                href={template.fileUrl}
-                download={template.fileName || `${template.title}.pdf`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={cn(STYLES.btn, "bg-primary-600 text-white hover:bg-primary-700 justify-center")}
-              >
-                <Download className="w-4 h-4" />
-                Download {template.fileType || 'Form'}
-              </a>
-            )}
             {template.isFillable && (
               <Link
                 href={`/staff/forms/${template.id}/fill`}
@@ -178,28 +160,13 @@ export default async function FormTemplateDetailPage({
                 Fill Out Online
               </Link>
             )}
-            {template.fileType === 'GOOGLE_FORM' && template.fileUrl && (
-              <a
-                href={template.fileUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={cn(STYLES.btn, STYLES.btnSecondary, "justify-center")}
-              >
-                <ExternalLink className="w-4 h-4" />
-                Open Google Form
-              </a>
-            )}
           </div>
         </div>
 
         {/* Stats */}
         <div className="bg-white rounded-lg border border-gray-200 p-4">
           <h2 className="text-sm font-semibold text-gray-900 mb-3">Usage Stats</h2>
-          <div className="grid grid-cols-3 gap-4">
-            <div>
-              <p className="text-xs text-gray-500">Downloads</p>
-              <p className="text-lg font-bold text-gray-900">{template.downloadCount}</p>
-            </div>
+          <div className="grid grid-cols-2 gap-4">
             <div>
               <p className="text-xs text-gray-500">Total Submissions</p>
               <p className="text-lg font-bold text-gray-900">{template._count.submissions}</p>

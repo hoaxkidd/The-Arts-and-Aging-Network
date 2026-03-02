@@ -5,9 +5,12 @@ import { STYLES } from "@/lib/styles"
 import { cn } from "@/lib/utils"
 import UsersTable from "@/components/admin/UsersTable"
 
+export const revalidate = 60
+
 export default async function UsersPage() {
   const users = await prisma.user.findMany({
     orderBy: { name: 'asc' },
+    take: 100,
     include: {
       geriatricHome: true,
     },

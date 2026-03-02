@@ -21,7 +21,7 @@ export function needsOnboarding(user: SessionUser | null | undefined): boolean {
   if (user.onboardingCompletedAt) return false
   const skipCount = user.onboardingSkipCount ?? 0
   if (skipCount >= MAX_SKIP_COUNT) return false
-  const staffRoles = ['FACILITATOR', 'CONTRACTOR', 'VOLUNTEER', 'BOARD', 'PARTNER']
+  const staffRoles = ['FACILITATOR', 'VOLUNTEER', 'BOARD', 'PARTNER']
   const dashboardRoles = ['HOME_ADMIN']
   return staffRoles.includes(user.role ?? '') || dashboardRoles.includes(user.role ?? '')
 }

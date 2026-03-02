@@ -3,6 +3,8 @@ import { redirect } from "next/navigation"
 import { getMyConfirmedEvents } from "@/app/actions/staff-attendance"
 import { StaffScheduleView } from "@/components/staff/StaffScheduleView"
 
+export const revalidate = 30
+
 export default async function StaffMyEventsPage() {
   const session = await auth()
   if (!session?.user?.id) redirect('/login')

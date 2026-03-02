@@ -9,6 +9,8 @@ import { STYLES } from "@/lib/styles"
 import { cn } from "@/lib/utils"
 import { AddressAutocomplete } from "@/components/ui/AddressAutocomplete"
 import { FormTemplateBuilder } from "@/components/admin/FormTemplateBuilder"
+import { DateTimeInput } from "@/components/ui/DateTimeInput"
+import { toInputDateTime } from "@/lib/date-utils"
 
 interface CurrentUser {
   name: string
@@ -110,30 +112,24 @@ export function EventForm({
               <Calendar className="w-4 h-4 text-primary-500" />
               Start Time
             </label>
-            <div className="relative">
-              <input
-                type="datetime-local"
-                name="startDateTime"
-                required
-                defaultValue={initialData?.startDateTime ? new Date(initialData.startDateTime).toISOString().slice(0, 16) : ''}
-                className={cn(STYLES.input, "pl-3 pr-3 bg-primary-50/30 border-primary-200 focus:border-primary-500 focus:ring-primary-100")}
-              />
-            </div>
+            <DateTimeInput
+              name="startDateTime"
+              value={initialData?.startDateTime ? toInputDateTime(initialData.startDateTime) : null}
+              required
+              className="bg-primary-50/30 border-primary-200 focus:border-primary-500 focus:ring-primary-100"
+            />
           </div>
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-1 flex items-center gap-1.5">
               <Clock className="w-4 h-4 text-primary-500" />
               End Time
             </label>
-            <div className="relative">
-              <input
-                type="datetime-local"
-                name="endDateTime"
-                required
-                defaultValue={initialData?.endDateTime ? new Date(initialData.endDateTime).toISOString().slice(0, 16) : ''}
-                className={cn(STYLES.input, "pl-3 pr-3 bg-primary-50/30 border-primary-200 focus:border-primary-500 focus:ring-primary-100")}
-              />
-            </div>
+            <DateTimeInput
+              name="endDateTime"
+              value={initialData?.endDateTime ? toInputDateTime(initialData.endDateTime) : null}
+              required
+              className="bg-primary-50/30 border-primary-200 focus:border-primary-500 focus:ring-primary-100"
+            />
           </div>
         </div>
         {timeError && (
@@ -233,6 +229,27 @@ export function EventForm({
                 className={STYLES.input}
             />
           </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-1">
+            Check-in Window (minutes before event)
+          </label>
+          <select
+            name="checkInWindowMinutes"
+            defaultValue={initialData?.checkInWindowMinutes || 120}
+            className={cn(STYLES.input, STYLES.select)}
+          >
+            <option value={30}>30 minutes before</option>
+            <option value={60}>1 hour before</option>
+            <option value={120}>2 hours before</option>
+            <option value={180}>3 hours before</option>
+            <option value={240}>4 hours before</option>
+            <option value={0}>Only at event start</option>
+          </select>
+          <p className="text-xs text-gray-500 mt-1">
+            When staff can start checking in to the event
+          </p>
         </div>
 
         <div>
@@ -339,7 +356,7 @@ export function EventForm({
               <label className="block text-xs font-medium text-gray-500 mb-1">Name</label>
               <input
                 name="organizerName"
-                defaultValue={initialData?.organizerName || currentUser?.name || ''}
+                defaultValue={''}
                 className={STYLES.input}
                 placeholder="e.g. John Smith"
               />
@@ -348,7 +365,7 @@ export function EventForm({
               <label className="block text-xs font-medium text-gray-500 mb-1">Role / Title</label>
               <input
                 name="organizerRole"
-                defaultValue={initialData?.organizerRole || currentUser?.role || ''}
+                defaultValue={''}
                 className={STYLES.input}
                 placeholder="e.g. Event Coordinator"
               />
@@ -360,7 +377,7 @@ export function EventForm({
               <input
                 type="email"
                 name="organizerEmail"
-                defaultValue={initialData?.organizerEmail || currentUser?.email || ''}
+                defaultValue={''}
                 className={STYLES.input}
                 placeholder="e.g. organizer@example.com"
               />

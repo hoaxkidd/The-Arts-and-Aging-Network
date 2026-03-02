@@ -4,6 +4,26 @@ import { prisma } from "@/lib/prisma"
 import { auth } from "@/auth"
 import { revalidatePath } from "next/cache"
 
+// Helper to parse date string in YYYY-MM-DD or DD-MM-YYYY format
+function parseDateString(dateStr: string): Date | null {
+  if (!dateStr) return null
+  
+  // Handle DD-MM-YYYY format
+  if (dateStr.match(/^\d{2}-\d{2}-\d{4}$/)) {
+    const [day, month, year] = dateStr.split('-')
+    return new Date(`${year}-${month}-${day}T00:00:00`)
+  }
+  
+  // Handle YYYY-MM-DD format
+  if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+    return new Date(`${dateStr}T00:00:00`)
+  }
+  
+  // Fallback to default parsing
+  const date = new Date(dateStr)
+  return isNaN(date.getTime()) ? null : date
+}
+
 // Submit a mileage entry
 export async function submitMileageEntry(data: {
   date: string
@@ -17,14 +37,18 @@ export async function submitMileageEntry(data: {
   if (!session?.user?.id) return { error: "Unauthorized" }
 
   try {
-    const date = new Date(data.date)
-    const month = date.getMonth() + 1
-    const year = date.getFullYear()
+    const parsedDate = parseDateString(data.date)
+    if (!parsedDate || isNaN(parsedDate.getTime())) {
+      return { error: "Invalid date format" }
+    }
+    
+    const month = parsedDate.getMonth() + 1
+    const year = parsedDate.getFullYear()
 
     await prisma.mileageEntry.create({
       data: {
         userId: session.user.id,
-        date,
+        date: parsedDate,
         month,
         year,
         startLocation: data.startLocation,

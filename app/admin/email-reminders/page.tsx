@@ -7,6 +7,8 @@ import Link from "next/link"
 import { ManualReminderTrigger } from "@/components/admin/ManualReminderTrigger"
 import { EmailReminderFilters } from "@/components/admin/EmailReminderFilters"
 
+export const revalidate = 60
+
 export default async function EmailRemindersPage({
   searchParams
 }: {

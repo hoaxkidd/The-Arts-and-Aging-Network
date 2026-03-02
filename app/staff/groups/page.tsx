@@ -5,6 +5,8 @@ import { MessageSquare, Users, Clock, Plus, Lock } from "lucide-react"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
 
+export const revalidate = 30
+
 export default async function StaffMessagesPage() {
   const session = await auth()
   if (!session?.user?.id) redirect('/login')

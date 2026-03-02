@@ -29,7 +29,7 @@ export default auth((req) => {
       // Strict Segregation: Redirect users to their portals
       if (userRole === 'PAYROLL') return NextResponse.redirect(new URL('/payroll', req.nextUrl))
       if (userRole === 'HOME_ADMIN') return NextResponse.redirect(new URL('/dashboard', req.nextUrl))
-      if (userRole === 'FACILITATOR' || userRole === 'CONTRACTOR') {
+      if (userRole === 'FACILITATOR') {
         return NextResponse.redirect(new URL('/staff', req.nextUrl))
       }
       return NextResponse.redirect(new URL('/', req.nextUrl))
@@ -43,7 +43,7 @@ export default auth((req) => {
     // Strict Segregation: Redirect other roles to their portals
     if (userRole === 'ADMIN') return NextResponse.redirect(new URL('/admin', req.nextUrl))
     if (userRole === 'HOME_ADMIN') return NextResponse.redirect(new URL('/dashboard', req.nextUrl))
-    if (userRole === 'FACILITATOR' || userRole === 'CONTRACTOR') {
+    if (userRole === 'FACILITATOR') {
       return NextResponse.redirect(new URL('/staff', req.nextUrl))
     }
 
@@ -58,7 +58,7 @@ export default auth((req) => {
     if (userRole !== 'HOME_ADMIN') {
       if (userRole === 'ADMIN') return NextResponse.redirect(new URL('/admin', req.nextUrl))
       if (userRole === 'PAYROLL') return NextResponse.redirect(new URL('/payroll', req.nextUrl))
-      if (userRole === 'FACILITATOR' || userRole === 'CONTRACTOR') {
+      if (userRole === 'FACILITATOR') {
         return NextResponse.redirect(new URL('/staff', req.nextUrl))
       }
       return NextResponse.redirect(new URL('/', req.nextUrl))
@@ -96,10 +96,10 @@ export default auth((req) => {
     })
   }
 
-  // Protect staff routes (FACILITATOR/CONTRACTOR/VOLUNTEER/BOARD/PARTNER)
+  // Protect staff routes (FACILITATOR/VOLUNTEER/BOARD/PARTNER/PAYROLL)
   if (pathname.startsWith('/staff')) {
     if (!isLoggedIn) return NextResponse.redirect(new URL('/login', req.nextUrl))
-    const allowedStaffRoles = ['FACILITATOR', 'CONTRACTOR', 'VOLUNTEER', 'BOARD', 'PARTNER']
+    const allowedStaffRoles = ['FACILITATOR', 'VOLUNTEER', 'BOARD', 'PARTNER', 'PAYROLL']
     if (!allowedStaffRoles.includes(userRole || '')) {
       if (userRole === 'ADMIN') return NextResponse.redirect(new URL('/admin', req.nextUrl))
       if (userRole === 'PAYROLL') return NextResponse.redirect(new URL('/payroll', req.nextUrl))
@@ -113,7 +113,7 @@ export default auth((req) => {
     if (userRole === 'ADMIN') return NextResponse.redirect(new URL('/admin', req.nextUrl))
     if (userRole === 'PAYROLL') return NextResponse.redirect(new URL('/payroll', req.nextUrl))
     if (userRole === 'HOME_ADMIN') return NextResponse.redirect(new URL('/dashboard', req.nextUrl))
-    if (userRole === 'FACILITATOR' || userRole === 'CONTRACTOR' || userRole === 'VOLUNTEER' || userRole === 'BOARD' || userRole === 'PARTNER') {
+    if (userRole === 'FACILITATOR' || userRole === 'VOLUNTEER' || userRole === 'BOARD' || userRole === 'PARTNER') {
       return NextResponse.redirect(new URL('/staff', req.nextUrl))
     }
     return NextResponse.redirect(new URL('/', req.nextUrl))
