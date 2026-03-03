@@ -51,6 +51,8 @@ export default async function EditFormTemplatePage({
           initialDescription={template.description ?? ''}
           initialCategory={template.category ?? 'EVENT_SIGNUP'}
           initialFormFields={safeFormFields}
+          initialIsPublic={template.isPublic ?? true}
+          initialAllowedRoles={template.allowedRoles ?? null}
         />
       </div>
     </div>

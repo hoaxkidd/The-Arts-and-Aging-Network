@@ -1,11 +1,13 @@
 'use client'
 
 import { useState } from 'react'
-import { Trash2, Save, Loader2, ChevronDown, Eye } from 'lucide-react'
+import { Trash2, Save, Loader2, ChevronDown, Eye, Users, Globe, Lock, Check } from 'lucide-react'
 import type { FormTemplateField, FormFieldType } from '@/lib/form-template-types'
 import { FORM_FIELD_TYPES, parseFormFields } from '@/lib/form-template-types'
 import { createFormTemplate, updateFormTemplate } from '@/app/actions/form-templates'
 import { FormTemplateView } from '@/components/forms/FormTemplateView'
+import { VALID_ROLES, ROLE_LABELS } from '@/lib/roles'
+import { cn } from '@/lib/utils'
 
 const CATEGORIES = [
   { value: 'EVENT_SIGNUP', label: 'Event sign-up' },
@@ -37,6 +39,8 @@ type Props = {
   initialDescription?: string | null
   initialCategory?: string
   initialFormFields?: string | null
+  initialIsPublic?: boolean
+  initialAllowedRoles?: string | null
   /** Called after successful create (not on update). Receives the new template. */
   onCreated?: (template: { id: string; title: string }) => void
 }
@@ -47,11 +51,17 @@ export function FormTemplateBuilder({
   initialDescription = '',
   initialCategory = 'EVENT_SIGNUP',
   initialFormFields = null,
+  initialIsPublic = true,
+  initialAllowedRoles = null,
   onCreated,
 }: Props) {
   const [title, setTitle] = useState(initialTitle)
   const [description, setDescription] = useState(initialDescription || '')
   const [category, setCategory] = useState(initialCategory)
+  const [isPublic, setIsPublic] = useState(initialIsPublic)
+  const [selectedRoles, setSelectedRoles] = useState<string[]>(
+    initialAllowedRoles ? initialAllowedRoles.split(',') : []
+  )
   const [fields, setFields] = useState<FormTemplateField[]>(() =>
     parseFormFields(initialFormFields)
   )
@@ -85,6 +95,12 @@ export function FormTemplateBuilder({
     })
   }
 
+  const toggleRole = (role: string) => {
+    setSelectedRoles((prev) =>
+      prev.includes(role) ? prev.filter((r) => r !== role) : [...prev, role]
+    )
+  }
+
   const handleSave = async () => {
     setError(null)
     setSuccess(false)
@@ -109,6 +125,8 @@ export function FormTemplateBuilder({
           category,
           formFields: formFieldsJson,
           isFillable,
+          isPublic,
+          allowedRoles: selectedRoles,
         })
         if (res.error) throw new Error(res.error)
       } else {
@@ -118,6 +136,8 @@ export function FormTemplateBuilder({
           category,
           formFields: formFieldsJson,
           isFillable,
+          isPublic,
+          allowedRoles: selectedRoles,
         })
         if (res.error) throw new Error(res.error)
         if (res.data && onCreated) onCreated({ id: res.data.id, title: res.data.title })
@@ -204,6 +224,81 @@ export function FormTemplateBuilder({
               ))}
             </select>
           </div>
+
+          {/* Public/Private Toggle */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Visibility
+            </label>
+            <div className="flex items-center gap-4">
+              <button
+                type="button"
+                onClick={() => setIsPublic(true)}
+                className={cn(
+                  "flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg border-2 transition-colors",
+                  isPublic
+                    ? "border-primary-500 bg-primary-50 text-primary-700"
+                    : "border-gray-200 text-gray-600 hover:border-gray-300"
+                )}
+              >
+                <Globe className="w-4 h-4" />
+                Public
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsPublic(false)}
+                className={cn(
+                  "flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg border-2 transition-colors",
+                  !isPublic
+                    ? "border-purple-500 bg-purple-50 text-purple-700"
+                    : "border-gray-200 text-gray-600 hover:border-gray-300"
+                )}
+              >
+                <Lock className="w-4 h-4" />
+                Private
+              </button>
+            </div>
+          </div>
+
+          {/* Access Control */}
+          {!isPublic && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <Users className="w-4 h-4 inline mr-1" />
+                Access Control
+              </label>
+              <p className="text-xs text-gray-500 mb-2">
+                Select which roles can access this form. Leave all unchecked for all roles.
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                {VALID_ROLES.map((role) => (
+                  <button
+                    key={role}
+                    type="button"
+                    onClick={() => toggleRole(role)}
+                    className={cn(
+                      "flex items-center gap-2 p-2 rounded-lg border transition-colors text-left",
+                      selectedRoles.includes(role)
+                        ? "border-primary-500 bg-primary-50"
+                        : "border-gray-200 hover:border-gray-300"
+                    )}
+                  >
+                    <div className={cn(
+                      "w-4 h-4 rounded border flex items-center justify-center",
+                      selectedRoles.includes(role)
+                        ? "bg-primary-500 border-primary-500"
+                        : "border-gray-300"
+                    )}>
+                      {selectedRoles.includes(role) && (
+                        <Check className="w-3 h-3 text-white" />
+                      )}
+                    </div>
+                    <span className="text-sm text-gray-700">{ROLE_LABELS[role]}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="border border-gray-200 rounded-lg p-6 space-y-4 bg-white">

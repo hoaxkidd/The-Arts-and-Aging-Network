@@ -1,14 +1,17 @@
 import { prisma } from "@/lib/prisma"
 import { auth } from "@/auth"
 import { redirect } from "next/navigation"
-import { FileText, Download, Calendar, CheckCircle, Clock, XCircle } from "lucide-react"
+import { FileText, Calendar, CheckCircle, Clock, XCircle, Search } from "lucide-react"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
+import { ROLE_LABELS } from "@/lib/roles"
+import { FormTemplateCard } from "@/components/admin/FormTemplateCard"
+import { FormTemplateFilters } from "@/components/admin/FormTemplateFilters"
 
 export default async function StaffFormsPage({
   searchParams
 }: {
-  searchParams: Promise<{ category?: string; tab?: string }>
+  searchParams: Promise<{ category?: string; tab?: string; view?: string; sort?: string; search?: string; status?: string }>
 }) {
   const session = await auth()
   if (!session?.user?.id) redirect('/login')
@@ -16,6 +19,10 @@ export default async function StaffFormsPage({
   const params = await searchParams
   const categoryFilter = params.category || 'ALL'
   const activeTab = params.tab || 'browse'
+  const view = params.view || 'cards'
+  const sort = params.sort || 'title'
+  const search = params.search || ''
+  const statusFilter = params.status || 'active'
 
   // Get active templates
   const userRole = session.user.role || ''
@@ -24,29 +31,38 @@ export default async function StaffFormsPage({
   // Build query based on user role
   let templates
   const categoryFilterObj = categoryFilter !== 'ALL' ? { category: categoryFilter } : {}
+  const statusFilterObj = statusFilter === 'active' ? { isActive: true } : {}
+  
+  // Build where clause based on filters
+  const where: any = {
+    ...categoryFilterObj,
+    ...statusFilterObj,
+  }
+  
+  // Add search filter if provided
+  if (search) {
+    where.OR = [
+      { title: { contains: search } },
+      { description: { contains: search } }
+    ]
+  }
 
   if (isAdmin) {
-    // Admin sees all active forms
+    // Admin sees all forms based on status filter
     templates = await prisma.formTemplate.findMany({
-      where: {
-        isActive: true,
-        ...categoryFilterObj
-      },
+      where,
       include: {
         _count: {
           select: { submissions: true }
         }
       },
-      orderBy: [
-        { createdAt: 'desc' }
-      ]
+      orderBy: sort === 'title' ? { title: 'asc' } : sort === 'category' ? { category: 'asc' } : { createdAt: 'desc' }
     })
   } else {
     // Non-admin: show public forms OR forms where their role has access
     templates = await prisma.formTemplate.findMany({
       where: {
-        isActive: true,
-        ...categoryFilterObj,
+        ...where,
         OR: [
           { isPublic: true },  // Public forms
           { allowedRoles: { contains: userRole } }  // Role-restricted forms
@@ -57,16 +73,9 @@ export default async function StaffFormsPage({
           select: { submissions: true }
         }
       },
-      orderBy: [
-        { createdAt: 'desc' }
-      ]
+      orderBy: sort === 'title' ? { title: 'asc' } : sort === 'category' ? { category: 'asc' } : { createdAt: 'desc' }
     })
   }
-
-  // DEBUG: Remove these after testing
-  console.log('[StaffForms] User role:', userRole)
-  console.log('[StaffForms] Is admin:', isAdmin)
-  console.log('[StaffForms] Templates found:', templates?.length || 0)
 
   // Get user's submissions
   const mySubmissions = await prisma.formSubmission.findMany({
@@ -94,6 +103,7 @@ export default async function StaffFormsPage({
   })
 
   const categories = [
+    { value: 'EVENT_SIGNUP', label: 'Event Sign-up', icon: '📅' },
     { value: 'INCIDENT', label: 'Incident Reports', icon: '⚠️' },
     { value: 'FEEDBACK', label: 'Feedback Forms', icon: '💬' },
     { value: 'EVALUATION', label: 'Evaluations', icon: '📊' },
@@ -113,14 +123,31 @@ export default async function StaffFormsPage({
     <div className="h-full flex flex-col">
       {/* Header */}
       <header className="flex-shrink-0 pb-3">
-        <h1 className="text-lg font-bold text-gray-900">Form Templates</h1>
-        <p className="text-xs text-gray-500">Access forms and track your submissions</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-lg font-bold text-gray-900">Form Templates</h1>
+            <p className="text-xs text-gray-500">Access forms and track your submissions</p>
+          </div>
+        </div>
       </header>
+
+      {/* Filters */}
+      <div className="flex-shrink-0 mt-4">
+        <FormTemplateFilters
+          categories={categories.map(c => ({ value: c.value, label: c.label, color: 'blue' }))}
+          currentCategory={categoryFilter}
+          currentStatus={statusFilter}
+          currentView={view}
+          currentSort={sort}
+          currentSearch={search}
+          mode="staff"
+        />
+      </div>
 
       {/* Tabs */}
       <div className="flex-shrink-0 flex items-center gap-2 mb-4 border-b border-gray-200">
         <Link
-          href="/staff/forms?tab=browse"
+          href={`/staff/forms?tab=browse&view=${view}&sort=${sort}&search=${search}&category=${categoryFilter}&status=${statusFilter}`}
           className={cn(
             "px-4 py-2 text-sm font-medium border-b-2 transition-colors",
             activeTab === 'browse'
@@ -131,7 +158,7 @@ export default async function StaffFormsPage({
           Browse Templates ({templates.length})
         </Link>
         <Link
-          href="/staff/forms?tab=submissions"
+          href={`/staff/forms?tab=submissions&view=${view}&sort=${sort}&search=${search}&category=${categoryFilter}&status=${statusFilter}`}
           className={cn(
             "px-4 py-2 text-sm font-medium border-b-2 transition-colors",
             activeTab === 'submissions'
@@ -177,46 +204,81 @@ export default async function StaffFormsPage({
             </div>
           </div>
 
-          {/* Templates Grid */}
+          {/* Templates Display */}
           <div className="flex-1 min-h-0 overflow-auto">
             {templates.length === 0 ? (
               <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
                 <FileText className="w-10 h-10 text-gray-300 mx-auto mb-2" />
-                <p className="text-sm text-gray-500">No forms available in this category</p>
+                <p className="text-sm text-gray-500">{search ? 'No forms match your search' : 'No forms available in this category'}</p>
               </div>
-            ) : (
-              <div className="space-y-3">
-                {templates.map((template) => {
-                  const category = categories.find(c => c.value === template.category)
-                  return (
-                    <Link
-                      key={template.id}
-                      href={`/staff/forms/${template.id}`}
-                      className="block bg-white rounded-lg border border-gray-200 p-4 hover:border-primary-300 transition-colors"
-                    >
-                      <div className="flex items-start gap-3">
-                        <div className="w-12 h-12 rounded-lg bg-primary-100 text-primary-600 flex items-center justify-center flex-shrink-0">
-                          <FileText className="w-6 h-6" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h3 className="text-sm font-semibold text-gray-900 mb-1">
-                            {template.title}
-                          </h3>
-                          {template.description && (
-                            <p className="text-xs text-gray-600 mb-2 line-clamp-2">
-                              {template.description}
-                            </p>
-                          )}
-                          <div className="flex items-center gap-3 text-xs text-gray-500">
-                            <span className="px-2 py-0.5 bg-gray-100 rounded">
-                              {category?.icon} {category?.label}
+            ) : view === 'table' ? (
+              /* Table View */
+              <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                <table className="w-full">
+                  <thead className="bg-gray-50 border-b border-gray-200">
+                    <tr>
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Form</th>
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Category</th>
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Status</th>
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Access</th>
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Submissions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {templates.map((template) => {
+                      const category = categories.find(c => c.value === template.category)
+                      const accessLabel = template.isPublic ? 'All' : (template.allowedRoles ? template.allowedRoles.split(',').map(r => ROLE_LABELS[r as keyof typeof ROLE_LABELS] || r).join(', ') : 'All')
+                      return (
+                        <tr key={template.id} className="hover:bg-gray-50">
+                          <td className="px-4 py-3">
+                            <Link href={`/staff/forms/${template.id}`} className="block">
+                              <span className="text-sm font-medium text-gray-900 hover:text-primary-600">{template.title}</span>
+                              {template.description && (
+                                <p className="text-xs text-gray-500 line-clamp-1">{template.description}</p>
+                              )}
+                            </Link>
+                          </td>
+                          <td className="px-4 py-3">
+                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
+                              {category?.icon} {category?.label || template.category}
                             </span>
-                          </div>
-                        </div>
-                      </div>
-                    </Link>
-                  )
-                })}
+                          </td>
+                          <td className="px-4 py-3">
+                            <span className={cn(
+                              "inline-flex px-2 py-1 rounded-full text-xs font-medium",
+                              template.isActive ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"
+                            )}>
+                              {template.isActive ? 'Active' : 'Archived'}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3">
+                            <span className={cn(
+                              "inline-flex px-2 py-1 rounded-full text-xs font-medium",
+                              template.isPublic ? "bg-blue-100 text-blue-700" : "bg-purple-100 text-purple-700"
+                            )}>
+                              {accessLabel}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3">
+                            <span className="text-sm text-gray-900">{template._count.submissions}</span>
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            /* Card View */
+ ) : (
+                           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {templates.map((template) => (
+                  <FormTemplateCard
+                    key={template.id}
+                    template={template}
+                    categories={categories.map(c => ({ value: c.value, label: c.label }))}
+                    mode="staff"
+                  />
+                ))}
               </div>
             )}
           </div>

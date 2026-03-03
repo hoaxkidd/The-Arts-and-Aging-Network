@@ -134,6 +134,7 @@ export async function createFormTemplate(data: {
   tags?: string[]
   requiredFor?: string[]
   isPublic?: boolean
+  allowedRoles?: string[]
 }) {
   const session = await auth()
   if (session?.user?.role !== 'ADMIN') {
@@ -149,6 +150,10 @@ export async function createFormTemplate(data: {
   }
 
   try {
+    const allowedRolesStr = data.allowedRoles && data.allowedRoles.length > 0 
+      ? data.allowedRoles.join(',') 
+      : null
+    
     const template = await prisma.formTemplate.create({
       data: {
         title: data.title,
@@ -161,6 +166,7 @@ export async function createFormTemplate(data: {
         tags: data.tags ? JSON.stringify(data.tags) : null,
         requiredFor: data.requiredFor ? JSON.stringify(data.requiredFor) : null,
         isPublic: data.isPublic !== undefined ? data.isPublic : true,
+        allowedRoles: allowedRolesStr,
         uploadedBy: session.user.id
       }
     })
@@ -190,9 +196,7 @@ export async function updateFormTemplate(
     title?: string
     description?: string
     category?: string
-    fileUrl?: string
     fileName?: string
-    fileType?: string
     fileSize?: number
     isFillable?: boolean
     formFields?: string
@@ -201,6 +205,7 @@ export async function updateFormTemplate(
     isPublic?: boolean
     isActive?: boolean
     version?: string
+    allowedRoles?: string[]
   }
 ) {
   const session = await auth()
@@ -223,6 +228,11 @@ export async function updateFormTemplate(
     if (data.isPublic !== undefined) updates.isPublic = data.isPublic
     if (data.isActive !== undefined) updates.isActive = data.isActive
     if (data.version !== undefined) updates.version = data.version
+    if (data.allowedRoles !== undefined) {
+      updates.allowedRoles = data.allowedRoles && data.allowedRoles.length > 0 
+        ? data.allowedRoles.join(',') 
+        : null
+    }
 
     const template = await prisma.formTemplate.update({
       where: { id },

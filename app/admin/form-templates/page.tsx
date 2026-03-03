@@ -1,19 +1,20 @@
 import { prisma } from "@/lib/prisma"
 import { auth } from "@/auth"
 import { redirect } from "next/navigation"
-import { FileText, Plus, Upload } from "lucide-react"
+import { FileText, Plus } from "lucide-react"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
 import { STYLES } from "@/lib/styles"
 import { FormTemplateFilters } from "@/components/admin/FormTemplateFilters"
 import { FormTemplateCard } from "@/components/admin/FormTemplateCard"
+import { ROLE_LABELS } from "@/lib/roles"
 
 export const revalidate = 60
 
 export default async function FormTemplatesAdminPage({
   searchParams
 }: {
-  searchParams: Promise<{ category?: string; status?: string }>
+  searchParams: Promise<{ category?: string; status?: string; view?: string; sort?: string; search?: string }>
 }) {
   const session = await auth()
   if (session?.user?.role !== 'ADMIN') redirect('/dashboard')
@@ -21,9 +22,13 @@ export default async function FormTemplatesAdminPage({
   const params = await searchParams
   const categoryFilter = params.category || 'ALL'
   const statusFilter = params.status || 'ALL'
+  const view = params.view || 'cards'
+  const sort = params.sort || 'title'
+  const search = params.search || ''
 
   // Build where clause
   const where: any = {}
+  
   if (categoryFilter !== 'ALL') {
     where.category = categoryFilter
   }
@@ -31,6 +36,28 @@ export default async function FormTemplatesAdminPage({
     where.isActive = true
   } else if (statusFilter === 'ARCHIVED') {
     where.isActive = false
+  }
+  if (search) {
+    where.OR = [
+      { title: { contains: search } },
+      { description: { contains: search } }
+    ]
+  }
+
+  // Build orderBy
+  let orderBy: any = []
+  if (sort === 'title') {
+    orderBy = [{ title: 'asc' }]
+  } else if (sort === 'date_desc') {
+    orderBy = [{ createdAt: 'desc' }]
+  } else if (sort === 'date_asc') {
+    orderBy = [{ createdAt: 'asc' }]
+  } else if (sort === 'category') {
+    orderBy = [{ category: 'asc' }]
+  } else if (sort === 'role') {
+    orderBy = [{ allowedRoles: 'asc' }]
+  } else {
+    orderBy = [{ isActive: 'desc' }, { createdAt: 'desc' }]
   }
 
   const templates = await prisma.formTemplate.findMany({
@@ -43,10 +70,7 @@ export default async function FormTemplatesAdminPage({
         select: { submissions: true }
       }
     },
-    orderBy: [
-      { isActive: 'desc' },
-      { createdAt: 'desc' }
-    ]
+    orderBy
   })
 
   // Serialize for client component
@@ -57,6 +81,7 @@ export default async function FormTemplatesAdminPage({
   }))
 
   const categories = [
+    { value: 'EVENT_SIGNUP', label: 'Event Sign-up', color: 'blue' },
     { value: 'INCIDENT', label: 'Incident Reports', color: 'red' },
     { value: 'FEEDBACK', label: 'Feedback Forms', color: 'blue' },
     { value: 'EVALUATION', label: 'Evaluations', color: 'purple' },
@@ -124,15 +149,19 @@ export default async function FormTemplatesAdminPage({
           categories={categories}
           currentCategory={categoryFilter}
           currentStatus={statusFilter}
+          currentView={view}
+          currentSort={sort}
+          currentSearch={search}
+          mode="admin"
         />
       </div>
 
-      {/* Templates Grid */}
+      {/* Templates Display */}
       <div className="flex-1 min-h-0 overflow-auto mt-4">
         {templates.length === 0 ? (
           <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
             <FileText className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-            <p className="text-gray-500">No form templates found</p>
+            <p className="text-gray-500">{search ? 'No forms match your search' : 'No form templates found'}</p>
             <Link
               href="/admin/form-templates/new"
               className={cn(STYLES.btn, STYLES.btnPrimary, "mt-4")}
@@ -140,13 +169,75 @@ export default async function FormTemplatesAdminPage({
               Create First Template
             </Link>
           </div>
+        ) : view === 'table' ? (
+          /* Table View */
+          <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+            <table className="w-full">
+              <thead className="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Form</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Category</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Status</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Access</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Submissions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {serializedTemplates.map((template) => {
+                  const category = categories.find(c => c.value === template.category)
+                  const accessLabel = template.isPublic ? 'All' : (template.allowedRoles ? template.allowedRoles.split(',').map(r => ROLE_LABELS[r as keyof typeof ROLE_LABELS] || r).join(', ') : 'All')
+                  return (
+                    <tr key={template.id} className="hover:bg-gray-50">
+                      <td className="px-4 py-3">
+                        <Link href={`/admin/form-templates/${template.id}/edit`} className="block">
+                          <span className="text-sm font-medium text-gray-900 hover:text-primary-600">{template.title}</span>
+                          {template.description && (
+                            <p className="text-xs text-gray-500 line-clamp-1">{template.description}</p>
+                          )}
+                        </Link>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className={cn(
+                          "inline-flex px-2 py-1 rounded-full text-xs font-medium",
+                          category ? `bg-${category.color}-100 text-${category.color}-700` : "bg-gray-100 text-gray-700"
+                        )}>
+                          {category?.label || template.category}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className={cn(
+                          "inline-flex px-2 py-1 rounded-full text-xs font-medium",
+                          template.isActive ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"
+                        )}>
+                          {template.isActive ? 'Active' : 'Archived'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className={cn(
+                          "inline-flex px-2 py-1 rounded-full text-xs font-medium",
+                          template.isPublic ? "bg-blue-100 text-blue-700" : "bg-purple-100 text-purple-700"
+                        )}>
+                          {accessLabel}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className="text-sm text-gray-900">{template._count.submissions}</span>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
         ) : (
+          /* Card View */
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {serializedTemplates.map((template) => (
               <FormTemplateCard
                 key={template.id}
                 template={template}
                 categories={categories}
+                mode="admin"
               />
             ))}
           </div>

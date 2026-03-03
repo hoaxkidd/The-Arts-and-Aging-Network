@@ -2,7 +2,8 @@ import { prisma } from "@/lib/prisma"
 import { auth } from "@/auth"
 import { redirect } from "next/navigation"
 import { notFound } from "next/navigation"
-import { FileText, Calendar, ArrowLeft, Edit } from "lucide-react"
+import { FileText, Calendar, ArrowLeft, Edit, Users, Lock, Globe } from "lucide-react"
+import { ROLE_LABELS } from "@/lib/roles"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
 import { STYLES } from "@/lib/styles"
@@ -107,6 +108,25 @@ export default async function FormTemplateDetailPage({
                 {template.isFillable && (
                   <span className="px-2 py-0.5 bg-green-100 text-green-700 rounded text-xs font-medium">
                     Fillable Form
+                  </span>
+                )}
+                <span className={cn(
+                  "px-2 py-0.5 rounded text-xs font-medium flex items-center gap-1",
+                  template.isActive ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"
+                )}>
+                  {template.isActive ? 'Active' : 'Archived'}
+                </span>
+                <span className={cn(
+                  "px-2 py-0.5 rounded text-xs font-medium flex items-center gap-1",
+                  template.isPublic ? "bg-blue-100 text-blue-700" : "bg-purple-100 text-purple-700"
+                )}>
+                  {template.isPublic ? <Globe className="w-3 h-3" /> : <Lock className="w-3 h-3" />}
+                  {template.isPublic ? 'Public' : 'Private'}
+                </span>
+                {!template.isPublic && template.allowedRoles && (
+                  <span className="px-2 py-0.5 bg-orange-100 text-orange-700 rounded text-xs font-medium flex items-center gap-1">
+                    <Users className="w-3 h-3" />
+                    {template.allowedRoles.split(',').map(r => ROLE_LABELS[r as keyof typeof ROLE_LABELS] || r).join(', ')}
                   </span>
                 )}
               </div>

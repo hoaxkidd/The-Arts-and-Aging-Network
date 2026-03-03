@@ -49,14 +49,10 @@ export function FormTemplateView({
           <h2 className="text-lg font-semibold text-gray-900">{eventTitle}</h2>
         </div>
       )}
-      <div>
-        <h3 className="text-base font-semibold text-gray-900">{title}</h3>
+      <div className="pb-3">
+        <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
         {description && (
-          <div className="mt-1 max-h-[120px] overflow-y-auto custom-scrollbar pr-2">
-            <p className="text-sm text-gray-500 whitespace-pre-wrap">
-              {description}
-            </p>
-          </div>
+          <p className="text-sm text-gray-500 mt-1">{description}</p>
         )}
       </div>
 
@@ -67,16 +63,13 @@ export function FormTemplateView({
       )}
 
       {fields.map((field) => (
-        <div
-          key={field.id}
-          className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm"
-        >
-          <label className="block text-sm font-medium text-gray-900 mb-1">
+        <div key={field.id} className="pb-3 last:pb-0">
+          <label className="block text-sm font-medium text-gray-900">
             {field.label || '(Untitled field)'}
             {field.required && <span className="text-red-500 ml-0.5">*</span>}
           </label>
           {field.description && (
-            <p className="text-xs text-gray-500 mb-2">{field.description}</p>
+            <p className="text-xs text-gray-500 mb-1.5">{field.description}</p>
           )}
           {preview ? (
             <FieldInputPreview field={field} />
@@ -96,12 +89,12 @@ export function FormTemplateView({
       ))}
 
       {!preview && submitLabel != null && (
-        <div className="pt-4">
+        <div className="pt-2">
           <button
             type="submit"
             disabled={submitting}
             className={cn(
-              'px-4 py-2.5 rounded-lg text-sm font-medium bg-primary-500 text-white hover:bg-primary-600 disabled:opacity-50',
+              'px-4 py-2 rounded-md text-sm font-medium bg-primary-500 text-white hover:bg-primary-600 disabled:opacity-50',
               submitting && 'pointer-events-none'
             )}
           >
@@ -114,7 +107,7 @@ export function FormTemplateView({
 
   if (preview) {
     return (
-      <div className="space-y-6 max-w-2xl">
+      <div className="space-y-4 p-4">
         {content}
       </div>
     )
@@ -126,7 +119,7 @@ export function FormTemplateView({
         e.preventDefault()
         onSubmit?.(e)
       }}
-      className="space-y-6 max-w-2xl"
+      className="space-y-4 p-4"
     >
       {content}
     </form>
@@ -147,7 +140,7 @@ function FieldInputPreview({ field }: { field: FormTemplateField }) {
           readOnly
           disabled
           placeholder={field.placeholder || placeholder}
-          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm bg-gray-50 text-gray-500 cursor-not-allowed"
+          className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm bg-gray-50 text-gray-500"
         />
       )
     case 'long_text':
@@ -157,8 +150,8 @@ function FieldInputPreview({ field }: { field: FormTemplateField }) {
           readOnly
           disabled
           placeholder={field.placeholder || placeholder}
-          rows={4}
-          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm bg-gray-50 text-gray-500 cursor-not-allowed"
+          rows={3}
+          className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm bg-gray-50 text-gray-500"
         />
       )
     case 'date':
@@ -168,13 +161,13 @@ function FieldInputPreview({ field }: { field: FormTemplateField }) {
           type="date"
           readOnly
           disabled
-          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm bg-gray-50 text-gray-500 cursor-not-allowed"
+          className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm bg-gray-50 text-gray-500"
         />
       )
     case 'radio': {
       const options = (field.options || []).filter(Boolean)
       return (
-        <div className="space-y-2">
+        <div className="space-y-1.5">
           {options.length === 0 ? (
             <span className="text-sm text-gray-400">(No options yet)</span>
           ) : (
@@ -186,14 +179,14 @@ function FieldInputPreview({ field }: { field: FormTemplateField }) {
             ))
           )}
           {field.allowOther && (
-            <div className="flex items-center gap-2 pl-6">
+            <div className="flex items-center gap-2 pl-5">
               <span className="text-sm text-gray-500">Other:</span>
               <input
                 type="text"
                 readOnly
                 disabled
                 placeholder="Please specify"
-                className="flex-1 rounded border border-gray-300 px-2 py-1 text-sm bg-gray-50 text-gray-400 cursor-not-allowed"
+                className="flex-1 rounded border border-gray-200 px-2 py-1 text-sm bg-gray-50 text-gray-400"
               />
             </div>
           )}
@@ -203,7 +196,7 @@ function FieldInputPreview({ field }: { field: FormTemplateField }) {
     case 'checkbox': {
       const options = (field.options || []).filter(Boolean)
       return (
-        <div className="space-y-2">
+        <div className="space-y-1.5">
           {options.length === 0 ? (
             <span className="text-sm text-gray-400">(No options yet)</span>
           ) : (
@@ -215,14 +208,14 @@ function FieldInputPreview({ field }: { field: FormTemplateField }) {
             ))
           )}
           {field.allowOther && (
-            <div className="flex items-center gap-2 pl-6">
+            <div className="flex items-center gap-2 pl-5">
               <span className="text-sm text-gray-500">Other:</span>
               <input
                 type="text"
                 readOnly
                 disabled
                 placeholder="Please specify"
-                className="flex-1 rounded border border-gray-300 px-2 py-1 text-sm bg-gray-50 text-gray-400 cursor-not-allowed"
+                className="flex-1 rounded border border-gray-200 px-2 py-1 text-sm bg-gray-50 text-gray-400"
               />
             </div>
           )}
@@ -231,13 +224,13 @@ function FieldInputPreview({ field }: { field: FormTemplateField }) {
     }
     case 'file':
       return (
-        <div className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm bg-gray-50 text-gray-500 cursor-not-allowed">
+        <div className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm bg-gray-50 text-gray-500">
           Choose file (preview)
         </div>
       )
     case 'address':
       return (
-        <div className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm bg-gray-50 text-gray-500 cursor-not-allowed">
+        <div className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm bg-gray-50 text-gray-500">
           Address with autocomplete (preview)
         </div>
       )
@@ -249,7 +242,7 @@ function FieldInputPreview({ field }: { field: FormTemplateField }) {
           readOnly
           disabled
           placeholder={placeholder}
-          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm bg-gray-50 text-gray-500 cursor-not-allowed"
+          className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm bg-gray-50 text-gray-500"
         />
       )
   }
