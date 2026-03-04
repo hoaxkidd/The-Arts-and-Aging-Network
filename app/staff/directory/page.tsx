@@ -34,44 +34,55 @@ export default async function StaffDirectoryPage({
     }))
 
   return (
-    <div className="max-w-3xl mx-auto space-y-4">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div>
-          <h1 className="text-lg font-semibold text-gray-900">Team Directory</h1>
-          <p className="text-gray-500 text-xs mt-0.5">
-            {staff.length} member{staff.length !== 1 ? 's' : ''} · {groups.length} group{groups.length !== 1 ? 's' : ''}
-          </p>
-        </div>
+    <div className="h-full flex flex-col">
+      {/* Header - consistent with other staff pages */}
+      <header className="flex-shrink-0 pb-3 border-b border-gray-200">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-md bg-primary-100 text-primary-600 flex items-center justify-center">
+              <Users className="w-4 h-4" />
+            </div>
+            <div>
+              <h1 className="text-base font-semibold text-gray-900">Team Directory</h1>
+              <p className="text-xs text-gray-500">
+                {staff.length} member{staff.length !== 1 ? 's' : ''} · {groups.length} group{groups.length !== 1 ? 's' : ''}
+              </p>
+            </div>
+          </div>
 
-        <form className="relative w-full sm:w-56">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
-          <input
-            type="text"
-            name="search"
-            defaultValue={search}
-            placeholder="Search..."
-            className="w-full pl-8 pr-3 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-primary-500 focus:border-primary-500 bg-white"
-          />
-        </form>
+          <form className="relative w-48">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+            <input
+              type="text"
+              name="search"
+              defaultValue={search}
+              placeholder="Search..."
+              className="w-full pl-8 pr-3 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-primary-500 focus:border-primary-500 bg-white"
+            />
+          </form>
+        </div>
+      </header>
+
+      {/* Content */}
+      <div className="flex-1 min-h-0 pt-3">
+        {search && (
+          <p className="text-xs text-gray-500 mb-2">
+            Results for &quot;{search}&quot;
+          </p>
+        )}
+
+        {groups.length > 0 ? (
+          <DirectoryTabs groups={groups} />
+        ) : (
+          <div className="text-center py-12">
+            <Users className="w-8 h-8 mx-auto text-gray-300 mb-2" />
+            <p className="text-sm font-medium text-gray-900">No team members found</p>
+            <p className="text-xs text-gray-500 mt-0.5">
+              {search ? 'Try adjusting your search' : 'No active staff yet'}
+            </p>
+          </div>
+        )}
       </div>
-
-      {search && (
-        <p className="text-xs text-gray-500">
-          Results for &quot;{search}&quot;
-        </p>
-      )}
-
-      {groups.length > 0 ? (
-        <DirectoryTabs groups={groups} />
-      ) : (
-        <div className="text-center py-12">
-          <Users className="w-8 h-8 mx-auto text-gray-300 mb-2" />
-          <p className="text-sm font-medium text-gray-900">No team members found</p>
-          <p className="text-xs text-gray-500 mt-0.5">
-            {search ? 'Try adjusting your search' : 'No active staff yet'}
-          </p>
-        </div>
-      )}
     </div>
   )
 }

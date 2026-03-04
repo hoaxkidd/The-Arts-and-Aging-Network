@@ -4,7 +4,7 @@ import { z } from "zod"
 import { prisma } from "@/lib/prisma"
 import bcrypt from "bcryptjs"
 
-export const { handlers, auth, signIn, signOut } = NextAuth({
+const nextAuthConfig = {
   trustHost: true,
   secret: process.env.AUTH_SECRET,
   providers: [
@@ -54,41 +54,41 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     signIn: '/login',
   },
   callbacks: {
-    async redirect({ url, baseUrl }) {
+    async redirect({ url, baseUrl }: { url: string; baseUrl: string }) {
       if (url.startsWith('/')) return `${baseUrl}${url}`
       if (new URL(url).origin === baseUrl) return url
       return baseUrl
     },
-    async jwt({ token, user }) {
+    async jwt({ token, user }: { token: any; user?: any }) {
       if (user) {
-        token.role = user.role
         token.id = user.id
-      }
-      if (token.id) {
-        try {
-          const dbUser = await prisma.user.findUnique({
-            where: { id: token.id as string },
-            select: { name: true, role: true }
-          })
-          if (dbUser) {
-            token.name = dbUser.name
-            token.role = dbUser.role
-          }
-        } catch {
-        }
+        token.name = user.name
+        token.role = user.role
+        token.onboardingCompletedAt = user.onboardingCompletedAt?.toISOString() ?? null
+        token.onboardingSkipCount = user.onboardingSkipCount ?? 0
       }
       return token
     },
-    async session({ session, token }) {
+    async session({ session, token }: { session: any; token: any }) {
       if (token && session.user) {
-        session.user.role = token.role as string
-        session.user.id = token.id as string
-        session.user.name = token.name as string
+        session.user.role = token.role
+        session.user.id = token.id
+        session.user.name = token.name
+        session.user.onboardingCompletedAt = token.onboardingCompletedAt
+        session.user.onboardingSkipCount = token.onboardingSkipCount
       }
       return session
     },
   },
   session: {
-    strategy: "jwt",
+    strategy: "jwt" as const,
   },
-})
+}
+
+// Export NextAuth - the TypeScript error about portable types is a known issue with NextAuth v5
+// https://github.com/nextauthjs/next-auth/issues/11070
+const nextAuthInstance = NextAuth(nextAuthConfig as any)
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const { handlers, signIn, signOut } = nextAuthInstance
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const auth = nextAuthInstance.auth as any

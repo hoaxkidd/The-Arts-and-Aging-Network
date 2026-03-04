@@ -40,8 +40,8 @@ export function DashboardStats({ stats }: { stats: { upcoming: number, past: num
         label="Pending Requests"
         value={stats.pending}
         icon={Clock}
-        iconBg="bg-secondary-100"
-        iconColor="text-secondary-500"
+        iconBg="bg-yellow-100"
+        iconColor="text-yellow-600"
       />
       <StatCard
         label="Completed Events"
@@ -54,8 +54,8 @@ export function DashboardStats({ stats }: { stats: { upcoming: number, past: num
         label="Total Engagement"
         value={stats.total}
         icon={TrendingUp}
-        iconBg="bg-accent-100"
-        iconColor="text-accent-500"
+        iconBg="bg-purple-100"
+        iconColor="text-purple-600"
       />
     </div>
   )

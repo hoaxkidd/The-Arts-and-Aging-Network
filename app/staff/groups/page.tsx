@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma"
 import { auth } from "@/auth"
 import { redirect } from "next/navigation"
-import { MessageSquare, Users, Clock, Plus, Lock } from "lucide-react"
+import { MessageSquare, Users, Clock, Plus, Lock, MessageCircle } from "lucide-react"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
 
@@ -112,13 +112,20 @@ export default async function StaffMessagesPage() {
   const pendingGroupIds = new Set(pendingRequests.map(r => r.group.id))
 
   return (
-    <div className="h-full flex flex-col">
-      <header className="flex-shrink-0 pb-3">
-        <h1 className="text-lg font-bold text-gray-900">Messages</h1>
-        <p className="text-xs text-gray-500">Connect with your team</p>
-      </header>
+    <div className="h-full flex flex-col px-4 sm:px-6 py-5">
+      <div className="flex-shrink-0 mb-5">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-lg bg-primary-100 text-primary-600 flex items-center justify-center">
+            <MessageCircle className="w-5 h-5" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Messages</h1>
+            <p className="text-sm text-gray-500 mt-1">Connect with your team</p>
+          </div>
+        </div>
+      </div>
 
-      <div className="flex-1 min-h-0 overflow-auto space-y-4">
+      <div className="flex-1 min-h-0 space-y-4">
         {/* Pending Requests */}
         {pendingRequests.length > 0 && (
           <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">

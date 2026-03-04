@@ -320,7 +320,7 @@ export function DashboardLayoutClient({ children, role, title = "Arts & Aging", 
       )}
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col">
         {/* Top Header Bar */}
         <header className="bg-white border-b border-gray-200 px-4 md:px-6 py-3 flex justify-between items-center shadow-sm">
           {/* Mobile menu button */}

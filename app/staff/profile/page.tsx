@@ -22,23 +22,20 @@ export default async function StaffProfilePage() {
   if (!user) return <div>User not found</div>
 
   return (
-    <div className="h-full flex flex-col">
-      {/* Simple header, shared style */}
-      <header className="flex-shrink-0 pb-4 border-b border-gray-200">
+    <div className="h-full flex flex-col px-4 sm:px-6 py-5">
+      <div className="flex-shrink-0 mb-5">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-md bg-primary-100 text-primary-600 flex items-center justify-center">
-            <User className="w-4 h-4" />
+          <div className="w-10 h-10 rounded-lg bg-primary-100 text-primary-600 flex items-center justify-center">
+            <User className="w-5 h-5" />
           </div>
           <div>
-            <h1 className="text-base font-semibold text-gray-900">My Profile</h1>
-            <p className="text-xs text-gray-500">
-              Review and update your profile and intake information.
-            </p>
+            <h1 className="text-2xl font-bold text-gray-900">My Profile</h1>
+            <p className="text-sm text-gray-500 mt-1">Review and update your profile and intake information.</p>
           </div>
         </div>
-      </header>
+      </div>
 
-      <div className="flex-1 min-h-0 overflow-auto pt-4">
+      <div className="flex-1 min-h-0">
         <ProfileForm user={user} flat embedded />
       </div>
     </div>

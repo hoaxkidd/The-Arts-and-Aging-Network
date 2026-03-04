@@ -374,7 +374,7 @@ function ContactCard({
       </div>
 
       {/* Mobile contact info */}
-      <div className="sm:hidden flex items-center gap-3 mt-2 text-xs text-gray-500 pl-13">
+      <div className="sm:hidden flex items-center gap-3 mt-2 text-xs text-gray-500 pl-12">
         {person.email && (
         <a href={`mailto:${person.email}`} className="flex items-center gap-1 hover:text-primary-600">
           <Mail className="w-3 h-3" />
@@ -450,30 +450,8 @@ export function PersonnelManager({ home }: { home: HomeData }) {
 
   return (
     <div className="space-y-4">
-      {/* Header */}
-      <div className="flex items-center justify-between pb-2">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-primary-100 text-primary-600 flex items-center justify-center">
-            <Users className="w-4 h-4" />
-          </div>
-          <div>
-            <h1 className="text-lg font-bold text-gray-900">Team Contacts</h1>
-            <p className="text-xs text-gray-500">
-              {1 + home.additionalContacts.length} contact{home.additionalContacts.length !== 0 ? 's' : ''} for {home.name}
-            </p>
-          </div>
-        </div>
-        <button
-          onClick={() => setShowAddModal(true)}
-          className={cn(STYLES.btn, STYLES.btnPrimary, "py-2 text-sm")}
-        >
-          <Plus className="w-4 h-4" />
-          Add Contact
-        </button>
-      </div>
-
-      {/* Primary Contact */}
-      <div>
+      {/* Primary Contact - Indented */}
+      <div className="pl-4 border-l-2 border-gray-100">
         <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">
           Primary Contact
         </h2>
@@ -489,11 +467,20 @@ export function PersonnelManager({ home }: { home: HomeData }) {
         />
       </div>
 
-      {/* Additional Contacts */}
-      <div>
-        <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">
-          Additional Contacts ({home.additionalContacts.length})
-        </h2>
+      {/* Additional Contacts - Indented */}
+      <div className="pl-4 border-l-2 border-gray-100">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">
+            Additional Contacts ({home.additionalContacts.length})
+          </h2>
+          <button
+            onClick={() => setShowAddModal(true)}
+            className={cn(STYLES.btn, STYLES.btnPrimary, "py-1.5 text-xs")}
+          >
+            <Plus className="w-3.5 h-3.5" />
+            Add
+          </button>
+        </div>
         {home.additionalContacts.length > 0 ? (
           <div className="grid gap-3">
             {home.additionalContacts.map((person) => (
@@ -506,20 +493,20 @@ export function PersonnelManager({ home }: { home: HomeData }) {
             ))}
           </div>
         ) : (
-          <div className="bg-gray-50 rounded-lg border-2 border-dashed border-gray-200 p-8 text-center">
-            <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
-              <User className="w-6 h-6 text-gray-400" />
+          <div className="bg-gray-50 rounded-lg border-2 border-dashed border-gray-200 p-6 text-center">
+            <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-2">
+              <User className="w-5 h-5 text-gray-400" />
             </div>
-            <h3 className="font-medium text-gray-900 mb-1">No additional contacts yet</h3>
-            <p className="text-sm text-gray-500 mb-4">
-              Add team members like nurses, activity coordinators, or other key staff.
+            <h3 className="font-medium text-gray-900 text-sm mb-1">No additional contacts</h3>
+            <p className="text-xs text-gray-500 mb-3">
+              Add team members like nurses or activity coordinators.
             </p>
             <button
               onClick={() => setShowAddModal(true)}
-              className={cn(STYLES.btn, "bg-white border border-gray-300 text-gray-700 hover:bg-gray-50")}
+              className={cn(STYLES.btn, "bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 text-xs py-1.5")}
             >
-              <Plus className="w-4 h-4 mr-2" />
-              Add Your First Contact
+              <Plus className="w-3.5 h-3.5" />
+              Add Contact
             </button>
           </div>
         )}

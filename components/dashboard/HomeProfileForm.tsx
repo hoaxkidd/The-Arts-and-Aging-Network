@@ -1,10 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useTransition } from 'react'
+import { useRouter } from 'next/navigation'
 import { updateHomeDetails } from "@/app/actions/home-management"
 import { STYLES } from "@/lib/styles"
-import { cn } from "@/lib/utils"
-import { Building2, Save, MapPin, Users, AlertTriangle, Camera, Settings, Info } from "lucide-react"
+import { cn, safeJsonParse } from "@/lib/utils"
+import { Building2, Save, MapPin, Users, AlertTriangle, Camera, Settings, Info, Check, User } from "lucide-react"
 import { AddressAutocomplete } from "@/components/ui/AddressAutocomplete"
 
 type HomeData = {
@@ -33,24 +34,42 @@ type HomeData = {
 
 export function HomeProfileForm({ home }: { home: HomeData }) {
   const [address, setAddress] = useState(home.address || '')
+  const [isPending, startTransition] = useTransition()
+  const [saved, setSaved] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const router = useRouter()
 
   // Parse photo permissions JSON
-  const photoPerms = home.photoPermissions ? JSON.parse(home.photoPermissions) : { formReceived: false, restrictions: '' }
+  const photoPerms = safeJsonParse(home.photoPermissions, { formReceived: false, restrictions: '' })
 
   // Parse accessibility info JSON
-  const accessInfo = home.accessibilityInfo ? JSON.parse(home.accessibilityInfo) : {
+  const accessInfo = safeJsonParse(home.accessibilityInfo, {
     wheelchair: false,
     hearingLoop: false,
     elevator: false,
     notes: ''
+  })
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    const formData = new FormData(e.currentTarget)
+    startTransition(async () => {
+      const result = await updateHomeDetails(formData)
+      if (result?.error) {
+        setError(result.error)
+        setSaved(false)
+      } else {
+        setError(null)
+        setSaved(true)
+        router.refresh()
+        setTimeout(() => setSaved(false), 3000)
+      }
+    })
   }
 
   return (
     <form
-        action={async (formData: FormData) => {
-            await updateHomeDetails(formData)
-            alert('Settings Saved')
-        }}
+        onSubmit={handleSubmit}
         className="p-5 space-y-5"
     >
         <input type="hidden" name="id" value={home.id} />
@@ -131,6 +150,54 @@ export function HomeProfileForm({ home }: { home: HomeData }) {
                         multiline
                         countries={['ca']}
                         className={cn(STYLES.input, "resize-none")}
+                    />
+                </div>
+            </div>
+        </div>
+
+        {/* Section: Contact Information */}
+        <div className="space-y-3 pt-4 border-t border-gray-100">
+            <h2 className="text-sm font-semibold text-gray-900 flex items-center gap-2 pb-2 border-b border-gray-100">
+                <User className="w-4 h-4 text-primary-500" />
+                Primary Contact
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Contact Name</label>
+                    <input
+                        name="contactName"
+                        defaultValue={(home as any).contactName || ''}
+                        className={STYLES.input}
+                        placeholder="Primary contact person"
+                    />
+                </div>
+                <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Contact Position</label>
+                    <input
+                        name="contactPosition"
+                        defaultValue={(home as any).contactPosition || ''}
+                        className={STYLES.input}
+                        placeholder="e.g. Activities Director"
+                    />
+                </div>
+                <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Contact Phone</label>
+                    <input
+                        name="contactPhone"
+                        type="tel"
+                        defaultValue={(home as any).contactPhone || ''}
+                        className={STYLES.input}
+                        placeholder="Phone number"
+                    />
+                </div>
+                <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Contact Email</label>
+                    <input
+                        name="contactEmail"
+                        type="email"
+                        defaultValue={(home as any).contactEmail || ''}
+                        className={STYLES.input}
+                        placeholder="Email address"
                     />
                 </div>
             </div>
@@ -279,10 +346,33 @@ export function HomeProfileForm({ home }: { home: HomeData }) {
         </div>
 
         {/* Submit */}
-        <div className="pt-3 flex justify-end border-t border-gray-100">
-            <button type="submit" className={cn(STYLES.btn, STYLES.btnPrimary)}>
-                <Save className="w-4 h-4" />
-                Save Changes
+        <div className="pt-3 flex items-center justify-between border-t border-gray-100">
+            {error ? (
+                <span className="text-sm text-red-600 flex items-center gap-1.5">
+                    {error}
+                </span>
+            ) : saved ? (
+                <span className="text-sm text-green-600 flex items-center gap-1.5">
+                    <Check className="w-4 h-4" />
+                    Saved
+                </span>
+            ) : <span className="text-sm text-gray-400">Unsaved changes</span>}
+            <button 
+                type="submit" 
+                disabled={isPending}
+                className={cn(STYLES.btn, STYLES.btnPrimary, "disabled:opacity-50")}
+            >
+                {isPending ? (
+                    <>
+                        <Save className="w-4 h-4 animate-pulse" />
+                        Saving...
+                    </>
+                ) : (
+                    <>
+                        <Save className="w-4 h-4" />
+                        Save Changes
+                    </>
+                )}
             </button>
         </div>
     </form>

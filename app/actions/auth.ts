@@ -4,6 +4,7 @@ import { signIn, signOut } from '@/auth'
 import { AuthError } from 'next-auth'
 import { rateLimit } from '@/lib/rate-limit'
 import { headers } from 'next/headers'
+import { prisma } from '@/lib/prisma'
 
 export type AuthState = { error?: string; redirect?: string } | undefined
 
@@ -29,18 +30,17 @@ export async function authenticate(
 
   const baseUrl = getBaseUrl(headersList)
 
+  const email = formData.get('email') as string | null
+  const password = formData.get('password') as string | null
+  const callbackUrl = (formData.get('callbackUrl') as string) || ''
+
   try {
-    const email = formData.get('email') as string | null
-    const password = formData.get('password') as string | null
-    const redirectTo = (formData.get('callbackUrl') as string) || '/admin'
     const result = await signIn('credentials', {
       email: email ?? '',
       password: password ?? '',
-      redirectTo, // NextAuth uses redirectTo (not callbackUrl) for the post-login redirect
       redirect: false,
     })
 
-    // Server-side signIn with redirect: false returns the redirect URL as a string (not { ok, url })
     if (typeof result === 'string') {
       const isErrorUrl = result.includes('error=') || result.includes('/signin')
       if (isErrorUrl) {
@@ -51,24 +51,80 @@ export async function authenticate(
           return { error: 'Invalid credentials.' }
         }
       }
-      // Never send the client to the auth callback URL (credentials only accept POST; GET triggers InvalidProvider)
+      
       const path = result.startsWith('http') ? new URL(result).pathname : result
       const isAuthCallback = path.includes('/api/auth/callback/') || path.includes('/api/auth/signin')
-      const destination = isAuthCallback ? redirectTo : (path.startsWith('/') ? path : `/${path}`)
-      // Use request-based base so Vercel never redirects to localhost
-      const redirectUrl = destination.startsWith('http') ? destination : `${baseUrl}${destination.startsWith('/') ? '' : '/'}${destination}`
+      
+      // If callbackUrl was provided, prioritize it
+      let destination = callbackUrl || '/'
+      
+      // If no callbackUrl, determine destination based on user role
+      if (!callbackUrl && email) {
+        const user = await prisma.user.findUnique({ 
+          where: { email }, 
+          select: { role: true } 
+        })
+        
+        switch (user?.role) {
+          case 'ADMIN':
+            destination = '/admin'
+            break
+          case 'PAYROLL':
+            destination = '/payroll'
+            break
+          case 'HOME_ADMIN':
+            destination = '/dashboard'
+            break
+          case 'FACILITATOR':
+          case 'VOLUNTEER':
+          case 'BOARD':
+          case 'PARTNER':
+            destination = '/staff'
+            break
+        }
+      }
+      
+      const redirectUrl = isAuthCallback 
+        ? `${baseUrl}${destination}`
+        : destination.startsWith('http') 
+          ? destination 
+          : `${baseUrl}${destination.startsWith('/') ? '' : '/'}${destination}`
+      
       return { redirect: redirectUrl }
     }
 
-    // Client-style response shape (some setups return { ok, url, error })
     if (result?.ok && result.url) {
-      const url = result.url
-      const path = url.startsWith('http') ? new URL(url).pathname : url
-      const isAuthCallback = path.includes('/api/auth/callback/') || path.includes('/api/auth/signin')
-      const destination = isAuthCallback ? redirectTo : url
+      let destination = callbackUrl || '/'
+      
+      if (!callbackUrl && email) {
+        const user = await prisma.user.findUnique({ 
+          where: { email }, 
+          select: { role: true } 
+        })
+        
+        switch (user?.role) {
+          case 'ADMIN':
+            destination = '/admin'
+            break
+          case 'PAYROLL':
+            destination = '/payroll'
+            break
+          case 'HOME_ADMIN':
+            destination = '/dashboard'
+            break
+          case 'FACILITATOR':
+          case 'VOLUNTEER':
+          case 'BOARD':
+          case 'PARTNER':
+            destination = '/staff'
+            break
+        }
+      }
+      
       const redirectUrl = destination.startsWith('http') ? destination : `${baseUrl}${destination.startsWith('/') ? '' : '/'}${destination}`
       return { redirect: redirectUrl }
     }
+    
     if (!result) {
       return { error: 'Sign-in failed. Check the server terminal for errors.' }
     }

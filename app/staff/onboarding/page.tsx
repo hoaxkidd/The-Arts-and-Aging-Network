@@ -17,27 +17,32 @@ export default async function StaffOnboardingPage() {
   if (!user) return <div>User not found</div>
 
   return (
-    <div className="max-w-3xl mx-auto">
-      <div className="mb-6">
-        <h1 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-          <ClipboardList className="w-6 h-6 text-primary-500" />
-          Complete your profile
-        </h1>
-        <p className="text-sm text-gray-500 mt-1">
-          Review the information below and update any details. When you&apos;re done, click the button to continue to your dashboard.
-        </p>
+    <div className="h-full flex flex-col px-4 sm:px-6 py-5">
+      <div className="flex-shrink-0 sticky top-0 z-10 bg-white pb-3 mb-3 border-b border-gray-100">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-lg bg-primary-100 text-primary-600 flex items-center justify-center">
+            <ClipboardList className="w-5 h-5" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Complete your profile</h1>
+            <p className="text-sm text-gray-500 mt-1">Review and update your details. Click Save & Continue when done.</p>
+          </div>
+        </div>
       </div>
 
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-        <div className="p-6">
-          <ProfileForm
-            user={user}
-            documents={user.documents}
-            isAdmin={false}
-            visibleTabs={['personal', 'contact', 'emergency', 'health', 'intake']}
-            flat
-          />
-          <OnboardingActions redirectTo="/staff" />
+      <div className="flex-1 min-h-0">
+        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+          <div className="p-6">
+            <ProfileForm
+              user={user}
+              documents={user.documents}
+              isAdmin={false}
+              visibleTabs={['personal', 'contact', 'emergency', 'health', 'intake']}
+              flat
+              showSaveButton={false}
+            />
+            <OnboardingActions redirectTo="/staff" />
+          </div>
         </div>
       </div>
     </div>

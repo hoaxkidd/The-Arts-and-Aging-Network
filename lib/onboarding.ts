@@ -1,6 +1,7 @@
 /**
  * Onboarding: prompt users to complete their profile after first login.
- * "Medium" enforcement: allow skipping a limited number of times.
+ * Only FACILITATOR, VOLUNTEER, and PARTNER roles require onboarding.
+ * HOME_ADMIN and BOARD are exempt.
  */
 
 const MAX_SKIP_COUNT = 3
@@ -21,12 +22,13 @@ export function needsOnboarding(user: SessionUser | null | undefined): boolean {
   if (user.onboardingCompletedAt) return false
   const skipCount = user.onboardingSkipCount ?? 0
   if (skipCount >= MAX_SKIP_COUNT) return false
-  const staffRoles = ['FACILITATOR', 'VOLUNTEER', 'BOARD', 'PARTNER']
-  const dashboardRoles = ['HOME_ADMIN']
-  return staffRoles.includes(user.role ?? '') || dashboardRoles.includes(user.role ?? '')
+  // Only FACILITATOR, VOLUNTEER, and PARTNER require onboarding
+  // HOME_ADMIN and BOARD are exempt
+  const staffRoles = ['FACILITATOR', 'VOLUNTEER', 'PARTNER']
+  return staffRoles.includes(user.role ?? '')
 }
 
 export function getOnboardingPath(role: string): string {
-  if (role === 'HOME_ADMIN') return '/dashboard/onboarding'
+  // All roles that need onboarding go to /staff/onboarding
   return '/staff/onboarding'
 }

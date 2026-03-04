@@ -40,7 +40,7 @@ export const STYLES = {
   // Tables - use with .table-scroll-wrapper for responsive sticky headers
   table: "w-full text-sm min-w-full divide-y divide-gray-200",
   tableWrapper: "table-scroll-wrapper border border-gray-200 rounded-lg overflow-hidden bg-white",
-  tableHeader: "text-left text-xs font-semibold text-gray-500 uppercase tracking-wider px-4 py-3",
+  tableHeader: "sticky top-0 text-left text-xs font-bold text-gray-600 uppercase tracking-wider px-3 py-2.5 bg-gray-50 border-b border-gray-200",
   tableCell: "px-4 py-3",
   tableRow: "border-b border-gray-100 hover:bg-gray-50 transition-colors",
 

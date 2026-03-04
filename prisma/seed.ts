@@ -134,11 +134,53 @@ async function main() {
   })
   console.log('Created:', payroll.email, '(PAYROLL)')
 
+  // 5. Volunteer
+  const volunteer = await prisma.user.create({
+    data: {
+      email: 'volunteer@artsandaging.com',
+      name: 'Test Volunteer',
+      password,
+      role: 'VOLUNTEER',
+      status: 'ACTIVE',
+      roleData: '{}',
+    },
+  })
+  console.log('Created:', volunteer.email, '(VOLUNTEER)')
+
+  // 6. Board Member
+  const board = await prisma.user.create({
+    data: {
+      email: 'board@artsandaging.com',
+      name: 'Test Board Member',
+      password,
+      role: 'BOARD',
+      status: 'ACTIVE',
+      roleData: '{}',
+    },
+  })
+  console.log('Created:', board.email, '(BOARD)')
+
+  // 7. Community Partner
+  const partner = await prisma.user.create({
+    data: {
+      email: 'partner@artsandaging.com',
+      name: 'Test Partner',
+      password,
+      role: 'PARTNER',
+      status: 'ACTIVE',
+      roleData: '{}',
+    },
+  })
+  console.log('Created:', partner.email, '(PARTNER)')
+
   console.log('\n--- Test logins (password for all: ' + TEST_PASSWORD + ') ---')
   console.log('  Admin:       admin@artsandaging.com')
   console.log('  Home Admin:  home@artsandaging.com')
-  console.log('  Staff:       staff@artsandaging.com')
+  console.log('  Facilitator:  staff@artsandaging.com')
   console.log('  Payroll:     payroll@artsandaging.com')
+  console.log('  Volunteer:   volunteer@artsandaging.com')
+  console.log('  Board:       board@artsandaging.com')
+  console.log('  Partner:     partner@artsandaging.com')
   console.log('\nTo use on Vercel: ensure DATABASE_URL (and DATABASE_URL_UNPOOLED) are set, then run: npm run db:seed')
 }
 

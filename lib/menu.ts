@@ -16,7 +16,8 @@ import {
   MessageSquare,
   MapPin,
   Receipt,
-  Inbox
+  Inbox,
+  FileSearch
 } from "lucide-react"
 
 export type MenuItem = {
@@ -27,6 +28,7 @@ export type MenuItem = {
 
 export const adminMenu = [
   { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
+  { label: "Audit Log", href: "/admin/audit-log", icon: FileSearch },
   { label: "Financial Management", href: "/admin/financials", icon: Receipt },
   { label: "Event Management", href: "/admin/events", icon: Calendar },
   { label: "Communication Hub", href: "/admin/communication", icon: MessageSquare },

@@ -2,13 +2,17 @@ import { auth } from "@/auth"
 import { NextResponse } from "next/server"
 import { needsOnboarding, getOnboardingPath } from "@/lib/onboarding"
 
-export default auth((req) => {
+// Type workaround for NextAuth middleware
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const authMiddleware = auth as any
+
+export default authMiddleware((req: any) => {
   const isLoggedIn = !!req.auth
   const { pathname } = req.nextUrl
   const userRole = req.auth?.user?.role
   const user = req.auth?.user
 
-  // Onboarding: redirect staff/dashboard users who haven't completed profile
+  // Onboarding: redirect staff/dashboard users who haven't completed profile (from JWT)
   if (isLoggedIn && user && needsOnboarding(user)) {
     const onboardingPath = getOnboardingPath(userRole ?? '')
     if (pathname !== onboardingPath && !pathname.startsWith('/login') && !pathname.startsWith('/invite')) {

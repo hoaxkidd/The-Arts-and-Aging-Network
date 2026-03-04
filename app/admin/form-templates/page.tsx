@@ -8,6 +8,7 @@ import { STYLES } from "@/lib/styles"
 import { FormTemplateFilters } from "@/components/admin/FormTemplateFilters"
 import { FormTemplateCard } from "@/components/admin/FormTemplateCard"
 import { ROLE_LABELS } from "@/lib/roles"
+import { StickyTable } from "@/components/ui/StickyTable"
 
 export const revalidate = 60
 
@@ -171,31 +172,23 @@ export default async function FormTemplatesAdminPage({
           </div>
         ) : view === 'table' ? (
           /* Table View */
-          <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-            <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-200">
-                <tr>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Form</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Category</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Status</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Access</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Submissions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {serializedTemplates.map((template) => {
-                  const category = categories.find(c => c.value === template.category)
-                  const accessLabel = template.isPublic ? 'All' : (template.allowedRoles ? template.allowedRoles.split(',').map(r => ROLE_LABELS[r as keyof typeof ROLE_LABELS] || r).join(', ') : 'All')
-                  return (
-                    <tr key={template.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-3">
-                        <Link href={`/admin/form-templates/${template.id}/edit`} className="block">
-                          <span className="text-sm font-medium text-gray-900 hover:text-primary-600">{template.title}</span>
-                          {template.description && (
-                            <p className="text-xs text-gray-500 line-clamp-1">{template.description}</p>
-                          )}
-                        </Link>
-                      </td>
+          <StickyTable 
+            headers={["Form", "Category", "Status", "Access", "Submissions"]}
+            className="bg-white rounded-lg border border-gray-200"
+          >
+            {serializedTemplates.map((template) => {
+              const category = categories.find(c => c.value === template.category)
+              const accessLabel = template.isPublic ? 'All' : (template.allowedRoles ? template.allowedRoles.split(',').map(r => ROLE_LABELS[r as keyof typeof ROLE_LABELS] || r).join(', ') : 'All')
+              return (
+                <tr key={template.id} className="hover:bg-gray-50">
+                  <td className="px-4 py-3">
+                    <Link href={`/admin/form-templates/${template.id}/edit`} className="block">
+                      <span className="text-sm font-medium text-gray-900 hover:text-primary-600">{template.title}</span>
+                      {template.description && (
+                        <p className="text-xs text-gray-500 line-clamp-1">{template.description}</p>
+                      )}
+                    </Link>
+                  </td>
                       <td className="px-4 py-3">
                         <span className={cn(
                           "inline-flex px-2 py-1 rounded-full text-xs font-medium",
@@ -226,10 +219,8 @@ export default async function FormTemplatesAdminPage({
                     </tr>
                   )
                 })}
-              </tbody>
-            </table>
-          </div>
-        ) : (
+              </StickyTable>
+            ) : (
           /* Card View */
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {serializedTemplates.map((template) => (

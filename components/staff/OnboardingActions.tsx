@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { completeOnboarding, skipOnboarding } from '@/app/actions/staff-onboarding'
+import { updateStaffProfile } from '@/app/actions/staff'
 import { STYLES } from '@/lib/styles'
 import { cn } from '@/lib/utils'
 
@@ -13,10 +14,26 @@ export function OnboardingActions({ redirectTo = '/staff' }: { redirectTo?: stri
 
   async function handleComplete() {
     setIsCompleting(true)
+    
+    // Auto-save: Find and submit the profile form
+    const form = document.querySelector('form')
+    if (form) {
+      const formData = new FormData(form)
+      const saveResult = await updateStaffProfile(formData)
+      if (saveResult?.error) {
+        alert('Failed to save profile: ' + saveResult.error)
+        setIsCompleting(false)
+        return
+      }
+    }
+    
+    // Then complete onboarding
     const result = await completeOnboarding()
     if (result?.success) {
       router.push(redirectTo)
       router.refresh()
+    } else if (result?.error) {
+      alert('Failed to complete onboarding: ' + result.error)
     }
     setIsCompleting(false)
   }
@@ -27,6 +44,8 @@ export function OnboardingActions({ redirectTo = '/staff' }: { redirectTo?: stri
     if (result?.success) {
       router.push(redirectTo)
       router.refresh()
+    } else if (result?.error) {
+      alert('Failed to skip onboarding: ' + result.error)
     }
     setIsSkipping(false)
   }
@@ -39,7 +58,7 @@ export function OnboardingActions({ redirectTo = '/staff' }: { redirectTo?: stri
         disabled={isCompleting}
         className={cn(STYLES.btn, STYLES.btnPrimary, isCompleting && 'opacity-70 cursor-not-allowed')}
       >
-        {isCompleting ? 'Saving...' : "I've reviewed my profile — continue"}
+        {isCompleting ? 'Saving...' : "Save & Continue"}
       </button>
       <button
         type="button"

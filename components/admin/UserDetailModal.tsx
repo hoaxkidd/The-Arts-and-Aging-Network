@@ -330,7 +330,7 @@ export function UserDetailModal({ user, isOpen, onClose }: UserDetailModalProps)
                           <p className="text-xs text-primary-600 mt-0.5">{home.contactPosition || 'Primary Contact'}</p>
                         </div>
                       </div>
-                      <div className="flex items-center gap-4 mt-2 pl-13 text-xs text-gray-600">
+                      <div className="flex items-center gap-4 mt-2 pl-12 text-xs text-gray-600">
                         <a href={`mailto:${home.contactEmail}`} className="flex items-center gap-1 hover:text-primary-600">
                           <Mail className="w-3 h-3" /> {home.contactEmail}
                         </a>
@@ -359,7 +359,7 @@ export function UserDetailModal({ user, isOpen, onClose }: UserDetailModalProps)
                                 <p className="text-xs text-gray-500 mt-0.5">{person.position || 'Staff Member'}</p>
                               </div>
                             </div>
-                            <div className="flex items-center gap-4 mt-2 pl-13 text-xs text-gray-600">
+                            <div className="flex items-center gap-4 mt-2 pl-12 text-xs text-gray-600">
                               {person.email && (
                               <a href={`mailto:${person.email}`} className="flex items-center gap-1 hover:text-primary-600">
                                 <Mail className="w-3 h-3" /> {person.email}

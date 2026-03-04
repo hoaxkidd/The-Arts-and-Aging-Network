@@ -48,7 +48,7 @@ export default async function HomeAdminDashboard() {
   return (
     <div className="h-full flex flex-col">
       {/* Compact Header */}
-      <header className="flex-shrink-0 pb-3">
+      <header className="flex-shrink-0 sticky top-0 z-10 bg-gray-50/95 pb-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg bg-primary-100 text-primary-600 flex items-center justify-center">

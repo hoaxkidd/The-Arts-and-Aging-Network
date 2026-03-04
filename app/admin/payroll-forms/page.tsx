@@ -149,16 +149,17 @@ export default function PayrollFormsPage() {
             </button>
           </div>
         ) : (
-          <table className="divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Form</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Required For</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Submissions</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
-              </tr>
-            </thead>
+          <div className="table-scroll-wrapper">
+            <table className="divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className={STYLES.tableHeader}>Form</th>
+                  <th className={STYLES.tableHeader}>Type</th>
+                  <th className={STYLES.tableHeader}>Required For</th>
+                  <th className={STYLES.tableHeader}>Submissions</th>
+                  <th className={STYLES.tableHeader}>Actions</th>
+                </tr>
+              </thead>
             <tbody className="divide-y divide-gray-200">
               {forms.map((form) => (
                 <tr key={form.id} className="hover:bg-gray-50">
@@ -213,11 +214,12 @@ export default function PayrollFormsPage() {
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
 

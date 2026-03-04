@@ -7,6 +7,7 @@ import Link from "next/link"
 import { ROLE_LABELS } from "@/lib/roles"
 import { FormTemplateCard } from "@/components/admin/FormTemplateCard"
 import { FormTemplateFilters } from "@/components/admin/FormTemplateFilters"
+import { StickyTable } from "@/components/ui/StickyTable"
 
 export default async function StaffFormsPage({
   searchParams
@@ -213,40 +214,32 @@ export default async function StaffFormsPage({
               </div>
             ) : view === 'table' ? (
               /* Table View */
-              <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-                <table className="w-full">
-                  <thead className="bg-gray-50 border-b border-gray-200">
-                    <tr>
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Form</th>
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Category</th>
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Status</th>
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Access</th>
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Submissions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200">
-                    {templates.map((template) => {
-                      const category = categories.find(c => c.value === template.category)
-                      const accessLabel = template.isPublic ? 'All' : (template.allowedRoles ? template.allowedRoles.split(',').map(r => ROLE_LABELS[r as keyof typeof ROLE_LABELS] || r).join(', ') : 'All')
-                      return (
-                        <tr key={template.id} className="hover:bg-gray-50">
-                          <td className="px-4 py-3">
-                            <Link href={`/staff/forms/${template.id}`} className="block">
-                              <span className="text-sm font-medium text-gray-900 hover:text-primary-600">{template.title}</span>
-                              {template.description && (
-                                <p className="text-xs text-gray-500 line-clamp-1">{template.description}</p>
-                              )}
-                            </Link>
-                          </td>
-                          <td className="px-4 py-3">
-                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
-                              {category?.icon} {category?.label || template.category}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3">
-                            <span className={cn(
-                              "inline-flex px-2 py-1 rounded-full text-xs font-medium",
-                              template.isActive ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"
+              <StickyTable 
+                headers={["Form", "Category", "Status", "Access", "Submissions"]}
+                className="bg-white rounded-lg border border-gray-200"
+              >
+                {templates.map((template) => {
+                  const category = categories.find(c => c.value === template.category)
+                  const accessLabel = template.isPublic ? 'All' : (template.allowedRoles ? template.allowedRoles.split(',').map(r => ROLE_LABELS[r as keyof typeof ROLE_LABELS] || r).join(', ') : 'All')
+                  return (
+                    <tr key={template.id} className="hover:bg-gray-50">
+                      <td className="px-4 py-3">
+                        <Link href={`/staff/forms/${template.id}`} className="block">
+                          <span className="text-sm font-medium text-gray-900 hover:text-primary-600">{template.title}</span>
+                          {template.description && (
+                            <p className="text-xs text-gray-500 line-clamp-1">{template.description}</p>
+                          )}
+                        </Link>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
+                          {category?.icon} {category?.label || template.category}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className={cn(
+                          "inline-flex px-2 py-1 rounded-full text-xs font-medium",
+                          template.isActive ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"
                             )}>
                               {template.isActive ? 'Active' : 'Archived'}
                             </span>
@@ -265,12 +258,9 @@ export default async function StaffFormsPage({
                         </tr>
                       )
                     })}
-                  </tbody>
-                </table>
-              </div>
-            /* Card View */
- ) : (
-                           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              </StickyTable>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {templates.map((template) => (
                   <FormTemplateCard
                     key={template.id}

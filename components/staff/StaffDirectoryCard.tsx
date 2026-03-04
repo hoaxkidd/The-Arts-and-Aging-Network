@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { MessageCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -37,7 +38,7 @@ export function StaffDirectoryCard({ staff }: { staff: StaffMember }) {
     <div className="flex items-center gap-3 px-3 py-2.5 rounded-md hover:bg-gray-50 transition-colors group">
       <Link href={`/staff/directory/${staff.id}`} className="flex items-center gap-3 flex-1 min-w-0">
         {staff.image ? (
-          <img src={staff.image} alt={displayName} className="w-8 h-8 rounded-full object-cover flex-shrink-0" />
+          <Image src={staff.image} alt={displayName} width={32} height={32} className="w-8 h-8 rounded-full object-cover flex-shrink-0" />
         ) : (
           <div className={cn(
             "w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-semibold flex-shrink-0",

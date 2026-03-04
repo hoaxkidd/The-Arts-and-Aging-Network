@@ -22,7 +22,7 @@ import {
   Camera,
   Accessibility
 } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { cn, safeJsonParse } from '@/lib/utils'
 import { STYLES } from '@/lib/styles'
 import { confirmStaffAttendance, withdrawStaffAttendance, staffCheckIn } from '@/app/actions/staff-attendance'
 
@@ -394,7 +394,7 @@ export function StaffEventDetail({ event }: { event: EventDetail }) {
             <div className="p-4 space-y-4">
               {/* Accessibility */}
               {event.geriatricHome.accessibilityInfo && (() => {
-                const access = JSON.parse(event.geriatricHome.accessibilityInfo)
+                const access = safeJsonParse(event.geriatricHome.accessibilityInfo, { wheelchair: false, hearingLoop: false, elevator: false, notes: '' })
                 const hasFeatures = access.wheelchair || access.hearingLoop || access.elevator || access.notes
                 if (!hasFeatures) return null
                 return (
@@ -450,7 +450,7 @@ export function StaffEventDetail({ event }: { event: EventDetail }) {
 
               {/* Photo Permissions */}
               {event.geriatricHome.photoPermissions && (() => {
-                const photo = JSON.parse(event.geriatricHome.photoPermissions)
+                const photo = safeJsonParse(event.geriatricHome.photoPermissions, { formReceived: false, restrictions: '' })
                 if (!photo.formReceived && !photo.restrictions) return null
                 return (
                   <div>

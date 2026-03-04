@@ -42,6 +42,8 @@ function LoginForm({ searchParams, router, tabParam }: { searchParams: ReturnTyp
     }
   }, [state?.redirect])
 
+  const callbackUrl = searchParams.get('callbackUrl') || ''
+
   return (
     <div className="flex min-h-screen min-h-[100dvh] items-center justify-center bg-background p-4 sm:p-6 relative overflow-hidden safe-area-x safe-area-top safe-area-bottom">
       <div className="absolute top-0 left-0 w-40 h-40 sm:w-64 sm:h-64 bg-primary-200 rounded-full mix-blend-multiply filter blur-xl opacity-50 sm:opacity-70 animate-blob -translate-x-1/2 -translate-y-1/2 sm:translate-x-0 sm:translate-y-0"></div>
@@ -87,6 +89,7 @@ function LoginForm({ searchParams, router, tabParam }: { searchParams: ReturnTyp
               </div>
               
               <form action={dispatch} className="space-y-5 sm:space-y-6">
+                <input type="hidden" name="callbackUrl" value={callbackUrl} />
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-1.5 sm:mb-2">Email Address</label>
                   <input

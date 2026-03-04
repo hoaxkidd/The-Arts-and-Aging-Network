@@ -240,7 +240,6 @@ export async function completeOnboarding() {
       data: { onboardingCompletedAt: new Date() },
     })
     revalidatePath('/staff/onboarding')
-    revalidatePath('/dashboard/onboarding')
     revalidatePath('/staff')
     revalidatePath('/dashboard')
     return { success: true }
@@ -260,7 +259,6 @@ export async function skipOnboarding() {
       data: { onboardingSkipCount: { increment: 1 } },
     })
     revalidatePath('/staff/onboarding')
-    revalidatePath('/dashboard/onboarding')
     return { success: true }
   } catch (e) {
     console.error('skipOnboarding error:', e)

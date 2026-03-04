@@ -8,6 +8,7 @@ import { DocumentManager } from './DocumentManager'
 import { useRouter } from 'next/navigation'
 import { DateInput } from '@/components/ui/DateInput'
 import { toInputDate } from '@/lib/date-utils'
+import { safeJsonParse } from '@/lib/utils'
 
 type UserData = {
   id: string
@@ -82,8 +83,8 @@ export function ProfileForm({ user, documents, isAdmin = false, visibleTabs, emb
   const [address, setAddress] = useState(user.address || '')
   const router = useRouter()
 
-  const ec = user.emergencyContact ? JSON.parse(user.emergencyContact) : {}
-  const intake = user.intakeAnswers ? JSON.parse(user.intakeAnswers) : {}
+  const ec = safeJsonParse(user.emergencyContact, {} as Record<string, string>)
+  const intake = safeJsonParse(user.intakeAnswers, { skills: [], tasks: [], hobbies: '' } as { skills?: string[], tasks?: { name: string, rating: number }[], hobbies?: string })
   
   // Dynamic State for Intake
   const [skills, setSkills] = useState<string[]>(Array.isArray(intake.skills) ? intake.skills : [])
@@ -95,7 +96,7 @@ export function ProfileForm({ user, documents, isAdmin = false, visibleTabs, emb
 
   // Sync state when user data changes (after refresh)
   useEffect(() => {
-    const updatedIntake = user.intakeAnswers ? JSON.parse(user.intakeAnswers) : {}
+    const updatedIntake = safeJsonParse(user.intakeAnswers, { skills: [], tasks: [], hobbies: '' } as { skills?: string[], tasks?: { name: string, rating: number }[], hobbies?: string })
     if (Array.isArray(updatedIntake.skills)) {
       setSkills(updatedIntake.skills)
     }
@@ -130,7 +131,7 @@ export function ProfileForm({ user, documents, isAdmin = false, visibleTabs, emb
     setTasks(tasks.filter((_, i) => i !== index))
   }
 
-  const health = user.healthInfo ? JSON.parse(user.healthInfo) : {}
+  const health = safeJsonParse(user.healthInfo, {} as Record<string, string>)
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -257,7 +258,7 @@ export function ProfileForm({ user, documents, isAdmin = false, visibleTabs, emb
             )}
 
             {/* Emergency Contact */}
-            {showSection('emergency') && (
+            {showSection('emergency') && !flat && (
               <div className="space-y-4">
                 <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2 pb-2 border-b border-gray-100">
                   <Phone className="w-4 h-4 text-primary-500" />

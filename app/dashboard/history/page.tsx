@@ -26,22 +26,21 @@ export default async function HistoryPage() {
   })
 
   return (
-    <div className="h-full flex flex-col">
-      {/* Header */}
-      <header className="flex-shrink-0 pb-4">
-        <h1 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-primary-100 text-primary-600 flex items-center justify-center">
-            <Clock className="w-4 h-4" />
+    <div className="h-full flex flex-col px-4 sm:px-6 py-5">
+      <div className="flex-shrink-0 sticky top-0 z-10 bg-white pb-3 mb-3 border-b border-gray-100">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-lg bg-primary-100 text-primary-600 flex items-center justify-center">
+            <Clock className="w-5 h-5" />
           </div>
-          Event History
-        </h1>
-        <p className="text-sm text-gray-500 mt-1 ml-10">
-          A record of past events and activities.
-        </p>
-      </header>
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Event History</h1>
+            <p className="text-sm text-gray-500 mt-1">A record of past events and activities.</p>
+          </div>
+        </div>
+      </div>
 
       {/* Content */}
-      <div className="flex-1 min-h-0 overflow-auto">
+      <div className="flex-1 min-h-0">
         {events.length > 0 ? (
           <div className="space-y-2">
             {events.map((event: any) => {

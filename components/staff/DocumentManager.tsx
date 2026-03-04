@@ -18,7 +18,10 @@ export function DocumentManager({ documents }: { documents: Document[] }) {
 
   async function handleUpload(formData: FormData) {
     setIsUploading(true)
-    await uploadDocument(formData)
+    const result = await uploadDocument(formData)
+    if (result?.error) {
+      alert('Upload failed: ' + result.error)
+    }
     setIsUploading(false)
   }
 
@@ -81,7 +84,14 @@ export function DocumentManager({ documents }: { documents: Document[] }) {
                             )}
                             
                             <button 
-                                onClick={() => deleteDocument(doc.id)}
+                                onClick={async () => {
+                                  if (confirm('Are you sure you want to delete this document?')) {
+                                    const result = await deleteDocument(doc.id)
+                                    if (result?.error) {
+                                      alert('Delete failed: ' + result.error)
+                                    }
+                                  }
+                                }}
                                 className="text-gray-400 hover:text-red-500 p-1"
                             >
                                 <Trash2 className="w-4 h-4" />

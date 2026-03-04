@@ -283,8 +283,12 @@ function EntryForm({
   onCancel: () => void
   isPending: boolean
 }) {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    onSubmit(new FormData(e.currentTarget))
+  }
   return (
-    <form action={onSubmit} className="p-3 bg-gray-50 rounded border border-gray-200 space-y-3">
+    <form onSubmit={handleSubmit} className="p-3 bg-gray-50 rounded border border-gray-200 space-y-3">
       <input type="hidden" name="entryId" value={entry?.id || ''} />
       <input type="hidden" name="date" value={date.toISOString().split('T')[0]} />
 

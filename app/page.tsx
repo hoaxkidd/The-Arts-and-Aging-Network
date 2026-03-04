@@ -18,6 +18,7 @@ export default async function Home() {
     if (role === 'ADMIN') redirect("/admin")
     if (role === 'PAYROLL') redirect("/payroll")
     if (role === 'HOME_ADMIN') redirect("/dashboard")
+    if (role === 'FACILITATOR' || role === 'VOLUNTEER' || role === 'BOARD' || role === 'PARTNER') redirect("/staff")
   }
 
   redirect("/login")
