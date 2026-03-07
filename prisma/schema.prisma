@@ -1,7 +1,6 @@
 datasource db {
-  provider  = "postgresql"
+  provider  = "sqlite"
   url       = env("DATABASE_URL")
-  directUrl = env("DATABASE_URL_UNPOOLED")
 }
 
 generator client {
@@ -377,7 +376,7 @@ model PayrollForm {
   fileType      String?
   fileSize      Int?
   isRequired    Boolean                 @default(false)
-  roles         String[]                // Roles that must complete this form
+  roles         String                 // Roles that must complete this form (comma-separated)
   expiresAt     DateTime?               // Optional expiration date
   isActive      Boolean                 @default(true)
   uploadedBy    String
@@ -387,7 +386,6 @@ model PayrollForm {
   uploader      User                    @relation(fields: [uploadedBy], references: [id])
 
   @@index([formType, isActive])
-  @@index([roles])
 }
 
 model PayrollFormSubmission {
