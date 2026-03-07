@@ -8,6 +8,7 @@ import { createFormTemplate, updateFormTemplate } from '@/app/actions/form-templ
 import { FormTemplateView } from '@/components/forms/FormTemplateView'
 import { VALID_ROLES, ROLE_LABELS } from '@/lib/roles'
 import { cn } from '@/lib/utils'
+import { RichTextEditor } from '@/components/ui/RichTextEditor'
 
 const CATEGORIES = [
   { value: 'EVENT_SIGNUP', label: 'Event sign-up' },
@@ -37,6 +38,7 @@ type Props = {
   templateId?: string
   initialTitle?: string
   initialDescription?: string | null
+  initialDescriptionHtml?: string | null
   initialCategory?: string
   initialFormFields?: string | null
   initialIsPublic?: boolean
@@ -49,6 +51,7 @@ export function FormTemplateBuilder({
   templateId,
   initialTitle = '',
   initialDescription = '',
+  initialDescriptionHtml = '',
   initialCategory = 'EVENT_SIGNUP',
   initialFormFields = null,
   initialIsPublic = true,
@@ -57,6 +60,7 @@ export function FormTemplateBuilder({
 }: Props) {
   const [title, setTitle] = useState(initialTitle)
   const [description, setDescription] = useState(initialDescription || '')
+  const [descriptionHtml, setDescriptionHtml] = useState(initialDescriptionHtml || '')
   const [category, setCategory] = useState(initialCategory)
   const [isPublic, setIsPublic] = useState(initialIsPublic)
   const [selectedRoles, setSelectedRoles] = useState<string[]>(
@@ -122,6 +126,7 @@ export function FormTemplateBuilder({
         const res = await updateFormTemplate(templateId, {
           title: title.trim(),
           description: description.trim() || undefined,
+          descriptionHtml: descriptionHtml || undefined,
           category,
           formFields: formFieldsJson,
           isFillable,
@@ -133,6 +138,7 @@ export function FormTemplateBuilder({
         const res = await createFormTemplate({
           title: title.trim(),
           description: description.trim() || undefined,
+          descriptionHtml: descriptionHtml || undefined,
           category,
           formFields: formFieldsJson,
           isFillable,
@@ -201,11 +207,11 @@ export function FormTemplateBuilder({
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Description
             </label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              className="w-full h-[120px] overflow-y-auto resize-none rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 custom-scrollbar"
+            <RichTextEditor
+              value={descriptionHtml}
+              onChange={setDescriptionHtml}
               placeholder="Instructions or context for respondents"
+              minHeight={100}
             />
           </div>
           <div>
@@ -407,15 +413,16 @@ export function FormTemplateBuilder({
                     <label className="block text-xs font-medium text-gray-600 mb-1">
                       Description / help text (optional)
                     </label>
-                    <input
-                      type="text"
-                      value={field.description ?? ''}
-                      onChange={(e) =>
+                    <RichTextEditor
+                      value={field.descriptionHtml ?? field.description ?? ''}
+                      onChange={(html) =>
                         updateField(index, {
-                          description: e.target.value || undefined,
+                          descriptionHtml: html,
+                          description: html.replace(/<[^>]*>/g, '').trim() || undefined,
                         })
                       }
-                      className="w-full rounded border border-gray-300 px-2 py-1.5 text-sm"
+                      placeholder="Additional instructions for this field"
+                      minHeight={60}
                     />
                   </div>
                   {(field.type === 'radio' || field.type === 'checkbox') && (
@@ -470,13 +477,14 @@ export function FormTemplateBuilder({
           <div className="flex-shrink-0 flex items-center gap-2 px-4 py-2.5 border-b border-gray-200 bg-gray-50">
             <Eye className="w-4 h-4 text-gray-500" />
             <span className="text-sm font-medium text-gray-700">
-              How home admins will see this form
+              How users will see this form
             </span>
           </div>
           <div className="flex-1 min-h-0 p-4 pr-2 overflow-y-auto custom-scrollbar">
             <FormTemplateView
               title={title || '(Untitled form)'}
               description={description || null}
+              descriptionHtml={descriptionHtml || null}
               fields={fields}
               preview
             />

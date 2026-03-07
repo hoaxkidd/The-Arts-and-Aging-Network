@@ -320,6 +320,11 @@ model FormSubmission {
   reviewedBy     String?
   reviewedAt     DateTime?
   reviewNotes    String?
+  editRequested    Boolean      @default(false)    // User requested edit access
+  editApproved     Boolean      @default(false)   // Admin approved edit access
+  editApprovedBy   String?
+  editApprovedAt  DateTime?
+  editDenyReason  String?                      // Reason if admin denies
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
   reviewer       User?         @relation("FormSubmission_reviewer", fields: [reviewedBy], references: [id])
@@ -338,6 +343,7 @@ model FormTemplate {
   id            String           @id @default(cuid())
   title         String
   description   String?
+  descriptionHtml String?  // Rich text HTML version
   category      String
   fileName      String?
   fileSize      Int?

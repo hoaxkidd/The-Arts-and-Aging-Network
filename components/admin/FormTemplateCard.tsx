@@ -8,11 +8,13 @@ import { deleteFormTemplate, updateFormTemplateRoles } from '@/app/actions/form-
 import { VALID_ROLES, ROLE_LABELS } from '@/lib/roles'
 import { FormTemplateView } from '@/components/forms/FormTemplateView'
 import type { FormTemplateField } from '@/lib/form-template-types'
+import DOMPurify from 'dompurify'
 
 type Template = {
   id: string
   title: string
   description: string | null
+  descriptionHtml: string | null
   category: string
   isActive: boolean
   isPublic: boolean
@@ -157,10 +159,13 @@ export function FormTemplateCard({ template, categories, mode = 'admin' }: FormT
           )}
         </div>
 
-        {template.description && (
-          <p className="text-xs text-gray-600 mb-3 line-clamp-2">
-            {template.description}
-          </p>
+        {(template.description || template.descriptionHtml) && (
+          <div 
+            className="text-xs text-gray-600 mb-3 line-clamp-2 rich-text-content"
+            dangerouslySetInnerHTML={{ 
+              __html: DOMPurify.sanitize(template.descriptionHtml || template.description || '') 
+            }} 
+          />
         )}
 
         <div className="flex items-center gap-4 text-xs text-gray-500 mb-3">
@@ -304,6 +309,7 @@ export function FormTemplateCard({ template, categories, mode = 'admin' }: FormT
                   <FormTemplateView
                     title={template.title}
                     description={template.description}
+                    descriptionHtml={template.descriptionHtml}
                     fields={parsedFields}
                     preview={true}
                   />

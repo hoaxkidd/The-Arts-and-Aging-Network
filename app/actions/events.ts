@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache"
 import { z } from "zod"
 import { notifyAllStaffAboutEvent, notifyAllStaffAboutEventUpdate, notifyAllStaffAboutEventCancellation } from "@/lib/notifications"
 import { scheduleEventReminders, cancelEventReminders } from "./email-reminders"
+import { logger } from "@/lib/logger"
 
 const EventSchema = z.object({
   title: z.string().min(3),
@@ -146,7 +147,7 @@ export async function createEvent(formData: FormData) {
         })
 
         // Notify all staff about the new event
-        console.log('🔔 Attempting to notify staff about event creation:', event.id)
+        logger.log('🔔 Attempting to notify staff about event creation:', event.id)
         try {
             const result = await notifyAllStaffAboutEvent({
                 id: event.id,
@@ -154,7 +155,7 @@ export async function createEvent(formData: FormData) {
                 startDateTime: event.startDateTime,
                 location: event.location
             })
-            console.log('✅ Notification result:', result)
+            logger.log('✅ Notification result:', result)
         } catch (notifyError) {
             console.error('❌ Failed to send notifications:', notifyError)
             // Don't fail the event creation if notifications fail
@@ -163,7 +164,7 @@ export async function createEvent(formData: FormData) {
         // Schedule email reminders for the new event
         try {
             await scheduleEventReminders(event.id)
-            console.log('✅ Email reminders scheduled for event:', event.id)
+            logger.log('✅ Email reminders scheduled for event:', event.id)
         } catch (reminderError) {
             console.error('❌ Failed to schedule reminders:', reminderError)
             // Don't fail the event creation if reminder scheduling fails

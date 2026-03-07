@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma"
 import { auth } from "@/auth"
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
+import { logger } from "@/lib/logger"
 
 function parseFormBool(value: FormDataEntryValue | null): boolean {
   if (value === null || value === undefined) return false
@@ -192,9 +193,9 @@ export async function updateStaffProfile(formData: FormData) {
   const intakeAnswers = { ...existingIntake, ...newIntakeAnswers }
   
   // Debug logging (remove in production)
-  console.log('[updateStaffProfile] Existing intake:', existingIntake)
-  console.log('[updateStaffProfile] New intake from form:', newIntakeAnswers)
-  console.log('[updateStaffProfile] Merged intake:', intakeAnswers)
+  logger.log('[updateStaffProfile] Existing intake:', existingIntake)
+  logger.log('[updateStaffProfile] New intake from form:', newIntakeAnswers)
+  logger.log('[updateStaffProfile] Merged intake:', intakeAnswers)
   
   // Merge intake into rawData for validation
   const dataToValidate = { ...rawData, intakeAnswers }

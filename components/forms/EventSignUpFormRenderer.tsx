@@ -7,6 +7,7 @@ import { FormTemplateView } from './FormTemplateView'
 export type TemplateForRender = {
   title: string
   description?: string | null
+  descriptionHtml?: string | null
   formFields: string | null
 }
 
@@ -64,6 +65,7 @@ export function EventSignUpFormRenderer({ template, eventTitle, onSubmit }: Prop
     <FormTemplateView
       title={template.title}
       description={template.description}
+      descriptionHtml={template.descriptionHtml}
       fields={fields}
       eventTitle={eventTitle}
       preview={false}

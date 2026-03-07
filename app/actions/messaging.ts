@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma"
 import { auth } from "@/auth"
 import { revalidatePath } from "next/cache"
+import { logger } from "@/lib/logger"
 
 // ============================================
 // GROUP MANAGEMENT
@@ -435,7 +436,7 @@ export async function sendGroupMessage(groupId: string, content: string, attachm
 
     // Debug logging
     if (!isAdmin && (!member || !member.isActive)) {
-      console.log('[sendGroupMessage] Permission denied:', { 
+      logger.warn('[sendGroupMessage] Permission denied:', { 
         userId: session.user.id, 
         role: session.user.role, 
         groupId, 

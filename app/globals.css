@@ -182,3 +182,49 @@ input[type="datetime-local"]::-webkit-datetime-edit-ampm-field:focus {
   white-space: nowrap;
   -webkit-user-drag: none;
 }
+
+/* Rich text editor content styles */
+.rich-text-content {
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: #374151;
+}
+.rich-text-content p {
+  margin: 0 0 0.5rem 0;
+}
+.rich-text-content p:last-child {
+  margin-bottom: 0;
+}
+.rich-text-content ul,
+.rich-text-content ol {
+  padding-left: 1.5rem;
+  margin: 0.25rem 0;
+}
+.rich-text-content li {
+  margin: 0.125rem 0;
+}
+.rich-text-content a,
+.rich-text-content .text-primary-600 {
+  color: #4A7EB8;
+  text-decoration: underline;
+}
+.rich-text-content strong {
+  font-weight: 600;
+}
+.rich-text-content em {
+  font-style: italic;
+}
+.rich-text-content u {
+  text-decoration: underline;
+}
+.rich-text-content ul[data-type="taskList"] {
+  list-style: none;
+  padding-left: 0;
+}
+.rich-text-content .is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  color: #9ca3af;
+  float: left;
+  height: 0;
+  pointer-events: none;
+}

@@ -126,6 +126,7 @@ export async function getFormTemplate(id: string) {
 export async function createFormTemplate(data: {
   title: string
   description?: string
+  descriptionHtml?: string
   category: string
   fileName?: string
   fileSize?: number
@@ -158,6 +159,7 @@ export async function createFormTemplate(data: {
       data: {
         title: data.title,
         description: data.description || null,
+        descriptionHtml: data.descriptionHtml || null,
         category: data.category,
         fileName: data.fileName || null,
         fileSize: data.fileSize || null,
@@ -195,6 +197,7 @@ export async function updateFormTemplate(
   data: {
     title?: string
     description?: string
+    descriptionHtml?: string
     category?: string
     fileName?: string
     fileSize?: number
@@ -218,6 +221,7 @@ export async function updateFormTemplate(
 
     if (data.title !== undefined) updates.title = data.title
     if (data.description !== undefined) updates.description = data.description
+    if (data.descriptionHtml !== undefined) updates.descriptionHtml = data.descriptionHtml
     if (data.category !== undefined) updates.category = data.category
     if (data.fileName !== undefined) updates.fileName = data.fileName
     if (data.fileSize !== undefined) updates.fileSize = data.fileSize
@@ -359,6 +363,207 @@ export async function submitForm(data: {
   } catch (error) {
     console.error("Failed to submit form:", error)
     return { error: "Failed to submit form" }
+  }
+}
+
+// Request edit access for a form submission
+export async function requestEditAccess(submissionId: string) {
+  const session = await auth()
+  if (!session?.user?.id) {
+    return { error: "Unauthorized" }
+  }
+
+  try {
+    const submission = await prisma.formSubmission.findUnique({
+      where: { id: submissionId },
+      include: {
+        template: { select: { title: true } },
+        submitter: { select: { name: true } }
+      }
+    })
+
+    if (!submission) {
+      return { error: "Submission not found" }
+    }
+
+    // Only the submitter can request edit access
+    if (submission.submittedBy !== session.user.id) {
+      return { error: "You can only request edit access for your own submissions" }
+    }
+
+    // Update submission to request edit
+    await prisma.formSubmission.update({
+      where: { id: submissionId },
+      data: {
+        editRequested: true,
+        editApproved: false,
+        editDenyReason: null
+      }
+    })
+
+    // Get all admin users to notify
+    const admins = await prisma.user.findMany({
+      where: { role: 'ADMIN' }
+    })
+
+    // Create in-app notifications for all admins
+    await prisma.notification.createMany({
+      data: admins.map(admin => ({
+        userId: admin.id,
+        type: 'FORM_EDIT_REQUEST',
+        title: 'Form Edit Request',
+        message: `${submission.submitter?.name || 'A user'} requested to edit their submission for "${submission.template.title}"`,
+        link: `/admin/form-submissions?editRequest=true`
+      }))
+    })
+
+    revalidatePath('/staff/forms')
+    revalidatePath(`/staff/forms/${submission.templateId}`)
+    revalidatePath('/dashboard/forms')
+    revalidatePath(`/dashboard/forms/${submission.templateId}`)
+
+    return { success: true }
+  } catch (error) {
+    console.error("Failed to request edit access:", error)
+    return { error: "Failed to request edit access" }
+  }
+}
+
+// Approve or deny edit request (Admin only)
+export async function approveEditRequest(
+  submissionId: string, 
+  approved: boolean, 
+  denyReason?: string
+) {
+  const session = await auth()
+  if (session?.user?.role !== 'ADMIN') {
+    return { error: "Unauthorized" }
+  }
+
+  try {
+    const submission = await prisma.formSubmission.findUnique({
+      where: { id: submissionId },
+      include: {
+        template: { select: { title: true } },
+        submitter: { select: { id: true, name: true, email: true, role: true } }
+      }
+    })
+
+    if (!submission) {
+      return { error: "Submission not found" }
+    }
+
+    if (!submission.editRequested) {
+      return { error: "No edit request found for this submission" }
+    }
+
+    // Update submission
+    const updateData: any = {
+      editRequested: false,
+      editApproved: approved,
+      editApprovedAt: approved ? new Date() : null,
+      editApprovedBy: approved ? session.user.id : null,
+      editDenyReason: approved ? null : denyReason || null
+    }
+
+    await prisma.formSubmission.update({
+      where: { id: submissionId },
+      data: updateData
+    })
+
+    // Create notification for the submitter
+    if (submission.submitter) {
+      await prisma.notification.create({
+        data: {
+          userId: submission.submitter.id,
+          type: approved ? 'FORM_EDIT_APPROVED' : 'FORM_EDIT_DENIED',
+          title: approved ? 'Edit Request Approved' : 'Edit Request Denied',
+          message: approved 
+            ? `Your edit request for "${submission.template.title}" has been approved. You can now edit your submission.`
+            : `Your edit request for "${submission.template.title}" has been denied. ${denyReason ? `Reason: ${denyReason}` : ''}`,
+          link: submission.submitter.role === 'HOME_ADMIN' 
+            ? `/dashboard/forms/${submission.templateId}` 
+            : `/staff/forms/${submission.templateId}`
+        }
+      })
+    }
+
+    // Audit log
+    await prisma.auditLog.create({
+      data: {
+        action: approved ? 'FORM_EDIT_REQUEST_APPROVED' : 'FORM_EDIT_REQUEST_DENIED',
+        details: JSON.stringify({ 
+          submissionId, 
+          approved, 
+          denyReason: denyReason || null 
+        }),
+        userId: session.user.id
+      }
+    })
+
+    revalidatePath('/admin/form-submissions')
+    revalidatePath('/staff/forms')
+    revalidatePath('/dashboard/forms')
+
+    return { success: true }
+  } catch (error) {
+    console.error("Failed to process edit request:", error)
+    return { error: "Failed to process edit request" }
+  }
+}
+
+// Update an existing form submission (after edit approval)
+export async function updateFormSubmission(
+  submissionId: string,
+  formData: Record<string, unknown>,
+  attachments?: string[]
+) {
+  const session = await auth()
+  if (!session?.user?.id) {
+    return { error: "Unauthorized" }
+  }
+
+  try {
+    const submission = await prisma.formSubmission.findUnique({
+      where: { id: submissionId }
+    })
+
+    if (!submission) {
+      return { error: "Submission not found" }
+    }
+
+    // Only the submitter can update
+    if (submission.submittedBy !== session.user.id) {
+      return { error: "You can only edit your own submissions" }
+    }
+
+    // Check if edit was approved
+    if (!submission.editApproved) {
+      return { error: "You must request and receive approval before editing" }
+    }
+
+    // Update submission
+    await prisma.formSubmission.update({
+      where: { id: submissionId },
+      data: {
+        formData: JSON.stringify(formData),
+        attachments: attachments ? JSON.stringify(attachments) : null,
+        editApproved: false, // Reset edit approval after submitting changes
+        editApprovedAt: null,
+        editApprovedBy: null
+      }
+    })
+
+    revalidatePath('/staff/forms')
+    revalidatePath(`/staff/forms/${submission.templateId}`)
+    revalidatePath('/dashboard/forms')
+    revalidatePath(`/dashboard/forms/${submission.templateId}`)
+    revalidatePath('/admin/form-submissions')
+
+    return { success: true }
+  } catch (error) {
+    console.error("Failed to update submission:", error)
+    return { error: "Failed to update submission" }
   }
 }
 

@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
+import { logger } from "@/lib/logger"
 
 type NotificationType =
   | 'EVENT_CREATED'
@@ -117,7 +118,7 @@ export async function notifyAllStaffAboutEvent(event: {
     select: { id: true, email: true, name: true, phone: true, notificationPreferences: true }
   })
 
-  console.log(`Found ${staffMembers.length} users to notify`)
+  logger.log(`Found ${staffMembers.length} users to notify`)
 
   const formattedDate = event.startDateTime.toLocaleDateString(undefined, {
     weekday: 'short',
@@ -153,7 +154,7 @@ export async function notifyAllStaffAboutEvent(event: {
     await prisma.notification.createMany({
       data: inAppNotifications
     })
-    console.log(`Created ${inAppNotifications.length} in-app notifications`)
+    logger.log(`Created ${inAppNotifications.length} in-app notifications`)
   }
 
   // Send emails/SMS (non-blocking)
@@ -205,7 +206,7 @@ export async function notifyAllStaffAboutEventUpdate(event: {
       select: { id: true, email: true, name: true, phone: true, notificationPreferences: true }
     })
 
-    console.log(`Found ${staffMembers.length} users to notify`)
+    logger.log(`Found ${staffMembers.length} users to notify`)
   
     const title = 'Event Updated'
     const message = `Updates for "${event.title}": ${event.changes}`
@@ -230,7 +231,7 @@ export async function notifyAllStaffAboutEventUpdate(event: {
   
     if (inAppNotifications.length > 0) {
       await prisma.notification.createMany({ data: inAppNotifications })
-      console.log(`Created ${inAppNotifications.length} in-app notifications`)
+      logger.log(`Created ${inAppNotifications.length} in-app notifications`)
     }
 
     // Send emails/SMS (non-blocking)
@@ -276,7 +277,7 @@ export async function notifyAllStaffAboutEventCancellation(event: {
       select: { id: true, email: true, name: true, phone: true, notificationPreferences: true }
     })
   
-    console.log(`Found ${staffMembers.length} users to notify`)
+    logger.log(`Found ${staffMembers.length} users to notify`)
 
     const formattedDate = event.date.toLocaleDateString()
     const title = 'Event Cancelled'
@@ -301,7 +302,7 @@ export async function notifyAllStaffAboutEventCancellation(event: {
   
     if (inAppNotifications.length > 0) {
       await prisma.notification.createMany({ data: inAppNotifications })
-      console.log(`Created ${inAppNotifications.length} in-app notifications`)
+      logger.log(`Created ${inAppNotifications.length} in-app notifications`)
     }
 
     // Send emails/SMS (non-blocking)
@@ -337,7 +338,7 @@ export async function notifyAllStaffAboutEventCancellation(event: {
 
 // SMS sending function (placeholder)
 async function sendSMS(params: { to: string, message: string }) {
-    console.log(`
+    logger.log(`
 📱 SMS NOTIFICATION
 To: ${params.to}
 Message: ${params.message}
@@ -362,7 +363,7 @@ async function sendEventNotificationEmail(params: {
   const content = params.content || `A new event has been scheduled: ${params.eventTitle}`
   const link = params.link || params.eventLink || ''
 
-  console.log(`
+  logger.log(`
 📧 EMAIL NOTIFICATION
 To: ${params.to}
 Subject: ${subject}

@@ -3,10 +3,12 @@
 import type { FormTemplateField } from '@/lib/form-template-types'
 import { cn } from '@/lib/utils'
 import { AddressAutocomplete } from '@/components/ui/AddressAutocomplete'
+import DOMPurify from 'dompurify'
 
 export type FormTemplateViewProps = {
   title: string
   description?: string | null
+  descriptionHtml?: string | null
   fields: FormTemplateField[]
   eventTitle?: string
   /** When true, render read-only preview (e.g. in admin builder). */
@@ -32,6 +34,7 @@ export type FormTemplateViewProps = {
 export function FormTemplateView({
   title,
   description,
+  descriptionHtml,
   fields,
   eventTitle,
   preview = false,
@@ -51,8 +54,13 @@ export function FormTemplateView({
       )}
       <div className="pb-3">
         <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
-        {description && (
-          <p className="text-sm text-gray-500 mt-1">{description}</p>
+        {(description || descriptionHtml) && (
+          <div 
+            className="text-sm text-gray-500 mt-1 rich-text-content"
+            dangerouslySetInnerHTML={{ 
+              __html: DOMPurify.sanitize(descriptionHtml || description || '') 
+            }} 
+          />
         )}
       </div>
 
@@ -68,8 +76,13 @@ export function FormTemplateView({
             {field.label || '(Untitled field)'}
             {field.required && <span className="text-red-500 ml-0.5">*</span>}
           </label>
-          {field.description && (
-            <p className="text-xs text-gray-500 mb-1.5">{field.description}</p>
+          {(field.description || field.descriptionHtml) && (
+            <div 
+              className="text-xs text-gray-500 mb-1.5 rich-text-content"
+              dangerouslySetInnerHTML={{ 
+                __html: DOMPurify.sanitize(field.descriptionHtml || field.description || '') 
+              }} 
+            />
           )}
           {preview ? (
             <FieldInputPreview field={field} />

@@ -5,6 +5,7 @@ import { auth } from "@/auth"
 import { revalidatePath } from "next/cache"
 import type { PrismaClient } from "@prisma/client"
 import { scheduleEventReminders } from "./email-reminders"
+import { logger } from "@/lib/logger"
 
 // Type-safe prisma client reference
 const db = prisma as PrismaClient & Record<string, unknown>
@@ -693,7 +694,7 @@ export async function approveEventRequest(
     if (approvedEventId) {
       try {
         await scheduleEventReminders(approvedEventId)
-        console.log('✅ Email reminders scheduled for approved event:', approvedEventId)
+        logger.log('✅ Email reminders scheduled for approved event:', approvedEventId)
       } catch (reminderError) {
         console.error('❌ Failed to schedule reminders:', reminderError)
       }
@@ -1243,9 +1244,9 @@ export async function approveRequestWithSelectedDate(data: {
     // Schedule email reminders for the new event
     try {
       await scheduleEventReminders(event.id)
-      console.log('✅ Email reminders scheduled for approved event:', event.id)
+      logger.log('✅ Email reminders scheduled for approved event:', event.id)
     } catch (reminderError) {
-      console.error('❌ Failed to schedule reminders:', reminderError)
+      logger.error('❌ Failed to schedule reminders:', reminderError)
     }
 
     revalidatePath('/admin/event-requests')

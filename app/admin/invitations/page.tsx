@@ -4,6 +4,7 @@ import { Mail, Send, Calendar, User, Clock, Trash2, Link2 } from "lucide-react"
 import { STYLES } from "@/lib/styles"
 import { cn } from "@/lib/utils"
 import { formatDateShort } from "@/lib/date-utils"
+import { logger } from "@/lib/logger"
 
 export const revalidate = 30
 
@@ -37,9 +38,9 @@ export default async function InvitationsPage() {
           'use server'
           const result = await createInvitation(formData)
           if (result.error) {
-            console.error(result.error)
+            logger.error(result.error)
           } else if (result.token) {
-             console.log("Invitation Link:", `${process.env.NEXTAUTH_URL}/invite/${result.token}`)
+             logger.log("Invitation Link:", `${process.env.NEXTAUTH_URL}/invite/${result.token}`)
           }
         }} className="flex flex-col md:flex-row gap-4 items-end">
           <div className="flex-1 w-full">

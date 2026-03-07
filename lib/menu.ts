@@ -98,6 +98,11 @@ export const homeAdminMenu = [
     icon: ClipboardList,
   },
   {
+    label: "Forms",
+    href: "/dashboard/forms",
+    icon: FileText,
+  },
+  {
     label: "My Events",
     href: "/dashboard/my-events",
     icon: CheckCircle,

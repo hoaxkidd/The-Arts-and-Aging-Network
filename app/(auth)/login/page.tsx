@@ -22,7 +22,9 @@ function LoginButton() {
 }
 
 function LoginForm({ searchParams, router, tabParam }: { searchParams: ReturnType<typeof useSearchParams>, router: ReturnType<typeof useRouter>, tabParam: string | null }) {
-  const [activeTab, setActiveTab] = useState<'login' | 'register'>(tabParam === 'register' ? 'register' : 'login')
+  const [activeTab, setActiveTab] = useState<'login' | 'register'>(() => 
+    tabParam === 'register' ? 'register' : 'login'
+  )
   const [state, dispatch] = useActionState(authenticate, undefined as AuthState)
   const [showPassword, setShowPassword] = useState(false)
 
@@ -31,10 +33,6 @@ function LoginForm({ searchParams, router, tabParam }: { searchParams: ReturnTyp
     const url = tab === 'register' ? '/login?tab=register' : '/login'
     router.replace(url, { scroll: false })
   }
-
-  useEffect(() => {
-    setActiveTab(tabParam === 'register' ? 'register' : 'login')
-  }, [tabParam])
 
   useEffect(() => {
     if (state?.redirect) {

@@ -22,6 +22,7 @@ export interface FormTemplateFieldBase {
   required: boolean
   placeholder?: string
   description?: string
+  descriptionHtml?: string  // Rich text HTML version
 }
 
 export interface FormTemplateFieldShortText extends FormTemplateFieldBase {
