@@ -2,18 +2,17 @@ import { auth } from "@/auth"
 import { NextResponse } from "next/server"
 import { needsOnboarding, getOnboardingPath } from "@/lib/onboarding"
 
-// Type workaround for NextAuth middleware
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const authMiddleware = auth as any
+const authMiddleware = auth
 
-export default authMiddleware((req: any) => {
+export default authMiddleware((req: { nextUrl: URL; auth: unknown; headers: Headers }) => {
   const isLoggedIn = !!req.auth
   const { pathname } = req.nextUrl
-  const userRole = req.auth?.user?.role
-  const user = req.auth?.user
+  const user = req.auth as { user?: { role?: string; onboardingCompletedAt?: string; onboardingSkipCount?: number } } | undefined
+  const userRole = user?.user?.role
+  const authUser = user?.user
 
-  // Onboarding: redirect staff/dashboard users who haven't completed profile (from JWT)
-  if (isLoggedIn && user && needsOnboarding(user)) {
+  // Onboarding: redirect staff/dashboard users who haven't completed profile
+  if (isLoggedIn && authUser && needsOnboarding(authUser)) {
     const onboardingPath = getOnboardingPath(userRole ?? '')
     if (pathname !== onboardingPath && !pathname.startsWith('/login') && !pathname.startsWith('/invite')) {
       if (pathname.startsWith('/staff') || pathname.startsWith('/dashboard')) {
@@ -30,7 +29,6 @@ export default authMiddleware((req: any) => {
   if (pathname.startsWith('/admin')) {
     if (!isLoggedIn) return NextResponse.redirect(new URL('/login', req.nextUrl))
     if (userRole !== 'ADMIN') {
-      // Strict Segregation: Redirect users to their portals
       if (userRole === 'PAYROLL') return NextResponse.redirect(new URL('/payroll', req.nextUrl))
       if (userRole === 'HOME_ADMIN') return NextResponse.redirect(new URL('/dashboard', req.nextUrl))
       if (userRole === 'FACILITATOR') {
@@ -44,7 +42,6 @@ export default authMiddleware((req: any) => {
   if (pathname.startsWith('/payroll')) {
     if (!isLoggedIn) return NextResponse.redirect(new URL('/login', req.nextUrl))
 
-    // Strict Segregation: Redirect other roles to their portals
     if (userRole === 'ADMIN') return NextResponse.redirect(new URL('/admin', req.nextUrl))
     if (userRole === 'HOME_ADMIN') return NextResponse.redirect(new URL('/dashboard', req.nextUrl))
     if (userRole === 'FACILITATOR') {
@@ -79,10 +76,11 @@ export default authMiddleware((req: any) => {
     })
   }
 
-  // HOME_ADMIN cannot access staff directory (redirect to dashboard)
+  // HOME_ADMIN and VOLUNTEER cannot access staff directory
   if (pathname.startsWith('/staff/directory')) {
     if (!isLoggedIn) return NextResponse.redirect(new URL('/login', req.nextUrl))
     if (userRole === 'HOME_ADMIN') return NextResponse.redirect(new URL('/dashboard', req.nextUrl))
+    if (userRole === 'VOLUNTEER') return NextResponse.redirect(new URL('/volunteers', req.nextUrl))
     return NextResponse.next({
       request: {
         headers: requestHeaders
@@ -90,7 +88,7 @@ export default authMiddleware((req: any) => {
     })
   }
 
-  // Allow all logged-in users to access inbox and groups (MUST come before general /staff check)
+  // Allow all logged-in users to access inbox and groups
   if (pathname.startsWith('/staff/inbox') || pathname.startsWith('/staff/groups')) {
     if (!isLoggedIn) return NextResponse.redirect(new URL('/login', req.nextUrl))
     return NextResponse.next({
@@ -112,12 +110,27 @@ export default authMiddleware((req: any) => {
     }
   }
 
+  // Protect volunteers routes (VOLUNTEER only)
+  if (pathname.startsWith('/volunteers')) {
+    if (!isLoggedIn) return NextResponse.redirect(new URL('/login', req.nextUrl))
+    if (userRole !== 'VOLUNTEER') {
+      if (userRole === 'ADMIN') return NextResponse.redirect(new URL('/admin', req.nextUrl))
+      if (userRole === 'PAYROLL') return NextResponse.redirect(new URL('/payroll', req.nextUrl))
+      if (userRole === 'HOME_ADMIN') return NextResponse.redirect(new URL('/dashboard', req.nextUrl))
+      if (userRole === 'FACILITATOR' || userRole === 'BOARD' || userRole === 'PARTNER') {
+        return NextResponse.redirect(new URL('/staff', req.nextUrl))
+      }
+      return NextResponse.redirect(new URL('/', req.nextUrl))
+    }
+  }
+
   // Redirect logged-in users away from login page
   if (pathname.startsWith('/login') && isLoggedIn) {
     if (userRole === 'ADMIN') return NextResponse.redirect(new URL('/admin', req.nextUrl))
     if (userRole === 'PAYROLL') return NextResponse.redirect(new URL('/payroll', req.nextUrl))
     if (userRole === 'HOME_ADMIN') return NextResponse.redirect(new URL('/dashboard', req.nextUrl))
-    if (userRole === 'FACILITATOR' || userRole === 'VOLUNTEER' || userRole === 'BOARD' || userRole === 'PARTNER') {
+    if (userRole === 'VOLUNTEER') return NextResponse.redirect(new URL('/volunteers', req.nextUrl))
+    if (userRole === 'FACILITATOR' || userRole === 'BOARD' || userRole === 'PARTNER') {
       return NextResponse.redirect(new URL('/staff', req.nextUrl))
     }
     return NextResponse.redirect(new URL('/', req.nextUrl))
@@ -131,12 +144,12 @@ export default authMiddleware((req: any) => {
 })
 
 export const config = {
-  // Only run on protected paths; skip / and /login to avoid redirect loop
   matcher: [
     '/admin/:path*',
     '/dashboard/:path*',
     '/payroll/:path*',
     '/staff/:path*',
+    '/volunteers/:path*',
     '/events/:path*',
     '/notifications/:path*',
   ],

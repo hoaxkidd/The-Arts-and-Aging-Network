@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma"
 import { auth } from "@/auth"
 import { redirect } from "next/navigation"
-import { FileText, Calendar, CheckCircle, Clock, XCircle, Search } from "lucide-react"
+import { FileText, Calendar, CheckCircle, Clock, XCircle } from "lucide-react"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
 import { ROLE_LABELS } from "@/lib/roles"
@@ -9,13 +9,15 @@ import { FormTemplateCard } from "@/components/admin/FormTemplateCard"
 import { FormTemplateFilters } from "@/components/admin/FormTemplateFilters"
 import { StickyTable } from "@/components/ui/StickyTable"
 
-export default async function StaffFormsPage({
+export default async function PayrollFormsPage({
   searchParams
 }: {
   searchParams: Promise<{ category?: string; tab?: string; view?: string; sort?: string; search?: string; status?: string }>
 }) {
   const session = await auth()
   if (!session?.user?.id) redirect('/login')
+
+  const userRole = session.user.role || ''
 
   const params = await searchParams
   const categoryFilter = params.category || 'ALL'
@@ -25,22 +27,18 @@ export default async function StaffFormsPage({
   const search = params.search || ''
   const statusFilter = params.status || 'active'
 
-  // Get active templates
-  const userRole = session.user.role || ''
   const isAdmin = session.user.role === 'ADMIN'
+  const isPayroll = session.user.role === 'PAYROLL'
 
-  // Build query based on user role
   let templates
   const categoryFilterObj = categoryFilter !== 'ALL' ? { category: categoryFilter } : {}
   const statusFilterObj = statusFilter === 'active' ? { isActive: true } : {}
   
-  // Build where clause based on filters
   const where: any = {
     ...categoryFilterObj,
     ...statusFilterObj,
   }
   
-  // Add search filter if provided
   if (search) {
     where.OR = [
       { title: { contains: search } },
@@ -49,7 +47,6 @@ export default async function StaffFormsPage({
   }
 
   if (isAdmin) {
-    // Admin sees all forms based on status filter
     templates = await prisma.formTemplate.findMany({
       where,
       include: {
@@ -59,14 +56,29 @@ export default async function StaffFormsPage({
       },
       orderBy: sort === 'title' ? { title: 'asc' } : sort === 'category' ? { category: 'asc' } : { createdAt: 'desc' }
     })
-  } else {
-    // Non-admin: show public forms OR forms where their role has access
+  } else if (isPayroll) {
     templates = await prisma.formTemplate.findMany({
       where: {
         ...where,
         OR: [
-          { isPublic: true },  // Public forms
-          { allowedRoles: { contains: userRole } }  // Role-restricted forms
+          { isPublic: true },
+          { allowedRoles: { contains: userRole } }
+        ]
+      },
+      include: {
+        _count: {
+          select: { submissions: true }
+        }
+      },
+      orderBy: sort === 'title' ? { title: 'asc' } : sort === 'category' ? { category: 'asc' } : { createdAt: 'desc' }
+    })
+  } else {
+    templates = await prisma.formTemplate.findMany({
+      where: {
+        ...where,
+        OR: [
+          { isPublic: true },
+          { allowedRoles: { contains: userRole } }
         ]
       },
       include: {
@@ -78,7 +90,6 @@ export default async function StaffFormsPage({
     })
   }
 
-  // Get user's submissions with template ID for linking to cards
   const mySubmissions = await prisma.formSubmission.findMany({
     where: {
       submittedBy: session.user.id
@@ -129,17 +140,15 @@ export default async function StaffFormsPage({
 
   return (
     <div className="h-full flex flex-col">
-      {/* Header */}
       <header className="flex-shrink-0 pb-3">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-lg font-bold text-gray-900">Form Templates</h1>
+            <h1 className="text-lg font-bold text-gray-900">Forms</h1>
             <p className="text-xs text-gray-500">Access forms and track your submissions</p>
           </div>
         </div>
       </header>
 
-      {/* Filters */}
       <div className="flex-shrink-0 mt-4">
         <FormTemplateFilters
           categories={categories.map(c => ({ value: c.value, label: c.label, color: 'blue' }))}
@@ -152,10 +161,9 @@ export default async function StaffFormsPage({
         />
       </div>
 
-      {/* Tabs */}
       <div className="flex-shrink-0 flex items-center gap-2 mb-4 border-b border-gray-200">
         <Link
-          href={`/staff/forms?tab=browse&view=${view}&sort=${sort}&search=${search}&category=${categoryFilter}&status=${statusFilter}`}
+          href={`/payroll/forms?tab=browse&view=${view}&sort=${sort}&search=${search}&category=${categoryFilter}&status=${statusFilter}`}
           className={cn(
             "px-4 py-2 text-sm font-medium border-b-2 transition-colors",
             activeTab === 'browse'
@@ -166,7 +174,7 @@ export default async function StaffFormsPage({
           Browse Templates ({templates.length})
         </Link>
         <Link
-          href={`/staff/forms?tab=submissions&view=${view}&sort=${sort}&search=${search}&category=${categoryFilter}&status=${statusFilter}`}
+          href={`/payroll/forms?tab=submissions&view=${view}&sort=${sort}&search=${search}&category=${categoryFilter}&status=${statusFilter}`}
           className={cn(
             "px-4 py-2 text-sm font-medium border-b-2 transition-colors",
             activeTab === 'submissions'
@@ -178,14 +186,12 @@ export default async function StaffFormsPage({
         </Link>
       </div>
 
-      {/* Browse Tab */}
       {activeTab === 'browse' && (
         <>
-          {/* Category Filter */}
           <div className="flex-shrink-0 mb-4">
             <div className="flex items-center gap-2 overflow-x-auto pb-2">
               <Link
-                href="/staff/forms?tab=browse&category=ALL"
+                href="/payroll/forms?tab=browse&category=ALL"
                 className={cn(
                   "px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap",
                   categoryFilter === 'ALL'
@@ -198,7 +204,7 @@ export default async function StaffFormsPage({
               {categories.map(cat => (
                 <Link
                   key={cat.value}
-                  href={`/staff/forms?tab=browse&category=${cat.value}`}
+                  href={`/payroll/forms?tab=browse&category=${cat.value}`}
                   className={cn(
                     "px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap",
                     categoryFilter === cat.value
@@ -212,7 +218,6 @@ export default async function StaffFormsPage({
             </div>
           </div>
 
-          {/* Templates Display */}
           <div className="flex-1 min-h-0 overflow-auto">
             {templates.length === 0 ? (
               <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
@@ -220,7 +225,6 @@ export default async function StaffFormsPage({
                 <p className="text-sm text-gray-500">{search ? 'No forms match your search' : 'No forms available in this category'}</p>
               </div>
             ) : view === 'table' ? (
-              /* Table View */
               <StickyTable 
                 headers={["Form", "Category", "Status", "Access", "Submissions"]}
                 className="bg-white rounded-lg border border-gray-200"
@@ -231,7 +235,7 @@ export default async function StaffFormsPage({
                   return (
                     <tr key={template.id} className="hover:bg-gray-50">
                       <td className="px-4 py-3">
-                        <Link href={`/staff/forms/${template.id}`} className="block">
+                        <Link href={`/payroll/forms/${template.id}`} className="block">
                           <span className="text-sm font-medium text-gray-900 hover:text-primary-600">{template.title}</span>
                           {template.description && (
                             <p className="text-xs text-gray-500 line-clamp-1">{template.description}</p>
@@ -263,8 +267,8 @@ export default async function StaffFormsPage({
                             <span className="text-sm text-gray-900">{template._count.submissions}</span>
                           </td>
                         </tr>
-                      )
-                    })}
+                  )
+                })}
               </StickyTable>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -274,7 +278,7 @@ export default async function StaffFormsPage({
                     template={template}
                     categories={categories.map(c => ({ value: c.value, label: c.label }))}
                     mode="staff"
-                    fillUrlPrefix="/staff/forms"
+                    fillUrlPrefix="/payroll/forms"
                     existingSubmission={submissionMap.get(template.id) ? {
                       id: submissionMap.get(template.id)!.id,
                       formData: submissionMap.get(template.id)!.formData,
@@ -289,10 +293,8 @@ export default async function StaffFormsPage({
         </>
       )}
 
-      {/* Submissions Tab */}
       {activeTab === 'submissions' && (
         <>
-          {/* Submission Stats */}
           <div className="flex-shrink-0 mb-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
             <div className="bg-white rounded-lg border border-gray-200 p-3">
               <p className="text-xs text-gray-500">Total</p>
@@ -312,14 +314,13 @@ export default async function StaffFormsPage({
             </div>
           </div>
 
-          {/* Submissions List */}
           <div className="flex-1 min-h-0 overflow-auto">
             {mySubmissions.length === 0 ? (
               <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
                 <FileText className="w-10 h-10 text-gray-300 mx-auto mb-2" />
                 <p className="text-sm text-gray-500">No submissions yet</p>
                 <Link
-                  href="/staff/forms?tab=browse"
+                  href="/payroll/forms?tab=browse"
                   className="text-xs text-primary-600 hover:text-primary-700 mt-2 inline-block"
                 >
                   Browse forms to get started

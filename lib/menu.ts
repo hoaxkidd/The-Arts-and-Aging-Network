@@ -38,8 +38,7 @@ export const adminMenu = [
   { label: "Inventory", href: "/admin/inventory", icon: Package },
   { label: "Donors", href: "/admin/donors", icon: Heart },
   { label: "Testimonials", href: "/admin/testimonials", icon: Quote },
-  { label: "Form Templates", href: "/admin/form-templates", icon: FileText },
-  { label: "Payroll Forms", href: "/admin/payroll-forms", icon: FileText },
+  { label: "Forms", href: "/admin/forms", icon: FileText },
   { label: "Settings", href: "/admin/settings", icon: Settings },
   { label: "My Profile", href: "/admin/profile", icon: UserCircle },
 ]
@@ -57,14 +56,13 @@ export const staffMenu = [
 ]
 
 export const volunteerMenu = [
-  { label: "Dashboard", href: "/staff", icon: LayoutDashboard },
-  { label: "Browse Events", href: "/staff/events", icon: Calendar },
-  { label: "My Schedule", href: "/staff/my-events", icon: CalendarCheck },
-  { label: "Team Directory", href: "/staff/directory", icon: Users },
+  { label: "Dashboard", href: "/volunteers", icon: LayoutDashboard },
+  { label: "Browse Events", href: "/events", icon: Calendar },
+  { label: "My Schedule", href: "/volunteers/my-events", icon: CalendarCheck },
   { label: "Inbox", href: "/staff/inbox", icon: Inbox },
-  { label: "Forms", href: "/staff/forms", icon: FileText },
-  { label: "My Profile", href: "/staff/profile", icon: UserCircle },
-  { label: "Settings", href: "/staff/settings", icon: Settings },
+  { label: "Forms", href: "/volunteers/forms", icon: FileText },
+  { label: "My Profile", href: "/volunteers/profile", icon: UserCircle },
+  { label: "Settings", href: "/volunteers/settings", icon: Settings },
 ]
 
 export const boardMenu = [
@@ -77,56 +75,16 @@ export const boardMenu = [
 ]
 
 export const homeAdminMenu = [
-  {
-    label: "Dashboard",
-    href: "/dashboard",
-    icon: LayoutDashboard,
-  },
-  {
-    label: "Events",
-    href: "/dashboard/events",
-    icon: Calendar,
-  },
-  {
-    label: "Inbox",
-    href: "/staff/inbox",
-    icon: Inbox,
-  },
-  {
-    label: "My Requests",
-    href: "/dashboard/requests",
-    icon: ClipboardList,
-  },
-  {
-    label: "Forms",
-    href: "/dashboard/forms",
-    icon: FileText,
-  },
-  {
-    label: "My Events",
-    href: "/dashboard/my-events",
-    icon: CheckCircle,
-  },
-  {
-    label: "History",
-    href: "/dashboard/history",
-    icon: Clock,
-  },
-  {
-    label: "Contacts",
-    href: "/dashboard/contacts",
-    icon: Users,
-  },
-  {
-    label: "My Profile",
-    href: "/dashboard/profile",
-    icon: UserCircle,
-  },
-  {
-    label: "Settings",
-    href: "/dashboard/settings",
-    icon: Settings,
-  },
+  { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { label: "Events", href: "/dashboard/events", icon: Calendar },
+  { label: "Inbox", href: "/staff/inbox", icon: Inbox },
+  { label: "My Requests", href: "/dashboard/requests", icon: ClipboardList },
+  { label: "Forms", href: "/dashboard/forms", icon: FileText },
+  { label: "My Events", href: "/dashboard/my-events", icon: CheckCircle },
+  { label: "History", href: "/dashboard/history", icon: Clock },
+  { label: "Contacts", href: "/dashboard/contacts", icon: Users },
+  { label: "My Profile", href: "/dashboard/profile", icon: UserCircle },
+  { label: "Settings", href: "/dashboard/settings", icon: Settings },
 ]
 
 export const MENU_ITEMS: Record<string, MenuItem[]> = {
@@ -136,7 +94,7 @@ export const MENU_ITEMS: Record<string, MenuItem[]> = {
     { label: "Events", href: "/events", icon: Calendar },
     { label: "Team Directory", href: "/staff/directory", icon: Users },
     { label: "Inbox", href: "/staff/inbox", icon: Inbox },
-    { label: "Forms", href: "/staff/forms", icon: FileText },
+    { label: "Forms", href: "/payroll/forms", icon: FileText },
     { label: "Daily Check-in", href: "/payroll/check-in", icon: Clock },
     { label: "Timesheet", href: "/payroll/timesheet", icon: ClipboardList },
     { label: "Mileage", href: "/payroll/mileage", icon: MapPin },
@@ -149,5 +107,5 @@ export const MENU_ITEMS: Record<string, MenuItem[]> = {
   FACILITATOR: staffMenu,
   VOLUNTEER: volunteerMenu,
   BOARD: boardMenu,
-  PARTNER: boardMenu, // Same as board for now
+  PARTNER: boardMenu,
 }

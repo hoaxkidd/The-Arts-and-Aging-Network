@@ -3,7 +3,7 @@
 import { prisma } from "@/lib/prisma"
 import { auth } from "@/auth"
 import { revalidatePath } from "next/cache"
-import type { PrismaClient } from "@prisma/client"
+import type { Prisma, PrismaClient } from "@prisma/client"
 import { scheduleEventReminders } from "./email-reminders"
 import { logger } from "@/lib/logger"
 
@@ -436,7 +436,7 @@ export async function getAllEventRequests(filters?: {
   if (session?.user?.role !== 'ADMIN') return { error: "Unauthorized" }
 
   try {
-    const where: any = {}
+    const where: Prisma.EventRequestWhereInput = {}
 
     if (filters?.status && filters.status !== 'ALL') {
       where.status = filters.status
@@ -858,14 +858,14 @@ export async function getHomeEventHistory(homeId?: string) {
       if (event && !eventsMap.has(event.id)) {
         // Calculate stats
         const confirmedStaff = event.attendances.filter(
-          (a: any) => a.status === 'YES' && ['FACILITATOR'].includes(a.user.role)
+          (a) => a.status === 'YES' && a.user && ['FACILITATOR'].includes(a.user.role)
         )
-        const checkedIn = event.attendances.filter((a: any) => a.checkInTime)
+        const checkedIn = event.attendances.filter((a) => a.checkInTime !== null)
         const feedbackRatings = event.attendances
-          .filter((a: any) => a.feedbackRating)
-          .map((a: any) => a.feedbackRating)
+          .filter((a) => a.feedbackRating !== null)
+          .map((a) => a.feedbackRating as number)
         const avgRating = feedbackRatings.length > 0
-          ? feedbackRatings.reduce((a: number, b: number) => a + b, 0) / feedbackRatings.length
+          ? feedbackRatings.reduce((a, b) => a + b, 0) / feedbackRatings.length
           : null
 
         eventsMap.set(event.id, {
@@ -887,14 +887,14 @@ export async function getHomeEventHistory(homeId?: string) {
     for (const event of directEvents) {
       if (!eventsMap.has(event.id)) {
         const confirmedStaff = event.attendances.filter(
-          (a: any) => a.status === 'YES' && ['FACILITATOR'].includes(a.user.role)
+          (a) => a.status === 'YES' && a.user && ['FACILITATOR'].includes(a.user.role)
         )
-        const checkedIn = event.attendances.filter((a: any) => a.checkInTime)
+        const checkedIn = event.attendances.filter((a) => a.checkInTime !== null)
         const feedbackRatings = event.attendances
-          .filter((a: any) => a.feedbackRating)
-          .map((a: any) => a.feedbackRating)
+          .filter((a) => a.feedbackRating !== null)
+          .map((a) => a.feedbackRating as number)
         const avgRating = feedbackRatings.length > 0
-          ? feedbackRatings.reduce((a: number, b: number) => a + b, 0) / feedbackRatings.length
+          ? feedbackRatings.reduce((a, b) => a + b, 0) / feedbackRatings.length
           : null
 
         eventsMap.set(event.id, {
@@ -1075,8 +1075,8 @@ export async function getRequestWithResponses(requestId: string) {
     if (!request) return { error: "Request not found" }
 
     // Calculate availability summary for each date option
-    const preferredDates = JSON.parse(request.preferredDates || '[]')
-    const availabilitySummary = preferredDates.map((_: any, index: number) => {
+    const preferredDates = JSON.parse(request.preferredDates || '[]') as unknown[]
+    const availabilitySummary = preferredDates.map((_, index: number) => {
       const availableStaff = request.responses.filter(response => {
         const availability = JSON.parse(response.availability)
         return availability[index] === true

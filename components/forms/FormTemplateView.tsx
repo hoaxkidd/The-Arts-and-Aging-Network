@@ -3,7 +3,7 @@
 import type { FormTemplateField } from '@/lib/form-template-types'
 import { cn } from '@/lib/utils'
 import { AddressAutocomplete } from '@/components/ui/AddressAutocomplete'
-import DOMPurify from 'dompurify'
+import { sanitizeHtml } from "@/lib/dompurify"
 
 export type FormTemplateViewProps = {
   title: string
@@ -58,7 +58,7 @@ export function FormTemplateView({
           <div 
             className="text-sm text-gray-500 mt-1 rich-text-content"
             dangerouslySetInnerHTML={{ 
-              __html: DOMPurify.sanitize(descriptionHtml || description || '') 
+              __html: sanitizeHtml(descriptionHtml || description || '') 
             }} 
           />
         )}
@@ -80,7 +80,7 @@ export function FormTemplateView({
             <div 
               className="text-xs text-gray-500 mb-1.5 rich-text-content"
               dangerouslySetInnerHTML={{ 
-                __html: DOMPurify.sanitize(field.descriptionHtml || field.description || '') 
+                __html: sanitizeHtml(field.descriptionHtml || field.description || '') 
               }} 
             />
           )}

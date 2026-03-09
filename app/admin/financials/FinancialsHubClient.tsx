@@ -8,9 +8,9 @@ import { MileageList } from "@/components/admin/financials/MileageList"
 import { ExpenseRequestList } from "@/components/admin/financials/ExpenseRequestList"
 
 type FinancialsHubClientProps = {
-    timesheets: any[]
-    mileageEntries: any[]
-    expenseRequests: any[]
+    timesheets: Record<string, unknown>[]
+    mileageEntries: Record<string, unknown>[]
+    expenseRequests: Record<string, unknown>[]
 }
 
 export function FinancialsHubClient({ timesheets, mileageEntries, expenseRequests }: FinancialsHubClientProps) {
@@ -51,9 +51,9 @@ export function FinancialsHubClient({ timesheets, mileageEntries, expenseRequest
             />
 
             <div className="flex-1 min-h-0 overflow-auto">
-                {activeTab === 'timesheets' && <TimesheetList timesheets={timesheets} />}
-                {activeTab === 'mileage' && <MileageList entries={mileageEntries} />}
-                {activeTab === 'expenses' && <ExpenseRequestList requests={expenseRequests} />}
+                {activeTab === 'timesheets' && <TimesheetList timesheets={timesheets as never[]} />}
+                {activeTab === 'mileage' && <MileageList entries={mileageEntries as never[]} />}
+                {activeTab === 'expenses' && <ExpenseRequestList requests={expenseRequests as never[]} />}
             </div>
         </div>
     )

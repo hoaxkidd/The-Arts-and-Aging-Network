@@ -41,7 +41,7 @@ export async function updateRequestStatus(requestId: string, status: 'APPROVED' 
     revalidatePath('/admin/requests')
     revalidatePath('/payroll/requests') // Update user view too
     return { success: true }
-  } catch (error) {
+  } catch (_error) {
     return { error: 'Failed to update request status' }
   }
 }

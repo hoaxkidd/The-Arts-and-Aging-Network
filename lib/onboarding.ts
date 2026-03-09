@@ -28,7 +28,7 @@ export function needsOnboarding(user: SessionUser | null | undefined): boolean {
   return staffRoles.includes(user.role ?? '')
 }
 
-export function getOnboardingPath(role: string): string {
+export function getOnboardingPath(_role: string): string {
   // All roles that need onboarding go to /staff/onboarding
   return '/staff/onboarding'
 }

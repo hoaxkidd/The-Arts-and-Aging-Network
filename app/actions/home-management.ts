@@ -48,7 +48,7 @@ export async function createFacilityProfile(formData: FormData) {
     if (!user) return { error: "User not found" }
     if (user.geriatricHome) return { error: "This user already has a facility profile" }
 
-    const prismaClient = prisma as any
+    const prismaClient = prisma
     await prismaClient.geriatricHome.create({
       data: {
         name,
@@ -198,7 +198,7 @@ export async function updateHomeDetails(formData: FormData) {
   }
 
   try {
-    const prismaClient = prisma as any
+    const prismaClient = prisma
 
     // Check ownership if not admin
     if (session.user.role !== 'ADMIN') {

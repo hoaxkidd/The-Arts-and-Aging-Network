@@ -314,11 +314,13 @@ export async function processPendingReminders() {
 }
 
 // Generate email content
-function generateReminderEmail(data: {
-  reminder: any
-  recipient: { name: string | null, preferredName: string | null, email: string | null }
-  event: any
-}) {
+interface ReminderData {
+  reminder: { id: string; eventId: string; recipientType: string; reminderType: string; scheduledFor: Date }
+  recipient: { name: string | null; preferredName: string | null; email: string | null }
+  event: { id: string; title: string; description: string | null; startDateTime: Date; endDateTime: Date; location: { name: string; address: string }; geriatricHome: { name: string } | null }
+}
+
+function generateReminderEmail(data: ReminderData) {
   const { reminder, recipient, event } = data
   const recipientName = recipient.preferredName || recipient.name || 'there'
   const eventDate = new Date(event.startDateTime)

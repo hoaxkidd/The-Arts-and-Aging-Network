@@ -1,10 +1,11 @@
 import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
-import { FileSearch, Download, ChevronLeft, ChevronRight, Calendar, ArrowUpRight, UserPlus, UserMinus, Edit, Trash2, LogIn, LogOut, FileText, Building, CalendarPlus, Settings, CheckCircle, XCircle } from "lucide-react"
+import { Prisma } from "@prisma/client"
+import { FileSearch, Download, ChevronLeft, ChevronRight, UserPlus, Edit, Trash2, LogIn, LogOut, FileText, CheckCircle, XCircle } from "lucide-react"
 import { STYLES } from "@/lib/styles"
 import { cn, safeJsonParse } from "@/lib/utils"
 import Link from "next/link"
-import { formatDateShort, getRelativeTime } from "@/lib/date-utils"
+import { getRelativeTime } from "@/lib/date-utils"
 import { AuditLogDetailsCell } from "./AuditLogDetailsCell"
 
 export const revalidate = 60
@@ -57,7 +58,7 @@ export default async function AuditLogPage({
   }
 
   // Build where clause
-  const where: any = {}
+  const where: Prisma.AuditLogWhereInput = {}
   
   if (search) {
     where.OR = [
@@ -114,11 +115,12 @@ export default async function AuditLogPage({
   function formatAuditDetails(details: string | null): string {
     if (!details) return '-'
     
-    const parsed = safeJsonParse<any>(details, {})
+    const parsed = safeJsonParse<Record<string, unknown>>(details, {} as Record<string, unknown>)
+    const updates = parsed.updates as Record<string, unknown> | undefined
     
     // Handle format: {"homeId":"...","updates":{"name":"...","address":"..."}}
-    if (parsed.updates && typeof parsed.updates === 'object') {
-      const changes = Object.keys(parsed.updates)
+    if (updates && typeof updates === 'object') {
+      const changes = Object.keys(updates)
       if (changes.length === 1) {
         return `Changed ${changes[0]}`
       }
@@ -129,22 +131,27 @@ export default async function AuditLogPage({
     }
     
     // Handle format: {"name":"New Home"} - for created items
-    if (parsed.name) {
-      return parsed.name
+    const name = parsed.name as string | undefined
+    const title = parsed.title as string | undefined
+    const email = parsed.email as string | undefined
+    const eventId = parsed.eventId as string | undefined
+    
+    if (name) {
+      return name
     }
     
     // Handle format: {"title":"Event Title"} 
-    if (parsed.title) {
-      return parsed.title
+    if (title) {
+      return title
     }
     
     // Handle user-related details
-    if (parsed.email) {
-      return parsed.email
+    if (email) {
+      return email
     }
     
     // Handle event details
-    if (parsed.eventId) {
+    if (eventId) {
       return 'Event action'
     }
     
@@ -166,14 +173,6 @@ export default async function AuditLogPage({
     if (search) params.set('search', search)
     if (newFilter !== 'all') params.set('filter', newFilter)
     if (page > 1) params.set('page', '1')
-    const queryString = params.toString()
-    return queryString ? `/admin/audit-log?${queryString}` : '/admin/audit-log'
-  }
-
-  function buildSearchUrl(): string {
-    const params = new URLSearchParams()
-    if (search) params.set('search', search)
-    if (filter !== 'all') params.set('filter', filter)
     const queryString = params.toString()
     return queryString ? `/admin/audit-log?${queryString}` : '/admin/audit-log'
   }

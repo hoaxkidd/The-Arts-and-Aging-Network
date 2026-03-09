@@ -65,7 +65,7 @@ export async function checkInToEvent(eventId: string) {
 
     revalidatePath(`/events/${eventId}`)
     return { success: true }
-  } catch (e) {
+  } catch (_e) {
     return { error: 'Failed to check in' }
   }
 }

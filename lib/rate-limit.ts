@@ -1,6 +1,6 @@
 const trackers = new Map<string, { count: number; expiresAt: number }>()
+let cleanupInterval: NodeJS.Timeout | null = null
 
-// Cleanup old entries periodically (every 5 minutes)
 function cleanup() {
   const now = Date.now()
   for (const [key, value] of trackers) {
@@ -10,24 +10,40 @@ function cleanup() {
   }
 }
 
-// Start cleanup interval
-if (typeof setInterval !== 'undefined') {
-    setInterval(cleanup, 5 * 60 * 1000)
+export function startCleanupInterval() {
+  if (cleanupInterval === null && typeof setInterval !== 'undefined') {
+    cleanupInterval = setInterval(cleanup, 5 * 60 * 1000)
+  }
+}
+
+export function stopCleanupInterval() {
+  if (cleanupInterval !== null) {
+    clearInterval(cleanupInterval)
+    cleanupInterval = null
+  }
+}
+
+export function resetRateLimit() {
+  trackers.clear()
 }
 
 export function rateLimit(key: string, limit: number = 5, windowMs: number = 60000) {
   const now = Date.now()
+  
   const record = trackers.get(key)
 
   if (!record || record.expiresAt < now) {
     trackers.set(key, { count: 1, expiresAt: now + windowMs })
-    return true
+    return { success: true, remaining: limit - 1, resetAt: now + windowMs }
   }
 
   if (record.count >= limit) {
-    return false
+    return { success: false, remaining: 0, resetAt: record.expiresAt }
   }
 
-  record.count++
-  return true
+  const newCount = record.count + 1
+  trackers.set(key, { count: newCount, expiresAt: record.expiresAt })
+  return { success: true, remaining: limit - newCount, resetAt: record.expiresAt }
 }
+
+startCleanupInterval()

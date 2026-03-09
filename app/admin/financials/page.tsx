@@ -1,8 +1,6 @@
 import { prisma } from "@/lib/prisma"
 import { auth } from "@/auth"
 import { redirect } from "next/navigation"
-import { DollarSign, Clock, MapPin, FileText } from "lucide-react"
-import { TabNavigation } from "@/components/admin/shared/TabNavigation"
 import { TimesheetList } from "@/components/admin/financials/TimesheetList"
 import { MileageList } from "@/components/admin/financials/MileageList"
 import { ExpenseRequestList } from "@/components/admin/financials/ExpenseRequestList"

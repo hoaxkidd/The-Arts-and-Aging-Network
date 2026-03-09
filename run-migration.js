@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 const { createClient } = require('@supabase/supabase-js');
 
 // Supabase connection - using the service role key (from Supabase Dashboard → Settings → API)
@@ -6,7 +7,9 @@ const serviceRoleKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmF
 
 const supabase = createClient(supabaseUrl, serviceRoleKey);
 
+/* eslint-disable @typescript-eslint/no-require-imports */
 const fs = require('fs');
+/* eslint-disable @typescript-eslint/no-require-imports */
 const path = require('path');
 
 async function runMigration() {
@@ -18,7 +21,7 @@ async function runMigration() {
     console.log('Executing SQL migration...');
     
     // Execute the SQL - Supabase allows running raw SQL via postgrest
-    const { data, error } = await supabase.rpc('exec_sql', { 
+    await supabase.rpc('exec_sql', { 
       query: sql 
     });
     

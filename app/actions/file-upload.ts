@@ -83,8 +83,8 @@ export async function removeFileAttachment(requestId: string, fileId: string) {
       return { error: "Unauthorized" }
     }
 
-    const existingAttachments = request.attachments ? JSON.parse(request.attachments) : []
-    const updatedAttachments = existingAttachments.filter((a: any) => a.id !== fileId)
+    const existingAttachments: Array<{ id: string }> = request.attachments ? JSON.parse(request.attachments) : []
+    const updatedAttachments = existingAttachments.filter((a) => a.id !== fileId)
 
     await prisma.expenseRequest.update({
       where: { id: requestId },
@@ -104,7 +104,7 @@ export async function removeFileAttachment(requestId: string, fileId: string) {
 }
 
 // Get upload URL (placeholder - integrate with your storage solution)
-export async function getUploadUrl(fileName: string, fileType: string) {
+export async function getUploadUrl(fileName: string, _fileType: string) {
   const session = await auth()
   if (!session?.user?.id) {
     return { error: "Unauthorized" }

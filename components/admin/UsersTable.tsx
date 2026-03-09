@@ -49,7 +49,7 @@ export default function UsersTable({ users: initialUsers }: { users: UserWithCou
 
   // Filter and search users
   const filteredUsers = useMemo(() => {
-    let result = users.filter(user => {
+    const result = users.filter(user => {
       const matchesSearch = searchQuery === '' ||
         user.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (user.email?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false)

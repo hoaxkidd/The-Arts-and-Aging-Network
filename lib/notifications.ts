@@ -76,11 +76,6 @@ export async function createNotification(params: CreateNotificationParams) {
         link: params.link,
       }
     })
-    revalidatePath('/admin')
-    revalidatePath('/staff')
-    revalidatePath('/payroll')
-    revalidatePath('/dashboard')
-    revalidatePath('/notifications')
   }
 
   // Email Notification
@@ -101,6 +96,8 @@ export async function createNotification(params: CreateNotificationParams) {
       message: `${params.title}: ${params.message}`
     })
   }
+
+  return { success: true }
 }
 
 // Notify all staff members about a new event
@@ -427,21 +424,26 @@ export async function notifyAdminsAboutRSVP(params: {
 }) {
   const admins = await prisma.user.findMany({
     where: { role: 'ADMIN', status: 'ACTIVE' },
-    select: { id: true }
+    select: { id: true, notificationPreferences: true }
   })
 
   const statusText = params.rsvpStatus === 'YES' ? 'confirmed attendance' :
                      params.rsvpStatus === 'NO' ? 'declined' : 'is considering'
 
-  const notifications = admins.map(admin => ({
-    userId: admin.id,
-    type: 'RSVP_RECEIVED' as NotificationType,
-    title: 'New RSVP',
-    message: `${params.staffName} ${statusText} for "${params.eventTitle}"`,
-    link: `/admin/events/${params.eventId}`,
-    read: false,
-    emailSent: false,
-  }))
+  const notifications = []
+  for (const admin of admins) {
+    const prefs = parsePreferences(admin.notificationPreferences)
+    if (prefs.inApp) {
+      notifications.push({
+        userId: admin.id,
+        type: 'RSVP_RECEIVED' as NotificationType,
+        title: 'New RSVP',
+        message: `${params.staffName} ${statusText} for "${params.eventTitle}"`,
+        link: `/admin/events/${params.eventId}`,
+        read: false,
+      })
+    }
+  }
 
   if (notifications.length > 0) {
     await prisma.notification.createMany({ data: notifications })
@@ -459,18 +461,23 @@ export async function notifyAdminsAboutCheckIn(params: {
 }) {
   const admins = await prisma.user.findMany({
     where: { role: 'ADMIN', status: 'ACTIVE' },
-    select: { id: true }
+    select: { id: true, notificationPreferences: true }
   })
 
-  const notifications = admins.map(admin => ({
-    userId: admin.id,
-    type: 'STAFF_CHECKIN' as NotificationType,
-    title: 'Staff Check-in',
-    message: `${params.staffName} has checked in to "${params.eventTitle}"`,
-    link: `/admin/events/${params.eventId}`,
-    read: false,
-    emailSent: false,
-  }))
+  const notifications = []
+  for (const admin of admins) {
+    const prefs = parsePreferences(admin.notificationPreferences)
+    if (prefs.inApp) {
+      notifications.push({
+        userId: admin.id,
+        type: 'STAFF_CHECKIN' as NotificationType,
+        title: 'Staff Check-in',
+        message: `${params.staffName} has checked in to "${params.eventTitle}"`,
+        link: `/admin/events/${params.eventId}`,
+        read: false,
+      })
+    }
+  }
 
   if (notifications.length > 0) {
     await prisma.notification.createMany({ data: notifications })
@@ -489,21 +496,26 @@ export async function notifyAdminsAboutExpense(params: {
 }) {
   const admins = await prisma.user.findMany({
     where: { role: 'ADMIN', status: 'ACTIVE' },
-    select: { id: true }
+    select: { id: true, notificationPreferences: true }
   })
 
   const categoryText = params.category === 'SICK_DAY' ? 'sick day' :
                        params.category === 'OFF_DAY' ? 'day off' : 'expense'
 
-  const notifications = admins.map(admin => ({
-    userId: admin.id,
-    type: 'EXPENSE_SUBMITTED' as NotificationType,
-    title: `${categoryText.charAt(0).toUpperCase() + categoryText.slice(1)} Request`,
-    message: `${params.staffName} submitted a ${categoryText} request: "${params.description}"`,
-    link: `/admin/expenses`,
-    read: false,
-    emailSent: false,
-  }))
+  const notifications = []
+  for (const admin of admins) {
+    const prefs = parsePreferences(admin.notificationPreferences)
+    if (prefs.inApp) {
+      notifications.push({
+        userId: admin.id,
+        type: 'EXPENSE_SUBMITTED' as NotificationType,
+        title: `${categoryText.charAt(0).toUpperCase() + categoryText.slice(1)} Request`,
+        message: `${params.staffName} submitted a ${categoryText} request: "${params.description}"`,
+        link: `/admin/expenses`,
+        read: false,
+      })
+    }
+  }
 
   if (notifications.length > 0) {
     await prisma.notification.createMany({ data: notifications })
@@ -525,6 +537,16 @@ export async function notifyStaffAboutExpenseStatus(params: {
   const statusText = params.status === 'APPROVED' ? 'approved' : 'rejected'
   const type = params.status === 'APPROVED' ? 'EXPENSE_APPROVED' : 'EXPENSE_REJECTED'
 
+  const user = await prisma.user.findUnique({
+    where: { id: params.staffId },
+    select: { notificationPreferences: true }
+  })
+
+  const prefs = parsePreferences(user?.notificationPreferences || null)
+  if (!prefs.inApp) {
+    return { success: true }
+  }
+
   await prisma.notification.create({
     data: {
       userId: params.staffId,
@@ -533,7 +555,6 @@ export async function notifyStaffAboutExpenseStatus(params: {
       message: `Your ${categoryText} request has been ${statusText}.`,
       link: `/payroll/requests`,
       read: false,
-      emailSent: false,
     }
   })
 

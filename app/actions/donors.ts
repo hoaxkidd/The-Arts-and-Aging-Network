@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma"
 import { auth } from "@/auth"
 import { revalidatePath } from "next/cache"
+import type { Prisma } from "@prisma/client"
 
 // Get all donors
 export async function getDonors(filters?: {
@@ -16,7 +17,7 @@ export async function getDonors(filters?: {
   }
 
   try {
-    const where: any = {}
+    const where: Prisma.DonorWhereInput = {}
 
     if (filters?.type && filters.type !== 'ALL') {
       where.type = filters.type

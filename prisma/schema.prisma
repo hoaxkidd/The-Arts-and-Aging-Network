@@ -1,5 +1,5 @@
 datasource db {
-  provider  = "sqlite"
+  provider  = "postgresql"
   url       = env("DATABASE_URL")
 }
 
@@ -30,6 +30,7 @@ model DirectMessage {
   recipient   User      @relation("DirectMessage_recipient", fields: [recipientId], references: [id])
 
   @@index([recipientId, read])
+  @@index([senderId])
 }
 
 model DirectMessageRequest {
@@ -178,6 +179,8 @@ model Event {
   testimonials            Testimonial[]
 
   @@index([requiredFormTemplateId])
+  @@index([startDateTime])
+  @@index([status])
 }
 
 model EventAttendance {
@@ -259,7 +262,7 @@ model EventRequest {
   requestedBy         String
   requestedAt         DateTime               @default(now())
   reviewedBy          String?
-  reviewedAt          DateTime?
+  reviewedAt         DateTime?
   rejectionReason     String?
   selectedDateIndex   Int?
   approvedEventId     String?                @unique
@@ -271,11 +274,14 @@ model EventRequest {
   approvedEvent       Event?                 @relation("EventRequest_approvedEvent", fields: [approvedEventId], references: [id])
   existingEvent       Event?                 @relation("EventRequest_existingEvent", fields: [existingEventId], references: [id])
   geriatricHome       GeriatricHome          @relation(fields: [geriatricHomeId], references: [id])
+  requester           User                   @relation("EventRequest_requester", fields: [requestedBy], references: [id])
+  reviewer            User?                  @relation("EventRequest_reviewer", fields: [reviewedBy], references: [id])
   responses           EventRequestResponse[]
   formSubmission      FormSubmission?
 
   @@index([status, requestedAt])
   @@index([geriatricHomeId, status])
+  @@index([requestedBy])
 }
 
 model EventRequestResponse {
@@ -305,6 +311,9 @@ model ExpenseRequest {
   updatedAt   DateTime @updatedAt
   attachments String?
   user        User     @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([status])
 }
 
 model FormSubmission {
@@ -701,6 +710,9 @@ model TimeEntry {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   user      User     @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([status, date])
 }
 
 model Timesheet {
@@ -814,6 +826,8 @@ model User {
   eventPhotos             EventPhoto[]
   eventReactions          EventReaction[]
   eventRequestResponses   EventRequestResponse[]
+  eventRequests           EventRequest[]        @relation("EventRequest_requester")
+  eventRequestReviews     EventRequest[]        @relation("EventRequest_reviewer")
   expenseRequests         ExpenseRequest[]
   reviewedSubmissions     FormSubmission[]       @relation("FormSubmission_reviewer")
   submittedForms          FormSubmission[]       @relation("FormSubmission_submitter")
@@ -854,4 +868,6 @@ model WorkLog {
   createdAt  DateTime  @default(now())
   updatedAt  DateTime @updatedAt
   user       User      @relation(fields: [userId], references: [id])
+
+  @@index([userId])
 }

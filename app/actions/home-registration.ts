@@ -54,22 +54,19 @@ export async function registerGeriatricHome(formData: FormData) {
 
     // Transaction to create User and Home
     await prisma.$transaction(async (tx) => {
-      // Cast tx to any to bypass stale types if needed, though tx is inferred from prisma client
-      const txClient = tx as any
-      
       const user = await tx.user.create({
         data: {
           name,
           email,
           password: hashedPassword,
-          role: "HOME_ADMIN", // This role string needs to be handled in the app logic
+          role: "HOME_ADMIN",
           status: "ACTIVE",
           phone: contactPhone,
         }
       })
 
       // 2. Create Home Profile
-      const home = await txClient.geriatricHome.create({
+      const home = await tx.geriatricHome.create({
         data: {
           name: homeName,
           address,

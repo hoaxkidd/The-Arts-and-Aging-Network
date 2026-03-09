@@ -267,7 +267,13 @@ export async function getMessageReactions(messageId: string) {
     })
 
     // Group by emoji
-    const groupedReactions = reactions.reduce((acc, reaction) => {
+    interface ReactionGroup {
+      emoji: string
+      count: number
+      users: Array<{ id: string; name: string | null; preferredName: string | null }>
+      hasCurrentUser: boolean
+    }
+    const groupedReactions = reactions.reduce<Record<string, ReactionGroup>>((acc, reaction) => {
       if (!acc[reaction.emoji]) {
         acc[reaction.emoji] = {
           emoji: reaction.emoji,
@@ -282,7 +288,7 @@ export async function getMessageReactions(messageId: string) {
         acc[reaction.emoji].hasCurrentUser = true
       }
       return acc
-    }, {} as Record<string, any>)
+    }, {})
 
     return { success: true, reactions: Object.values(groupedReactions) }
   } catch (error) {

@@ -4,6 +4,10 @@ import { z } from "zod"
 import { prisma } from "@/lib/prisma"
 import bcrypt from "bcryptjs"
 
+if (!process.env.AUTH_SECRET) {
+  throw new Error('AUTH_SECRET environment variable is required')
+}
+
 const nextAuthConfig = {
   trustHost: true,
   secret: process.env.AUTH_SECRET,
@@ -16,26 +20,26 @@ const nextAuthConfig = {
             .safeParse(credentials)
 
           if (!parsedCredentials.success) {
-            console.error('[Auth] Invalid credentials shape:', parsedCredentials.error.flatten())
+            console.error('[Auth] Invalid credentials shape')
             return null
           }
           const { email, password } = parsedCredentials.data
           const user = await prisma.user.findUnique({ where: { email } })
           if (!user) {
-            console.error('[Auth] User not found:', email)
+            console.error('[Auth] User not found')
             return null
           }
           if (!user.password) {
-            console.error('[Auth] User has no password set:', email)
+            console.error('[Auth] User has no password set')
             return null
           }
           if (user.status !== 'ACTIVE') {
-            console.error('[Auth] User not active:', email, 'status=', user.status)
+            console.error('[Auth] User not active:', user.status)
             return null
           }
           const passwordsMatch = await bcrypt.compare(password, user.password)
           if (!passwordsMatch) {
-            console.error('[Auth] Password mismatch for:', email)
+            console.error('[Auth] Password mismatch')
             return null
           }
           await prisma.user.update({
@@ -64,7 +68,7 @@ const nextAuthConfig = {
         token.id = user.id
         token.name = user.name
         token.role = user.role
-        token.onboardingCompletedAt = user.onboardingCompletedAt?.toISOString() ?? null
+        token.onboardingCompletedAt = user.onboardingCompletedAt?.toISOString() ?? undefined
         token.onboardingSkipCount = user.onboardingSkipCount ?? 0
       }
       return token
@@ -88,7 +92,7 @@ const nextAuthConfig = {
 // Export NextAuth - the TypeScript error about portable types is a known issue with NextAuth v5
 // https://github.com/nextauthjs/next-auth/issues/11070
 const nextAuthInstance = NextAuth(nextAuthConfig as any)
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 export const { handlers, signIn, signOut } = nextAuthInstance
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const auth = nextAuthInstance.auth as any

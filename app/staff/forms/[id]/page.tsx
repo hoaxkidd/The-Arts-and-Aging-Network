@@ -7,7 +7,7 @@ import { ROLE_LABELS } from "@/lib/roles"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
 import { STYLES } from "@/lib/styles"
-import DOMPurify from "dompurify"
+import { sanitizeHtml } from "@/lib/dompurify"
 
 export default async function FormTemplateDetailPage({
   params
@@ -153,7 +153,7 @@ export default async function FormTemplateDetailPage({
             <div 
               className="text-sm text-gray-600 rich-text-content"
               dangerouslySetInnerHTML={{ 
-                __html: DOMPurify.sanitize(template.descriptionHtml || template.description || '') 
+                __html: sanitizeHtml(template.descriptionHtml || template.description || '') 
               }} 
             />
           </div>

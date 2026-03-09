@@ -100,7 +100,7 @@ export default async function HomeAdminFormsPage({
     }) as any
   }
 
-  // Get user's submissions
+  // Get user's submissions with template ID for linking to cards
   const mySubmissions = await prisma.formSubmission.findMany({
     where: {
       submittedBy: session.user.id
@@ -121,9 +121,16 @@ export default async function HomeAdminFormsPage({
         }
       }
     },
-    orderBy: { createdAt: 'desc' },
-    take: 20
+    orderBy: { createdAt: 'desc' }
   })
+
+  // Create a map of latest submission per template for the form cards
+  const submissionMap = new Map<string, typeof mySubmissions[0]>()
+  for (const sub of mySubmissions) {
+    if (!submissionMap.has(sub.templateId)) {
+      submissionMap.set(sub.templateId, sub)
+    }
+  }
 
   const categories = [
     { value: 'EVENT_SIGNUP', label: 'Event Sign-up', icon: '📅' },
@@ -300,6 +307,13 @@ export default async function HomeAdminFormsPage({
                     template={template}
                     categories={categories.map(c => ({ value: c.value, label: c.label }))}
                     mode="staff"
+                    fillUrlPrefix="/dashboard/forms"
+                    existingSubmission={submissionMap.get(template.id) ? {
+                      id: submissionMap.get(template.id)!.id,
+                      formData: submissionMap.get(template.id)!.formData,
+                      status: submissionMap.get(template.id)!.status,
+                      createdAt: submissionMap.get(template.id)!.createdAt,
+                    } : undefined}
                   />
                 ))}
               </div>

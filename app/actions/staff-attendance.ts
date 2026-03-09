@@ -13,7 +13,7 @@ const db = prisma as PrismaClient & Record<string, unknown>
 // ============================================
 
 // Confirm attendance to an approved event
-export async function confirmStaffAttendance(eventId: string, notes?: string) {
+export async function confirmStaffAttendance(eventId: string, _notes?: string) {
   const session = await auth()
   if (!session?.user?.id) return { error: "Unauthorized" }
 
@@ -41,7 +41,7 @@ export async function confirmStaffAttendance(eventId: string, notes?: string) {
     }
 
     // Check capacity
-    const confirmedCount = event.attendances.filter((a: any) => a.status === 'YES').length
+    const confirmedCount = event.attendances.filter((a) => a.status === 'YES').length
     if (confirmedCount >= event.maxAttendees) {
       return { error: "Event is at full capacity" }
     }
@@ -179,11 +179,11 @@ export async function getAvailableEventsForStaff() {
     })
 
     // Add user's attendance status to each event
-    const eventsWithStatus = events.map((event: any) => {
+    const eventsWithStatus = events.map((event) => {
       const myAttendance = event.attendances.find(
-        (a: any) => a.userId === session.user.id
+        (a) => a.userId === session.user.id
       )
-      const confirmedCount = event.attendances.filter((a: any) => a.status === 'YES').length
+      const confirmedCount = event.attendances.filter((a) => a.status === 'YES').length
 
       return {
         ...event,
@@ -229,8 +229,8 @@ export async function getMyConfirmedEvents() {
 
     // Filter to only include valid events and add status
     const events = attendances
-      .filter((a: any) => a.event)
-      .map((a: any) => {
+      .filter((a) => a.event !== null)
+      .map((a) => {
         const now = new Date()
         const eventDate = new Date(a.event.startDateTime)
         const eventEndDate = new Date(a.event.endDateTime)
@@ -249,10 +249,10 @@ export async function getMyConfirmedEvents() {
           myCheckInTime: a.checkInTime,
           eventStatus,
           confirmedStaff: a.event.attendances.filter(
-            (att: any) => ['FACILITATOR'].includes(att.user.role)
+            (att) => att.user && ['FACILITATOR'].includes(att.user.role)
           )
         }
-      })
+      }) as never[]
 
     return { success: true, data: events }
   } catch (error) {
@@ -401,15 +401,15 @@ export async function getStaffEventDetail(eventId: string) {
 
     // Get user's attendance
     const myAttendance = event.attendances.find(
-      (a: any) => a.userId === session.user.id
+      (a) => a.userId === session.user.id
     )
 
     // Calculate stats
     const confirmedStaff = event.attendances.filter(
-      (a: any) => a.status === 'YES' && ['FACILITATOR'].includes(a.user.role)
+      (a) => a.status === 'YES' && a.user && ['FACILITATOR'].includes(a.user.role)
     )
     const checkedInStaff = event.attendances.filter(
-      (a: any) => a.checkInTime && ['FACILITATOR'].includes(a.user.role)
+      (a) => a.checkInTime !== null && a.user && ['FACILITATOR'].includes(a.user.role)
     )
 
     // Determine event status

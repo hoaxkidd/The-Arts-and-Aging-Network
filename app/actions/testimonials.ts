@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma"
 import { auth } from "@/auth"
 import { revalidatePath } from "next/cache"
+import type { Prisma } from "@prisma/client"
 
 // Get all testimonials (filtered)
 export async function getTestimonials(filters?: {
@@ -11,7 +12,7 @@ export async function getTestimonials(filters?: {
   eventId?: string
 }) {
   try {
-    const where: any = {}
+    const where: Prisma.TestimonialWhereInput = {}
 
     if (filters?.status && filters.status !== 'ALL') {
       where.status = filters.status
@@ -139,7 +140,7 @@ export async function updateTestimonial(
   }
 
   try {
-    const updates: any = {}
+    const updates: Prisma.TestimonialUpdateInput = {}
     if (data.authorName !== undefined) updates.authorName = data.authorName
     if (data.authorRole !== undefined) updates.authorRole = data.authorRole
     if (data.content !== undefined) updates.content = data.content

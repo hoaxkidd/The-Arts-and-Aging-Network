@@ -26,7 +26,47 @@ const GROUP_COLOR_CLASS: Record<string, string> = {
     pink: 'bg-pink-100 text-pink-700'
 }
 
-function GroupsList({ groups }: { groups: any[] }) {
+interface Group {
+  id: string
+  name: string
+  color: string
+  iconEmoji: string
+  _count?: {
+    members?: number
+    messages?: number
+  }
+}
+
+interface GroupRequest {
+  id: string
+  groupId: string
+  userId: string
+  joinedAt: string
+  user: {
+    id: string
+    name?: string | null
+    preferredName?: string | null
+    image?: string | null
+    role?: string
+  }
+  group: {
+    id: string
+    name: string
+    iconEmoji: string
+  }
+}
+
+interface Invitation {
+  id: string
+  email: string
+  role: string
+  status: string
+  createdBy?: {
+    name?: string | null
+  }
+}
+
+function GroupsList({ groups }: { groups: Group[] }) {
     if (groups.length === 0) {
         return (
             <div className="flex flex-col items-center justify-center py-16 px-6 text-center bg-white rounded-lg border border-gray-200">
@@ -82,7 +122,7 @@ function GroupsList({ groups }: { groups: any[] }) {
     )
 }
 
-function GroupRequestsList({ requests }: { requests: any[] }) {
+function GroupRequestsList({ requests }: { requests: GroupRequest[] }) {
     const [processing, setProcessing] = useState<string | null>(null)
     const router = useRouter()
 
@@ -170,7 +210,27 @@ function GroupRequestsList({ requests }: { requests: any[] }) {
     )
 }
 
-function AccessRequestsList({ groupRequests, convoRequests }: { groupRequests: any[], convoRequests: any[] }) {
+interface ConversationRequest {
+  id: string
+  message: string | null
+  createdAt: Date
+  requester: {
+    id: string
+    name: string | null
+    preferredName: string | null
+    image: string | null
+    role: string
+  }
+  requested: {
+    id: string
+    name: string | null
+    preferredName: string | null
+    image: string | null
+    role: string
+  }
+}
+
+function AccessRequestsList({ groupRequests, convoRequests }: { groupRequests: GroupRequest[], convoRequests: ConversationRequest[] }) {
     return (
         <div className="space-y-8">
             {/* Group Requests */}
@@ -192,7 +252,7 @@ function AccessRequestsList({ groupRequests, convoRequests }: { groupRequests: a
     )
 }
 
-function InvitationsList({ invitations }: { invitations: any[] }) {
+function InvitationsList({ invitations }: { invitations: Invitation[] }) {
     return (
         <div className="space-y-4 sm:space-y-0 w-full min-w-0">
             {/* Mobile: card layout - only below sm breakpoint */}
@@ -270,10 +330,10 @@ function InvitationsList({ invitations }: { invitations: any[] }) {
 }
 
 type CommunicationHubClientProps = {
-    groups: any[]
-    pendingGroupRequests: any[]
-    pendingConversationRequests: any[]
-    invitations: any[]
+    groups: Group[]
+    pendingGroupRequests: GroupRequest[]
+    pendingConversationRequests: ConversationRequest[]
+    invitations: Invitation[]
     currentUserId: string
 }
 

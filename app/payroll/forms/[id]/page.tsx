@@ -9,7 +9,7 @@ import Link from "next/link"
 import { STYLES } from "@/lib/styles"
 import { sanitizeHtml } from "@/lib/dompurify"
 
-export default async function HomeAdminFormDetailPage({
+export default async function PayrollFormTemplateDetailPage({
   params
 }: {
   params: Promise<{ id: string }>
@@ -33,34 +33,16 @@ export default async function HomeAdminFormDetailPage({
         select: { submissions: true }
       }
     }
-  }) as any
+  })
 
   if (!template) notFound()
 
-  // Check access - Home admins can only view non-public (role-restricted) forms
-  const userRole = session.user.role || ''
-  const isAdmin = session.user.role === 'ADMIN'
-  const isHomeAdmin = session.user.role === 'HOME_ADMIN'
-
-  if (isHomeAdmin) {
-    // Home admin can only access non-public forms
-    if (template.isPublic) {
-      return (
-        <div className="p-8 text-center">
-          <Lock className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-          <p className="text-gray-500">This form is not accessible to Home Administrators.</p>
-          <Link href="/dashboard/forms" className="text-primary-600 hover:text-primary-700 text-sm mt-2 inline-block">
-            Back to Forms
-          </Link>
-        </div>
-      )
-    }
-  } else if (!template.isActive || !template.isPublic) {
-    if (!isAdmin) {
+  if (!template.isActive || !template.isPublic) {
+    if (session.user.role !== 'ADMIN') {
       return (
         <div className="p-8 text-center">
           <p className="text-gray-500">This template is not available</p>
-          <Link href="/dashboard/forms" className="text-primary-600 hover:text-primary-700 text-sm mt-2 inline-block">
+          <Link href="/payroll/forms" className="text-primary-600 hover:text-primary-700 text-sm mt-2 inline-block">
             Back to Forms
           </Link>
         </div>
@@ -68,7 +50,6 @@ export default async function HomeAdminFormDetailPage({
     }
   }
 
-  // Get user's submissions for this template
   const mySubmissions = await prisma.formSubmission.findMany({
     where: {
       templateId: id,
@@ -101,10 +82,9 @@ export default async function HomeAdminFormDetailPage({
 
   return (
     <div className="h-full flex flex-col">
-      {/* Header */}
       <header className="flex-shrink-0 pb-3">
         <Link
-          href="/dashboard/forms"
+          href="/payroll/forms"
           className="inline-flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-700 mb-2"
         >
           <ArrowLeft className="w-3 h-3" /> Back to Forms
@@ -144,7 +124,7 @@ export default async function HomeAdminFormDetailPage({
                 {!template.isPublic && template.allowedRoles && (
                   <span className="px-2 py-0.5 bg-orange-100 text-orange-700 rounded text-xs font-medium flex items-center gap-1">
                     <Users className="w-3 h-3" />
-                    {template.allowedRoles.split(',').map((r: string) => ROLE_LABELS[r as keyof typeof ROLE_LABELS] || r).join(', ')}
+                    {template.allowedRoles.split(',').map(r => ROLE_LABELS[r as keyof typeof ROLE_LABELS] || r).join(', ')}
                   </span>
                 )}
               </div>
@@ -161,22 +141,19 @@ export default async function HomeAdminFormDetailPage({
         </div>
       </header>
 
-      {/* Content */}
       <div className="flex-1 min-h-0 overflow-auto space-y-4">
-        {/* Description */}
         {(template.description || template.descriptionHtml) && (
           <div className="bg-white rounded-lg border border-gray-200 p-4">
             <h2 className="text-sm font-semibold text-gray-900 mb-2">Description</h2>
             <div 
               className="text-sm text-gray-600 rich-text-content"
               dangerouslySetInnerHTML={{ 
-                __html: sanitizeHtml(template.descriptionHtml || template.description || '') 
+                __html: sanitizeHtml(template.descriptionHtml || template.description || '')
               }} 
             />
           </div>
         )}
 
-        {/* Tags */}
         {tags.length > 0 && (
           <div className="bg-white rounded-lg border border-gray-200 p-4">
             <h2 className="text-sm font-semibold text-gray-900 mb-2">Tags</h2>
@@ -190,23 +167,21 @@ export default async function HomeAdminFormDetailPage({
           </div>
         )}
 
-        {/* Actions */}
         <div className="bg-white rounded-lg border border-gray-200 p-4">
           <h2 className="text-sm font-semibold text-gray-900 mb-3">Actions</h2>
           <div className="flex flex-col gap-2">
             {template.isFillable && (
               <Link
-                href={`/dashboard/forms/${template.id}/fill`}
+                href={`/payroll/forms/${template.id}/fill`}
                 className={cn(STYLES.btn, STYLES.btnSecondary, "justify-center")}
               >
                 <Edit className="w-4 h-4" />
-                Fill Out Form
+                Fill Out Online
               </Link>
             )}
           </div>
         </div>
 
-        {/* Stats */}
         <div className="bg-white rounded-lg border border-gray-200 p-4">
           <h2 className="text-sm font-semibold text-gray-900 mb-3">Usage Stats</h2>
           <div className="grid grid-cols-2 gap-4">
@@ -221,27 +196,26 @@ export default async function HomeAdminFormDetailPage({
           </div>
         </div>
 
-        {/* My Submissions */}
         {mySubmissions.length > 0 && (
           <div className="bg-white rounded-lg border border-gray-200 p-4">
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-sm font-semibold text-gray-900">Your Recent Submissions</h2>
               <Link
-                href="/dashboard/forms?tab=submissions"
+                href="/payroll/forms?tab=submissions"
                 className="text-xs text-primary-600 hover:text-primary-700"
               >
                 View All
               </Link>
             </div>
             <div className="space-y-2">
-              {mySubmissions.map((submission: any) => (
+              {mySubmissions.map((submission) => (
                 <div
                   key={submission.id}
                   className="p-3 bg-gray-50 rounded-lg"
                 >
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-xs text-gray-500">
-                      {new Date(submission.createdAt).toLocaleDateString('en-US', {
+                      {submission.createdAt.toLocaleDateString('en-US', {
                         month: 'short',
                         day: 'numeric',
                         year: 'numeric',
@@ -271,7 +245,6 @@ export default async function HomeAdminFormDetailPage({
           </div>
         )}
 
-        {/* Template Info */}
         <div className="bg-gray-50 rounded-lg border border-gray-200 p-4">
           <h2 className="text-sm font-semibold text-gray-900 mb-2">Template Information</h2>
           <div className="space-y-1 text-xs">
@@ -282,7 +255,7 @@ export default async function HomeAdminFormDetailPage({
             <div className="flex items-center justify-between">
               <span className="text-gray-500">Last Updated:</span>
               <span className="text-gray-900 font-medium">
-                {new Date(template.updatedAt).toLocaleDateString('en-US', {
+                {template.updatedAt.toLocaleDateString('en-US', {
                   month: 'short',
                   day: 'numeric',
                   year: 'numeric'

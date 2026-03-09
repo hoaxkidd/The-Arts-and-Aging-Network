@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma"
 import { auth } from "@/auth"
 import { revalidatePath } from "next/cache"
 import bcrypt from "bcryptjs"
+import type { Prisma } from "@prisma/client"
 
 /**
  * Delete a user (Admin only)
@@ -73,7 +74,7 @@ export async function updateUser(userId: string, data: {
   }
 
   try {
-    const updateData: any = {}
+    const updateData: Prisma.UserUpdateInput = {}
 
     if (data.name) updateData.name = data.name
     if (data.email) {

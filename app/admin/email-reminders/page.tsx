@@ -1,7 +1,8 @@
 import { prisma } from "@/lib/prisma"
 import { auth } from "@/auth"
 import { redirect } from "next/navigation"
-import { Calendar, Mail, CheckCircle, XCircle, Clock, AlertCircle, Users, Home } from "lucide-react"
+import { Prisma } from "@prisma/client"
+import { Mail, CheckCircle, XCircle, Clock, AlertCircle, Users, Home } from "lucide-react"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
 import { ManualReminderTrigger } from "@/components/admin/ManualReminderTrigger"
@@ -22,7 +23,7 @@ export default async function EmailRemindersPage({
   const typeFilter = params.type || 'ALL'
 
   // Build where clause
-  const where: any = {}
+  const where: Prisma.EmailReminderWhereInput = {}
   if (statusFilter !== 'ALL') {
     where.status = statusFilter
   }

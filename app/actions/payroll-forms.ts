@@ -79,11 +79,11 @@ export async function getMyPayrollFormSubmissions() {
   try {
     const userRole = session.user.role
     
-    // Get all required forms for this role
+    // Get all required forms for this role (roles is comma-separated string)
     const requiredForms = await prisma.payrollForm.findMany({
       where: {
         isActive: true,
-        roles: { has: userRole }
+        roles: { contains: userRole }
       },
       include: {
         submissions: {
@@ -185,7 +185,7 @@ export async function createPayrollForm(formData: FormData) {
         description: validated.data.description || null,
         formType: validated.data.formType,
         isRequired: validated.data.isRequired,
-        roles: validated.data.roles,
+        roles: validated.data.roles.join(','),
         expiresAt: expiresAtDate,
         fileUrl,
         fileName: file.name,

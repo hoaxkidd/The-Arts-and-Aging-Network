@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma"
 import { auth } from "@/auth"
 import { revalidatePath } from "next/cache"
+import type { Prisma } from "@prisma/client"
 
 // Helper to parse date string in YYYY-MM-DD or DD-MM-YYYY format
 function parseDateString(dateStr: string): Date | null {
@@ -147,7 +148,7 @@ export async function getMileageForAdmin(status?: string) {
   if (user?.role !== 'ADMIN') return { error: "Unauthorized" }
 
   try {
-    const where: any = {}
+    const where: Prisma.MileageEntryWhereInput = {}
     if (status && status !== 'ALL') {
       where.status = status
     }

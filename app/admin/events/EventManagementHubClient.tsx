@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { Calendar, List, ClipboardList, Plus } from "lucide-react"
 import { TabNavigation } from "@/components/admin/shared/TabNavigation"
@@ -13,8 +13,8 @@ import { cn } from "@/lib/utils"
 import { AdminCalendarView } from "@/components/admin/events/AdminCalendarView"
 
 type EventManagementHubClientProps = {
-  events: any[]
-  requests: any[]
+  events: Record<string, unknown>[]
+  requests: Record<string, unknown>[]
 }
 
 export function EventManagementHubClient({ events, requests }: EventManagementHubClientProps) {
@@ -26,12 +26,6 @@ export function EventManagementHubClient({ events, requests }: EventManagementHu
 
   const [activeTab, setActiveTab] = useState(initialTab)
 
-  useEffect(() => {
-    if (tabParam === 'requests' || tabParam === 'list' || tabParam === 'calendar') {
-      setActiveTab(tabParam)
-    }
-  }, [tabParam])
-
   const tabs = [
     { id: 'list', label: 'All Events', icon: List },
     { id: 'calendar', label: 'Calendar', icon: Calendar },
@@ -39,7 +33,7 @@ export function EventManagementHubClient({ events, requests }: EventManagementHu
       id: 'requests',
       label: 'Event Requests',
       icon: ClipboardList,
-      count: requests.filter((r: any) => r.status === 'PENDING').length
+      count: requests.filter((r) => r.status === 'PENDING').length
     }
   ]
 
@@ -65,9 +59,9 @@ export function EventManagementHubClient({ events, requests }: EventManagementHu
       />
 
       <div className="flex-1 min-h-0 overflow-auto mt-5">
-        {activeTab === 'list' && <EventListTable events={events} />}
-        {activeTab === 'calendar' && <AdminCalendarView events={events} />}
-        {activeTab === 'requests' && <AdminRequestList requests={requests} />}
+        {activeTab === 'list' && <EventListTable events={events as never[]} />}
+        {activeTab === 'calendar' && <AdminCalendarView events={events as never[]} />}
+        {activeTab === 'requests' && <AdminRequestList requests={requests as never[]} />}
       </div>
     </div>
   )

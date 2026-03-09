@@ -3,6 +3,8 @@
 import { prisma } from "@/lib/prisma"
 import { auth } from "@/auth"
 import { revalidatePath } from "next/cache"
+import type { Prisma } from "@prisma/client"
+import { createNotification } from "./notifications"
 
 // ============================================
 // FORM TEMPLATE MANAGEMENT
@@ -20,7 +22,7 @@ export async function getFormTemplates(filters?: {
   }
 
   try {
-    const where: any = {}
+    const where: Prisma.FormTemplateWhereInput = {}
 
     // Non-admins only see active, public templates
     if (session.user.role !== 'ADMIN') {
@@ -36,9 +38,9 @@ export async function getFormTemplates(filters?: {
 
     if (filters?.search) {
       where.OR = [
-        { title: { contains: filters.search, mode: 'insensitive' } },
-        { description: { contains: filters.search, mode: 'insensitive' } },
-        { tags: { contains: filters.search, mode: 'insensitive' } }
+        { title: { contains: filters.search } },
+        { description: { contains: filters.search } },
+        { tags: { contains: filters.search } }
       ]
     }
 
@@ -217,7 +219,7 @@ export async function updateFormTemplate(
   }
 
   try {
-    const updates: any = {}
+    const updates: Prisma.FormTemplateUpdateInput = {}
 
     if (data.title !== undefined) updates.title = data.title
     if (data.description !== undefined) updates.description = data.description
@@ -355,9 +357,26 @@ export async function submitForm(data: {
       data: { usageCount: { increment: 1 } }
     })
 
+    // Notify admins about new submission
+    const admins = await prisma.user.findMany({
+      where: { role: 'ADMIN' },
+      select: { id: true }
+    })
+    const userName = session.user.name || session.user.email || 'A user'
+    for (const admin of admins) {
+      await createNotification({
+        userId: admin.id,
+        type: 'FORM_SUBMISSION',
+        title: 'New Form Submission',
+        message: `${userName} submitted "${template.title}"`,
+        actionUrl: '/admin/forms?tab=submissions'
+      })
+    }
+
     revalidatePath('/staff/forms')
     revalidatePath(`/staff/forms/${data.templateId}`)
     revalidatePath('/admin/form-submissions')
+    revalidatePath('/admin/forms')
 
     return { success: true, data: submission }
   } catch (error) {
@@ -458,13 +477,13 @@ export async function approveEditRequest(
     }
 
     // Update submission
-    const updateData: any = {
+    const updateData = {
       editRequested: false,
       editApproved: approved,
-      editApprovedAt: approved ? new Date() : null,
-      editApprovedBy: approved ? session.user.id : null,
+      editApprovedAt: approved ? new Date() : undefined,
+      editApprovedBy: approved ? session.user.id : undefined,
       editDenyReason: approved ? null : denyReason || null
-    }
+    } as Prisma.FormSubmissionUpdateInput
 
     await prisma.formSubmission.update({
       where: { id: submissionId },
@@ -537,20 +556,12 @@ export async function updateFormSubmission(
       return { error: "You can only edit your own submissions" }
     }
 
-    // Check if edit was approved
-    if (!submission.editApproved) {
-      return { error: "You must request and receive approval before editing" }
-    }
-
     // Update submission
     await prisma.formSubmission.update({
       where: { id: submissionId },
       data: {
         formData: JSON.stringify(formData),
-        attachments: attachments ? JSON.stringify(attachments) : null,
-        editApproved: false, // Reset edit approval after submitting changes
-        editApprovedAt: null,
-        editApprovedBy: null
+        attachments: attachments ? JSON.stringify(attachments) : null
       }
     })
 
@@ -559,6 +570,7 @@ export async function updateFormSubmission(
     revalidatePath('/dashboard/forms')
     revalidatePath(`/dashboard/forms/${submission.templateId}`)
     revalidatePath('/admin/form-submissions')
+    revalidatePath('/admin/forms')
 
     return { success: true }
   } catch (error) {
@@ -578,7 +590,7 @@ export async function getMyFormSubmissions(filters?: {
   }
 
   try {
-    const where: any = {
+    const where: Prisma.FormSubmissionWhereInput = {
       submittedBy: session.user.id
     }
 
@@ -636,7 +648,7 @@ export async function getAllFormSubmissions(filters?: {
   }
 
   try {
-    const where: any = {}
+    const where: Prisma.FormSubmissionWhereInput = {}
 
     if (filters?.templateId) {
       where.templateId = filters.templateId

@@ -139,7 +139,7 @@ export async function updateStaffProfile(formData: FormData) {
     const alternateEmailStr = String(rawData.alternateEmail).toLowerCase().trim()
     const existingWithEmail = await prisma.user.findFirst({
       where: {
-        email: { equals: alternateEmailStr, mode: 'insensitive' },
+        email: { equals: alternateEmailStr },
         NOT: { id: targetUserId }
       }
     })

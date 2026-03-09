@@ -75,8 +75,10 @@ export async function authenticate(
           case 'HOME_ADMIN':
             destination = '/dashboard'
             break
-          case 'FACILITATOR':
           case 'VOLUNTEER':
+            destination = '/volunteers'
+            break
+          case 'FACILITATOR':
           case 'BOARD':
           case 'PARTNER':
             destination = '/staff'
@@ -112,8 +114,10 @@ export async function authenticate(
           case 'HOME_ADMIN':
             destination = '/dashboard'
             break
-          case 'FACILITATOR':
           case 'VOLUNTEER':
+            destination = '/volunteers'
+            break
+          case 'FACILITATOR':
           case 'BOARD':
           case 'PARTNER':
             destination = '/staff'

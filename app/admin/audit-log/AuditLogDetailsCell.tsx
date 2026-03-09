@@ -16,19 +16,25 @@ export function AuditLogDetailsCell({ details, children }: AuditLogDetailsCellPr
   function formatAuditDetails(dets: string | null): string {
     if (!dets) return '-'
     
-    const parsed = safeJsonParse<any>(dets, {})
+    const parsed = safeJsonParse<Record<string, unknown>>(dets, {} as Record<string, unknown>)
+    const updates = parsed.updates as Record<string, unknown> | undefined
     
-    if (parsed.updates && typeof parsed.updates === 'object') {
-      const changes = Object.keys(parsed.updates)
+    if (updates && typeof updates === 'object') {
+      const changes = Object.keys(updates)
       if (changes.length === 1) return `Changed ${changes[0]}`
       if (changes.length === 2) return `Changed ${changes[0]} and ${changes[1]}`
       return `Changed ${changes.slice(0, 2).join(', ')} and ${changes.length - 2} more`
     }
     
-    if (parsed.name) return parsed.name
-    if (parsed.title) return parsed.title
-    if (parsed.email) return parsed.email
-    if (parsed.eventId) return 'Event action'
+    const name = parsed.name as string | undefined
+    const title = parsed.title as string | undefined
+    const email = parsed.email as string | undefined
+    const eventId = parsed.eventId as string | undefined
+    
+    if (name) return name
+    if (title) return title
+    if (email) return email
+    if (eventId) return 'Event action'
     
     return '-'
   }
@@ -42,11 +48,12 @@ export function AuditLogDetailsCell({ details, children }: AuditLogDetailsCellPr
   }
 
   const tooltipContent = (() => {
-    const parsed = safeJsonParse<any>(details, {})
-    if (parsed.updates && typeof parsed.updates === 'object') {
-      return Object.keys(parsed.updates).map(key => ({
+    const parsed = safeJsonParse<Record<string, unknown>>(details, {} as Record<string, unknown>)
+    const updates = parsed.updates as Record<string, unknown> | undefined
+    if (updates && typeof updates === 'object') {
+      return Object.keys(updates).map(key => ({
         key,
-        value: String(parsed.updates[key])
+        value: String(updates[key])
       }))
     }
     return null

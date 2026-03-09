@@ -3,6 +3,7 @@ const API_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsIn
 const BASE_URL = 'https://oiaqvnttpilswcxzvsyq.supabase.co';
 
 // Simple bcrypt hash implementation (同步版本)
+/* eslint-disable @typescript-eslint/no-require-imports */
 const bcrypt = require('bcryptjs');
 
 const PLAIN_PASSWORD = 'TestPass123!';

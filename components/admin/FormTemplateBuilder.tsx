@@ -1,7 +1,7 @@
 'use client'
 
-import { useState } from 'react'
-import { Trash2, Save, Loader2, ChevronDown, Eye, Users, Globe, Lock, Check } from 'lucide-react'
+import { useState, useRef, useEffect } from 'react'
+import { Trash2, Save, Loader2, ChevronDown, ChevronUp, Eye, Users, Globe, Lock, Check } from 'lucide-react'
 import type { FormTemplateField, FormFieldType } from '@/lib/form-template-types'
 import { FORM_FIELD_TYPES, parseFormFields } from '@/lib/form-template-types'
 import { createFormTemplate, updateFormTemplate } from '@/app/actions/form-templates'
@@ -69,12 +69,30 @@ export function FormTemplateBuilder({
   const [fields, setFields] = useState<FormTemplateField[]>(() =>
     parseFormFields(initialFormFields)
   )
+  const [focusedFieldId, setFocusedFieldId] = useState<string | null>(null)
+  const fieldRefs = useRef<{ [key: string]: HTMLDivElement }>({})
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
+  const [accessControlMinimized, setAccessControlMinimized] = useState(false)
+
+  // Auto-scroll to focused field
+  useEffect(() => {
+    if (focusedFieldId && fieldRefs.current[focusedFieldId]) {
+      setTimeout(() => {
+        fieldRefs.current[focusedFieldId]?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center',
+        })
+        setFocusedFieldId(null)
+      }, 100)
+    }
+  }, [focusedFieldId])
 
   const addField = (type: FormFieldType) => {
-    setFields((prev) => [...prev, newField(type)])
+    const field = newField(type)
+    setFields((prev) => [...prev, field])
+    setFocusedFieldId(field.id)
   }
 
   const removeField = (index: number) => {
@@ -160,38 +178,38 @@ export function FormTemplateBuilder({
   return (
     <div className="flex flex-col lg:flex-row lg:items-stretch gap-6 lg:gap-8 w-full max-w-6xl lg:h-[calc(100vh-11rem)] lg:min-h-[500px]">
       {/* Left: Builder */}
-      <div className="flex-1 min-w-0 min-h-0 flex flex-col overflow-y-auto custom-scrollbar pr-1">
-        <div className="space-y-6 pb-4">
-        <div className="border border-gray-200 rounded-lg p-6 space-y-4 bg-white">
-          <div className="flex items-center justify-between gap-4 flex-wrap">
-            <h2 className="text-sm font-semibold text-gray-900">Template details</h2>
+      <div className="flex-1 min-w-0 min-h-0 flex flex-col">
+        {/* Fixed Header with Save Button */}
+        <div className="sticky top-0 z-10 bg-white border border-gray-200 rounded-t-lg p-4 flex items-center justify-between gap-4">
+          <h2 className="text-sm font-semibold text-gray-900">
+            {templateId ? 'Edit Template' : 'Create Template'}
+          </h2>
+          <div className="flex items-center gap-3">
+            {(error || success) && (
+              <span className={success ? "text-sm text-green-600" : "text-sm text-red-600"}>
+                {success ? 'Saved!' : error}
+              </span>
+            )}
             <button
               type="button"
               onClick={handleSave}
               disabled={saving}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium bg-primary-500 text-white hover:bg-primary-600 disabled:opacity-50 flex-shrink-0"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium bg-primary-500 text-white hover:bg-primary-600 disabled:opacity-50"
             >
               {saving ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
                 <Save className="w-4 h-4" />
               )}
-              Save template
+              Save
             </button>
           </div>
-          {(error || success) && (
-            <div className="flex flex-col gap-2">
-              {error && (
-                <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">{error}</p>
-              )}
-              {success && (
-                <p className="text-sm text-green-600 bg-green-50 px-3 py-2 rounded-lg">
-                  Template saved.
-                </p>
-              )}
-            </div>
-          )}
-          <div>
+        </div>
+        {/* Scrollable Content */}
+        <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar pr-1 border border-t-0 border-gray-200 rounded-b-lg bg-white">
+          <div className="space-y-6 p-4 pb-4">
+          <div className="border border-gray-200 rounded-lg p-4 space-y-4">
+            <h3 className="text-sm font-semibold text-gray-900">Template details</h3>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Title *
             </label>
@@ -269,47 +287,70 @@ export function FormTemplateBuilder({
           {/* Access Control */}
           {!isPublic && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                <Users className="w-4 h-4 inline mr-1" />
-                Access Control
-              </label>
-              <p className="text-xs text-gray-500 mb-2">
-                Select which roles can access this form. Leave all unchecked for all roles.
-              </p>
-              <div className="grid grid-cols-2 gap-2">
-                {VALID_ROLES.map((role) => (
-                  <button
-                    key={role}
-                    type="button"
-                    onClick={() => toggleRole(role)}
-                    className={cn(
-                      "flex items-center gap-2 p-2 rounded-lg border transition-colors text-left",
-                      selectedRoles.includes(role)
-                        ? "border-primary-500 bg-primary-50"
-                        : "border-gray-200 hover:border-gray-300"
-                    )}
-                  >
-                    <div className={cn(
-                      "w-4 h-4 rounded border flex items-center justify-center",
-                      selectedRoles.includes(role)
-                        ? "bg-primary-500 border-primary-500"
-                        : "border-gray-300"
-                    )}>
-                      {selectedRoles.includes(role) && (
-                        <Check className="w-3 h-3 text-white" />
-                      )}
-                    </div>
-                    <span className="text-sm text-gray-700">{ROLE_LABELS[role]}</span>
-                  </button>
-                ))}
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-sm font-medium text-gray-700">
+                  <Users className="w-4 h-4 inline mr-1" />
+                  Access Control
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setAccessControlMinimized(!accessControlMinimized)}
+                  className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700"
+                >
+                  {accessControlMinimized ? (
+                    <>
+                      <span>{selectedRoles.length} role(s) selected</span>
+                      <ChevronDown className="w-3 h-3" />
+                    </>
+                  ) : (
+                    <>
+                      <span>Minimize</span>
+                      <ChevronUp className="w-3 h-3" />
+                    </>
+                  )}
+                </button>
               </div>
+              {!accessControlMinimized && (
+                <>
+                  <p className="text-xs text-gray-500 mb-2">
+                    Select which roles can access this form. Leave all unchecked for all roles.
+                  </p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {VALID_ROLES.map((role) => (
+                      <button
+                        key={role}
+                        type="button"
+                        onClick={() => toggleRole(role)}
+                        className={cn(
+                          "flex items-center gap-2 p-2 rounded-lg border transition-colors text-left",
+                          selectedRoles.includes(role)
+                            ? "border-primary-500 bg-primary-50"
+                            : "border-gray-200 hover:border-gray-300"
+                        )}
+                      >
+                        <div className={cn(
+                          "w-4 h-4 rounded border flex items-center justify-center",
+                          selectedRoles.includes(role)
+                            ? "bg-primary-500 border-primary-500"
+                            : "border-gray-300"
+                        )}>
+                          {selectedRoles.includes(role) && (
+                            <Check className="w-3 h-3 text-white" />
+                          )}
+                        </div>
+                        <span className="text-sm text-gray-700">{ROLE_LABELS[role]}</span>
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
             </div>
           )}
         </div>
 
-        <div className="border border-gray-200 rounded-lg p-6 space-y-4 bg-white">
+        <div className="border border-gray-200 rounded-lg p-4 space-y-4">
           <div className="flex items-center justify-between flex-wrap gap-2">
-            <h2 className="text-sm font-semibold text-gray-900">Form fields</h2>
+            <h3 className="text-sm font-semibold text-gray-900">Form fields</h3>
             <div className="flex items-center gap-1 flex-wrap">
               {FORM_FIELD_TYPES.map((type) => (
                 <button
@@ -338,6 +379,7 @@ export function FormTemplateBuilder({
               {fields.map((field, index) => (
                 <div
                   key={field.id}
+                  ref={(el) => { if (el) fieldRefs.current[field.id] = el }}
                   className="border border-gray-200 rounded-lg p-4 bg-gray-50/50 space-y-3"
                 >
                   <div className="flex items-center gap-2">
@@ -368,7 +410,7 @@ export function FormTemplateBuilder({
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
-                  <div>
+                    <div>
                     <label className="block text-xs font-medium text-gray-600 mb-1">
                       Label
                     </label>
@@ -378,7 +420,9 @@ export function FormTemplateBuilder({
                       onChange={(e) =>
                         updateField(index, { label: e.target.value })
                       }
-                      className="w-full rounded border border-gray-300 px-2 py-1.5 text-sm"
+                      autoFocus={focusedFieldId === field.id}
+                      onFocus={() => setFocusedFieldId(null)}
+                      className="w-full rounded border border-gray-300 px-2 py-1.5 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                       placeholder="Question or field label"
                     />
                   </div>

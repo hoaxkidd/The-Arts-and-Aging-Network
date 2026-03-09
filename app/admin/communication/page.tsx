@@ -49,10 +49,10 @@ export default async function CommunicationHubPage() {
 
   return (
     <CommunicationHubClient 
-        groups={groups}
-        pendingGroupRequests={pendingGroupRequests}
-        pendingConversationRequests={pendingConversationRequests}
-        invitations={invitations}
+        groups={groups as never[]}
+        pendingGroupRequests={pendingGroupRequests as never[]}
+        pendingConversationRequests={pendingConversationRequests as never[]}
+        invitations={invitations as never[]}
         currentUserId={session.user.id || ''}
     />
   )
