@@ -1,7 +1,19 @@
 import DOMPurify from 'dompurify'
 
 export function sanitizeHtml(dirty: string): string {
-  // For server-side rendering, we don't need a window object
-  // Using type assertion to bypass the TypeScript issue with DOMPurify v3
-  return (DOMPurify as unknown as (dirty: string) => string)(dirty)
+  if (!dirty || typeof dirty !== 'string') {
+    return ''
+  }
+
+  if (typeof window === 'undefined') {
+    return dirty
+  }
+
+  try {
+    const purify = (DOMPurify as unknown as (window: Window) => { sanitize: (dirty: string) => string })(window)
+    return purify.sanitize(dirty)
+  } catch (error) {
+    console.error('DOMPurify sanitization error:', error)
+    return dirty
+  }
 }

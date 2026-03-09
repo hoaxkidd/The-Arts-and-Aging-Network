@@ -300,7 +300,7 @@ export function FormTemplateCard({ template, categories, mode = 'admin', fillUrl
                       onClick={() => setShowRolesModal(true)}
                       className="text-xs text-primary-600 hover:text-primary-700"
                     >
-                      Edit
+                      Access Control
                     </button>
                   )}
                 </div>
@@ -323,6 +323,13 @@ export function FormTemplateCard({ template, categories, mode = 'admin', fillUrl
         <div className="flex items-center gap-2 pt-3 border-t border-gray-100 shrink-0">
           {isAdmin ? (
             <>
+              <button
+                onClick={() => setShowViewModal(true)}
+                className="flex-1 text-center px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-50 rounded hover:bg-gray-100"
+              >
+                <Eye className="w-3 h-3 inline mr-1" />
+                Preview
+              </button>
               <Link
                 href={`/admin/forms/${template.id}/edit`}
                 className="flex-1 text-center px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-50 rounded hover:bg-gray-100"

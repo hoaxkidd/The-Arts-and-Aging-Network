@@ -26,7 +26,7 @@ export default async function EditFormTemplatePage({
   return (
     <div className="h-full flex flex-col">
       <header className="flex-shrink-0 pb-4 border-b border-gray-200">
-        <Link href="/admin/form-templates" className="text-gray-500 hover:text-gray-700 flex items-center gap-2 mb-3 text-sm">
+        <Link href="/admin/forms?tab=templates" className="text-gray-500 hover:text-gray-700 flex items-center gap-2 mb-3 text-sm">
           <ArrowLeft className="w-4 h-4" /> Back to Form Templates
         </Link>
         <div className="flex items-center gap-3">

@@ -292,7 +292,7 @@ export function EventForm({
                 Refresh list
               </button>
               <Link
-                href="/admin/form-templates"
+                href="/admin/forms?tab=templates"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-xs font-medium text-gray-500 hover:text-gray-700 flex items-center gap-1"

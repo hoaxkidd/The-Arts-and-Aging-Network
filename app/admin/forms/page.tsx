@@ -2,7 +2,7 @@ import { prisma } from "@/lib/prisma"
 import { auth } from "@/auth"
 import { redirect } from "next/navigation"
 import { Prisma } from "@prisma/client"
-import { FileText, FileCheck, Inbox, Plus, Search, Filter } from "lucide-react"
+import { FileText, Inbox, Plus, Search, Filter } from "lucide-react"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
 import { FormTemplateCard } from "@/components/admin/FormTemplateCard"
@@ -129,13 +129,13 @@ export default async function AdminFormsPage({
           </div>
           <div>
             <h1 className="text-base font-semibold text-gray-900">Forms Management</h1>
-            <p className="text-xs text-gray-500">Manage templates, submissions, and documents</p>
+            <p className="text-xs text-gray-500">Manage form templates and submissions</p>
           </div>
         </div>
       </header>
 
       <div className="flex-shrink-0 flex items-center gap-1 mt-4 border-b border-gray-200">
-        {(['templates', 'submissions', 'documents'] as const).map((tab) => (
+        {(['templates', 'submissions'] as const).map((tab) => (
           <Link
             key={tab}
             href={`/admin/forms?tab=${tab}`}
@@ -146,7 +146,6 @@ export default async function AdminFormsPage({
           >
             {tab === 'templates' && <FileText className="w-4 h-4 inline mr-2" />}
             {tab === 'submissions' && <Inbox className="w-4 h-4 inline mr-2" />}
-            {tab === 'documents' && <FileCheck className="w-4 h-4 inline mr-2" />}
             {tab}
             {tab === 'submissions' && (unreviewedCount > 0 || editRequestCount > 0) && (
               <span className="ml-1 px-1.5 py-0.5 bg-yellow-100 text-yellow-700 text-xs rounded-full">
@@ -182,10 +181,6 @@ export default async function AdminFormsPage({
             totalCount={totalSubmissions}
           />
         )}
-
-        {activeTab === 'documents' && (
-          <DocumentsTab />
-        )}
       </div>
     </div>
   )
@@ -211,22 +206,18 @@ function TemplatesTab({
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <div className="bg-white rounded-lg border p-3">
-            <p className="text-xl font-bold">{templateStats.total}</p>
-            <p className="text-xs text-gray-500">Total Templates</p>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          <div className="bg-white text-gray-700 border border-gray-300 px-3 py-1.5 rounded-lg font-medium text-sm hover:bg-gray-50 text-center">
+            <p className="text-sm font-semibold text-gray-900">{templateStats.total} Total Templates</p>
           </div>
-          <div className="bg-white rounded-lg border p-3">
-            <p className="text-xl font-bold text-green-600">{templateStats.active}</p>
-            <p className="text-xs text-gray-500">Active</p>
+          <div className="bg-white text-gray-700 border border-gray-300 px-3 py-1.5 rounded-lg font-medium text-sm hover:bg-gray-50 text-center">
+            <p className="text-sm font-semibold text-green-700">{templateStats.active} Active</p>
           </div>
-          <div className="bg-white rounded-lg border p-3">
-            <p className="text-xl font-bold text-gray-600">{templateStats.archived}</p>
-            <p className="text-xs text-gray-500">Archived</p>
+          <div className="bg-white text-gray-700 border border-gray-300 px-3 py-1.5 rounded-lg font-medium text-sm hover:bg-gray-50 text-center">
+            <p className="text-sm font-semibold text-gray-600">{templateStats.archived} Archived</p>
           </div>
-          <div className="bg-white rounded-lg border p-3">
-            <p className="text-xl font-bold text-blue-600">{templateStats.totalSubmissions}</p>
-            <p className="text-xs text-gray-500">Submissions</p>
+          <div className="bg-white text-gray-700 border border-gray-300 px-3 py-1.5 rounded-lg font-medium text-sm hover:bg-gray-50 text-center">
+            <p className="text-sm font-semibold text-blue-700">{templateStats.totalSubmissions} Submissions</p>
           </div>
         </div>
         <CreateTemplateButton />

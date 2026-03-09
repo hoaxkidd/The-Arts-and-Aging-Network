@@ -1,7 +1,9 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { Trash2, Save, Loader2, ChevronDown, ChevronUp, Eye, Users, Globe, Lock, Check } from 'lucide-react'
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { Trash2, Save, Loader2, ChevronDown, ChevronUp, Eye, Users, Globe, Lock, Check, ArrowLeft, X } from 'lucide-react'
 import type { FormTemplateField, FormFieldType } from '@/lib/form-template-types'
 import { FORM_FIELD_TYPES, parseFormFields } from '@/lib/form-template-types'
 import { createFormTemplate, updateFormTemplate } from '@/app/actions/form-templates'
@@ -71,21 +73,108 @@ export function FormTemplateBuilder({
   )
   const [focusedFieldId, setFocusedFieldId] = useState<string | null>(null)
   const fieldRefs = useRef<{ [key: string]: HTMLDivElement }>({})
+  const previewRef = useRef<HTMLDivElement>(null)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
   const [accessControlMinimized, setAccessControlMinimized] = useState(false)
+  const router = useRouter()
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
+  const [showUnsavedModal, setShowUnsavedModal] = useState(false)
+  const builderScrollRef = useRef<HTMLDivElement>(null)
+  const fieldsScrollRef = useRef<HTMLDivElement>(null)
+
+  // Store initial state snapshot for comparison (initialized after first render)
+  const [mounted, setMounted] = useState(false)
+  const initialSnapshot = useRef<{
+    title: string
+    description: string
+    descriptionHtml: string
+    category: string
+    isPublic: boolean
+    selectedRoles: string[]
+    fields: FormTemplateField[]
+  } | null>(null)
+
+  // Initialize snapshot after mount
+  useEffect(() => {
+    if (!mounted) {
+      initialSnapshot.current = {
+        title: initialTitle,
+        description: initialDescription || '',
+        descriptionHtml: initialDescriptionHtml || '',
+        category: initialCategory,
+        isPublic: initialIsPublic,
+        selectedRoles: initialAllowedRoles ? initialAllowedRoles.split(',') : [],
+        fields: parseFormFields(initialFormFields)
+      }
+      setMounted(true)
+    }
+  }, [mounted, initialTitle, initialDescription, initialDescriptionHtml, initialCategory, initialIsPublic, initialAllowedRoles, initialFormFields])
+
+  // Track unsaved changes - only after mount and snapshot is initialized
+  useEffect(() => {
+    if (!mounted || !initialSnapshot.current) return
+    
+    const titleChanged = title !== initialSnapshot.current.title
+    const descChanged = description !== initialSnapshot.current.description
+    const descHtmlChanged = descriptionHtml !== initialSnapshot.current.descriptionHtml
+    const categoryChanged = category !== initialSnapshot.current.category
+    const isPublicChanged = isPublic !== initialSnapshot.current.isPublic
+    const rolesChanged = JSON.stringify(selectedRoles || []) !== JSON.stringify(initialSnapshot.current.selectedRoles || [])
+    const fieldsChanged = JSON.stringify(fields || []) !== JSON.stringify(initialSnapshot.current.fields || [])
+    
+    const hasChanges = titleChanged || descChanged || descHtmlChanged || categoryChanged || isPublicChanged || rolesChanged || fieldsChanged
+    
+    setHasUnsavedChanges(hasChanges)
+  }, [title, description, descriptionHtml, category, isPublic, selectedRoles, fields, mounted])
+
+  // Browser-level warning for unsaved changes
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges) {
+        e.preventDefault()
+        e.returnValue = ''
+      }
+    }
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+  }, [hasUnsavedChanges])
+
+  // Handle back button with unsaved changes
+  const handleBack = () => {
+    if (hasUnsavedChanges) {
+      setShowUnsavedModal(true)
+    } else {
+      router.push('/admin/forms?tab=templates')
+    }
+  }
+
+  const confirmDiscard = () => {
+    setShowUnsavedModal(false)
+    router.push('/admin/forms?tab=templates')
+  }
 
   // Auto-scroll to focused field
   useEffect(() => {
-    if (focusedFieldId && fieldRefs.current[focusedFieldId]) {
+    if (focusedFieldId) {
       setTimeout(() => {
-        fieldRefs.current[focusedFieldId]?.scrollIntoView({
-          behavior: 'smooth',
-          block: 'center',
-        })
+        // Scroll field into view in the builder
+        if (fieldRefs.current[focusedFieldId]) {
+          fieldRefs.current[focusedFieldId]?.scrollIntoView({
+            behavior: 'smooth',
+            block: 'center',
+          })
+        }
+        // Also scroll preview to show the new field
+        if (previewRef.current) {
+          previewRef.current.scrollTo({ 
+            top: previewRef.current.scrollHeight, 
+            behavior: 'smooth' 
+          })
+        }
         setFocusedFieldId(null)
-      }, 100)
+      }, 300)
     }
   }, [focusedFieldId])
 
@@ -93,6 +182,12 @@ export function FormTemplateBuilder({
     const field = newField(type)
     setFields((prev) => [...prev, field])
     setFocusedFieldId(field.id)
+    
+    // Scroll both preview and fields list to bottom after adding field
+    setTimeout(() => {
+      previewRef.current?.scrollTo({ top: previewRef.current.scrollHeight, behavior: 'smooth' })
+      fieldsScrollRef.current?.scrollTo({ top: fieldsScrollRef.current.scrollHeight, behavior: 'smooth' })
+    }, 150)
   }
 
   const removeField = (index: number) => {
@@ -176,14 +271,23 @@ export function FormTemplateBuilder({
   }
 
   return (
-    <div className="flex flex-col lg:flex-row lg:items-stretch gap-6 lg:gap-8 w-full max-w-6xl lg:h-[calc(100vh-11rem)] lg:min-h-[500px]">
+    <div className="flex flex-col lg:flex-row lg:items-stretch gap-6 lg:gap-8 w-full max-w-[90vw] lg:h-[calc(100vh-8rem)] lg:min-h-[500px]">
       {/* Left: Builder */}
       <div className="flex-1 min-w-0 min-h-0 flex flex-col">
         {/* Fixed Header with Save Button */}
         <div className="sticky top-0 z-10 bg-white border border-gray-200 rounded-t-lg p-4 flex items-center justify-between gap-4">
-          <h2 className="text-sm font-semibold text-gray-900">
-            {templateId ? 'Edit Template' : 'Create Template'}
-          </h2>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={handleBack}
+              className="text-gray-400 hover:text-gray-600 p-1 rounded hover:bg-gray-100"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+            <h2 className="text-sm font-semibold text-gray-900">
+              {templateId ? 'Edit Template' : 'Create Template'}
+            </h2>
+          </div>
           <div className="flex items-center gap-3">
             {(error || success) && (
               <span className={success ? "text-sm text-green-600" : "text-sm text-red-600"}>
@@ -206,7 +310,7 @@ export function FormTemplateBuilder({
           </div>
         </div>
         {/* Scrollable Content */}
-        <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar pr-1 border border-t-0 border-gray-200 rounded-b-lg bg-white">
+        <div ref={builderScrollRef} className="flex-1 min-h-0 overflow-y-auto custom-scrollbar pr-1 border border-t-0 border-gray-200 rounded-b-lg bg-white">
           <div className="space-y-6 p-4 pb-4">
           <div className="border border-gray-200 rounded-lg p-4 space-y-4">
             <h3 className="text-sm font-semibold text-gray-900">Template details</h3>
@@ -372,9 +476,16 @@ export function FormTemplateBuilder({
             </p>
           ) : (
             <div
+              ref={fieldsScrollRef}
               className="space-y-4 max-h-[400px] min-h-[120px] overflow-y-auto custom-scrollbar pr-1"
               role="region"
               aria-label="Form field list"
+              onKeyDown={(e) => {
+                const target = e.target as HTMLElement
+                if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') {
+                  e.stopPropagation()
+                }
+              }}
             >
               {fields.map((field, index) => (
                 <div
@@ -473,25 +584,49 @@ export function FormTemplateBuilder({
                     <>
                       <div>
                         <label className="block text-xs font-medium text-gray-600 mb-1">
-                          Options (one per line)
+                          Options
                         </label>
-                        <p className="text-xs text-gray-500 mb-1">Enter each option on its own line.</p>
-                        <textarea
-                          value={(field.options || []).join('\n')}
-                          onChange={(e) => {
-                            const raw = e.target.value
-                            const lines = raw.split(/\r?\n/).map((s) => s.trim())
-                            const endsWithNewline = /\r?\n$/.test(raw)
-                            const options = endsWithNewline
-                              ? [...lines.filter(Boolean), '']
-                              : lines.filter(Boolean)
-                            updateField(index, { options })
-                          }}
-                          rows={4}
-                          className="w-full min-h-[80px] resize-none rounded border border-gray-300 px-2 py-1.5 text-sm"
-                          placeholder="Yes\nNo\nMaybe"
-                          aria-label="Options (one per line)"
-                        />
+                        <p className="text-xs text-gray-500 mb-2">Add options for this field.</p>
+                        <div className="space-y-2">
+                          {(field.options || []).map((option, optIndex) => (
+                            <div key={optIndex} className="flex items-center gap-2">
+                              <input
+                                type="text"
+                                value={option}
+                                onChange={(e) => {
+                                  const newOptions = [...(field.options || [])]
+                                  newOptions[optIndex] = e.target.value
+                                  updateField(index, { options: newOptions })
+                                }}
+                                className="flex-1 rounded border border-gray-300 px-2 py-1.5 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                                placeholder={`Option ${optIndex + 1}`}
+                              />
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const newOptions = (field.options || []).filter((_, i) => i !== optIndex)
+                                  updateField(index, { options: newOptions.length ? newOptions : [] })
+                                }}
+                                className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded"
+                                title="Remove option"
+                              >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                              </button>
+                            </div>
+                          ))}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const newOptions = [...(field.options || []), '']
+                              updateField(index, { options: newOptions })
+                            }}
+                            className="text-xs text-primary-600 hover:text-primary-700 font-medium"
+                          >
+                            + Add Option
+                          </button>
+                        </div>
                       </div>
                       <label className="flex items-center gap-2 text-sm text-gray-700">
                         <input
@@ -516,7 +651,7 @@ export function FormTemplateBuilder({
       </div>
 
       {/* Right: Live preview */}
-      <div className="lg:w-[380px] xl:w-[420px] flex-shrink-0 flex flex-col min-h-0">
+      <div className="lg:w-[45%] xl:w-[45%] flex-shrink-0 flex flex-col min-h-0">
         <div className="sticky top-4 flex-1 min-h-0 flex flex-col border border-gray-200 rounded-lg bg-white shadow-sm overflow-hidden">
           <div className="flex-shrink-0 flex items-center gap-2 px-4 py-2.5 border-b border-gray-200 bg-gray-50">
             <Eye className="w-4 h-4 text-gray-500" />
@@ -524,7 +659,7 @@ export function FormTemplateBuilder({
               How users will see this form
             </span>
           </div>
-          <div className="flex-1 min-h-0 p-4 pr-2 overflow-y-auto custom-scrollbar">
+          <div ref={previewRef} className="flex-1 min-h-0 p-4 pr-2 overflow-y-auto custom-scrollbar">
             <FormTemplateView
               title={title || '(Untitled form)'}
               description={description || null}
@@ -535,6 +670,34 @@ export function FormTemplateBuilder({
           </div>
         </div>
       </div>
+
+      {/* Unsaved Changes Modal */}
+      {showUnsavedModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Unsaved Changes</h3>
+            <p className="text-sm text-gray-600 mb-6">
+              You have unsaved changes. Are you sure you want to leave?
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                type="button"
+                onClick={() => setShowUnsavedModal(false)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+              >
+                Keep Editing
+              </button>
+              <button
+                type="button"
+                onClick={confirmDiscard}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700"
+              >
+                Discard Changes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

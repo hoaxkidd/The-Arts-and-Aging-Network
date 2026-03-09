@@ -183,7 +183,7 @@ export async function createFormTemplate(data: {
       }
     })
 
-    revalidatePath('/admin/form-templates')
+    revalidatePath('/admin/forms')
     revalidatePath('/staff/forms')
 
     return { success: true, data: template }
@@ -253,7 +253,7 @@ export async function updateFormTemplate(
       }
     })
 
-    revalidatePath('/admin/form-templates')
+    revalidatePath('/admin/forms')
     revalidatePath('/staff/forms')
     revalidatePath(`/staff/forms/${id}`)
 
@@ -300,7 +300,7 @@ export async function deleteFormTemplate(id: string) {
       }
     })
 
-    revalidatePath('/admin/form-templates')
+    revalidatePath('/admin/forms')
     revalidatePath('/staff/forms')
 
     return { success: true }
@@ -781,7 +781,7 @@ export async function updateFormTemplateRoles(templateId: string, allowedRoles: 
       }
     })
 
-    revalidatePath('/admin/form-templates')
+    revalidatePath('/admin/forms')
     revalidatePath('/staff/forms')
 
     return { success: true, data: template }
