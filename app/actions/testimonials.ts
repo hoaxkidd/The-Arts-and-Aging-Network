@@ -112,7 +112,6 @@ export async function createTestimonial(data: {
     })
 
     revalidatePath('/admin/testimonials')
-    revalidatePath('/testimonials')
 
     return { success: true, data: testimonial }
   } catch (error) {
@@ -159,7 +158,6 @@ export async function updateTestimonial(
     })
 
     revalidatePath('/admin/testimonials')
-    revalidatePath('/testimonials')
 
     return { success: true, data: testimonial }
   } catch (error) {
@@ -187,7 +185,6 @@ export async function deleteTestimonial(id: string) {
     })
 
     revalidatePath('/admin/testimonials')
-    revalidatePath('/testimonials')
 
     return { success: true }
   } catch (error) {

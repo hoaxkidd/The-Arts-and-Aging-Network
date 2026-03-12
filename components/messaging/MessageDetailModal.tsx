@@ -11,12 +11,14 @@ type Message = {
   createdAt: Date
   sender?: {
     id: string
+    userCode?: string | null
     name: string | null
     preferredName: string | null
     role: string
   }
   recipient?: {
     id: string
+    userCode?: string | null
     name: string | null
     preferredName: string | null
     role: string
@@ -82,7 +84,7 @@ export function MessageDetailModal({ message, isInbox, onClose }: MessageDetailM
         {isInbox && (
           <div className="p-4 border-t border-gray-200 bg-gray-50">
             <Link
-              href={`/staff/directory/${otherUser?.id}`}
+              href={`/staff/directory/${otherUser?.userCode || otherUser?.id}`}
               className="w-full px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 font-medium flex items-center justify-center gap-2"
             >
               <Reply className="w-4 h-4" />

@@ -30,6 +30,9 @@ export const STYLES = {
   pageTitle: "text-2xl font-bold text-gray-900 flex items-center gap-3",
   pageDescription: "text-gray-500 mt-1",
   pageIcon: "w-10 h-10 rounded-lg bg-primary-100 text-primary-600 flex items-center justify-center",
+  pageTemplateRoot: "space-y-4",
+  pageTemplateHeader: "flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4",
+  pageTemplateSubHeader: "pb-3 border-b border-gray-200",
 
   // Stats Cards
   statsCard: "bg-white rounded-lg border border-gray-200 p-4",

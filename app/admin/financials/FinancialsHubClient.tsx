@@ -38,7 +38,7 @@ export function FinancialsHubClient({ timesheets, mileageEntries, expenseRequest
     ]
 
     return (
-        <div className="h-full flex flex-col p-6">
+        <div className="h-full flex flex-col">
             <div className="flex-shrink-0 mb-2">
                 <h1 className="text-2xl font-bold text-gray-900">Financial Management</h1>
                 <p className="text-sm text-gray-500">Approve timesheets, mileage, and reimbursement requests</p>

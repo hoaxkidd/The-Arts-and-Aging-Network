@@ -6,6 +6,14 @@ import { revalidatePath } from "next/cache"
 import type { Prisma } from "@prisma/client"
 import { createNotification } from "./notifications"
 
+function hasTemplateAccess(template: { isActive: boolean; isPublic: boolean; allowedRoles: string | null }, role?: string | null) {
+  if (role === 'ADMIN') return true
+  if (!template.isActive) return false
+  if (template.isPublic) return true
+  if (!role || !template.allowedRoles) return false
+  return template.allowedRoles.split(',').map((r) => r.trim()).includes(role)
+}
+
 // ============================================
 // FORM TEMPLATE MANAGEMENT
 // ============================================
@@ -113,7 +121,7 @@ export async function getFormTemplate(id: string) {
     }
 
     // Check access
-    if (session.user.role !== 'ADMIN' && (!template.isActive || !template.isPublic)) {
+    if (!hasTemplateAccess(template, session.user.role)) {
       return { error: "Template not accessible" }
     }
 
@@ -340,6 +348,10 @@ export async function submitForm(data: {
       return { error: "Template is not active" }
     }
 
+    if (!hasTemplateAccess(template, session.user.role)) {
+      return { error: "Template not accessible" }
+    }
+
     const submission = await prisma.formSubmission.create({
       data: {
         templateId: data.templateId,
@@ -556,12 +568,20 @@ export async function updateFormSubmission(
       return { error: "You can only edit your own submissions" }
     }
 
+    if (!submission.editApproved) {
+      return { error: "Edit access has not been approved" }
+    }
+
     // Update submission
     await prisma.formSubmission.update({
       where: { id: submissionId },
       data: {
         formData: JSON.stringify(formData),
-        attachments: attachments ? JSON.stringify(attachments) : null
+        attachments: attachments ? JSON.stringify(attachments) : null,
+        editApproved: false,
+        editApprovedAt: null,
+        editApprovedBy: null,
+        editDenyReason: null,
       }
     })
 

@@ -37,8 +37,8 @@ export function RequestListClient({ requests, tabs, initialTab }: RequestListCli
   const activeFilter = activeTab === 'all' ? 'ALL' : activeTab as 'PENDING' | 'APPROVED' | 'REJECTED'
 
   return (
-    <div className="h-full flex flex-col px-4 sm:px-6 py-5">
-      <div className="flex-shrink-0 sticky top-0 z-10 bg-white pb-3 mb-3 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div className="h-full flex flex-col">
+      <div className="flex-shrink-0 pb-3 mb-3 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-lg bg-primary-100 text-primary-600 flex items-center justify-center">
             <ClipboardList className="w-5 h-5" />
@@ -55,7 +55,7 @@ export function RequestListClient({ requests, tabs, initialTab }: RequestListCli
       </div>
 
       {/* Tabs */}
-      <div className="flex-shrink-0 sticky top-[73px] z-9 bg-white border-b border-gray-200 -mb-px">
+      <div className="flex-shrink-0 border-b border-gray-200 -mb-px">
         <TabNavigation
           tabs={tabs}
           activeTab={activeTab}

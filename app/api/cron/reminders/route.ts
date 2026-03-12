@@ -9,13 +9,18 @@ export async function GET(request: NextRequest) {
     // Verify the request is from your cron service
     const authHeader = request.headers.get('authorization')
     const cronSecret = process.env.CRON_SECRET
+    const isProduction = process.env.NODE_ENV === 'production'
 
-    if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+    if (isProduction && !cronSecret) {
+      return NextResponse.json({ error: 'CRON_SECRET is not configured' }, { status: 500 })
+    }
+
+    if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     // Process pending reminders
-    const result = await processPendingReminders()
+    const result = await processPendingReminders({ trustedCron: true })
 
     if (result.error) {
       return NextResponse.json(

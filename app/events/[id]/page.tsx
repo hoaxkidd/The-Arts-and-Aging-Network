@@ -26,6 +26,7 @@ import Link from "next/link"
 import { AddToCalendar } from "@/components/events/AddToCalendar"
 import EventCommunityTabs from "@/components/events/EventCommunityTabs"
 import { STYLES } from "@/lib/styles"
+import { checkInNotOpenMessage, getCheckInWindowStart } from "@/lib/event-checkin"
 
 export default async function EventDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -95,8 +96,7 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
   const isCheckedIn = !!userAttendance?.checkInTime
   const isConfirmed = userAttendance?.status === 'YES'
 
-  // Check-in available 24 hours before
-  const checkInOpenTime = new Date(event.startDateTime.getTime() - 24 * 60 * 60 * 1000)
+  const checkInOpenTime = getCheckInWindowStart(new Date(event.startDateTime), event.checkInWindowMinutes)
   const canCheckIn = isConfirmed && !isCheckedIn && !isPast && now >= checkInOpenTime
 
   // Full content: admins, checked-in users, or home admins whose facility is participating
@@ -208,7 +208,7 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
                 </div>
                 <div>
                   <h3 className="font-semibold text-gray-900">You're Confirmed!</h3>
-                  <p className="text-xs text-gray-500">Check-in opens 24 hours before the event</p>
+                  <p className="text-xs text-gray-500">{checkInNotOpenMessage(event.checkInWindowMinutes)}</p>
                 </div>
                 <AddToCalendar event={{
                   title: event.title,

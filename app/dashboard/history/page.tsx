@@ -26,8 +26,8 @@ export default async function HistoryPage() {
   })
 
   return (
-    <div className="h-full flex flex-col px-4 sm:px-6 py-5">
-      <div className="flex-shrink-0 sticky top-0 z-10 bg-white pb-3 mb-3 border-b border-gray-100">
+    <div className="h-full flex flex-col">
+      <div className="flex-shrink-0 pb-3 mb-3 border-b border-gray-200">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-lg bg-primary-100 text-primary-600 flex items-center justify-center">
             <Clock className="w-5 h-5" />

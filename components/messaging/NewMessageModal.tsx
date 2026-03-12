@@ -10,6 +10,7 @@ import Link from 'next/link'
 
 type User = {
   id: string
+  userCode?: string | null
   name: string | null
   preferredName: string | null
   email: string | null
@@ -101,7 +102,7 @@ export function NewMessageModal({ isOpen, onClose, currentUserRole }: Props) {
         setError(result.error || null)
       } else {
         onClose()
-        router.push(`/staff/inbox/${selectedUser.id}`)
+        router.push(`/staff/inbox/${selectedUser.userCode || selectedUser.id}`)
         router.refresh()
       }
     } else {
@@ -114,7 +115,7 @@ export function NewMessageModal({ isOpen, onClose, currentUserRole }: Props) {
           setError(result.error || null)
         } else {
           onClose()
-          router.push(`/staff/inbox/${selectedUser.id}`)
+          router.push(`/staff/inbox/${selectedUser.userCode || selectedUser.id}`)
           router.refresh()
         }
       } else {

@@ -340,7 +340,7 @@ export function AdminFormSubmissionsList({
                 <tr key={submission.id} className="hover:bg-gray-50">
                   <td className="px-4 py-3">
                     <Link 
-                      href={`/admin/form-templates/${submission.template.id}`}
+                      href={`/admin/form-templates/${submission.template.id}/edit`}
                       className="text-sm font-medium text-gray-900 hover:text-primary-600"
                     >
                       {submission.template.title}

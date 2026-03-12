@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma"
 import { auth } from "@/auth"
 import { revalidatePath } from "next/cache"
 import type { PrismaClient } from "@prisma/client"
+import { checkInNotOpenMessage, getCheckInWindowMinutes, getCheckInWindowStart } from "@/lib/event-checkin"
 
 // Type-safe prisma client reference
 const db = prisma as PrismaClient & Record<string, unknown>
@@ -276,16 +277,12 @@ export async function staffCheckIn(eventId: string) {
     // Validate check-in window based on event setting
     const now = new Date()
     const eventStart = new Date(event.startDateTime)
-    const checkInWindowMinutes = event.checkInWindowMinutes || 120 // default 2 hours
-    const checkInWindowStart = new Date(eventStart.getTime() - checkInWindowMinutes * 60 * 1000)
+    const checkInWindowMinutes = getCheckInWindowMinutes(event.checkInWindowMinutes)
+    const checkInWindowStart = getCheckInWindowStart(eventStart, checkInWindowMinutes)
     const eventEnd = new Date(event.endDateTime)
 
     if (now < checkInWindowStart) {
-      const hoursBefore = Math.floor(checkInWindowMinutes / 60)
-      const message = hoursBefore > 0 
-        ? `Check-in opens ${hoursBefore} hour${hoursBefore > 1 ? 's' : ''} before the event`
-        : 'Check-in opens at the event start time'
-      return { error: message }
+      return { error: checkInNotOpenMessage(checkInWindowMinutes) }
     }
 
     if (now > eventEnd) {
@@ -416,8 +413,8 @@ export async function getStaffEventDetail(eventId: string) {
     const now = new Date()
     const eventStart = new Date(event.startDateTime)
     const eventEnd = new Date(event.endDateTime)
-    const checkInWindowMinutes = event.checkInWindowMinutes || 120
-    const checkInWindowStart = new Date(eventStart.getTime() - checkInWindowMinutes * 60 * 1000)
+    const checkInWindowMinutes = getCheckInWindowMinutes(event.checkInWindowMinutes)
+    const checkInWindowStart = getCheckInWindowStart(eventStart, checkInWindowMinutes)
 
     let eventStatus: 'upcoming' | 'check-in-open' | 'in-progress' | 'past'
     let canCheckIn = false

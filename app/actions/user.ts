@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache"
 import { z } from "zod"
 import bcrypt from "bcryptjs"
 import { VALID_ROLES } from "@/lib/roles"
+import { randomBytes } from "crypto"
 
 const PrefsSchema = z.object({
   email: z.boolean(),
@@ -47,7 +48,10 @@ export async function updateNotificationPreferences(prefs: { email: boolean, sms
       }
     })
 
-    revalidatePath('/settings') // Assuming a settings page exists or will exist
+    revalidatePath('/admin/settings')
+    revalidatePath('/dashboard/settings')
+    revalidatePath('/staff/settings')
+    revalidatePath('/payroll/settings')
     return { success: true }
   } catch (error) {
     console.error('Failed to update preferences:', error)
@@ -138,6 +142,9 @@ export async function updateUser(id: string, formData: FormData) {
 
   const role = formData.get('role') as string
   const status = formData.get('status') as string
+  const requestedEmailRaw = (formData.get('email') as string | null) || ''
+  const requestedEmail = requestedEmailRaw.trim().toLowerCase()
+  const expiryRaw = (formData.get('emailExpiryHours') as string | null) || ''
 
   // Validate input using schema
   const validation = UpdateUserSchema.safeParse({ role, status })
@@ -147,10 +154,29 @@ export async function updateUser(id: string, formData: FormData) {
   }
 
   try {
+    const now = new Date()
+    const resolveExpiryHours = () => {
+      const parsedCustom = Number.parseInt(expiryRaw, 10)
+      if (expiryRaw.trim() !== '') {
+        if (!Number.isFinite(parsedCustom) || parsedCustom < 1 || parsedCustom > 720) {
+          return { error: 'Expiry hours must be a whole number between 1 and 720' }
+        }
+        return { value: parsedCustom }
+      }
+
+      const envRaw = process.env.EMAIL_CHANGE_REQUEST_TTL_HOURS
+      const envHours = envRaw ? Number.parseInt(envRaw, 10) : NaN
+      if (Number.isFinite(envHours) && envHours >= 1 && envHours <= 720) {
+        return { value: envHours }
+      }
+
+      return { value: 72 }
+    }
+
     // Verify target user exists
     const targetUser = await prisma.user.findUnique({
       where: { id },
-      select: { id: true, role: true }
+      select: { id: true, role: true, email: true }
     })
 
     if (!targetUser) {
@@ -160,6 +186,52 @@ export async function updateUser(id: string, formData: FormData) {
     // Prevent admins from demoting themselves (safety check)
     if (id === session.user.id && targetUser.role === 'ADMIN' && validation.data.role !== 'ADMIN') {
       return { error: 'You cannot change your own admin role' }
+    }
+
+    let pendingEmailChange:
+      | { requestedEmail: string; expiresAt: string; hours: number }
+      | undefined
+
+    if (requestedEmail && requestedEmail !== (targetUser.email || '').toLowerCase()) {
+      const existingEmailUser = await prisma.user.findFirst({
+        where: { email: requestedEmail, NOT: { id } },
+        select: { id: true },
+      })
+
+      if (existingEmailUser) {
+        return { error: 'Email already in use' }
+      }
+
+      const expiry = resolveExpiryHours()
+      if (expiry.error) return { error: expiry.error }
+      const expiryHours = expiry.value ?? 72
+
+      const expiresAt = new Date(now.getTime() + expiryHours * 60 * 60 * 1000)
+
+      await prisma.$transaction(async (tx) => {
+        await tx.emailChangeRequest.updateMany({
+          where: { userId: id, status: 'PENDING' },
+          data: { status: 'CANCELLED', cancelledAt: now },
+        })
+
+        await tx.emailChangeRequest.create({
+          data: {
+            userId: id,
+            requestedById: session.user.id,
+            currentEmail: targetUser.email || '',
+            requestedEmail,
+            token: randomBytes(24).toString('hex'),
+            status: 'PENDING',
+            expiresAt,
+          },
+        })
+      })
+
+      pendingEmailChange = {
+        requestedEmail,
+        expiresAt: expiresAt.toISOString(),
+        hours: expiryHours,
+      }
     }
 
     await prisma.user.update({
@@ -183,10 +255,37 @@ export async function updateUser(id: string, formData: FormData) {
     })
 
     revalidatePath('/admin/users')
+    revalidatePath(`/admin/users/${id}`)
     revalidatePath('/staff/directory')
-    return { success: true }
+    return {
+      success: true,
+      pendingEmailChange,
+      message: pendingEmailChange
+        ? 'Email change request created. Confirmation integration is pending.'
+        : undefined,
+    }
   } catch (error) {
     console.error('Failed to update user:', error)
     return { error: 'Failed to update user' }
+  }
+}
+
+export async function cancelPendingEmailChange(userId: string) {
+  const session = await auth()
+  if (!session?.user?.id || session.user.role !== 'ADMIN') return { error: 'Unauthorized' }
+
+  try {
+    const now = new Date()
+    const result = await prisma.emailChangeRequest.updateMany({
+      where: { userId, status: 'PENDING' },
+      data: { status: 'CANCELLED', cancelledAt: now },
+    })
+
+    revalidatePath('/admin/users')
+    revalidatePath(`/admin/users/${userId}`)
+    return { success: true, cancelled: result.count }
+  } catch (error) {
+    console.error('Failed to cancel pending email change:', error)
+    return { error: 'Failed to cancel pending email change' }
   }
 }

@@ -42,7 +42,7 @@ export default async function NewMessageGroupPage() {
   })
 
   return (
-    <div className="h-full flex flex-col p-4 sm:p-6">
+    <div className="h-full flex flex-col">
       <div className="flex-shrink-0 mb-4 sm:mb-6">
         <Link
           href="/admin/communication"

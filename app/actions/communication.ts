@@ -64,6 +64,13 @@ export async function requestPhoneNumber(staffId: string, message?: string) {
   }
 
   try {
+    const staff = await prisma.user.findUnique({
+      where: { id: staffId },
+      select: { id: true, userCode: true },
+    })
+
+    if (!staff) return { error: 'Staff member not found' }
+
     // Check if request already exists
     const existing = await prisma.phoneRequest.findUnique({
       where: {
@@ -82,7 +89,7 @@ export async function requestPhoneNumber(staffId: string, message?: string) {
     const request = await prisma.phoneRequest.create({
       data: {
         requesterId: session.user.id,
-        requestedId: staffId,
+        requestedId: staff.id,
         message: message?.trim() || null
       },
       include: {
@@ -94,7 +101,7 @@ export async function requestPhoneNumber(staffId: string, message?: string) {
     const requesterName = request.requester.preferredName || request.requester.name || 'A team member'
     await prisma.notification.create({
       data: {
-        userId: staffId,
+        userId: staff.id,
         type: 'PHONE_REQUEST',
         title: 'Phone Number Request',
         message: `${requesterName} is requesting your phone number`,
@@ -102,7 +109,7 @@ export async function requestPhoneNumber(staffId: string, message?: string) {
       }
     })
 
-    revalidatePath(`/staff/directory/${staffId}`)
+    revalidatePath(`/staff/directory/${staff.userCode || staff.id}`)
     return { success: true }
   } catch (e) {
     console.error('requestPhoneNumber error:', e)
@@ -119,7 +126,7 @@ export async function respondToPhoneRequest(requestId: string, approved: boolean
     const request = await prisma.phoneRequest.findUnique({
       where: { id: requestId },
       include: {
-        requested: { select: { phone: true, name: true, preferredName: true } }
+        requested: { select: { id: true, userCode: true, phone: true, name: true, preferredName: true } }
       }
     })
 
@@ -144,7 +151,7 @@ export async function respondToPhoneRequest(requestId: string, approved: boolean
         type: 'PHONE_REQUEST_RESPONSE',
         title: approved ? 'Phone Request Approved' : 'Phone Request Declined',
         message: `${staffName} has ${approved ? 'shared their phone number with you' : 'declined your request'}.${phoneInfo}`,
-        link: `/staff/directory/${request.requestedId}`
+        link: `/staff/directory/${request.requested.userCode || request.requested.id}`
       }
     })
 
@@ -170,10 +177,17 @@ export async function createMeetingRequest(staffId: string, proposedDates: strin
   }
 
   try {
+    const staff = await prisma.user.findUnique({
+      where: { id: staffId },
+      select: { id: true, userCode: true },
+    })
+
+    if (!staff) return { error: 'Staff member not found' }
+
     const request = await prisma.meetingRequest.create({
       data: {
         requesterId: session.user.id,
-        requestedId: staffId,
+        requestedId: staff.id,
         proposedTimes: JSON.stringify(proposedDates),
         notes: notes?.trim() || null
       },
@@ -186,7 +200,7 @@ export async function createMeetingRequest(staffId: string, proposedDates: strin
     const requesterName = request.requester.preferredName || request.requester.name || 'A team member'
     await prisma.notification.create({
       data: {
-        userId: staffId,
+        userId: staff.id,
         type: 'MEETING_REQUEST',
         title: 'Meeting Request',
         message: `${requesterName} would like to schedule a meeting with you`,
@@ -194,7 +208,7 @@ export async function createMeetingRequest(staffId: string, proposedDates: strin
       }
     })
 
-    revalidatePath(`/staff/directory/${staffId}`)
+    revalidatePath(`/staff/directory/${staff.userCode || staff.id}`)
     return { success: true, requestId: request.id }
   } catch (e) {
     console.error('createMeetingRequest error:', e)
@@ -215,7 +229,7 @@ export async function respondToMeetingRequest(
     const request = await prisma.meetingRequest.findUnique({
       where: { id: requestId },
       include: {
-        requested: { select: { name: true, preferredName: true } }
+        requested: { select: { id: true, userCode: true, name: true, preferredName: true } }
       }
     })
 
@@ -243,7 +257,7 @@ export async function respondToMeetingRequest(
         type: 'MEETING_REQUEST_RESPONSE',
         title: accepted ? 'Meeting Accepted' : 'Meeting Declined',
         message: `${staffName} has ${accepted ? 'accepted' : 'declined'} your meeting request.${timeInfo}`,
-        link: `/staff/directory/${request.requestedId}`
+        link: `/staff/directory/${request.requested.userCode || request.requested.id}`
       }
     })
 

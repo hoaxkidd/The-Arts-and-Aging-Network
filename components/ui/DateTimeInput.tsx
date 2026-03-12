@@ -215,12 +215,18 @@ export function DateTimeInput({
   }
 
   // Update combined value
-  const updateValue = (date: string, time: string) => {
+  const getCombinedValue = (date: string, time: string): string => {
     if (date.length === 10 && time.length === 5) {
-      // Construct ISO string preserving local time (not UTC conversion)
       const [day, month, year] = date.split('-')
-      const iso = `${year}-${month}-${day}T${time}:00`
-      onChange?.(iso)
+      return `${year}-${month}-${day}T${time}:00`
+    }
+    return ''
+  }
+
+  const updateValue = (date: string, time: string) => {
+    const combined = getCombinedValue(date, time)
+    if (combined) {
+      onChange?.(combined)
     } else if (date.length === 0 && time.length === 0) {
       onChange?.('')
     }
@@ -269,6 +275,7 @@ export function DateTimeInput({
       )}
       
       <div className="flex gap-2">
+        <input type="hidden" name={name} value={getCombinedValue(dateValue, timeValue)} />
         {/* Date input */}
         <div className="relative flex-1">
           <input

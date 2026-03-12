@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { auth } from '@/auth'
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
+import { createUserWithGeneratedCode } from '@/lib/user-code'
 
 const optionalString = z.string().optional().nullable()
 const optionalBool = z.boolean().optional().nullable()
@@ -423,12 +424,10 @@ export async function importStaffFromCSV(
           skipped++
         }
       } else {
-        await prisma.user.create({
-          data: {
-            ...userData,
-            email,
-          } as never,
-        })
+        await createUserWithGeneratedCode(prisma, {
+          ...(userData as Record<string, unknown>),
+          email,
+        } as never)
         created++
       }
     } catch (err) {

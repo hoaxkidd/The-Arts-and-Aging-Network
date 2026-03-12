@@ -2,6 +2,7 @@ import { PrismaClient } from '@prisma/client'
 import { hash } from 'bcryptjs'
 import dotenv from 'dotenv'
 import path from 'path'
+import { createUserWithGeneratedCode } from '../lib/user-code'
 
 // Load .env.local first (Neon/Prod URLs), then .env
 dotenv.config({ path: path.resolve(process.cwd(), '.env.local') })
@@ -67,30 +68,26 @@ async function main() {
   const password = await hash(TEST_PASSWORD, 12)
 
   // 1. Admin
-  const admin = await prisma.user.create({
-    data: {
-      email: 'admin@artsandaging.com',
-      name: 'Super Admin',
-      password,
-      role: 'ADMIN',
-      status: 'ACTIVE',
-      bio: 'System Administrator',
-      roleData: '{}',
-    },
+  const admin = await createUserWithGeneratedCode(prisma, {
+    email: 'admin@artsandaging.com',
+    name: 'Super Admin',
+    password,
+    role: 'ADMIN',
+    status: 'ACTIVE',
+    bio: 'System Administrator',
+    roleData: '{}',
   })
   console.log('Created:', admin.email, '(ADMIN)')
 
   // 2. Home Admin
-  const homeAdminUser = await prisma.user.create({
-    data: {
-      email: 'home@artsandaging.com',
-      name: 'Test Home Admin',
-      password,
-      role: 'HOME_ADMIN',
-      status: 'ACTIVE',
-      phone: '555-0100',
-      roleData: '{}',
-    },
+  const homeAdminUser = await createUserWithGeneratedCode(prisma, {
+    email: 'home@artsandaging.com',
+    name: 'Test Home Admin',
+    password,
+    role: 'HOME_ADMIN',
+    status: 'ACTIVE',
+    phone: '555-0100',
+    roleData: '{}',
   })
 
   await prisma.geriatricHome.create({
@@ -109,67 +106,57 @@ async function main() {
   console.log('Created:', homeAdminUser.email, '(HOME_ADMIN) + GeriatricHome')
 
   // 3. Staff / Facilitator
-  const facilitator = await prisma.user.create({
-    data: {
-      email: 'staff@artsandaging.com',
-      name: 'Test Facilitator',
-      password,
-      role: 'FACILITATOR',
-      status: 'ACTIVE',
-      roleData: '{}',
-    },
+  const facilitator = await createUserWithGeneratedCode(prisma, {
+    email: 'staff@artsandaging.com',
+    name: 'Test Facilitator',
+    password,
+    role: 'FACILITATOR',
+    status: 'ACTIVE',
+    roleData: '{}',
   })
   console.log('Created:', facilitator.email, '(FACILITATOR)')
 
   // 4. Payroll
-  const payroll = await prisma.user.create({
-    data: {
-      email: 'payroll@artsandaging.com',
-      name: 'Test Payroll',
-      password,
-      role: 'PAYROLL',
-      status: 'ACTIVE',
-      roleData: '{}',
-    },
+  const payroll = await createUserWithGeneratedCode(prisma, {
+    email: 'payroll@artsandaging.com',
+    name: 'Test Payroll',
+    password,
+    role: 'PAYROLL',
+    status: 'ACTIVE',
+    roleData: '{}',
   })
   console.log('Created:', payroll.email, '(PAYROLL)')
 
   // 5. Volunteer
-  const volunteer = await prisma.user.create({
-    data: {
-      email: 'volunteer@artsandaging.com',
-      name: 'Test Volunteer',
-      password,
-      role: 'VOLUNTEER',
-      status: 'ACTIVE',
-      roleData: '{}',
-    },
+  const volunteer = await createUserWithGeneratedCode(prisma, {
+    email: 'volunteer@artsandaging.com',
+    name: 'Test Volunteer',
+    password,
+    role: 'VOLUNTEER',
+    status: 'ACTIVE',
+    roleData: '{}',
   })
   console.log('Created:', volunteer.email, '(VOLUNTEER)')
 
   // 6. Board Member
-  const board = await prisma.user.create({
-    data: {
-      email: 'board@artsandaging.com',
-      name: 'Test Board Member',
-      password,
-      role: 'BOARD',
-      status: 'ACTIVE',
-      roleData: '{}',
-    },
+  const board = await createUserWithGeneratedCode(prisma, {
+    email: 'board@artsandaging.com',
+    name: 'Test Board Member',
+    password,
+    role: 'BOARD',
+    status: 'ACTIVE',
+    roleData: '{}',
   })
   console.log('Created:', board.email, '(BOARD)')
 
   // 7. Community Partner
-  const partner = await prisma.user.create({
-    data: {
-      email: 'partner@artsandaging.com',
-      name: 'Test Partner',
-      password,
-      role: 'PARTNER',
-      status: 'ACTIVE',
-      roleData: '{}',
-    },
+  const partner = await createUserWithGeneratedCode(prisma, {
+    email: 'partner@artsandaging.com',
+    name: 'Test Partner',
+    password,
+    role: 'PARTNER',
+    status: 'ACTIVE',
+    roleData: '{}',
   })
   console.log('Created:', partner.email, '(PARTNER)')
 

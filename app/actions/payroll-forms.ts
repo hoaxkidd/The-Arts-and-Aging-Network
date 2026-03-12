@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache"
 import { z } from "zod"
 import { join } from "path"
 import { writeFile, mkdir, unlink } from "fs/promises"
+import { isPayrollOrAdminRole } from "@/lib/roles"
 
 const PayrollFormSchema = z.object({
   title: z.string().min(1, "Title is required"),
@@ -18,7 +19,7 @@ const PayrollFormSchema = z.object({
 
 export async function getPayrollForms() {
   const session = await auth()
-  if (!session?.user?.id) {
+  if (!session?.user?.id || !isPayrollOrAdminRole(session.user.role)) {
     return { error: "Unauthorized" }
   }
 
@@ -45,7 +46,7 @@ export async function getPayrollForms() {
 
 export async function getPayrollFormById(id: string) {
   const session = await auth()
-  if (!session?.user?.id) {
+  if (!session?.user?.id || !isPayrollOrAdminRole(session.user.role)) {
     return { error: "Unauthorized" }
   }
 
@@ -72,7 +73,7 @@ export async function getPayrollFormById(id: string) {
 
 export async function getMyPayrollFormSubmissions() {
   const session = await auth()
-  if (!session?.user?.id) {
+  if (!session?.user?.id || !isPayrollOrAdminRole(session.user.role)) {
     return { error: "Unauthorized" }
   }
 
@@ -252,7 +253,7 @@ export async function deletePayrollForm(id: string) {
 
 export async function submitPayrollForm(formId: string, signature: string) {
   const session = await auth()
-  if (!session?.user?.id) {
+  if (!session?.user?.id || !isPayrollOrAdminRole(session.user.role)) {
     return { error: "Unauthorized" }
   }
 

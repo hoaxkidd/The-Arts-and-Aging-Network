@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
+import { isPayrollOrAdminRole } from '@/lib/roles'
 
 export async function GET(req: NextRequest) {
   const session = await auth()
   
-  if (!session?.user?.id) {
+  if (!session?.user?.id || !isPayrollOrAdminRole(session.user.role)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 

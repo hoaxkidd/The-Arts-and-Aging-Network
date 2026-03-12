@@ -9,6 +9,7 @@ import { getRoleLabel } from '@/lib/roles'
 
 type StaffMember = {
   id: string
+  userCode?: string | null
   name: string | null
   preferredName: string | null
   pronouns: string | null
@@ -36,7 +37,7 @@ export function StaffDirectoryCard({ staff }: { staff: StaffMember }) {
 
   return (
     <div className="flex items-center gap-3 px-3 py-2.5 rounded-md hover:bg-gray-50 transition-colors group">
-      <Link href={`/staff/directory/${staff.id}`} className="flex items-center gap-3 flex-1 min-w-0">
+      <Link href={`/staff/directory/${staff.userCode || staff.id}`} className="flex items-center gap-3 flex-1 min-w-0">
         {staff.image ? (
           <Image src={staff.image} alt={displayName} width={32} height={32} className="w-8 h-8 rounded-full object-cover flex-shrink-0" />
         ) : (
@@ -63,8 +64,8 @@ export function StaffDirectoryCard({ staff }: { staff: StaffMember }) {
         </div>
       </Link>
 
-      <button
-        onClick={() => router.push(`/staff/inbox/${staff.id}`)}
+        <button
+        onClick={() => router.push(`/staff/inbox/${staff.userCode || staff.id}`)}
         className="text-gray-300 hover:text-primary-500 transition-colors flex-shrink-0"
       >
         <MessageCircle className="w-4 h-4" />

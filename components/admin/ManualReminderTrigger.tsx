@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Send, Loader2, CheckCircle, XCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { STYLES } from '@/lib/styles'
+import { processPendingReminders } from '@/app/actions/email-reminders'
 
 export function ManualReminderTrigger() {
   const [loading, setLoading] = useState(false)
@@ -18,16 +19,11 @@ export function ManualReminderTrigger() {
     setResult(null)
 
     try {
-      const response = await fetch('/api/cron/reminders', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      })
+      // Run through a server action so admin users can trigger reminders
+      // without exposing CRON_SECRET in the browser.
+      const data = await processPendingReminders()
 
-      const data = await response.json()
-
-      if (response.ok) {
+      if (!data.error) {
         setResult({
           success: true,
           message: 'Reminders processed successfully',
@@ -36,7 +32,7 @@ export function ManualReminderTrigger() {
       } else {
         setResult({
           success: false,
-          message: data.error || 'Failed to process reminders'
+          message: data.error
         })
       }
     } catch (error) {

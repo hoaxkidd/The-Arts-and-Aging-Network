@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma"
 import { auth } from "@/auth"
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
+import { isPayrollOrAdminRole } from "@/lib/roles"
 
 const timeEntrySchema = z.object({
   hours: z.number().min(0).max(24),
@@ -13,7 +14,7 @@ const timeEntrySchema = z.object({
 // Simplified One-Click Check-in
 export async function quickCheckIn() {
   const session = await auth()
-  if (!session?.user?.id) return { error: "Unauthorized" }
+  if (!session?.user?.id || !isPayrollOrAdminRole(session.user.role)) return { error: "Unauthorized" }
 
   const now = new Date()
 
@@ -46,7 +47,7 @@ export async function quickCheckIn() {
 
 export async function submitTimeEntry(formData: FormData) {
   const session = await auth()
-  if (!session?.user || (session.user.role !== 'PAYROLL' && session.user.role !== 'ADMIN')) {
+  if (!session?.user || !isPayrollOrAdminRole(session.user.role)) {
     return { error: 'Unauthorized' }
   }
 

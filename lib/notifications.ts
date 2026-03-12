@@ -439,7 +439,7 @@ export async function notifyAdminsAboutRSVP(params: {
         type: 'RSVP_RECEIVED' as NotificationType,
         title: 'New RSVP',
         message: `${params.staffName} ${statusText} for "${params.eventTitle}"`,
-        link: `/admin/events/${params.eventId}`,
+        link: `/admin/events/${params.eventId}/edit`,
         read: false,
       })
     }
@@ -473,7 +473,7 @@ export async function notifyAdminsAboutCheckIn(params: {
         type: 'STAFF_CHECKIN' as NotificationType,
         title: 'Staff Check-in',
         message: `${params.staffName} has checked in to "${params.eventTitle}"`,
-        link: `/admin/events/${params.eventId}`,
+        link: `/admin/events/${params.eventId}/edit`,
         read: false,
       })
     }
@@ -511,7 +511,7 @@ export async function notifyAdminsAboutExpense(params: {
         type: 'EXPENSE_SUBMITTED' as NotificationType,
         title: `${categoryText.charAt(0).toUpperCase() + categoryText.slice(1)} Request`,
         message: `${params.staffName} submitted a ${categoryText} request: "${params.description}"`,
-        link: `/admin/expenses`,
+        link: `/admin/requests`,
         read: false,
       })
     }

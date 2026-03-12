@@ -77,7 +77,7 @@ export default async function EmailRemindersPage({
   }
 
   return (
-    <div className="h-full flex flex-col p-6">
+    <div className="h-full flex flex-col">
       <div className="flex-shrink-0 mb-6">
         <h1 className="text-2xl font-bold text-gray-900 mb-2">Email Reminders</h1>
         <p className="text-sm text-gray-500">Monitor automated email reminders for events</p>

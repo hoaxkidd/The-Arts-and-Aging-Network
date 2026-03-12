@@ -128,29 +128,55 @@ export async function scheduleEventReminders(eventId: string) {
 
     // Schedule reminders for HOME_ADMIN (5-7 days before)
     if (event.geriatricHome && sevenDaysBefore > now) {
-      await prisma.emailReminder.create({
-        data: {
+      await prisma.emailReminder.upsert({
+        where: {
+          eventId_recipientType_recipientId_reminderType: {
+            eventId: event.id,
+            recipientType: 'HOME_ADMIN',
+            recipientId: event.geriatricHome.userId,
+            reminderType: '7_DAY',
+          },
+        },
+        update: {
+          scheduledFor: sevenDaysBefore,
+          status: 'PENDING',
+          error: null,
+        },
+        create: {
           eventId: event.id,
           recipientType: 'HOME_ADMIN',
           recipientId: event.geriatricHome.userId,
           reminderType: '7_DAY',
           scheduledFor: sevenDaysBefore,
           status: 'PENDING',
-          updatedAt: new Date()
+          updatedAt: new Date(),
         }
       })
     }
 
     if (event.geriatricHome && fiveDaysBefore > now) {
-      await prisma.emailReminder.create({
-        data: {
+      await prisma.emailReminder.upsert({
+        where: {
+          eventId_recipientType_recipientId_reminderType: {
+            eventId: event.id,
+            recipientType: 'HOME_ADMIN',
+            recipientId: event.geriatricHome.userId,
+            reminderType: '5_DAY',
+          },
+        },
+        update: {
+          scheduledFor: fiveDaysBefore,
+          status: 'PENDING',
+          error: null,
+        },
+        create: {
           eventId: event.id,
           recipientType: 'HOME_ADMIN',
           recipientId: event.geriatricHome.userId,
           reminderType: '5_DAY',
           scheduledFor: fiveDaysBefore,
           status: 'PENDING',
-          updatedAt: new Date()
+          updatedAt: new Date(),
         }
       })
     }
@@ -162,27 +188,53 @@ export async function scheduleEventReminders(eventId: string) {
 
     for (const attendance of confirmedStaff) {
       if (threeDaysBefore > now) {
-        await prisma.emailReminder.create({
-          data: {
+        await prisma.emailReminder.upsert({
+          where: {
+            eventId_recipientType_recipientId_reminderType: {
+              eventId: event.id,
+              recipientType: 'STAFF',
+              recipientId: attendance.userId,
+              reminderType: '3_DAY',
+            },
+          },
+          update: {
+            scheduledFor: threeDaysBefore,
+            status: 'PENDING',
+            error: null,
+          },
+          create: {
             eventId: event.id,
             recipientType: 'STAFF',
             recipientId: attendance.userId,
             reminderType: '3_DAY',
             scheduledFor: threeDaysBefore,
-            status: 'PENDING'
+            status: 'PENDING',
           }
         })
       }
 
       if (oneDayBefore > now) {
-        await prisma.emailReminder.create({
-          data: {
+        await prisma.emailReminder.upsert({
+          where: {
+            eventId_recipientType_recipientId_reminderType: {
+              eventId: event.id,
+              recipientType: 'STAFF',
+              recipientId: attendance.userId,
+              reminderType: '1_DAY',
+            },
+          },
+          update: {
+            scheduledFor: oneDayBefore,
+            status: 'PENDING',
+            error: null,
+          },
+          create: {
             eventId: event.id,
             recipientType: 'STAFF',
             recipientId: attendance.userId,
             reminderType: '1_DAY',
             scheduledFor: oneDayBefore,
-            status: 'PENDING'
+            status: 'PENDING',
           }
         })
       }
@@ -196,10 +248,10 @@ export async function scheduleEventReminders(eventId: string) {
 }
 
 // Process pending reminders (should be called by a cron job)
-export async function processPendingReminders() {
+export async function processPendingReminders(options?: { trustedCron?: boolean }) {
   const session = await auth()
-  // Only admins or system should be able to trigger this
-  if (session?.user?.role !== 'ADMIN' && !process.env.CRON_SECRET) {
+  const isAdmin = session?.user?.role === 'ADMIN'
+  if (!isAdmin && !options?.trustedCron) {
     return { error: "Unauthorized" }
   }
 

@@ -49,7 +49,7 @@ export default async function AdminDashboard() {
   return (
     <div className="h-full flex flex-col">
       {/* Sticky Header */}
-      <div className="sticky top-0 z-10 bg-gray-50 px-4 sm:px-6 pt-5 pb-3">
+      <div className="flex-shrink-0 pb-3 border-b border-gray-200">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-lg bg-primary-100 text-primary-600 flex items-center justify-center">
             <LayoutDashboard className="w-4 h-4" />
@@ -61,7 +61,7 @@ export default async function AdminDashboard() {
         </div>
       </div>
 
-      <div className="flex-1 min-h-0 overflow-auto space-y-4 px-4 sm:px-6 pb-6">
+      <div className="flex-1 min-h-0 overflow-auto space-y-4 pt-4 pb-6">
         {/* Stats Cards - 6 columns */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
           {/* Stats Card 1: Total Users */}

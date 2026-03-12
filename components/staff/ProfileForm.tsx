@@ -5,10 +5,11 @@ import { Star, User, Briefcase, Phone, Activity, ClipboardList, FileText, Mail }
 import { updateStaffProfile } from '@/app/actions/staff'
 import { AddressAutocomplete } from '@/components/ui/AddressAutocomplete'
 import { DocumentManager } from './DocumentManager'
-import { useRouter } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { DateInput } from '@/components/ui/DateInput'
 import { toInputDate } from '@/lib/date-utils'
 import { safeJsonParse } from '@/lib/utils'
+import { toast } from 'sonner'
 
 type UserData = {
   id: string
@@ -82,6 +83,7 @@ export function ProfileForm({ user, documents, isAdmin = false, visibleTabs, emb
   const [statusMessage, setStatusMessage] = useState<string | null>(null)
   const [address, setAddress] = useState(user.address || '')
   const router = useRouter()
+  const pathname = usePathname()
 
   const ec = safeJsonParse(user.emergencyContact, {} as Record<string, string>)
   const intake = safeJsonParse(user.intakeAnswers, { skills: [], tasks: [], hobbies: '' } as { skills?: string[], tasks?: { name: string, rating: number }[], hobbies?: string })
@@ -170,6 +172,13 @@ export function ProfileForm({ user, documents, isAdmin = false, visibleTabs, emb
         setStatusMessage(result.error)
       } else {
         setStatusMessage('Profile saved.')
+        if (pathname.startsWith('/admin/users/') && result?.userIdentifier) {
+          const currentIdentifier = pathname.split('/').filter(Boolean).at(-1)
+          if (currentIdentifier && currentIdentifier !== result.userIdentifier) {
+            toast.success(`User ID updated to ${result.userIdentifier}`)
+          }
+          router.replace(`/admin/users/${result.userIdentifier}`)
+        }
         router.refresh() // Sync sidebar and other UI
       }
     } catch (err) {

@@ -4,6 +4,7 @@ import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/auth'
 import { revalidatePath } from 'next/cache'
+import { createUserWithGeneratedCode } from '@/lib/user-code'
 
 const optionalString = z.string().optional().nullable()
 const optionalDate = z.string().optional().nullable()
@@ -164,54 +165,52 @@ export async function createPlaceholderStaffUser(formData: FormData) {
   }
 
   try {
-    const user = await prisma.user.create({
-      data: {
-        email: data.email,
-        name: data.name,
-        password: null,
-        status: 'PENDING',
-        role: data.role,
-        preferredName: data.preferredName ?? null,
-        pronouns: data.pronouns ?? null,
-        birthDate: parseFormDate(data.birthDate ?? null) ?? null,
-        phone: data.phone ?? null,
-        address: data.address ?? null,
-        teamId: data.teamId ?? null,
-        teamCode: data.teamCode ?? null,
-        teamType: data.teamType ?? null,
-        tShirtSize: data.tShirtSize ?? null,
-        position: data.position ?? null,
-        employmentType: data.employmentType ?? null,
-        employmentStatus: data.employmentStatus ?? null,
-        startDate: parseFormDate(data.startDate) ?? null,
-        supervisorId: data.supervisorId ?? null,
-        region: data.region ?? null,
-        emergencyContact,
-        emergencyAltPhone: data.ec_alt_phone ?? null,
-        healthInfo,
-        requiresAccommodation: data.requiresAccommodation ?? false,
-        accommodationDetails: data.accommodationDetails ?? null,
-        workplaceSafetyFormReceived: data.workplaceSafetyFormReceived ?? false,
-        codeOfConductReceived: data.codeOfConductReceived ?? false,
-        travelPolicyAcknowledged: data.travelPolicyAcknowledged ?? false,
-        policeCheckReceived: data.policeCheckReceived ?? false,
-        vulnerableSectorCheckRequired: data.vulnerableSectorCheckRequired ?? false,
-        dementiaTrainingCompleted: data.dementiaTrainingCompleted ?? false,
-        dementiaTrainingDate: parseFormDate(data.dementiaTrainingDate) ?? null,
-        dementiaTrainingTopupDate: parseFormDate(data.dementiaTrainingTopupDate) ?? null,
-        strengthsSkills: data.strengthsSkills ?? null,
-        facilitatingSkillRating: rating(data.facilitatingSkillRating) ?? null,
-        creativeArtsSkillRating: rating(data.creativeArtsSkillRating) ?? null,
-        organizingSkillRating: rating(data.organizingSkillRating) ?? null,
-        communicatingSkillRating: rating(data.communicatingSkillRating) ?? null,
-        mentoringSkillRating: rating(data.mentoringSkillRating) ?? null,
-        supportNotes: data.supportNotes ?? null,
-        funFacts: data.funFacts ?? null,
-        signatureOnFile: data.signatureOnFile ?? false,
-        signatureDate: parseFormDate(data.signatureDate) ?? null,
-        headshotReceived: data.headshotReceived ?? false,
-        bioReceived: data.bioReceived ?? false,
-      },
+    const user = await createUserWithGeneratedCode(prisma, {
+      email: data.email,
+      name: data.name,
+      password: null,
+      status: 'PENDING',
+      role: data.role,
+      preferredName: data.preferredName ?? null,
+      pronouns: data.pronouns ?? null,
+      birthDate: parseFormDate(data.birthDate ?? null) ?? null,
+      phone: data.phone ?? null,
+      address: data.address ?? null,
+      teamId: data.teamId ?? null,
+      teamCode: data.teamCode ?? null,
+      teamType: data.teamType ?? null,
+      tShirtSize: data.tShirtSize ?? null,
+      position: data.position ?? null,
+      employmentType: data.employmentType ?? null,
+      employmentStatus: data.employmentStatus ?? null,
+      startDate: parseFormDate(data.startDate) ?? null,
+      supervisorId: data.supervisorId ?? null,
+      region: data.region ?? null,
+      emergencyContact,
+      emergencyAltPhone: data.ec_alt_phone ?? null,
+      healthInfo,
+      requiresAccommodation: data.requiresAccommodation ?? false,
+      accommodationDetails: data.accommodationDetails ?? null,
+      workplaceSafetyFormReceived: data.workplaceSafetyFormReceived ?? false,
+      codeOfConductReceived: data.codeOfConductReceived ?? false,
+      travelPolicyAcknowledged: data.travelPolicyAcknowledged ?? false,
+      policeCheckReceived: data.policeCheckReceived ?? false,
+      vulnerableSectorCheckRequired: data.vulnerableSectorCheckRequired ?? false,
+      dementiaTrainingCompleted: data.dementiaTrainingCompleted ?? false,
+      dementiaTrainingDate: parseFormDate(data.dementiaTrainingDate) ?? null,
+      dementiaTrainingTopupDate: parseFormDate(data.dementiaTrainingTopupDate) ?? null,
+      strengthsSkills: data.strengthsSkills ?? null,
+      facilitatingSkillRating: rating(data.facilitatingSkillRating) ?? null,
+      creativeArtsSkillRating: rating(data.creativeArtsSkillRating) ?? null,
+      organizingSkillRating: rating(data.organizingSkillRating) ?? null,
+      communicatingSkillRating: rating(data.communicatingSkillRating) ?? null,
+      mentoringSkillRating: rating(data.mentoringSkillRating) ?? null,
+      supportNotes: data.supportNotes ?? null,
+      funFacts: data.funFacts ?? null,
+      signatureOnFile: data.signatureOnFile ?? false,
+      signatureDate: parseFormDate(data.signatureDate) ?? null,
+      headshotReceived: data.headshotReceived ?? false,
+      bioReceived: data.bioReceived ?? false,
     })
 
     await prisma.auditLog.create({
@@ -223,7 +222,7 @@ export async function createPlaceholderStaffUser(formData: FormData) {
     })
 
     revalidatePath('/admin/users')
-    return { success: true, userId: user.id }
+    return { success: true, userId: user.id, userIdentifier: user.userCode || user.id }
   } catch (e) {
     console.error('createPlaceholderStaffUser error:', e)
     return { error: 'Failed to create staff profile' }

@@ -10,6 +10,7 @@ type Conversation = {
   partnerId: string
   partner: {
     id: string
+    userCode?: string | null
     name: string | null
     preferredName: string | null
     image: string | null
@@ -67,6 +68,7 @@ type Message = {
 
 type Partner = {
   id: string
+  userCode?: string | null
   name: string | null
   preferredName: string | null
   image: string | null
@@ -105,7 +107,7 @@ export function ConversationSplitView({
             groupMemberships={groupMemberships}
             currentUserId={currentUserId}
             currentUserRole={currentUserRole}
-            activeConversationId={activeConversation?.partner.id}
+            activeConversationId={activeConversation ? (activeConversation.partner.userCode || activeConversation.partner.id) : undefined}
           />
         </div>
       </div>

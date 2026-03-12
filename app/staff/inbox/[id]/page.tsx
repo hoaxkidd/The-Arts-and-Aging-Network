@@ -71,6 +71,11 @@ export default async function ConversationPage({
     return <div className="p-4 text-red-600">{conversationsResult.error}</div>
   }
 
+  const canonicalIdentifier = conversationResult.partner.userCode || conversationResult.partner.id
+  if (id !== canonicalIdentifier) {
+    redirect(`/staff/inbox/${canonicalIdentifier}`)
+  }
+
   return (
     <ConversationSplitView
       conversations={conversationsResult.conversations}

@@ -5,6 +5,7 @@ import { auth } from "@/auth"
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
 import { logger } from "@/lib/logger"
+import { reassignUserCodeForName, shouldReassignUserCode } from "@/lib/user-code"
 
 function parseFormBool(value: FormDataEntryValue | null): boolean {
   if (value === null || value === undefined) return false
@@ -151,7 +152,7 @@ export async function updateStaffProfile(formData: FormData) {
   // Load existing intake answers to merge with new values
   const existingUser = await prisma.user.findUnique({
     where: { id: targetUserId },
-    select: { intakeAnswers: true }
+    select: { intakeAnswers: true, name: true }
   })
   
   const existingIntake: Record<string, unknown> = existingUser?.intakeAnswers 
@@ -231,7 +232,10 @@ export async function updateStaffProfile(formData: FormData) {
 
     // Name field (disabled inputs aren't submitted, so only present when editable)
     const name = formData.get("name")
-    if (name) updateData.name = name
+    if (name && !isAdmin) {
+      return { error: 'Only admins can change a user name' }
+    }
+    if (name && isAdmin) updateData.name = name
 
     // Image field (from profile pages that include it)
     const image = formData.get("image")
@@ -332,10 +336,25 @@ export async function updateStaffProfile(formData: FormData) {
         }
     }
 
-    await prisma.user.update({
+    const nextName = typeof updateData.name === 'string' ? updateData.name : existingUser?.name
+
+    const updatedUser = await prisma.$transaction(async (tx) => {
+      await tx.user.update({
         where: { id: targetUserId },
-        data: updateData
+        data: updateData,
+      })
+
+      if (shouldReassignUserCode(existingUser?.name, nextName)) {
+        await reassignUserCodeForName(tx, targetUserId, nextName)
+      }
+
+      return tx.user.findUnique({
+        where: { id: targetUserId },
+        select: { id: true, userCode: true },
+      })
     })
+
+    if (!updatedUser) return { error: 'User not found after update' }
 
     // Revalidate all paths that display user profile data
     revalidatePath('/staff/directory')
@@ -345,11 +364,12 @@ export async function updateStaffProfile(formData: FormData) {
     revalidatePath('/admin/settings')
     revalidatePath('/admin/users')
     revalidatePath(`/admin/users/${targetUserId}`)
+    revalidatePath(`/admin/users/${updatedUser.userCode || targetUserId}`)
     revalidatePath('/payroll/profile')
     revalidatePath('/payroll/settings')
     revalidatePath('/dashboard/profile')
     revalidatePath('/dashboard/settings')
-    return { success: true }
+    return { success: true, userId: updatedUser.id, userIdentifier: updatedUser.userCode || updatedUser.id }
   } catch (e) {
     console.error(e)
     return { error: "Failed to update profile" }

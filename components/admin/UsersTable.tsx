@@ -33,7 +33,7 @@ type UserWithCounts = User & {
   geriatricHome?: GeriatricHome | null
 }
 
-type SortField = 'name' | 'role' | 'status' | 'lastLoginAt'
+type SortField = 'name' | 'userCode' | 'role' | 'status' | 'lastLoginAt'
 type SortDirection = 'asc' | 'desc'
 
 export default function UsersTable({ users: initialUsers }: { users: UserWithCounts[] }) {
@@ -52,7 +52,8 @@ export default function UsersTable({ users: initialUsers }: { users: UserWithCou
     const result = users.filter(user => {
       const matchesSearch = searchQuery === '' ||
         user.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (user.email?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false)
+        (user.email?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false) ||
+        (user.userCode?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false)
 
       const matchesRole = roleFilter === 'ALL' || user.role === roleFilter
       const matchesStatus = statusFilter === 'ALL' || user.status === statusFilter
@@ -70,6 +71,9 @@ export default function UsersTable({ users: initialUsers }: { users: UserWithCou
           break
         case 'role':
           comparison = a.role.localeCompare(b.role)
+          break
+        case 'userCode':
+          comparison = (a.userCode || '').localeCompare(b.userCode || '')
           break
         case 'status':
           comparison = a.status.localeCompare(b.status)
@@ -141,8 +145,8 @@ export default function UsersTable({ users: initialUsers }: { users: UserWithCou
             id="search-users"
             name="searchUsers"
             type="search"
-            placeholder="Search by name or email..."
-            aria-label="Search users by name or email"
+            placeholder="Search by name, email, or user ID..."
+            aria-label="Search users by name, email, or user ID"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className={cn(STYLES.input, "pl-10")}
@@ -207,6 +211,15 @@ export default function UsersTable({ users: initialUsers }: { users: UserWithCou
                   </button>
                 </th>
                 <th className={STYLES.tableHeader}>
+                  <button
+                    onClick={() => handleSort('userCode')}
+                    className="flex items-center hover:text-primary-600"
+                  >
+                    User ID
+                    <SortIcon field="userCode" />
+                  </button>
+                </th>
+                <th className={STYLES.tableHeader}>
                   <button 
                     onClick={() => handleSort('role')}
                     className="flex items-center hover:text-primary-600"
@@ -263,6 +276,17 @@ export default function UsersTable({ users: initialUsers }: { users: UserWithCou
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
+                    {user.userCode ? (
+                      <span className="font-mono text-xs font-semibold text-primary-700 bg-primary-50 border border-primary-100 rounded px-2 py-1">
+                        {user.userCode}
+                      </span>
+                    ) : (
+                      <span className="font-mono text-xs font-semibold text-red-700 bg-red-50 border border-red-100 rounded px-2 py-1">
+                        MISSING-ID
+                      </span>
+                    )}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
                     <span className="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800 border border-gray-200">
                       {user.role}
                     </span>
@@ -312,7 +336,7 @@ export default function UsersTable({ users: initialUsers }: { users: UserWithCou
                         )}
                       </button>
                       <Link
-                        href={`/admin/users/${user.id}`}
+                        href={`/admin/users/${user.userCode || user.id}`}
                         className="text-primary-600 hover:text-primary-900 inline-flex items-center gap-1 hover:bg-primary-50 px-2 py-1 rounded"
                       >
                         <Edit2 className="w-4 h-4" /> Edit
@@ -323,7 +347,7 @@ export default function UsersTable({ users: initialUsers }: { users: UserWithCou
               ))}
               {filteredUsers.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-6 py-8 text-center text-gray-500">
+                  <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
                     No users found matching your filters.
                   </td>
                 </tr>

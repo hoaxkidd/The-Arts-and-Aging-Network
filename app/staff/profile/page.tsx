@@ -22,7 +22,7 @@ export default async function StaffProfilePage() {
   if (!user) return <div>User not found</div>
 
   return (
-    <div className="h-full flex flex-col px-4 sm:px-6 py-5">
+    <div className="h-full flex flex-col">
       <div className="flex-shrink-0 mb-5">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-lg bg-primary-100 text-primary-600 flex items-center justify-center">

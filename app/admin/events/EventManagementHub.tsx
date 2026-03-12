@@ -13,6 +13,12 @@ export default async function EventManagementHubPage() {
     orderBy: { startDateTime: 'asc' },
     include: {
       location: true,
+      requiredFormTemplate: {
+        select: {
+          id: true,
+          title: true,
+        },
+      },
       attendances: {
         include: { user: true }
       }

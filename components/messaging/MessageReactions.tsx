@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Smile } from 'lucide-react'
 import { addMessageReaction, getMessageReactions } from '@/app/actions/message-features'
 
@@ -23,17 +23,17 @@ export function MessageReactions({ messageId, initialReactions = [] }: Props) {
   const [showPicker, setShowPicker] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
 
-  // Load reactions on mount
-  useEffect(() => {
-    loadReactions()
-  }, [messageId])
-
-  const loadReactions = async () => {
+  const loadReactions = useCallback(async () => {
+    // Keep reaction fetch logic memoized for predictable re-runs.
     const result = await getMessageReactions(messageId)
     if ('reactions' in result && result.reactions) {
       setReactions(result.reactions as Reaction[])
     }
-  }
+  }, [messageId])
+
+  useEffect(() => {
+    loadReactions()
+  }, [loadReactions])
 
   const handleReaction = async (emoji: string) => {
     setIsLoading(true)

@@ -107,7 +107,7 @@ export function SettingsPage({
 
   return (
     <div className="h-full flex flex-col">
-      <header className="flex-shrink-0 sticky top-0 z-10 bg-white pb-4 border-b border-gray-200">
+      <header className="flex-shrink-0 pb-4 border-b border-gray-200">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-md bg-primary-100 text-primary-600 flex items-center justify-center">
             <Settings className="w-4 h-4" />
@@ -121,7 +121,7 @@ export function SettingsPage({
         </div>
       </header>
 
-      <div className="flex-shrink-0 sticky top-[73px] z-9 bg-white border-b border-gray-200 -mb-px">
+      <div className="flex-shrink-0 border-b border-gray-200 -mb-px">
         <nav className="flex gap-1" aria-label="Settings sections">
           {tabs.map((tab) => {
             const Icon = tab.icon
@@ -148,7 +148,7 @@ export function SettingsPage({
         </nav>
       </div>
 
-      <div className="flex-1 min-h-0 overflow-auto pt-6">
+      <div className="flex-1 min-h-0 overflow-auto pt-4">
         {activeTab === 'notifications' && (
           <section
             id="panel-notifications"

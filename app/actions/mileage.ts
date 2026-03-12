@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma"
 import { auth } from "@/auth"
 import { revalidatePath } from "next/cache"
 import type { Prisma } from "@prisma/client"
+import { isPayrollOrAdminRole } from "@/lib/roles"
 
 // Helper to parse date string in YYYY-MM-DD or DD-MM-YYYY format
 function parseDateString(dateStr: string): Date | null {
@@ -35,7 +36,7 @@ export async function submitMileageEntry(data: {
   purpose?: string
 }) {
   const session = await auth()
-  if (!session?.user?.id) return { error: "Unauthorized" }
+  if (!session?.user?.id || !isPayrollOrAdminRole(session.user.role)) return { error: "Unauthorized" }
 
   try {
     const parsedDate = parseDateString(data.date)
@@ -72,7 +73,7 @@ export async function submitMileageEntry(data: {
 // Get mileage entries for a specific month
 export async function getMileageEntries(month: number, year: number) {
   const session = await auth()
-  if (!session?.user?.id) return { error: "Unauthorized" }
+  if (!session?.user?.id || !isPayrollOrAdminRole(session.user.role)) return { error: "Unauthorized" }
 
   try {
     const entries = await prisma.mileageEntry.findMany({
@@ -94,7 +95,7 @@ export async function getMileageEntries(month: number, year: number) {
 // Get all mileage entries for current user
 export async function getMyMileageEntries() {
   const session = await auth()
-  if (!session?.user?.id) return { error: "Unauthorized" }
+  if (!session?.user?.id || !isPayrollOrAdminRole(session.user.role)) return { error: "Unauthorized" }
 
   try {
     const entries = await prisma.mileageEntry.findMany({
@@ -113,7 +114,7 @@ export async function getMyMileageEntries() {
 // Delete a mileage entry (only if pending)
 export async function deleteMileageEntry(entryId: string) {
   const session = await auth()
-  if (!session?.user?.id) return { error: "Unauthorized" }
+  if (!session?.user?.id || !isPayrollOrAdminRole(session.user.role)) return { error: "Unauthorized" }
 
   try {
     const entry = await prisma.mileageEntry.findUnique({
@@ -269,7 +270,7 @@ export async function rejectMileageEntry(entryId: string, reason: string) {
 // Get monthly summary
 export async function getMonthlySummary(month: number, year: number) {
   const session = await auth()
-  if (!session?.user?.id) return { error: "Unauthorized" }
+  if (!session?.user?.id || !isPayrollOrAdminRole(session.user.role)) return { error: "Unauthorized" }
 
   try {
     const entries = await prisma.mileageEntry.findMany({

@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma"
 import { auth } from "@/auth"
 import { revalidatePath } from "next/cache"
 import type { PrismaClient } from "@prisma/client"
+import { createUserWithGeneratedCode } from "@/lib/user-code"
 
 // Type-safe prisma client reference
 const db = prisma as PrismaClient & Record<string, unknown>
@@ -358,7 +359,7 @@ export async function updateHomeField(
   ]
 
   // Allowed fields for user
-  const allowedUserFields = ['userName', 'userEmail', 'userPhone']
+  const allowedUserFields = ['userName', 'userEmail', 'userPhone', 'userAddress']
 
   try {
     const home = await db.geriatricHome.findUnique({
@@ -461,6 +462,113 @@ type Personnel = {
   phone: string
   position: string
   isPrimary?: boolean
+}
+
+function normalizeEmail(value: string | null | undefined): string | null {
+  if (!value) return null
+  const normalized = value.trim().toLowerCase()
+  return normalized.includes('@') ? normalized : null
+}
+
+function normalizePhone(value: string | null | undefined): string | null {
+  if (!value) return null
+  const normalized = value.trim()
+  return normalized.length > 0 ? normalized : null
+}
+
+export async function createAdminHome(formData: FormData) {
+  const session = await auth()
+  if (session?.user?.role !== 'ADMIN') {
+    return { error: 'Unauthorized' }
+  }
+
+  const name = (formData.get('name') as string | null)?.trim() || ''
+  const contactName = (formData.get('contactName') as string | null)?.trim() || ''
+  const contactPosition = (formData.get('contactPosition') as string | null)?.trim() || null
+  const contactEmail = normalizeEmail(formData.get('contactEmail') as string | null) || ''
+  const contactPhone = normalizePhone(formData.get('contactPhone') as string | null) || ''
+  const address = (formData.get('address') as string | null)?.trim() || ''
+  const cityProvince = (formData.get('cityProvince') as string | null)?.trim() || ''
+  const postalCode = (formData.get('postalCode') as string | null)?.trim() || ''
+  const type = (formData.get('type') as string | null)?.trim() || null
+  const region = (formData.get('region') as string | null)?.trim() || null
+  const contactedRaw = (formData.get('contacted') as string | null)?.trim() || ''
+  const secondContact = (formData.get('secondContact') as string | null)?.trim() || ''
+  const secondEmailPhone = (formData.get('secondEmailPhone') as string | null)?.trim() || ''
+
+  if (!name || !contactName || !contactEmail || !contactPhone || !address) {
+    return { error: 'Please fill in all required fields' }
+  }
+
+  const fullAddressParts = [address, cityProvince, postalCode].filter(Boolean)
+  const fullAddress = fullAddressParts.join(', ')
+
+  const secondaryEmail = normalizeEmail(secondEmailPhone)
+  const secondaryPhone = normalizePhone(secondEmailPhone)
+  const additionalContacts = secondContact
+    ? [{
+        id: `contact_${Date.now()}`,
+        name: secondContact,
+        email: secondaryEmail || '',
+        phone: secondaryPhone || '',
+        position: 'Secondary Contact'
+      }]
+    : []
+
+  const contactedNormalized = contactedRaw.toLowerCase()
+  const contacted = ['yes', 'y', 'true', '1'].includes(contactedNormalized)
+
+  try {
+    const user = await createUserWithGeneratedCode(prisma, {
+      name: `${name} Home Admin`,
+      email: null,
+      password: null,
+      role: 'HOME_ADMIN',
+      status: 'PENDING',
+      phone: contactPhone
+    })
+
+    const home = await db.geriatricHome.create({
+      data: {
+        name,
+        address: fullAddress,
+        residentCount: 0,
+        maxCapacity: 1,
+        contactName,
+        contactEmail,
+        contactPhone,
+        contactPosition,
+        type,
+        region,
+        secondaryContact: secondContact || null,
+        additionalContacts: JSON.stringify(additionalContacts),
+        flags: JSON.stringify({
+          contacted,
+          raw: contactedRaw || null,
+          cityProvince: cityProvince || null,
+          postalCode: postalCode || null,
+          secondEmailPhone: secondEmailPhone || null
+        }),
+        userId: user.id
+      }
+    })
+
+    await prisma.auditLog.create({
+      data: {
+        action: 'HOME_CREATED',
+        details: JSON.stringify({ homeId: home.id, homeName: home.name, source: 'admin_add_home' }),
+        userId: session.user.id
+      }
+    })
+
+    revalidatePath('/admin/homes')
+    revalidatePath('/admin/import')
+
+    return { success: true, homeId: home.id }
+  } catch (error) {
+    console.error('Failed to create admin home:', error)
+    return { error: 'Failed to create home' }
+  }
 }
 
 // Add a new personnel contact

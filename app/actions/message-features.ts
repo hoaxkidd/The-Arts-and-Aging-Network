@@ -4,6 +4,42 @@ import { prisma } from "@/lib/prisma"
 import { auth } from "@/auth"
 import { revalidatePath } from "next/cache"
 
+interface ReactionGroup {
+  emoji: string
+  count: number
+  users: Array<{ id: string; name: string | null; preferredName: string | null }>
+  hasCurrentUser: boolean
+}
+
+async function canAccessGroupMessage(messageId: string, userId: string, role?: string | null) {
+  const message = await prisma.groupMessage.findUnique({
+    where: { id: messageId },
+    select: {
+      id: true,
+      group: {
+        select: {
+          members: {
+            where: {
+              userId,
+              isActive: true,
+            },
+            select: { id: true },
+            take: 1,
+          },
+        },
+      },
+    },
+  })
+
+  if (!message) return { allowed: false, reason: 'Message not found' }
+  if (role === 'ADMIN') return { allowed: true }
+  if (message.group.members.length === 0) {
+    return { allowed: false, reason: 'Unauthorized' }
+  }
+
+  return { allowed: true }
+}
+
 /**
  * Edit a direct message (only within 15 minutes of sending)
  */
@@ -206,6 +242,11 @@ export async function addMessageReaction(messageId: string, emoji: string) {
   }
 
   try {
+    const access = await canAccessGroupMessage(messageId, session.user.id, session.user.role)
+    if (!access.allowed) {
+      return { error: access.reason }
+    }
+
     // Check if user already reacted with this emoji
     const existing = await prisma.messageReaction.findFirst({
       where: {
@@ -253,6 +294,11 @@ export async function getMessageReactions(messageId: string) {
   }
 
   try {
+    const access = await canAccessGroupMessage(messageId, session.user.id, session.user.role)
+    if (!access.allowed) {
+      return { error: access.reason }
+    }
+
     const reactions = await prisma.messageReaction.findMany({
       where: { messageId },
       include: {
@@ -267,12 +313,6 @@ export async function getMessageReactions(messageId: string) {
     })
 
     // Group by emoji
-    interface ReactionGroup {
-      emoji: string
-      count: number
-      users: Array<{ id: string; name: string | null; preferredName: string | null }>
-      hasCurrentUser: boolean
-    }
     const groupedReactions = reactions.reduce<Record<string, ReactionGroup>>((acc, reaction) => {
       if (!acc[reaction.emoji]) {
         acc[reaction.emoji] = {

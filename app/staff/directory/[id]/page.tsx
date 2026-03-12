@@ -1,7 +1,7 @@
 import { getStaffPublicProfile } from '@/app/actions/directory'
 import { StaffPublicProfile } from '@/components/staff/StaffPublicProfile'
 import { auth } from '@/auth'
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import { ArrowLeft, User } from 'lucide-react'
 import Link from 'next/link'
 
@@ -27,6 +27,10 @@ export default async function StaffProfilePage({
   }
 
   const { staff, upcomingEvents, phoneRequestStatus } = result
+  const canonicalIdentifier = staff.userCode || staff.id
+  if (id !== canonicalIdentifier) {
+    redirect(`/staff/directory/${canonicalIdentifier}`)
+  }
 
   return (
     <div className="h-full flex flex-col">

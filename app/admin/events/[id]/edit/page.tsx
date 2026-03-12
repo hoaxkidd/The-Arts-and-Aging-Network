@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma"
 import { EventForm } from "@/components/admin/EventForm"
 import Link from "next/link"
-import { ArrowLeft } from "lucide-react"
+import { ArrowLeft, Calendar } from "lucide-react"
 
 export default async function EditEventPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -18,16 +18,31 @@ export default async function EditEventPage({ params }: { params: Promise<{ id: 
   if (!event) return <div>Event not found</div>
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
-       <Link href="/admin/events" className="text-gray-500 hover:text-gray-700 flex items-center gap-2">
-          <ArrowLeft className="w-4 h-4" /> Back to Events
-       </Link>
-       
-       <EventForm
-         locations={locations}
-         initialData={event}
-         formTemplates={formTemplates}
-       />
-    </div>
+    <div className="h-full flex flex-col">
+       <header className="flex-shrink-0 pb-4 border-b border-gray-200">
+         <div className="space-y-3">
+           <Link href="/admin/events" className="text-gray-500 hover:text-gray-700 flex items-center gap-2 text-sm">
+              <ArrowLeft className="w-4 h-4" /> Back to Events
+           </Link>
+           <div className="flex items-center gap-3">
+             <div className="w-8 h-8 rounded-md bg-primary-100 text-primary-600 flex items-center justify-center">
+               <Calendar className="w-4 h-4" />
+             </div>
+             <div>
+               <h1 className="text-base font-semibold text-gray-900">Edit Event</h1>
+               <p className="text-xs text-gray-500">Update event details, timing, location, and required forms</p>
+             </div>
+           </div>
+         </div>
+       </header>
+
+       <div className="flex-1 min-h-0 overflow-auto pt-4">
+         <EventForm
+           locations={locations}
+           initialData={event}
+           formTemplates={formTemplates}
+         />
+       </div>
+     </div>
   )
 }

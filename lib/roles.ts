@@ -56,3 +56,7 @@ export function getRoleLabel(role: string, short = false): string {
   const labels = short ? ROLE_LABELS_SHORT : ROLE_LABELS
   return isValidRole(role) ? labels[role] : role
 }
+
+export function isPayrollOrAdminRole(role: string | null | undefined): boolean {
+  return role === 'PAYROLL' || role === 'ADMIN'
+}

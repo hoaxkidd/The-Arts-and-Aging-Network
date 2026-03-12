@@ -5,6 +5,7 @@ import { auth } from "@/auth"
 import { revalidatePath } from "next/cache"
 import bcrypt from "bcryptjs"
 import type { Prisma } from "@prisma/client"
+import { reassignUserCodeForName, shouldReassignUserCode } from "@/lib/user-code"
 
 /**
  * Delete a user (Admin only)
@@ -74,21 +75,22 @@ export async function updateUser(userId: string, data: {
   }
 
   try {
-    const updateData: Prisma.UserUpdateInput = {}
+    const existingUser = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, name: true },
+    })
 
-    if (data.name) updateData.name = data.name
+    if (!existingUser) {
+      return { error: 'User not found' }
+    }
+
+    const updateData: Prisma.UserUpdateInput = {}
+    const normalizedName = typeof data.name === 'string' ? data.name.trim() : ''
+    const hasNameChange = normalizedName.length > 0 && normalizedName !== (existingUser.name || '')
+
+    if (hasNameChange) updateData.name = normalizedName
     if (data.email) {
-      // Check if email is already taken
-      const existing = await prisma.user.findFirst({
-        where: {
-          email: data.email,
-          NOT: { id: userId }
-        }
-      })
-      if (existing) {
-        return { error: 'Email already in use' }
-      }
-      updateData.email = data.email
+      return { error: 'Email changes require a pending confirmation request from the user detail page' }
     }
     if (data.role) updateData.role = data.role
     if (data.status) updateData.status = data.status
@@ -96,13 +98,26 @@ export async function updateUser(userId: string, data: {
       updateData.password = await bcrypt.hash(data.password, 10)
     }
 
-    const user = await prisma.user.update({
-      where: { id: userId },
-      data: updateData
+    const user = await prisma.$transaction(async (tx) => {
+      const updated = await tx.user.update({
+        where: { id: userId },
+        data: updateData,
+      })
+
+      if (hasNameChange && shouldReassignUserCode(existingUser.name, normalizedName)) {
+        await reassignUserCodeForName(tx, userId, normalizedName)
+      }
+
+      return tx.user.findUnique({ where: { id: userId } })
     })
+
+    if (!user) return { error: 'User not found' }
 
     revalidatePath('/admin/users')
     revalidatePath(`/admin/users/${userId}`)
+    revalidatePath(`/admin/users/${user.userCode || userId}`)
+    revalidatePath(`/staff/directory/${user.userCode || userId}`)
+    revalidatePath(`/staff/inbox/${user.userCode || userId}`)
     return { success: true, user }
   } catch (error) {
     console.error('Update user error:', error)

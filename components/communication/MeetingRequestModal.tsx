@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useId } from 'react'
+import { useState } from 'react'
 import { X, Calendar, Plus, Trash2, Loader2 } from 'lucide-react'
 import { createMeetingRequest } from '@/app/actions/communication'
 
@@ -17,7 +17,7 @@ type Props = {
 }
 
 export function MeetingRequestModal({ staffId, staffName, isOpen, onClose }: Props) {
-  const [proposedDates, setProposedDates] = useState<DateOption[]>([{ id: useId(), value: '' }])
+  const [proposedDates, setProposedDates] = useState<DateOption[]>([{ id: createDateOptionId(), value: '' }])
   const [notes, setNotes] = useState('')
   const [isPending, setIsPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -25,7 +25,7 @@ export function MeetingRequestModal({ staffId, staffName, isOpen, onClose }: Pro
   if (!isOpen) return null
 
   function addDate() {
-    setProposedDates([...proposedDates, { id: useId(), value: '' }])
+    setProposedDates([...proposedDates, { id: createDateOptionId(), value: '' }])
   }
 
   function removeDate(id: string) {
@@ -54,7 +54,7 @@ export function MeetingRequestModal({ staffId, staffName, isOpen, onClose }: Pro
       setError(result.error)
       setIsPending(false)
     } else {
-      setProposedDates([{ id: useId(), value: '' }])
+      setProposedDates([{ id: createDateOptionId(), value: '' }])
       setNotes('')
       setIsPending(false)
       onClose()
@@ -62,8 +62,8 @@ export function MeetingRequestModal({ staffId, staffName, isOpen, onClose }: Pro
     }
   }
 
-  // Get minimum datetime (now)
-  const minDateTime = new Date().toISOString().slice(0, 16)
+  // Build min datetime in local timezone for datetime-local input.
+  const minDateTime = toLocalDateTimeInputValue(new Date())
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -178,4 +178,21 @@ export function MeetingRequestModal({ staffId, staffName, isOpen, onClose }: Pro
       </div>
     </div>
   )
+}
+
+function createDateOptionId() {
+  // Stable, debuggable IDs without calling React hooks in handlers.
+  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
+    return crypto.randomUUID()
+  }
+  return `date_${Date.now()}_${Math.random().toString(36).slice(2)}`
+}
+
+function toLocalDateTimeInputValue(date: Date): string {
+  const year = date.getFullYear()
+  const month = `${date.getMonth() + 1}`.padStart(2, '0')
+  const day = `${date.getDate()}`.padStart(2, '0')
+  const hours = `${date.getHours()}`.padStart(2, '0')
+  const minutes = `${date.getMinutes()}`.padStart(2, '0')
+  return `${year}-${month}-${day}T${hours}:${minutes}`
 }

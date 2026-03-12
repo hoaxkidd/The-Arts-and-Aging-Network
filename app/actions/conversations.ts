@@ -25,6 +25,7 @@ export async function getConversations() {
         sender: {
           select: {
             id: true,
+            userCode: true,
             name: true,
             preferredName: true,
             image: true,
@@ -34,6 +35,7 @@ export async function getConversations() {
         recipient: {
           select: {
             id: true,
+            userCode: true,
             name: true,
             preferredName: true,
             image: true,
@@ -48,13 +50,11 @@ export async function getConversations() {
     const conversationsMap = new Map()
 
     messages.forEach(message => {
-      const partnerId = message.senderId === session.user.id
-        ? message.recipientId
-        : message.senderId
-
       const partner = message.senderId === session.user.id
         ? message.recipient
         : message.sender
+
+      const partnerId = partner.userCode || partner.id
 
       if (!conversationsMap.has(partnerId)) {
         conversationsMap.set(partnerId, {
@@ -86,7 +86,7 @@ export async function getConversations() {
 }
 
 // Get conversation with a specific user
-export async function getConversation(partnerId: string) {
+export async function getConversation(partnerIdentifier: string) {
   const session = await auth()
   if (!session?.user?.id) {
     return { error: 'Unauthorized' }
@@ -94,10 +94,13 @@ export async function getConversation(partnerId: string) {
 
   try {
     // Get partner info
-    const partner = await prisma.user.findUnique({
-      where: { id: partnerId },
+    const partner = await prisma.user.findFirst({
+      where: {
+        OR: [{ id: partnerIdentifier }, { userCode: partnerIdentifier }],
+      },
       select: {
         id: true,
+        userCode: true,
         name: true,
         preferredName: true,
         image: true,
@@ -114,14 +117,15 @@ export async function getConversation(partnerId: string) {
     const messages = await prisma.directMessage.findMany({
       where: {
         OR: [
-          { senderId: session.user.id, recipientId: partnerId },
-          { senderId: partnerId, recipientId: session.user.id }
+          { senderId: session.user.id, recipientId: partner.id },
+          { senderId: partner.id, recipientId: session.user.id }
         ]
       },
       include: {
         sender: {
           select: {
             id: true,
+            userCode: true,
             name: true,
             preferredName: true,
             image: true
@@ -134,7 +138,7 @@ export async function getConversation(partnerId: string) {
     // Mark all received messages as read
     await prisma.directMessage.updateMany({
       where: {
-        senderId: partnerId,
+        senderId: partner.id,
         recipientId: session.user.id,
         read: false
       },
@@ -173,6 +177,7 @@ export async function sendMessage(recipientId: string, content: string) {
         sender: {
           select: {
             id: true,
+            userCode: true,
             name: true,
             preferredName: true,
             image: true
@@ -190,12 +195,17 @@ export async function sendMessage(recipientId: string, content: string) {
         type: 'DIRECT_MESSAGE',
         title: `Message from ${senderName}`,
         message: preview,
-        link: `/staff/inbox/${session.user.id}`
+        link: `/staff/inbox/${message.sender.userCode || message.sender.id}`
       }
     })
 
+    const recipient = await prisma.user.findUnique({
+      where: { id: recipientId },
+      select: { id: true, userCode: true },
+    })
+
     revalidatePath('/staff/inbox')
-    revalidatePath(`/staff/inbox/${recipientId}`)
+    revalidatePath(`/staff/inbox/${recipient?.userCode || recipientId}`)
 
     return { success: true, message }
   } catch (error) {

@@ -25,6 +25,7 @@ import {
 import { cn, safeJsonParse } from '@/lib/utils'
 import { STYLES } from '@/lib/styles'
 import { confirmStaffAttendance, withdrawStaffAttendance, staffCheckIn } from '@/app/actions/staff-attendance'
+import { checkInNotOpenMessage, getCheckInWindowStart } from '@/lib/event-checkin'
 
 type EventDetail = {
   id: string
@@ -32,6 +33,7 @@ type EventDetail = {
   description: string | null
   startDateTime: string
   endDateTime: string
+  checkInWindowMinutes?: number
   maxAttendees: number
   status: string
   location: {
@@ -80,9 +82,8 @@ export function StaffEventDetail({ event }: { event: EventDetail }) {
   const isCheckedIn = !!event.myAttendance?.checkInTime
   const isFull = event.stats.spotsRemaining <= 0
 
-  // Check-in opens 24 hours before event
   const now = new Date()
-  const checkInOpenTime = new Date(eventDate.getTime() - 24 * 60 * 60 * 1000)
+  const checkInOpenTime = getCheckInWindowStart(eventDate, event.checkInWindowMinutes)
   const canCheckInNow = isConfirmed && !isCheckedIn && event.eventStatus !== 'past' && now >= checkInOpenTime
 
   const handleConfirm = () => {
@@ -186,7 +187,7 @@ export function StaffEventDetail({ event }: { event: EventDetail }) {
                   </div>
                   <div>
                     <p className="text-sm font-medium text-blue-700">You're confirmed!</p>
-                    <p className="text-[10px] text-blue-600">Check-in opens 24 hours before event</p>
+                    <p className="text-[10px] text-blue-600">{checkInNotOpenMessage(event.checkInWindowMinutes)}</p>
                   </div>
                 </>
               ) : (

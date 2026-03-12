@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import Link from 'next/link'
 import { createEvent } from "@/app/actions/events"
 import { getFormTemplates } from "@/app/actions/form-templates"
@@ -11,6 +11,8 @@ import { AddressAutocomplete } from "@/components/ui/AddressAutocomplete"
 import { FormTemplateBuilder } from "@/components/admin/FormTemplateBuilder"
 import { DateTimeInput } from "@/components/ui/DateTimeInput"
 import { toInputDateTime } from "@/lib/date-utils"
+import { useRouter } from 'next/navigation'
+import { toast } from 'sonner'
 
 interface CurrentUser {
   name: string
@@ -41,6 +43,9 @@ export function EventForm({
   // Form State
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [timeError, setTimeError] = useState('')
+  const [submitError, setSubmitError] = useState('')
+  const submittingRef = useRef(false)
+  const router = useRouter()
 
   const clearAddress = () => {
     setAddress('')
@@ -49,17 +54,33 @@ export function EventForm({
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
+    if (submittingRef.current || isSubmitting) return
     setTimeError('')
+    setSubmitError('')
     
     const formData = new FormData(e.currentTarget)
-    const start = new Date(formData.get('startDateTime') as string)
-    const end = new Date(formData.get('endDateTime') as string)
+    const startRaw = (formData.get('startDateTime') as string | null) || ''
+    const endRaw = (formData.get('endDateTime') as string | null) || ''
+
+    if (!startRaw || !endRaw) {
+      setTimeError('Please enter both start and end date/time')
+      return
+    }
+
+    const start = new Date(startRaw)
+    const end = new Date(endRaw)
+
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+      setTimeError('Please enter valid start and end date/time')
+      return
+    }
 
     if (end <= start) {
       setTimeError('End time must be after start time')
       return
     }
 
+    submittingRef.current = true
     setIsSubmitting(true)
     
     // Add verification data
@@ -81,8 +102,27 @@ export function EventForm({
         // We will need to update the import to include updateEvent
     }
 
-    await createEvent(formData) // TODO: Switch to updateEvent if ID exists
+    const result = await createEvent(formData)
+
+    if (result?.error) {
+      setSubmitError(result.error)
+      setIsSubmitting(false)
+      submittingRef.current = false
+      return
+    }
+
+    const conflictCount = typeof result?.conflictCount === 'number' ? result.conflictCount : 0
+    if (!initialData?.id && result?.eventId) {
+      router.replace(`/admin/events?created=1&eventId=${encodeURIComponent(result.eventId)}&conflicts=${conflictCount}`)
+      return
+    }
+
+    if (initialData?.id) {
+      toast.success('Event updated successfully')
+    }
+
     setIsSubmitting(false)
+    submittingRef.current = false
   }
 
   return (
@@ -135,6 +175,11 @@ export function EventForm({
         {timeError && (
           <p className="text-red-600 text-xs flex items-center gap-1">
             <AlertTriangle className="w-3 h-3" /> {timeError}
+          </p>
+        )}
+        {submitError && (
+          <p className="text-red-600 text-xs flex items-center gap-1">
+            <AlertTriangle className="w-3 h-3" /> {submitError}
           </p>
         )}
 
@@ -356,7 +401,7 @@ export function EventForm({
               <label className="block text-xs font-medium text-gray-500 mb-1">Name</label>
               <input
                 name="organizerName"
-                defaultValue={''}
+                defaultValue={initialData?.organizerName}
                 className={STYLES.input}
                 placeholder="e.g. John Smith"
               />
@@ -365,7 +410,7 @@ export function EventForm({
               <label className="block text-xs font-medium text-gray-500 mb-1">Role / Title</label>
               <input
                 name="organizerRole"
-                defaultValue={''}
+                defaultValue={initialData?.organizerRole}
                 className={STYLES.input}
                 placeholder="e.g. Event Coordinator"
               />
@@ -377,7 +422,7 @@ export function EventForm({
               <input
                 type="email"
                 name="organizerEmail"
-                defaultValue={''}
+                defaultValue={initialData?.organizerEmail}
                 className={STYLES.input}
                 placeholder="e.g. organizer@example.com"
               />

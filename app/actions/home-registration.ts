@@ -5,6 +5,7 @@ import { hash } from "bcryptjs"
 import { redirect } from "next/navigation"
 import { headers } from "next/headers"
 import { rateLimit } from "@/lib/rate-limit"
+import { createUserWithGeneratedCode } from "@/lib/user-code"
 
 export async function registerGeriatricHome(formData: FormData) {
   // Rate Limiting
@@ -54,15 +55,13 @@ export async function registerGeriatricHome(formData: FormData) {
 
     // Transaction to create User and Home
     await prisma.$transaction(async (tx) => {
-      const user = await tx.user.create({
-        data: {
-          name,
-          email,
-          password: hashedPassword,
-          role: "HOME_ADMIN",
-          status: "ACTIVE",
-          phone: contactPhone,
-        }
+      const user = await createUserWithGeneratedCode(tx, {
+        name,
+        email,
+        password: hashedPassword,
+        role: "HOME_ADMIN",
+        status: "ACTIVE",
+        phone: contactPhone,
       })
 
       // 2. Create Home Profile

@@ -134,7 +134,7 @@ export default async function AdminFormsPage({
         </div>
       </header>
 
-      <div className="flex-shrink-0 flex items-center gap-1 mt-4 border-b border-gray-200">
+      <div className="flex-shrink-0 flex items-center gap-1 mt-2 border-b border-gray-200">
         {(['templates', 'submissions'] as const).map((tab) => (
           <Link
             key={tab}
@@ -300,14 +300,5 @@ function SubmissionsTab({
       totalPages={totalPages}
       totalCount={totalCount}
     />
-  )
-}
-
-function DocumentsTab() {
-  return (
-    <div className="text-center py-8">
-      <p className="text-gray-500">Document management has been moved to the Forms page.</p>
-      <p className="text-xs text-gray-400 mt-2">Please use the Documents tab on this page.</p>
-    </div>
   )
 }

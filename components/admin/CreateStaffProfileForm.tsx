@@ -39,8 +39,8 @@ export function CreateStaffProfileForm() {
       setIsPending(false)
       return
     }
-    if (result?.success && result?.userId) {
-      router.push(`/admin/users/${result.userId}`)
+    if (result?.success && result?.userIdentifier) {
+      router.push(`/admin/users/${result.userIdentifier}`)
       router.refresh()
       return
     }

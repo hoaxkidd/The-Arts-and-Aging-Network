@@ -26,6 +26,12 @@ async function getNotifications(userId: string) {
 
 export default async function DashboardLayout({ children, role, title = "Arts & Aging" }: DashboardLayoutProps) {
   const session = await auth()
+  const currentUser = session?.user?.id
+    ? await prisma.user.findUnique({
+        where: { id: session.user.id },
+        select: { name: true, email: true },
+      })
+    : null
 
   let notifications: {
     id: string
@@ -49,7 +55,11 @@ export default async function DashboardLayout({ children, role, title = "Arts & 
         title={title} 
         notifications={notifications} 
         unreadCount={unreadCount}
-        userSession={session?.user}
+        userSession={{
+          ...session?.user,
+          name: currentUser?.name ?? session?.user?.name,
+          email: currentUser?.email ?? session?.user?.email,
+        }}
     >
         {children}
     </DashboardLayoutClient>

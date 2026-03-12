@@ -59,6 +59,7 @@ type HomeData = {
   updatedAt: string
   user: {
     id: string
+    userCode: string | null
     name: string | null
     email: string
     status: string
@@ -315,6 +316,7 @@ export function HomeDetailsClient({ home }: { home: HomeData }) {
   const [editingPersonnel, setEditingPersonnel] = useState<Personnel | undefined>()
   const [personnelToDelete, setPersonnelToDelete] = useState<string | null>(null)
   const [editAddress, setEditAddress] = useState(home.address || '')
+  const additionalContacts = Array.isArray(home.additionalContacts) ? home.additionalContacts : []
   const acc = parseAccessibilityInfo(home.accessibilityInfo)
   const photo = parsePhotoPermissions(home.photoPermissions)
 
@@ -365,124 +367,98 @@ export function HomeDetailsClient({ home }: { home: HomeData }) {
     })
   }
 
-  const occupancyPercent = Math.round((home.residentCount / home.maxCapacity) * 100)
+  const occupancyPercent = home.maxCapacity > 0 ? Math.round((home.residentCount / home.maxCapacity) * 100) : 0
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto px-4 sm:px-6 pb-12">
-      {/* Header */}
-      <div className="pt-2">
-        <Link
-          href="/admin/homes"
-          className="inline-flex items-center text-sm text-gray-500 hover:text-gray-900 mb-5 transition-colors"
-        >
+    <div className="h-full flex flex-col pb-10">
+      <header className="flex-shrink-0 pb-4 border-b border-gray-200">
+        <Link href="/admin/homes" className="inline-flex items-center text-sm text-gray-500 hover:text-gray-900 mb-3">
           <ArrowLeft className="w-4 h-4 mr-1.5" /> Back to Homes
         </Link>
-
-        <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
-          <div className="min-w-0 flex-1">
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 flex items-center gap-3">
-              <div className="w-11 h-11 rounded-xl bg-primary-100 text-primary-600 flex items-center justify-center shrink-0">
-                <Building2 className="w-6 h-6" />
+        <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+          <div className="min-w-0">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-md bg-primary-100 text-primary-600 flex items-center justify-center shrink-0">
+                <Building2 className="w-4 h-4" />
               </div>
-              <span className="truncate">{home.name}</span>
-            </h1>
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-3 text-gray-600 ml-0 sm:ml-14">
-              <span className="flex items-center gap-1">
-                <MapPin className="w-4 h-4" />
-                {home.address}
+              <div className="min-w-0">
+                <h1 className="text-base font-semibold text-gray-900 truncate">{home.name}</h1>
+                <p className="text-xs text-gray-500 truncate">Facility profile and operating details</p>
+              </div>
+            </div>
+            <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-gray-600">
+              <span className="inline-flex items-center gap-1 min-w-0">
+                <MapPin className="w-3.5 h-3.5 shrink-0 text-gray-400" />
+                <span className="truncate">{home.address}</span>
               </span>
-              {home.type && (
-                <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-700 rounded">{home.type}</span>
-              )}
-              {home.region && (
-                <span className="text-xs text-gray-500">{home.region}</span>
-              )}
-              <a
-                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(home.address)}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-primary-600 hover:underline text-sm ml-2"
-              >
+              {home.type && <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-700 rounded border border-gray-200">{home.type}</span>}
+              {home.region && <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-700 rounded border border-gray-200">{home.region}</span>}
+              <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(home.address)}`} target="_blank" rel="noopener noreferrer" className="text-primary-600 hover:underline text-xs">
                 View Map
               </a>
             </div>
           </div>
-
-          <div className="flex items-center gap-4 shrink-0">
-            <span className="text-xs text-gray-500 whitespace-nowrap">
-              Registered {new Date(home.createdAt).toLocaleDateString()}
-            </span>
-            <button
-              onClick={() => setShowDeleteModal(true)}
-              className={cn(STYLES.btn, STYLES.btnDanger, "text-sm py-2")}
-            >
-              <Trash2 className="w-4 h-4" />
-              Delete Home
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="text-xs text-gray-500 whitespace-nowrap">Registered {new Date(home.createdAt).toLocaleDateString()}</span>
+            <button onClick={() => setShowDeleteModal(true)} className={cn(STYLES.btn, STYLES.btnDanger, "text-sm py-2")}> 
+              <Trash2 className="w-4 h-4" /> Delete Home
             </button>
           </div>
         </div>
-      </div>
+      </header>
 
-      {/* Key metrics strip */}
-      <div className="rounded-xl border border-gray-200 bg-white shadow-sm px-5 py-4 sm:py-5 flex flex-wrap items-center gap-x-8 gap-y-3">
-        <div className="flex items-baseline gap-1.5">
-          <span className="text-2xl font-bold text-primary-600 tabular-nums">{home.residentCount}</span>
-          <span className="text-sm text-gray-500">residents</span>
+      <div className="flex-shrink-0 grid grid-cols-2 lg:grid-cols-4 gap-2 mt-4">
+        <div className="bg-white text-gray-700 border border-gray-300 px-3 py-2 rounded-lg text-center">
+          <p className="text-sm font-semibold text-gray-900">Residents: <span className="text-primary-700 tabular-nums">{home.residentCount}</span></p>
         </div>
-        <div className="flex items-baseline gap-1.5">
-          <span className="text-2xl font-bold text-gray-800 tabular-nums">{home.maxCapacity}</span>
-          <span className="text-sm text-gray-500">capacity</span>
+        <div className="bg-white text-gray-700 border border-gray-300 px-3 py-2 rounded-lg text-center">
+          <p className="text-sm font-semibold text-gray-900">Capacity: <span className="tabular-nums">{home.maxCapacity}</span></p>
         </div>
-        <div className="flex items-baseline gap-1.5">
-          <span className={cn("text-2xl font-bold tabular-nums", occupancyPercent >= 90 ? "text-red-600" : occupancyPercent >= 70 ? "text-amber-600" : "text-emerald-600")}>
-            {occupancyPercent}%
-          </span>
-          <span className="text-sm text-gray-500">occupancy</span>
+        <div className="bg-white text-gray-700 border border-gray-300 px-3 py-2 rounded-lg text-center">
+          <p className="text-sm font-semibold text-gray-900">Occupancy: <span className={cn("tabular-nums", occupancyPercent >= 90 ? "text-red-600" : occupancyPercent >= 70 ? "text-amber-600" : "text-emerald-600")}>{occupancyPercent}%</span></p>
         </div>
-        <div className="flex items-baseline gap-1.5">
-          <span className="text-2xl font-bold text-gray-800 tabular-nums">{home._count.events}</span>
-          <span className="text-sm text-gray-500">events</span>
-        </div>
-        {home.type && <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2.5 py-1 rounded-md">{home.type}</span>}
-        {home.region && <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2.5 py-1 rounded-md">{home.region}</span>}
-        <div className="w-full sm:w-auto sm:ml-auto text-xs text-gray-400 flex items-center gap-1.5 pt-1 sm:pt-0">
-          <Clock className="w-3.5 h-3.5 shrink-0" />
-          Updated {new Date(home.updatedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+        <div className="bg-white text-gray-700 border border-gray-300 px-3 py-2 rounded-lg text-center">
+          <p className="text-sm font-semibold text-gray-900">Events: <span className="tabular-nums">{home._count.events}</span></p>
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="flex border-b border-gray-200 bg-white rounded-t-xl overflow-x-auto">
-        {(['facility', 'contact', 'account', 'protocol', 'events'] as const).map((tab) => (
-          <button
-            key={tab}
-            type="button"
-            onClick={() => setActiveTab(tab)}
-            className={cn(
-              "px-5 py-3.5 text-sm font-medium whitespace-nowrap border-b-2 -mb-px transition-all duration-150 shrink-0",
-              activeTab === tab
-                ? "border-primary-500 text-primary-600 bg-white shadow-[0_-1px_3px_rgba(0,0,0,0.04)]"
-                : "border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50/80"
-            )}
-          >
-            {tab === 'facility' && <><Building2 className="w-4 h-4 inline-block mr-2 align-middle opacity-80" /> Facility</>}
-            {tab === 'contact' && <><Phone className="w-4 h-4 inline-block mr-2 align-middle opacity-80" /> Contact</>}
-            {tab === 'account' && <><User className="w-4 h-4 inline-block mr-2 align-middle opacity-80" /> Account</>}
-            {tab === 'protocol' && <><Shield className="w-4 h-4 inline-block mr-2 align-middle opacity-80" /> Protocol</>}
-            {tab === 'events' && <><Calendar className="w-4 h-4 inline-block mr-2 align-middle opacity-80" /> Events</>}
-          </button>
-        ))}
+      <div className="flex-shrink-0 text-xs text-gray-400 flex items-center gap-1.5 mt-2">
+        <Clock className="w-3.5 h-3.5 shrink-0" />
+        Updated {new Date(home.updatedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
       </div>
 
-      {/* Tab content */}
-      <div className="rounded-b-xl border border-gray-200 border-t-0 bg-gray-50/40 px-5 sm:px-6 py-6 min-h-[420px]">
-        <form action={async (formData: FormData) => { await updateHomeDetails(formData); router.refresh() }} className="space-y-6">
+      <div className="flex-shrink-0 flex items-center gap-1 mt-3 border-b border-gray-200 overflow-x-auto">
+        <div role="tablist" className="min-w-[620px] grid grid-cols-5 w-full">
+          {(['facility', 'contact', 'account', 'protocol', 'events'] as const).map((tab) => (
+            <button
+              key={tab}
+              type="button"
+              onClick={() => setActiveTab(tab)}
+              className={cn(
+                "px-4 py-2.5 text-sm font-medium whitespace-nowrap transition-colors flex items-center justify-center gap-1.5 border-b-2 -mb-px",
+                activeTab === tab
+                  ? "border-primary-600 text-primary-600"
+                  : "border-transparent text-gray-500 hover:text-gray-700"
+              )}
+            >
+              {tab === 'facility' && <><Building2 className="w-4 h-4 opacity-80" /> Facility</>}
+              {tab === 'contact' && <><Phone className="w-4 h-4 opacity-80" /> Contact</>}
+              {tab === 'account' && <><User className="w-4 h-4 opacity-80" /> Account</>}
+              {tab === 'protocol' && <><Shield className="w-4 h-4 opacity-80" /> Protocol</>}
+              {tab === 'events' && <><Calendar className="w-4 h-4 opacity-80" /> Events</>}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="flex-1 min-h-0 overflow-auto pt-4">
+        <form action={async (formData: FormData) => { await updateHomeDetails(formData); router.refresh() }} className="space-y-4 min-w-0">
           <input type="hidden" name="id" value={home.id} />
 
           {/* Facility tab */}
           <div className={cn(activeTab !== 'facility' && 'hidden')}>
-            <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
-              <div className="px-5 py-4 border-b border-gray-100 bg-gray-50/80">
+            <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+              <div className="px-5 py-3 border-b border-gray-200">
                 <h3 className="text-sm font-semibold text-gray-800">Facility information</h3>
                 <p className="text-xs text-gray-500 mt-1">Basic details for onboarding</p>
               </div>
@@ -528,8 +504,8 @@ export function HomeDetailsClient({ home }: { home: HomeData }) {
           {/* Contact tab */}
           <div className={cn(activeTab !== 'contact' && 'hidden')}>
             <div className="space-y-5">
-              <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
-                <div className="px-5 py-4 border-b border-gray-100 bg-gray-50/80">
+              <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                <div className="px-5 py-3 border-b border-gray-200">
                   <h3 className="text-sm font-semibold text-gray-800">Primary contact</h3>
                   <p className="text-xs text-gray-500 mt-1">Main point of contact for this facility</p>
                 </div>
@@ -552,8 +528,8 @@ export function HomeDetailsClient({ home }: { home: HomeData }) {
                   </div>
                 </div>
               </div>
-              <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
-                <div className="px-5 py-4 border-b border-gray-100 bg-gray-50/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                <div className="px-5 py-3 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div>
                     <h3 className="text-sm font-semibold text-gray-800">Additional contacts</h3>
                     <p className="text-xs text-gray-500 mt-1">Staff or personnel for events and coordination</p>
@@ -563,8 +539,8 @@ export function HomeDetailsClient({ home }: { home: HomeData }) {
                   </button>
                 </div>
                 <div className="divide-y divide-gray-100">
-                  {home.additionalContacts.length > 0 ? (
-                    home.additionalContacts.map((person) => (
+                  {additionalContacts.length > 0 ? (
+                    additionalContacts.map((person) => (
                       <div key={person.id} className="p-4 hover:bg-gray-50/50 transition-colors group flex items-start justify-between">
                         <div className="flex items-start gap-3">
                           <div className="w-10 h-10 rounded-full bg-gray-100 text-gray-600 flex items-center justify-center shrink-0"><User className="w-5 h-5" /></div>
@@ -595,13 +571,14 @@ export function HomeDetailsClient({ home }: { home: HomeData }) {
 
           {/* Account tab */}
           <div className={cn(activeTab !== 'account' && 'hidden')}>
-            <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
-              <div className="px-5 py-4 border-b border-gray-100 bg-gray-50/80">
+            <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+              <div className="px-5 py-3 border-b border-gray-200">
                 <h3 className="text-sm font-semibold text-gray-800">Login account</h3>
                 <p className="text-xs text-gray-500 mt-1">User account linked to this facility</p>
               </div>
               <div className="p-5 sm:p-6">
-                <table className="w-full text-sm">
+                <div className="table-scroll-wrapper border border-gray-200 rounded-lg overflow-hidden bg-white">
+                <table className="w-full text-sm min-w-full divide-y divide-gray-200">
                   <tbody className="divide-y divide-gray-100">
                     <tr><td className="py-3 pr-4 text-gray-500 font-medium w-[40%]">Account name</td><td className="py-3 text-gray-900 font-medium">{home.user.name || 'Not set'}</td></tr>
                     <tr><td className="py-3 pr-4 text-gray-500 font-medium">Email</td><td className="py-3"><a href={`mailto:${home.user.email}`} className="text-primary-600 hover:underline">{home.user.email}</a></td></tr>
@@ -609,7 +586,8 @@ export function HomeDetailsClient({ home }: { home: HomeData }) {
                     <tr><td className="py-3 pr-4 text-gray-500 font-medium">Joined</td><td className="py-3 text-gray-700">{new Date(home.user.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</td></tr>
                   </tbody>
                 </table>
-                <Link href={`/admin/users/${home.user.id}`} className={cn(STYLES.btn, STYLES.btnSecondary, "w-full justify-center mt-6")}>
+                </div>
+                <Link href={`/admin/users/${home.user.userCode || home.user.id}`} className={cn(STYLES.btn, STYLES.btnSecondary, "w-full justify-center mt-6")}>
                   <ExternalLink className="w-4 h-4" /> View user profile
                 </Link>
               </div>
@@ -618,9 +596,9 @@ export function HomeDetailsClient({ home }: { home: HomeData }) {
 
           {/* Protocol tab */}
           <div className={cn(activeTab !== 'protocol' && 'hidden')}>
-            <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+            <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
               {/* Protocol sub-tabs */}
-              <div className="flex border-b border-gray-200 bg-gray-50/80 overflow-x-auto shrink-0">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:flex lg:flex-nowrap border-b border-gray-200 shrink-0 min-w-0">
                 {([
                   ['specialNeeds', 'Special needs', AlertTriangle, 'amber'] as const,
                   ['emergency', 'Emergency', Shield, 'red'] as const,
@@ -635,19 +613,21 @@ export function HomeDetailsClient({ home }: { home: HomeData }) {
                     type="button"
                     onClick={() => setProtocolSubTab(id)}
                     className={cn(
-                      "px-4 py-3.5 text-sm font-medium whitespace-nowrap border-b-2 -mb-px transition-all shrink-0",
+                      "px-3 sm:px-4 py-3 text-sm font-medium border-b-2 transition-all min-w-0 text-center lg:text-left",
                       protocolSubTab === id
                         ? "border-primary-500 text-primary-600 bg-white"
                         : "border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-100/80"
                     )}
                   >
-                    <Icon className="w-3.5 h-3.5 inline-block mr-1.5 align-middle opacity-80" />
-                    {label}
+                    <span className="inline-flex items-center justify-center lg:justify-start gap-1.5 min-w-0">
+                      <Icon className="w-3.5 h-3.5 shrink-0 opacity-80" />
+                      <span className="truncate">{label}</span>
+                    </span>
                   </button>
                 ))}
               </div>
               {/* Sub-tab content */}
-              <div className="p-5 sm:p-6">
+              <div className="p-5 sm:p-6 min-w-0">
                 <div className={cn(protocolSubTab !== 'specialNeeds' && 'hidden')}>
                   <h3 className="text-sm font-semibold text-amber-800 mb-2 flex items-center gap-2"><AlertTriangle className="w-4 h-4" /> Special needs & accommodations</h3>
                   <p className="text-xs text-amber-700/80 mb-3">Notes for staff and facilitators</p>
@@ -699,8 +679,8 @@ export function HomeDetailsClient({ home }: { home: HomeData }) {
 
           {/* Events tab */}
           <div className={cn(activeTab !== 'events' && 'hidden')}>
-            <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
-              <div className="px-5 py-4 border-b border-gray-100 bg-gray-50/80">
+            <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+              <div className="px-5 py-3 border-b border-gray-200">
                 <h3 className="text-sm font-semibold text-gray-800">Recent events</h3>
                 <p className="text-xs text-gray-500 mt-1">Events this facility is linked to</p>
               </div>

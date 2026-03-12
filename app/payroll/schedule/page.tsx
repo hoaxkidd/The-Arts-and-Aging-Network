@@ -34,7 +34,7 @@ export default async function SchedulePage() {
   }))
 
   return (
-    <div className="max-w-6xl mx-auto space-y-8">
+    <div className="space-y-8">
       <header>
         <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
             <Calendar className="w-8 h-8 text-primary-600" />

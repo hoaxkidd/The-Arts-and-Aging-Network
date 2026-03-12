@@ -34,14 +34,14 @@ export default async function TestimonialsPage() {
   }
 
   return (
-    <div className="h-full flex flex-col p-6">
-      <div className="flex-shrink-0 mb-6">
+    <div className="space-y-4">
+      <div>
         <h1 className="text-2xl font-bold text-gray-900">Testimonials</h1>
         <p className="text-sm text-gray-500">Manage testimonials and success stories</p>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <div className="bg-white rounded-lg border border-gray-200 p-4">
           <p className="text-xs text-gray-500 uppercase">Total</p>
           <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
@@ -61,7 +61,7 @@ export default async function TestimonialsPage() {
       </div>
 
       {/* Testimonials List */}
-      <div className="flex-1 min-h-0 overflow-auto space-y-3">
+      <div className="space-y-3">
         {testimonials.map((testimonial) => (
           <div key={testimonial.id} className="bg-white rounded-lg border border-gray-200 p-4">
             <div className="flex items-start justify-between mb-2">

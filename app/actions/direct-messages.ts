@@ -35,6 +35,7 @@ export async function searchUsers(query: string) {
       where: { AND: andConditions },
       select: {
         id: true,
+        userCode: true,
         name: true,
         preferredName: true,
         email: true,
@@ -95,6 +96,7 @@ export async function searchFacilitatorsWithSharedEvents() {
         user: {
           select: {
             id: true,
+            userCode: true,
             name: true,
             preferredName: true,
             email: true,

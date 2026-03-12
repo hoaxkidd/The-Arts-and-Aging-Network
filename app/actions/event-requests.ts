@@ -286,7 +286,7 @@ export async function createCustomEventRequest(data: {
             type: 'EVENT_REQUEST_AVAILABILITY',
             title: 'Staff Availability Needed',
             message: `${home.name} is requesting "${data.title}". Please indicate your availability.`,
-            link: `/staff/event-requests/${request.id}`
+            link: `/staff/events`
           }
         })
       }
@@ -321,7 +321,7 @@ export async function createCustomEventRequest(data: {
     revalidatePath('/dashboard/requests')
     revalidatePath('/dashboard/events')
     revalidatePath('/admin/event-requests')
-    revalidatePath('/staff/event-requests')
+    revalidatePath('/staff/events')
 
     return { success: true, data: request }
   } catch (error) {
@@ -996,8 +996,9 @@ export async function submitStaffAvailability(data: {
       }
     }
 
-    revalidatePath(`/staff/event-requests/${data.requestId}`)
-    revalidatePath('/staff/event-requests')
+    revalidatePath(`/admin/event-requests/${data.requestId}`)
+    revalidatePath('/admin/event-requests')
+    revalidatePath('/staff/events')
     return { success: true }
   } catch (error) {
     console.error("Failed to submit availability:", error)
@@ -1136,75 +1137,67 @@ export async function approveRequestWithSelectedDate(data: {
     }
 
     const selectedDate = preferredDates[data.selectedDateIndex]
+    const confirmedStaffIds = request.responses
+      .filter((response) => {
+        const availability = JSON.parse(response.availability)
+        return availability[data.selectedDateIndex] === true
+      })
+      .map((response) => response.staffId)
 
-    // Create or find location
-    let locationId = data.locationId
-    if (!locationId) {
-      if (request.customLocationName) {
-        const location = await db.location.create({
+    const event = await prisma.$transaction(async (tx) => {
+      let locationId = data.locationId
+      if (!locationId) {
+        const location = await tx.location.create({
           data: {
-            name: request.customLocationName,
-            address: request.customLocationAddress || request.customLocationName,
+            name: request.customLocationName || request.geriatricHome.name,
+            address: request.customLocationAddress || request.customLocationName || request.geriatricHome.address,
             type: 'HOME',
-            updatedAt: new Date()
-          }
-        })
-        locationId = location.id
-      } else {
-        const location = await db.location.create({
-          data: {
-            name: request.geriatricHome.name,
-            address: request.geriatricHome.address,
-            type: 'HOME',
-            updatedAt: new Date()
-          }
+            updatedAt: new Date(),
+          },
         })
         locationId = location.id
       }
-    }
 
-    // Create the event
-    const event = await db.event.create({
-      data: {
-        title: request.customTitle!,
-        description: request.customDescription,
-        startDateTime: new Date(selectedDate.startDateTime),
-        endDateTime: new Date(selectedDate.endDateTime),
-        locationId,
-        geriatricHomeId: request.geriatricHomeId,
-        maxAttendees: request.expectedAttendees || 20,
-        status: 'PUBLISHED',
-        origin: 'HOME_REQUESTED',
-        updatedAt: new Date()
-      }
-    })
+      const createdEvent = await tx.event.create({
+        data: {
+          title: request.customTitle!,
+          description: request.customDescription,
+          startDateTime: new Date(selectedDate.startDateTime),
+          endDateTime: new Date(selectedDate.endDateTime),
+          locationId,
+          geriatricHomeId: request.geriatricHomeId,
+          maxAttendees: request.expectedAttendees || 20,
+          status: 'PUBLISHED',
+          origin: 'HOME_REQUESTED',
+          updatedAt: new Date(),
+        },
+      })
 
-    // Update request
-    await db.eventRequest.update({
-      where: { id: data.requestId },
-      data: {
-        status: 'APPROVED',
-        reviewedBy: session.user.id,
-        reviewedAt: new Date(),
-        selectedDateIndex: data.selectedDateIndex,
-        approvedEventId: event.id
-      }
-    })
+      await tx.eventRequest.update({
+        where: { id: data.requestId },
+        data: {
+          status: 'APPROVED',
+          reviewedBy: session.user.id,
+          reviewedAt: new Date(),
+          selectedDateIndex: data.selectedDateIndex,
+          approvedEventId: createdEvent.id,
+        },
+      })
 
-    // Auto-confirm staff who said they were available
-    for (const response of request.responses) {
-      const availability = JSON.parse(response.availability)
-      if (availability[data.selectedDateIndex] === true) {
-        await db.eventAttendance.create({
-          data: {
-            eventId: event.id,
-            userId: response.staffId,
+      if (confirmedStaffIds.length > 0) {
+        await tx.eventAttendance.createMany({
+          data: confirmedStaffIds.map((staffId) => ({
+            eventId: createdEvent.id,
+            userId: staffId,
             status: 'YES',
-            updatedAt: new Date()
-          }
+            updatedAt: new Date(),
+          })),
+          skipDuplicates: true,
         })
       }
-    }
+
+      return createdEvent
+    })
 
     // Notify facility
     await db.notification.create({
@@ -1219,8 +1212,7 @@ export async function approveRequestWithSelectedDate(data: {
 
     // Notify confirmed staff
     for (const response of request.responses) {
-      const availability = JSON.parse(response.availability)
-      if (availability[data.selectedDateIndex] === true) {
+      if (confirmedStaffIds.includes(response.staffId)) {
         await db.notification.create({
           data: {
             userId: response.staffId,
@@ -1250,7 +1242,7 @@ export async function approveRequestWithSelectedDate(data: {
     }
 
     revalidatePath('/admin/event-requests')
-    revalidatePath('/staff/event-requests')
+    revalidatePath('/staff/events')
     revalidatePath('/dashboard/requests')
     revalidatePath(`/events/${event.id}`)
 

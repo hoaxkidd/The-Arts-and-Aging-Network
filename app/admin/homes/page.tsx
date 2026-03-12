@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma"
 import { auth } from "@/auth"
 import { HomeList } from "@/components/admin/HomeList"
 import { Building } from "lucide-react"
+import { AddHomeButton } from "@/components/admin/AddHomeButton"
 
 export const revalidate = 60
 
@@ -22,7 +23,7 @@ export default async function AdminHomesPage() {
         take: 100,
         include: {
             user: {
-                select: { email: true }
+                select: { email: true, status: true }
             }
         },
         orderBy: { createdAt: 'desc' }
@@ -40,8 +41,11 @@ export default async function AdminHomesPage() {
                     Manage registered facilities, view capacity metrics, and access contact details.
                 </p>
             </div>
-            <div className="bg-white px-4 py-2 rounded-lg border border-gray-200 text-sm font-medium text-gray-700">
-                Total Homes: <span className="text-primary-600 font-bold ml-1">{homes.length}</span>
+            <div className="flex items-center gap-3">
+                <div className="bg-white px-4 py-2 rounded-lg border border-gray-200 text-sm font-medium text-gray-700">
+                    Total Homes: <span className="text-primary-600 font-bold ml-1">{homes.length}</span>
+                </div>
+                <AddHomeButton />
             </div>
         </div>
 

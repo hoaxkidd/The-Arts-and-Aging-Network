@@ -193,7 +193,7 @@ export default async function AuditLogPage({
   return (
     <div className="h-full flex flex-col">
       {/* Sticky Header */}
-      <div className="sticky top-0 z-10 bg-gray-50 px-4 sm:px-6 pt-5 pb-3">
+      <div className="flex-shrink-0 pb-3 border-b border-gray-200">
         <div className="flex items-center gap-2 mb-3">
           <div className="w-8 h-8 rounded-lg bg-primary-100 text-primary-600 flex items-center justify-center">
             <FileSearch className="w-4 h-4" />
@@ -274,7 +274,7 @@ export default async function AuditLogPage({
       </div>
 
       {/* Table */}
-      <div className="flex-1 overflow-auto px-4 sm:px-6 pb-4">
+      <div className="flex-1 overflow-auto pt-4 pb-4">
         <div className={STYLES.tableWrapper}>
           <table className={STYLES.table}>
             <thead className="sticky top-0 z-10 bg-gray-50">

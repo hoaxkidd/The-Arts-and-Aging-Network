@@ -11,7 +11,7 @@ export default async function NewCustomEventPage() {
   return (
     <div className="h-full flex flex-col">
       {/* Sticky Header */}
-      <header className="sticky top-0 z-10 flex-shrink-0 pb-3 bg-gray-50/95 backdrop-blur-sm border-b border-gray-200 -mx-4 px-4 md:-mx-6 md:px-6 -mt-4 pt-4 mb-2">
+      <header className="flex-shrink-0 pb-3 border-b border-gray-200 mb-2">
         <div className="flex items-center gap-3">
           <Link 
             href="/dashboard/requests" 

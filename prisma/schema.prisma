@@ -756,6 +756,7 @@ model TimesheetEntry {
 
 model User {
   id                      String                 @id @default(cuid())
+  userCode                String?                @unique
   name                    String?
   email                   String?                @unique
   alternateEmail          String?
@@ -828,6 +829,8 @@ model User {
   eventRequestResponses   EventRequestResponse[]
   eventRequests           EventRequest[]        @relation("EventRequest_requester")
   eventRequestReviews     EventRequest[]        @relation("EventRequest_reviewer")
+  emailChangeRequests     EmailChangeRequest[]  @relation("EmailChangeRequest_targetUser")
+  emailChangeRequestsCreated EmailChangeRequest[] @relation("EmailChangeRequest_requestedBy")
   expenseRequests         ExpenseRequest[]
   reviewedSubmissions     FormSubmission[]       @relation("FormSubmission_reviewer")
   submittedForms          FormSubmission[]       @relation("FormSubmission_submitter")
@@ -853,6 +856,25 @@ model User {
   timesheets              Timesheet[]
   timesheetEntries        TimesheetEntry[]
   workLogs                WorkLog[]
+}
+
+model EmailChangeRequest {
+  id             String   @id @default(cuid())
+  userId         String
+  requestedById  String
+  currentEmail   String
+  requestedEmail String
+  token          String   @unique
+  status         String   @default("PENDING")
+  expiresAt      DateTime
+  cancelledAt    DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  user           User     @relation("EmailChangeRequest_targetUser", fields: [userId], references: [id])
+  requestedBy    User     @relation("EmailChangeRequest_requestedBy", fields: [requestedById], references: [id])
+
+  @@index([userId, status])
+  @@index([requestedEmail, status])
 }
 
 model WorkLog {

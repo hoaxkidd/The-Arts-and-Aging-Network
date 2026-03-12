@@ -16,7 +16,7 @@ export default async function ProfilePage() {
   if (!user) return <div>User not found</div>
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="w-full">
       <h1 className="text-2xl font-bold text-gray-900 mb-6">My Profile</h1>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

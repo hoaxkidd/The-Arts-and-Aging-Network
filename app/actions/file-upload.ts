@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma"
 import { auth } from "@/auth"
 import { revalidatePath } from "next/cache"
+import { isPayrollOrAdminRole } from "@/lib/roles"
 
 // Upload file attachment to expense/mileage request
 export async function attachFileToRequest(data: {
@@ -13,7 +14,7 @@ export async function attachFileToRequest(data: {
   fileSize: number
 }) {
   const session = await auth()
-  if (!session?.user?.id) {
+  if (!session?.user?.id || !isPayrollOrAdminRole(session.user.role)) {
     return { error: "Unauthorized" }
   }
 
@@ -66,7 +67,7 @@ export async function attachFileToRequest(data: {
 // Remove file attachment
 export async function removeFileAttachment(requestId: string, fileId: string) {
   const session = await auth()
-  if (!session?.user?.id) {
+  if (!session?.user?.id || !isPayrollOrAdminRole(session.user.role)) {
     return { error: "Unauthorized" }
   }
 
@@ -106,7 +107,7 @@ export async function removeFileAttachment(requestId: string, fileId: string) {
 // Get upload URL (placeholder - integrate with your storage solution)
 export async function getUploadUrl(fileName: string, _fileType: string) {
   const session = await auth()
-  if (!session?.user?.id) {
+  if (!session?.user?.id || !isPayrollOrAdminRole(session.user.role)) {
     return { error: "Unauthorized" }
   }
 

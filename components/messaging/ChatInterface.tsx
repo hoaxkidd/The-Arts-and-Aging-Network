@@ -25,6 +25,7 @@ type Message = {
 
 type Partner = {
   id: string
+  userCode?: string | null
   name: string | null
   preferredName: string | null
   image: string | null
@@ -138,7 +139,7 @@ export function ChatInterface({ partner, messages, currentUserId, onBack }: Prop
         )}
 
         <Link
-          href={`/staff/directory/${partner.id}`}
+          href={`/staff/directory/${partner.userCode || partner.id}`}
           className="flex items-center gap-3 flex-1 min-h-[44px] hover:bg-gray-50 active:bg-gray-100 -mx-2 px-2 py-2 rounded-lg transition-colors touch-manipulation"
         >
           <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 text-white flex items-center justify-center font-semibold text-lg flex-shrink-0">

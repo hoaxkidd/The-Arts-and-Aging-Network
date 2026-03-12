@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma"
 import { auth } from "@/auth"
 import { revalidatePath } from "next/cache"
 import type { Prisma } from "@prisma/client"
+import { isPayrollOrAdminRole } from "@/lib/roles"
 
 // Helper to parse date string in YYYY-MM-DD or DD-MM-YYYY format
 function parseDateString(dateStr: string): Date | null {
@@ -38,7 +39,7 @@ function getWeekStart(date: Date): Date {
 // Get a timesheet for the given week (read-only, does NOT auto-create)
 export async function getWeeklyTimesheet(weekStartDate?: Date) {
   const session = await auth()
-  if (!session?.user?.id) return { error: "Unauthorized" }
+  if (!session?.user?.id || !isPayrollOrAdminRole(session.user.role)) return { error: "Unauthorized" }
 
   const weekStart = getWeekStart(weekStartDate || new Date())
 
@@ -67,7 +68,7 @@ export async function getWeeklyTimesheet(weekStartDate?: Date) {
 // Create a new timesheet for the given week
 export async function createWeeklyTimesheet(weekStartDate?: Date) {
   const session = await auth()
-  if (!session?.user?.id) return { error: "Unauthorized" }
+  if (!session?.user?.id || !isPayrollOrAdminRole(session.user.role)) return { error: "Unauthorized" }
 
   const weekStart = getWeekStart(weekStartDate || new Date())
 
@@ -122,7 +123,7 @@ export async function saveTimesheetEntry(
   }
 ) {
   const session = await auth()
-  if (!session?.user?.id) return { error: "Unauthorized" }
+  if (!session?.user?.id || !isPayrollOrAdminRole(session.user.role)) return { error: "Unauthorized" }
 
   try {
     // Verify timesheet belongs to user and is in DRAFT status
@@ -165,8 +166,12 @@ export async function saveTimesheetEntry(
 
     if (entryData.id) {
       // Update existing entry
-      await prisma.timesheetEntry.update({
-        where: { id: entryData.id },
+      const updated = await prisma.timesheetEntry.updateMany({
+        where: {
+          id: entryData.id,
+          timesheetId,
+          userId: session.user.id,
+        },
         data: {
           date,
           checkInTime,
@@ -177,6 +182,10 @@ export async function saveTimesheetEntry(
           notes: entryData.notes
         }
       })
+
+      if (updated.count === 0) {
+        return { error: "Entry not found or unauthorized" }
+      }
     } else {
       // Create new entry
       await prisma.timesheetEntry.create({
@@ -205,7 +214,7 @@ export async function saveTimesheetEntry(
 // Delete a timesheet entry
 export async function deleteTimesheetEntry(entryId: string) {
   const session = await auth()
-  if (!session?.user?.id) return { error: "Unauthorized" }
+  if (!session?.user?.id || !isPayrollOrAdminRole(session.user.role)) return { error: "Unauthorized" }
 
   try {
     const entry = await prisma.timesheetEntry.findUnique({
@@ -232,7 +241,7 @@ export async function deleteTimesheetEntry(entryId: string) {
 // Submit timesheet for approval
 export async function submitTimesheet(timesheetId: string) {
   const session = await auth()
-  if (!session?.user?.id) return { error: "Unauthorized" }
+  if (!session?.user?.id || !isPayrollOrAdminRole(session.user.role)) return { error: "Unauthorized" }
 
   try {
     const timesheet = await prisma.timesheet.findUnique({

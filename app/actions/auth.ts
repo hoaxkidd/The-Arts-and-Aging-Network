@@ -8,14 +8,51 @@ import { prisma } from '@/lib/prisma'
 
 export type AuthState = { error?: string; redirect?: string } | undefined
 
-/** Base URL for redirects: prefer request host (Vercel) then NEXTAUTH_URL, then localhost. */
+/** Base URL for redirects: prefer configured env URL; avoid host-header trust in production. */
 function getBaseUrl(headersList: Headers): string {
   const envUrl = process.env.NEXTAUTH_URL ?? process.env.AUTH_URL
   if (envUrl) return envUrl.replace(/\/$/, '')
+  if (process.env.NODE_ENV === 'production') return 'http://localhost:3000'
   const host = headersList.get('x-forwarded-host') ?? headersList.get('host')
   const proto = headersList.get('x-forwarded-proto') ?? 'https'
   if (host) return `${proto === 'https' ? 'https' : 'http'}://${host}`
   return 'http://localhost:3000'
+}
+
+function getRoleDestination(role: string | null | undefined): string {
+  switch (role) {
+    case 'ADMIN':
+      return '/admin'
+    case 'PAYROLL':
+      return '/payroll'
+    case 'HOME_ADMIN':
+      return '/dashboard'
+    case 'VOLUNTEER':
+      return '/volunteers'
+    case 'FACILITATOR':
+    case 'BOARD':
+    case 'PARTNER':
+      return '/staff'
+    default:
+      return '/'
+  }
+}
+
+function sanitizeCallbackUrl(callbackUrl: string, baseUrl: string): string | null {
+  const trimmed = callbackUrl.trim()
+  if (!trimmed) return null
+  if (trimmed.startsWith('/')) {
+    if (trimmed.startsWith('//')) return null
+    return trimmed
+  }
+
+  try {
+    const parsed = new URL(trimmed)
+    if (parsed.origin !== baseUrl) return null
+    return `${parsed.pathname}${parsed.search}${parsed.hash}`
+  } catch {
+    return null
+  }
 }
 
 export async function authenticate(
@@ -55,77 +92,38 @@ export async function authenticate(
       const path = result.startsWith('http') ? new URL(result).pathname : result
       const isAuthCallback = path.includes('/api/auth/callback/') || path.includes('/api/auth/signin')
       
-      // If callbackUrl was provided, prioritize it
-      let destination = callbackUrl || '/'
-      
-      // If no callbackUrl, determine destination based on user role
-      if (!callbackUrl && email) {
-        const user = await prisma.user.findUnique({ 
-          where: { email }, 
-          select: { role: true } 
+      const safeCallback = sanitizeCallbackUrl(callbackUrl, baseUrl)
+      let destination = safeCallback || '/'
+
+      if (!safeCallback && email) {
+        const user = await prisma.user.findUnique({
+          where: { email },
+          select: { role: true }
         })
-        
-        switch (user?.role) {
-          case 'ADMIN':
-            destination = '/admin'
-            break
-          case 'PAYROLL':
-            destination = '/payroll'
-            break
-          case 'HOME_ADMIN':
-            destination = '/dashboard'
-            break
-          case 'VOLUNTEER':
-            destination = '/volunteers'
-            break
-          case 'FACILITATOR':
-          case 'BOARD':
-          case 'PARTNER':
-            destination = '/staff'
-            break
-        }
+        destination = getRoleDestination(user?.role)
       }
       
       const redirectUrl = isAuthCallback 
         ? `${baseUrl}${destination}`
-        : destination.startsWith('http') 
-          ? destination 
-          : `${baseUrl}${destination.startsWith('/') ? '' : '/'}${destination}`
+        : `${baseUrl}${destination.startsWith('/') ? '' : '/'}${destination}`
       
       return { redirect: redirectUrl }
     }
 
     if (result?.ok && result.url) {
-      let destination = callbackUrl || '/'
-      
-      if (!callbackUrl && email) {
+      const safeCallback = sanitizeCallbackUrl(callbackUrl, baseUrl)
+      let destination = safeCallback || '/'
+
+      if (!safeCallback && email) {
         const user = await prisma.user.findUnique({ 
           where: { email }, 
           select: { role: true } 
         })
-        
-        switch (user?.role) {
-          case 'ADMIN':
-            destination = '/admin'
-            break
-          case 'PAYROLL':
-            destination = '/payroll'
-            break
-          case 'HOME_ADMIN':
-            destination = '/dashboard'
-            break
-          case 'VOLUNTEER':
-            destination = '/volunteers'
-            break
-          case 'FACILITATOR':
-          case 'BOARD':
-          case 'PARTNER':
-            destination = '/staff'
-            break
-        }
+
+        destination = getRoleDestination(user?.role)
       }
-      
-      const redirectUrl = destination.startsWith('http') ? destination : `${baseUrl}${destination.startsWith('/') ? '' : '/'}${destination}`
+       
+      const redirectUrl = `${baseUrl}${destination.startsWith('/') ? '' : '/'}${destination}`
       return { redirect: redirectUrl }
     }
     

@@ -275,7 +275,7 @@ export function FormTemplateBuilder({
       {/* Left: Builder */}
       <div className="flex-1 min-w-0 min-h-0 flex flex-col">
         {/* Fixed Header with Save Button */}
-        <div className="sticky top-0 z-10 bg-white border border-gray-200 rounded-t-lg p-4 flex items-center justify-between gap-4">
+        <div className="sticky top-0 z-10 bg-gray-50 border border-gray-200 rounded-t-lg p-4 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <button
               type="button"

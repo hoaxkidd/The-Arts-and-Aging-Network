@@ -12,6 +12,7 @@ import {
   ArrowUpRight
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { isCheckInOpen } from "@/lib/event-checkin"
 
 export const revalidate = 60
 
@@ -151,7 +152,14 @@ export default async function StaffDashboard() {
                   hour: 'numeric',
                   minute: '2-digit'
                 })
-                const canCheckIn = !attendance.checkInTime
+                const canCheckIn =
+                  !attendance.checkInTime &&
+                  isCheckInOpen({
+                    now: new Date(),
+                    eventStart: new Date(event.startDateTime),
+                    eventEnd: new Date(event.endDateTime),
+                    checkInWindowMinutes: event.checkInWindowMinutes,
+                  })
 
                 return (
                   <Link

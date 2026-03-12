@@ -68,7 +68,6 @@ const PAGE_TITLES: Record<string, string> = {
 // Tables: full width (max-w-full) for data-heavy displays
 // Mixed: default width (max-w-7xl) for dashboards and mixed content
 const FORM_PAGES = [
-  '/admin/events/new',
   '/admin/form-templates/new',
   '/admin/users/new',
   '/dashboard/requests/new',
@@ -76,12 +75,16 @@ const FORM_PAGES = [
 
 const TABLE_PAGES = [
   '/admin/users',
+  '/admin/events',
   '/admin/homes',
   '/admin/invitations',
   '/admin/timesheets',
   '/admin/mileage',
   '/admin/donors',
   '/admin/inventory',
+  '/admin/events/new',
+  '/admin/forms',
+  '/admin/testimonials',
   '/admin/event-requests',
   '/staff/directory',
   '/payroll/timesheet',
@@ -98,10 +101,7 @@ const TABLE_PAGES = [
 function getPageLayoutType(pathname: string): 'form' | 'table' | 'mixed' {
   // Form pages (narrow width for focused input)
   if (FORM_PAGES.some(p => pathname === p)) return 'form'
-  // Check form pages with dynamic IDs (edit pages)
-  if (pathname.startsWith('/admin/events/') && pathname !== '/admin/events' && pathname !== '/admin/events/new') return 'form'
   if (pathname.startsWith('/admin/form-templates/') && pathname !== '/admin/form-templates' && pathname !== '/admin/form-templates/new') return 'form'
-  if (pathname.startsWith('/admin/users/') && pathname !== '/admin/users' && pathname !== '/admin/users/new') return 'form'
   
   // Table pages (full width for data displays)
   if (TABLE_PAGES.some(p => pathname.startsWith(p))) return 'table'

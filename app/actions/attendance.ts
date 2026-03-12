@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma"
 import { auth } from "@/auth"
 import { revalidatePath } from "next/cache"
 import { notifyAdminsAboutRSVP, notifyAdminsAboutCheckIn } from "@/lib/notifications"
+import { checkInNotOpenMessage, getCheckInWindowStart } from "@/lib/event-checkin"
 
 export async function checkInToEvent(eventId: string) {
   const session = await auth()
@@ -16,13 +17,12 @@ export async function checkInToEvent(eventId: string) {
     
     if (!event) return { error: 'Event not found' }
 
-    // Validation: Ensure check-in is within allowed window (2 hours before to end of event)
+    // Validation: Ensure check-in is within allowed window
     const now = new Date()
-    const windowStart = new Date(event.startDateTime)
-    windowStart.setHours(windowStart.getHours() - 2) // Allow check-in 2 hours early
+    const windowStart = getCheckInWindowStart(new Date(event.startDateTime), event.checkInWindowMinutes)
 
     if (now < windowStart) {
-      return { error: 'Check-in not open yet. You can check in starting 2 hours before the event.' }
+      return { error: checkInNotOpenMessage(event.checkInWindowMinutes) }
     }
 
     if (now > new Date(event.endDateTime)) {

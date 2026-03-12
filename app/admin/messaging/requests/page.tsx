@@ -37,7 +37,7 @@ export default async function MessagingRequestsPage() {
   })
 
   return (
-    <div className="h-full flex flex-col p-6">
+    <div className="h-full flex flex-col">
       <div className="flex-shrink-0 mb-6">
         <Link
           href="/admin/messaging"

@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma"
-import { updateUser } from "@/app/actions/user"
+import { cancelPendingEmailChange, updateUser } from "@/app/actions/user"
 import { createFacilityProfile } from "@/app/actions/home-management"
 import { redirect } from "next/navigation"
 import Link from "next/link"
@@ -14,10 +14,19 @@ import { HomeProfileForm } from "@/components/dashboard/HomeProfileForm"
 import { PersonnelManager } from "@/components/dashboard/PersonnelManager"
 import { AdminUserTabs } from "@/components/admin/AdminUserTabs"
 
-export default async function EditUserPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function EditUserPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>
+  searchParams: Promise<{ accountError?: string; accountMessage?: string }>
+}) {
   const { id } = await params
-  const user = await prisma.user.findUnique({
-    where: { id },
+  const query = await searchParams
+  const user = await prisma.user.findFirst({
+    where: {
+      OR: [{ id }, { userCode: id }],
+    },
     include: {
       documents: true,
       geriatricHome: true,
@@ -25,13 +34,40 @@ export default async function EditUserPage({ params }: { params: Promise<{ id: s
   })
 
   if (!user) return <div>User not found</div>
+  const canonicalIdentifier = user.userCode || user.id
+  if (id !== canonicalIdentifier) {
+    redirect(`/admin/users/${canonicalIdentifier}`)
+  }
+
+  const pendingEmailChange = await prisma.emailChangeRequest.findFirst({
+    where: {
+      userId: user.id,
+      status: 'PENDING',
+      expiresAt: { gt: new Date() },
+    },
+    orderBy: { createdAt: 'desc' },
+  })
 
   const isHomeAdmin = user.role === 'HOME_ADMIN'
 
   // Parse additional contacts for Home Admin
-  const additionalContacts = isHomeAdmin && user.geriatricHome?.additionalContacts
-    ? JSON.parse(user.geriatricHome.additionalContacts as string)
-    : []
+  let additionalContacts: Array<{ id: string; name: string; position: string; email: string; phone: string }> = []
+  if (isHomeAdmin && user.geriatricHome?.additionalContacts) {
+    try {
+      const parsed = JSON.parse(user.geriatricHome.additionalContacts as string)
+      if (Array.isArray(parsed)) {
+        additionalContacts = parsed.map((contact, index) => ({
+          id: typeof contact?.id === 'string' ? contact.id : `legacy-${index}`,
+          name: typeof contact?.name === 'string' ? contact.name : '',
+          position: typeof contact?.position === 'string' ? contact.position : '',
+          email: typeof contact?.email === 'string' ? contact.email : '',
+          phone: typeof contact?.phone === 'string' ? contact.phone : '',
+        }))
+      }
+    } catch {
+      additionalContacts = []
+    }
+  }
 
   return (
     <div className="space-y-4">
@@ -67,16 +103,37 @@ export default async function EditUserPage({ params }: { params: Promise<{ id: s
         </div>
       )}
 
+      {query.accountError && (
+        <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3 text-sm text-red-800">
+          {query.accountError}
+        </div>
+      )}
+
+      {query.accountMessage && (
+        <div className="bg-emerald-50 border border-emerald-200 rounded-lg px-4 py-3 text-sm text-emerald-800">
+          {query.accountMessage}
+        </div>
+      )}
+
       {/* Account Settings Bar */}
       <div className="bg-white rounded-lg border border-gray-200 px-4 py-3">
         <form action={async (formData) => {
           'use server'
-          await updateUser(id, formData)
-          redirect(`/admin/users/${id}`)
+          const result = await updateUser(user.id, formData)
+          if (result?.error) {
+            redirect(`/admin/users/${canonicalIdentifier}?accountError=${encodeURIComponent(result.error)}`)
+          }
+          if (result?.message) {
+            redirect(`/admin/users/${canonicalIdentifier}?accountMessage=${encodeURIComponent(result.message)}`)
+          }
+          redirect(`/admin/users/${canonicalIdentifier}`)
         }} className="flex flex-wrap items-center gap-3">
           <div className="flex items-center gap-2 text-sm text-gray-500">
             <Settings className="w-4 h-4" />
             <span className="font-medium text-gray-700">Account:</span>
+            <span className="font-mono text-xs bg-primary-50 text-primary-700 border border-primary-100 rounded px-2 py-1">
+              {user.userCode || 'MISSING-ID'}
+            </span>
           </div>
           <div className="flex items-center gap-2">
             <label className="text-xs text-gray-500">Role</label>
@@ -96,6 +153,26 @@ export default async function EditUserPage({ params }: { params: Promise<{ id: s
             )}
           </div>
           <div className="flex items-center gap-2">
+            <label className="text-xs text-gray-500">Request Email</label>
+            <input
+              name="email"
+              type="email"
+              placeholder={user.email || 'new@example.com'}
+              className="text-sm rounded-md border-gray-300 py-1.5 px-2 w-60"
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <label className="text-xs text-gray-500">Expiry (hours)</label>
+            <input
+              name="emailExpiryHours"
+              type="number"
+              min={1}
+              max={720}
+              placeholder="72"
+              className="text-sm rounded-md border-gray-300 py-1.5 px-2 w-24"
+            />
+          </div>
+          <div className="flex items-center gap-2">
             <label className="text-xs text-gray-500">Status</label>
             <select name="status" defaultValue={user.status} className="text-sm rounded-md border-gray-300 py-1.5 pr-8 pl-2">
               <option value="PENDING">Pending signup</option>
@@ -104,8 +181,34 @@ export default async function EditUserPage({ params }: { params: Promise<{ id: s
               <option value="SUSPENDED">Suspended</option>
             </select>
           </div>
+          <button type="submit" className={cn(STYLES.btn, STYLES.btnPrimary, "ml-auto")}> 
+            <Save className="w-4 h-4" /> Save account
+          </button>
         </form>
       </div>
+
+      {pendingEmailChange && (
+        <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 flex items-start justify-between gap-4">
+          <div>
+            <h3 className="text-sm font-semibold text-amber-900">Pending email change request</h3>
+            <p className="text-sm text-amber-800 mt-0.5">
+              Requested: <span className="font-medium">{pendingEmailChange.requestedEmail}</span>
+            </p>
+            <p className="text-xs text-amber-700 mt-1">
+              Expires: {new Date(pendingEmailChange.expiresAt).toLocaleString()}
+            </p>
+          </div>
+          <form action={async () => {
+            'use server'
+            await cancelPendingEmailChange(user.id)
+            redirect(`/admin/users/${canonicalIdentifier}`)
+          }}>
+            <button type="submit" className={cn(STYLES.btn, STYLES.btnSecondary)}>
+              Cancel request
+            </button>
+          </form>
+        </div>
+      )}
 
       {/* Main Content */}
       {isHomeAdmin ? (
@@ -154,13 +257,13 @@ export default async function EditUserPage({ params }: { params: Promise<{ id: s
                           Create Facility Profile
                         </h4>
                         <CreateFacilityForm
-                          userId={id}
+                          userId={user.id}
                           userName={user.name}
                           userEmail={user.email}
                           action={async (formData) => {
                             'use server'
                             await createFacilityProfile(formData)
-                            redirect(`/admin/users/${id}`)
+                            redirect(`/admin/users/${canonicalIdentifier}`)
                           }}
                         />
                       </div>
@@ -210,7 +313,7 @@ export default async function EditUserPage({ params }: { params: Promise<{ id: s
                 : 'This will permanently remove all user data including messages and activity history.'
               }
             </p>
-            <DeleteUserButton userId={id} userName={user.name || user.email} />
+            <DeleteUserButton userId={user.id} userName={user.name || user.email} />
           </div>
         </div>
       </div>

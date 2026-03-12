@@ -144,6 +144,8 @@ export async function approveConversationRequest(requestId: string) {
         },
         requested: {
           select: {
+            id: true,
+            userCode: true,
             name: true,
             preferredName: true
           }
@@ -157,7 +159,7 @@ export async function approveConversationRequest(requestId: string) {
       type: 'CONVERSATION_APPROVED',
       title: 'Conversation Request Approved',
       message: `You can now message ${request.requested.preferredName || request.requested.name}`,
-      actionUrl: `/staff/inbox/${request.requestedId}`,
+      actionUrl: `/staff/inbox/${request.requested.userCode || request.requested.id}`,
       metadata: JSON.stringify({ requestId: request.id })
     })
 

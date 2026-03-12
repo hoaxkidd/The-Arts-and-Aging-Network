@@ -10,6 +10,7 @@ import {
 import { getHomeDetails, updateHomeField } from '@/app/actions/home-management'
 import { cn } from '@/lib/utils'
 import { STYLES } from '@/lib/styles'
+import { SendHomeInvitationButton } from './SendHomeInvitationButton'
 
 type HomeDetails = {
   id: string
@@ -27,6 +28,9 @@ type HomeDetails = {
   contactEmail: string
   contactPhone: string
   contactPosition: string | null
+  secondaryContact?: string | null
+  additionalContacts?: string | null
+  flags?: string | null
   createdAt: Date
   updatedAt: Date
   user: {
@@ -49,6 +53,16 @@ type HomeDetails = {
     events: number
   }
 }
+
+type HomeFlags = {
+  cityProvince?: string | null
+  postalCode?: string | null
+  contacted?: boolean
+  raw?: string | null
+  secondEmailPhone?: string | null
+}
+
+type SecondaryContact = { id?: string; name?: string; email?: string; phone?: string; position?: string }
 
 type EditableFieldProps = {
   label: string
@@ -174,6 +188,28 @@ export function HomeQuickView({ homeId, isOpen, onClose }: HomeQuickViewProps) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<QuickViewTab>('facility')
+
+  const parsedFlags: HomeFlags = (() => {
+    if (!home?.flags) return {}
+    try {
+      return JSON.parse(home.flags) as HomeFlags
+    } catch {
+      return {}
+    }
+  })()
+
+  const parsedAdditionalContacts: SecondaryContact[] = (() => {
+    if (!home?.additionalContacts) return []
+    try {
+      const parsed = JSON.parse(home.additionalContacts) as SecondaryContact[]
+      return Array.isArray(parsed) ? parsed : []
+    } catch {
+      return []
+    }
+  })()
+
+  const secondaryContact = home?.secondaryContact || parsedAdditionalContacts[0]?.name || null
+  const secondEmailPhone = parsedFlags.secondEmailPhone || parsedAdditionalContacts[0]?.email || parsedAdditionalContacts[0]?.phone || null
 
   const fetchHome = useCallback(async () => {
     setLoading(true)
@@ -313,10 +349,19 @@ export function HomeQuickView({ homeId, isOpen, onClose }: HomeQuickViewProps) {
                       <tbody className="divide-y divide-gray-100">
                         <tr className="hover:bg-gray-50/50 transition-colors"><td className="w-[38%] py-3 px-4 text-sm font-medium text-gray-600">Facility name</td><td className="py-3 px-4"><EditableField label="" value={home.name} field="name" homeId={home.id} onUpdate={handleUpdate} hideLabel /></td></tr>
                         <tr className="hover:bg-gray-50/50 transition-colors"><td className="py-3 px-4 text-sm font-medium text-gray-600">Address</td><td className="py-3 px-4"><EditableField label="" value={home.address} field="address" homeId={home.id} onUpdate={handleUpdate} hideLabel /></td></tr>
-                        {(home.type ?? home.region) && (
+                        {(home.type || home.region || parsedFlags.cityProvince || parsedFlags.postalCode || parsedFlags.raw || typeof parsedFlags.contacted === 'boolean') && (
                           <>
                             {home.type && <tr className="hover:bg-gray-50/50 transition-colors"><td className="py-3 px-4 text-sm font-medium text-gray-600">Type</td><td className="py-3 px-4 text-sm text-gray-900">{home.type}</td></tr>}
                             {home.region && <tr className="hover:bg-gray-50/50 transition-colors"><td className="py-3 px-4 text-sm font-medium text-gray-600">Region</td><td className="py-3 px-4 text-sm text-gray-900">{home.region}</td></tr>}
+                            {(parsedFlags.cityProvince || parsedFlags.postalCode) && (
+                              <>
+                                {parsedFlags.cityProvince && <tr className="hover:bg-gray-50/50 transition-colors"><td className="py-3 px-4 text-sm font-medium text-gray-600">City, Province</td><td className="py-3 px-4 text-sm text-gray-900">{parsedFlags.cityProvince}</td></tr>}
+                                {parsedFlags.postalCode && <tr className="hover:bg-gray-50/50 transition-colors"><td className="py-3 px-4 text-sm font-medium text-gray-600">Postal Code</td><td className="py-3 px-4 text-sm text-gray-900">{parsedFlags.postalCode}</td></tr>}
+                              </>
+                            )}
+                            {(parsedFlags.raw || typeof parsedFlags.contacted === 'boolean') && (
+                              <tr className="hover:bg-gray-50/50 transition-colors"><td className="py-3 px-4 text-sm font-medium text-gray-600">Contacted</td><td className="py-3 px-4 text-sm text-gray-900">{parsedFlags.raw || (parsedFlags.contacted ? 'Yes' : 'No')}</td></tr>
+                            )}
                           </>
                         )}
                         <tr className="hover:bg-gray-50/50 transition-colors"><td className="py-3 px-4 text-sm font-medium text-gray-600">Resident count</td><td className="py-3 px-4"><EditableField label="" value={home.residentCount} field="residentCount" homeId={home.id} type="number" onUpdate={handleUpdate} hideLabel /></td></tr>
@@ -340,6 +385,8 @@ export function HomeQuickView({ homeId, isOpen, onClose }: HomeQuickViewProps) {
                         <tr className="hover:bg-gray-50/50 transition-colors"><td className="py-3 px-4 text-sm font-medium text-gray-600">Position</td><td className="py-3 px-4"><EditableField label="" value={home.contactPosition} field="contactPosition" homeId={home.id} onUpdate={handleUpdate} hideLabel /></td></tr>
                         <tr className="hover:bg-gray-50/50 transition-colors"><td className="py-3 px-4 text-sm font-medium text-gray-600">Email</td><td className="py-3 px-4"><EditableField label="" value={home.contactEmail} field="contactEmail" homeId={home.id} type="email" onUpdate={handleUpdate} hideLabel /></td></tr>
                         <tr className="hover:bg-gray-50/50 transition-colors"><td className="py-3 px-4 text-sm font-medium text-gray-600">Phone</td><td className="py-3 px-4"><EditableField label="" value={home.contactPhone} field="contactPhone" homeId={home.id} onUpdate={handleUpdate} hideLabel /></td></tr>
+                        <tr className="hover:bg-gray-50/50 transition-colors"><td className="py-3 px-4 text-sm font-medium text-gray-600">2nd Contact</td><td className="py-3 px-4 text-sm text-gray-900">{secondaryContact || '—'}</td></tr>
+                        <tr className="hover:bg-gray-50/50 transition-colors"><td className="py-3 px-4 text-sm font-medium text-gray-600">2nd Email/Phone</td><td className="py-3 px-4 text-sm text-gray-900">{secondEmailPhone || '—'}</td></tr>
                       </tbody>
                     </table>
                   </div>
@@ -442,6 +489,7 @@ export function HomeQuickView({ homeId, isOpen, onClose }: HomeQuickViewProps) {
 
                 {/* Actions - shown on all tabs */}
                 <div className="flex flex-wrap items-center gap-3 mt-5 pt-5 border-t border-gray-200">
+                  {home.user.status !== 'ACTIVE' && <SendHomeInvitationButton homeId={home.id} />}
                   <a href={`/admin/homes/${home.id}`} className={cn(STYLES.btn, STYLES.btnPrimary, "inline-flex")}><ExternalLink className="w-4 h-4" /> Full details</a>
                   <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(home.address)}`} target="_blank" rel="noopener noreferrer" className={cn(STYLES.btn, STYLES.btnSecondary, "inline-flex")}><MapPin className="w-4 h-4" /> View on map</a>
                 </div>

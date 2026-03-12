@@ -5,6 +5,7 @@
 
 import { PrismaClient } from '@prisma/client'
 import bcrypt from 'bcryptjs'
+import { createUserWithGeneratedCode } from '../lib/user-code'
 
 const prisma = new PrismaClient()
 
@@ -61,9 +62,7 @@ async function main() {
       continue
     }
 
-    const user = await prisma.user.create({
-      data: userData
-    })
+    const user = await createUserWithGeneratedCode(prisma, userData)
 
     console.log(`✓ Created ${user.role}: ${user.email}`)
   }

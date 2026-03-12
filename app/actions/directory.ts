@@ -28,6 +28,7 @@ export async function getStaffDirectory(search?: string, limit = 100) {
     where: whereClause,
     select: {
       id: true,
+      userCode: true,
       name: true,
       preferredName: true,
       pronouns: true,
@@ -59,14 +60,17 @@ export async function getStaffDirectory(search?: string, limit = 100) {
 }
 
 // Get public profile data for a specific staff member
-export async function getStaffPublicProfile(staffId: string) {
+export async function getStaffPublicProfile(staffIdentifier: string) {
   const session = await auth()
   if (!session?.user?.id) return { error: "Unauthorized" }
 
-  const staff = await prisma.user.findUnique({
-    where: { id: staffId },
+  const staff = await prisma.user.findFirst({
+    where: {
+      OR: [{ id: staffIdentifier }, { userCode: staffIdentifier }],
+    },
     select: {
       id: true,
+      userCode: true,
       name: true,
       preferredName: true,
       pronouns: true,
@@ -87,7 +91,7 @@ export async function getStaffPublicProfile(staffId: string) {
   // Get upcoming confirmed events
   const upcomingEvents = await prisma.eventAttendance.findMany({
     where: {
-      userId: staffId,
+        userId: staff.id,
       status: 'YES',
       event: {
         startDateTime: { gte: new Date() },
@@ -114,7 +118,7 @@ export async function getStaffPublicProfile(staffId: string) {
     where: {
       requesterId_requestedId: {
         requesterId: session.user.id,
-        requestedId: staffId
+        requestedId: staff.id
       }
     }
   })

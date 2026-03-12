@@ -8,6 +8,57 @@ import { notifyAllStaffAboutEvent, notifyAllStaffAboutEventUpdate, notifyAllStaf
 import { scheduleEventReminders, cancelEventReminders } from "./email-reminders"
 import { logger } from "@/lib/logger"
 
+const VALID_EVENT_STATUSES = ['DRAFT', 'PUBLISHED', 'CANCELLED', 'COMPLETED'] as const
+
+async function notifyAdminsAboutNearbyEvents(event: { id: string; title: string; startDateTime: Date }) {
+  const windowStart = new Date(event.startDateTime.getTime() - 60 * 60 * 1000)
+  const windowEnd = new Date(event.startDateTime.getTime() + 60 * 60 * 1000)
+
+  const nearbyEvents = await prisma.event.findMany({
+    where: {
+      id: { not: event.id },
+      startDateTime: {
+        gte: windowStart,
+        lte: windowEnd,
+      },
+      status: { not: 'CANCELLED' },
+    },
+    select: {
+      id: true,
+      title: true,
+      startDateTime: true,
+    },
+    orderBy: { startDateTime: 'asc' },
+    take: 5,
+  })
+
+  if (nearbyEvents.length === 0) return { conflictCount: 0 }
+
+  const admins = await prisma.user.findMany({
+    where: { role: 'ADMIN', status: 'ACTIVE' },
+    select: { id: true },
+  })
+
+  const nearbySummary = nearbyEvents
+    .slice(0, 3)
+    .map((e) => `${e.title} (${new Date(e.startDateTime).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })})`)
+    .join(', ')
+
+  for (const admin of admins) {
+    await prisma.notification.create({
+      data: {
+        userId: admin.id,
+        type: 'EVENT_TIME_PROXIMITY',
+        title: 'Potential Event Time Conflict',
+        message: `"${event.title}" starts within 1 hour of ${nearbyEvents.length} other event(s): ${nearbySummary}`,
+        link: '/admin/events?tab=list',
+      },
+    })
+  }
+
+  return { conflictCount: nearbyEvents.length }
+}
+
 const EventSchema = z.object({
   title: z.string().min(3),
   description: z.string().optional(),
@@ -46,6 +97,17 @@ export async function createEvent(formData: FormData) {
   if (!validated.success) return { error: 'Invalid fields' }
 
   try {
+    const startDateTime = new Date(validated.data.startDateTime)
+    const endDateTime = new Date(validated.data.endDateTime)
+
+    if (Number.isNaN(startDateTime.getTime()) || Number.isNaN(endDateTime.getTime())) {
+      return { error: 'Invalid start or end date/time' }
+    }
+
+    if (endDateTime <= startDateTime) {
+      return { error: 'End time must be after start time' }
+    }
+
     let locationId = validated.data.locationId
 
     // Handle new location creation
@@ -82,8 +144,8 @@ export async function createEvent(formData: FormData) {
             data: {
                 title: validated.data.title,
                 description: validated.data.description,
-                startDateTime: new Date(validated.data.startDateTime),
-                endDateTime: new Date(validated.data.endDateTime),
+                startDateTime,
+                endDateTime,
                 locationId,
                 maxAttendees: validated.data.maxAttendees,
                 autoAcceptLimit: validated.data.autoAcceptLimit,
@@ -115,14 +177,20 @@ export async function createEvent(formData: FormData) {
         } catch (e) {
             console.error('Failed to send update notification', e)
         }
+
+        await notifyAdminsAboutNearbyEvents({
+          id: updatedEvent.id,
+          title: updatedEvent.title,
+          startDateTime: updatedEvent.startDateTime,
+        })
     } else {
         // Create New Event
         const event = await prisma.event.create({
             data: {
                 title: validated.data.title,
                 description: validated.data.description,
-                startDateTime: new Date(validated.data.startDateTime),
-                endDateTime: new Date(validated.data.endDateTime),
+                startDateTime,
+                endDateTime,
                 locationId,
                 maxAttendees: validated.data.maxAttendees,
                 autoAcceptLimit: validated.data.autoAcceptLimit,
@@ -169,11 +237,28 @@ export async function createEvent(formData: FormData) {
             console.error('❌ Failed to schedule reminders:', reminderError)
             // Don't fail the event creation if reminder scheduling fails
         }
+
+        const proximity = await notifyAdminsAboutNearbyEvents({
+          id: event.id,
+          title: event.title,
+          startDateTime: event.startDateTime,
+        })
+
+        revalidatePath('/admin/events')
+        revalidatePath('/events')
+        revalidatePath('/dashboard/events')
+        revalidatePath('/dashboard/calendar')
+        revalidatePath('/staff/events')
+
+        return { success: true, eventId: event.id, conflictCount: proximity.conflictCount }
     }
 
     revalidatePath('/admin/events')
     revalidatePath('/events')
-    return { success: true }
+    revalidatePath('/dashboard/events')
+    revalidatePath('/dashboard/calendar')
+    revalidatePath('/staff/events')
+    return { success: true, eventId: id }
   } catch (e) {
     console.error(e)
     return { error: 'Failed to save event' }
@@ -204,25 +289,27 @@ export async function deleteEvent(eventId: string) {
       console.error('Failed to cancel reminders:', e)
     }
 
-    // Delete all related records first to avoid foreign key constraints
-    // Delete reactions on comments first (nested dependency)
-    await prisma.eventReaction.deleteMany({
-      where: { comment: { eventId } }
-    })
-    await prisma.eventComment.deleteMany({ where: { eventId } })
-    await prisma.eventReaction.deleteMany({ where: { photo: { eventId } } })
-    await prisma.eventPhoto.deleteMany({ where: { eventId } })
-    await prisma.eventAttendance.deleteMany({ where: { eventId } })
+    await prisma.$transaction(async (tx) => {
+      // Delete all related records first to avoid foreign key constraints
+      // Delete reactions on comments first (nested dependency)
+      await tx.eventReaction.deleteMany({
+        where: { comment: { eventId } }
+      })
+      await tx.eventComment.deleteMany({ where: { eventId } })
+      await tx.eventReaction.deleteMany({ where: { photo: { eventId } } })
+      await tx.eventPhoto.deleteMany({ where: { eventId } })
+      await tx.eventAttendance.deleteMany({ where: { eventId } })
 
-    // Now delete the event
-    await prisma.event.delete({ where: { id: eventId } })
+      // Now delete the event
+      await tx.event.delete({ where: { id: eventId } })
 
-    await prisma.auditLog.create({
-        data: {
-            action: 'EVENT_DELETED',
-            details: JSON.stringify({ eventId, title: eventTitle }),
-            userId: session.user.id
-        }
+      await tx.auditLog.create({
+          data: {
+              action: 'EVENT_DELETED',
+              details: JSON.stringify({ eventId, title: eventTitle }),
+              userId: session.user.id
+          }
+      })
     })
 
     // Notify staff about cancellation
@@ -238,6 +325,9 @@ export async function deleteEvent(eventId: string) {
     revalidatePath('/admin/events')
     revalidatePath('/events')
     revalidatePath('/payroll')
+    revalidatePath('/dashboard/events')
+    revalidatePath('/dashboard/calendar')
+    revalidatePath('/staff/events')
     return { success: true }
   } catch (e) {
     console.error('Delete event error:', e)
@@ -248,6 +338,10 @@ export async function deleteEvent(eventId: string) {
 export async function updateEventStatus(eventId: string, status: string) {
   const session = await auth()
   if (session?.user?.role !== 'ADMIN') return { error: 'Unauthorized' }
+
+  if (!VALID_EVENT_STATUSES.includes(status as (typeof VALID_EVENT_STATUSES)[number])) {
+    return { error: 'Invalid event status' }
+  }
 
   await prisma.event.update({ where: { id: eventId }, data: { status } })
   revalidatePath('/admin/events')

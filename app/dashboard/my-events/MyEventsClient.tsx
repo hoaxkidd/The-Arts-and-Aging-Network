@@ -34,8 +34,8 @@ export function MyEventsClient({ events, tabs, initialTab }: MyEventsClientProps
   const activeFilter = activeTab === 'all' ? 'ALL' : activeTab as 'UPCOMING' | 'PAST'
 
   return (
-    <div className="h-full flex flex-col px-4 sm:px-6 py-5">
-      <div className="flex-shrink-0 sticky top-0 z-10 bg-white pb-3 mb-3 border-b border-gray-100">
+    <div className="h-full flex flex-col">
+      <div className="flex-shrink-0 pb-3 mb-3 border-b border-gray-200">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-lg bg-primary-100 text-primary-600 flex items-center justify-center">
             <CheckCircle className="w-5 h-5" />
@@ -48,7 +48,7 @@ export function MyEventsClient({ events, tabs, initialTab }: MyEventsClientProps
       </div>
 
       {/* Tabs */}
-      <div className="flex-shrink-0 sticky top-[73px] z-9 bg-white border-b border-gray-200 -mb-px">
+      <div className="flex-shrink-0 border-b border-gray-200 -mb-px">
         <TabNavigation
           tabs={tabs}
           activeTab={activeTab}

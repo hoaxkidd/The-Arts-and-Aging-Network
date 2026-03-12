@@ -13,6 +13,9 @@ export async function createNotification(data: {
   actionUrl?: string
   metadata?: string
 }) {
+  const session = await auth()
+  if (!session?.user?.id) return { error: 'Unauthorized' }
+
   try {
     const notification = await prisma.notification.create({
       data: {
@@ -88,10 +91,12 @@ export async function markAsRead(notificationId: string) {
   const session = await auth()
   if (!session?.user?.id) return { error: 'Unauthorized' }
 
-  await prisma.notification.update({
-    where: { id: notificationId },
+  const result = await prisma.notification.updateMany({
+    where: { id: notificationId, userId: session.user.id },
     data: { read: true }
   })
+
+  if (result.count === 0) return { error: 'Notification not found' }
 
   revalidatePath('/payroll')
   revalidatePath('/admin')
@@ -124,9 +129,11 @@ export async function deleteNotification(notificationId: string) {
   const session = await auth()
   if (!session?.user?.id) return { error: 'Unauthorized' }
 
-  await prisma.notification.delete({
-    where: { id: notificationId }
+  const result = await prisma.notification.deleteMany({
+    where: { id: notificationId, userId: session.user.id }
   })
+
+  if (result.count === 0) return { error: 'Notification not found' }
 
   revalidatePath('/payroll')
   revalidatePath('/admin')

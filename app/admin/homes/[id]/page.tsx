@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma"
+import { safeJsonParse } from "@/lib/utils"
 import { auth } from "@/auth"
 import { notFound, redirect } from "next/navigation"
 import { HomeDetailsClient } from "./HomeDetailsClient"
@@ -26,13 +27,14 @@ export default async function HomeDetailPage({ params }: { params: Promise<{ id:
 
   if (!home) return notFound()
 
-  const additionalContacts = home.additionalContacts
-    ? JSON.parse(home.additionalContacts)
-    : []
+  const normalizedHome = {
+    ...home,
+    additionalContacts: safeJsonParse(home.additionalContacts, [])
+  }
 
   return (
     <HomeDetailsClient
-      home={home as never}
+      home={normalizedHome as never}
     />
   )
 }
