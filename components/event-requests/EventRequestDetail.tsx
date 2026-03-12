@@ -142,10 +142,10 @@ export function EventRequestDetail({ request }: { request: Request }) {
       <div className="bg-white rounded-lg border border-gray-200 px-4 py-3">
         <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
           <span className={cn(
-            "px-2.5 py-0.5 text-xs font-semibold rounded-full border",
-            request.status === 'PENDING' && "bg-amber-100 text-amber-800 border-amber-200",
-            request.status === 'APPROVED' && "bg-green-100 text-green-800 border-green-200",
-            request.status === 'REJECTED' && "bg-red-100 text-red-800 border-red-200"
+            "text-xs font-semibold",
+            request.status === 'PENDING' && "text-amber-700",
+            request.status === 'APPROVED' && "text-green-700",
+            request.status === 'REJECTED' && "text-red-700"
           )}>
             {request.status}
           </span>

@@ -243,18 +243,18 @@ export default async function PayrollFormsPage({
                         </Link>
                       </td>
                       <td className="px-4 py-3">
-                        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
+                        <span className="inline-flex items-center gap-1 text-xs font-medium text-gray-700">
                           {category?.icon} {category?.label || template.category}
                         </span>
                       </td>
                       <td className="px-4 py-3">
                         <span className={cn(
-                          "inline-flex px-2 py-1 rounded-full text-xs font-medium",
-                          template.isActive ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"
+                          "inline-flex text-xs font-medium",
+                          template.isActive ? "text-green-700" : "text-gray-500"
                             )}>
                               {template.isActive ? 'Active' : 'Archived'}
                             </span>
-                          </td>
+                      </td>
                           <td className="px-4 py-3">
                             <span className={cn(
                               "inline-flex px-2 py-1 rounded-full text-xs font-medium",

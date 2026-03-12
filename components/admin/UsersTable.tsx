@@ -286,18 +286,18 @@ export default function UsersTable({ users: initialUsers }: { users: UserWithCou
                       </span>
                     )}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800 border border-gray-200">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                    <span className="inline-flex text-xs leading-5 font-semibold text-gray-700">
                       {user.role}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
                       user.status === 'ACTIVE'
-                        ? 'bg-green-100 text-green-800 border border-green-200'
+                        ? 'text-green-700'
                         : user.status === 'PENDING'
-                        ? 'bg-amber-100 text-amber-800 border border-amber-200'
-                        : 'bg-red-100 text-red-800 border border-red-200'
+                        ? 'text-amber-700'
+                        : 'text-red-700'
                     }`}>
                       {user.status}
                     </span>

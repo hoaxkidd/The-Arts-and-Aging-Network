@@ -129,9 +129,9 @@ export function EventList({ events, canManage }: { events: any[], canManage: boo
                   )}
                   {userStatus && (
                     <span className={cn(STYLES.badge,
-                      isPast && userStatus === 'YES' ? 'bg-blue-100 text-blue-800' :
-                      userStatus === 'YES' ? 'bg-green-100 text-green-800' :
-                      userStatus === 'NO' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'
+                      isPast && userStatus === 'YES' ? 'text-blue-700' :
+                      userStatus === 'YES' ? 'text-green-700' :
+                      userStatus === 'NO' ? 'text-red-700' : 'text-yellow-700'
                     )}>
                       {isPast && userStatus === 'YES' ? 'Attended' : userStatus === 'YES' ? 'Going' : userStatus === 'NO' ? 'Declined' : 'Maybe'}
                     </span>

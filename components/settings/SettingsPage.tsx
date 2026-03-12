@@ -295,7 +295,7 @@ export function SettingsPage({
               <p className="text-sm text-gray-500 mb-3">
                 Add an extra layer of security to your account.
               </p>
-              <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
+              <span className="inline-flex items-center text-xs font-medium text-amber-700">
                 Not enabled
               </span>
             </div>

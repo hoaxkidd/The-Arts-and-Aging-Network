@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { MessageSquare, UserPlus, Mail, Users, Check, X, Loader2 } from "lucide-react"
+import { MessageSquare, UserPlus, Mail, Users, Check, X, Loader2, FileText } from "lucide-react"
 import { TabNavigation } from "@/components/admin/shared/TabNavigation"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
@@ -14,6 +14,7 @@ import { approveGroupAccess, denyGroupAccess } from "@/app/actions/messaging"
 import { ConversationRequestsList } from "@/components/admin/ConversationRequestsList"
 
 import { AdminMessagingPanel } from "@/components/admin/communication/AdminMessagingPanel"
+import { EmailTemplatesTab } from "@/components/admin/communication/EmailTemplatesTab"
 
 // --- Sub-Components ---
 
@@ -266,10 +267,10 @@ function InvitationsList({ invitations }: { invitations: Invitation[] }) {
                     <div key={inv.id} className="bg-white rounded-lg border border-gray-200 p-4">
                         <div className="flex justify-between items-start gap-2 mb-2">
                             <p className="text-sm font-medium text-gray-900 truncate">{inv.email}</p>
-                            <span className={cn("shrink-0 px-2 py-0.5 text-xs rounded-full",
-                                inv.status === 'ACCEPTED' ? "bg-green-100 text-green-800" :
-                                inv.status === 'PENDING' ? "bg-yellow-100 text-yellow-800" :
-                                "bg-red-100 text-red-800"
+                            <span className={cn("shrink-0 text-xs font-medium",
+                                inv.status === 'ACCEPTED' ? "text-green-700" :
+                                inv.status === 'PENDING' ? "text-yellow-700" :
+                                "text-red-700"
                             )}>
                                 {inv.status}
                             </span>
@@ -308,10 +309,10 @@ function InvitationsList({ invitations }: { invitations: Invitation[] }) {
                                             <td className="px-6 py-4 text-sm text-gray-900">{inv.email}</td>
                                             <td className="px-6 py-4 text-sm text-gray-600">{inv.role}</td>
                                             <td className="px-6 py-4">
-                                                <span className={cn("px-2 py-0.5 text-xs rounded-full",
-                                                    inv.status === 'ACCEPTED' ? "bg-green-100 text-green-800" :
-                                                    inv.status === 'PENDING' ? "bg-yellow-100 text-yellow-800" :
-                                                    "bg-red-100 text-red-800"
+                                                <span className={cn("text-xs font-medium",
+                                                    inv.status === 'ACCEPTED' ? "text-green-700" :
+                                                    inv.status === 'PENDING' ? "text-yellow-700" :
+                                                    "text-red-700"
                                                 )}>
                                                     {inv.status}
                                                 </span>
@@ -360,10 +361,16 @@ export function CommunicationHubClient({ groups, pendingGroupRequests, pendingCo
             count: totalRequests
         },
         { 
+            id: 'emailTemplates', 
+            label: 'Email Templates', 
+            icon: FileText 
+        },
+        { 
             id: 'invitations', 
             label: 'System Invites', 
             icon: Mail 
         }
+        
     ]
 
     return (
@@ -389,6 +396,7 @@ export function CommunicationHubClient({ groups, pendingGroupRequests, pendingCo
                     />
                 )}
                 {activeTab === 'invitations' && <InvitationsList invitations={invitations} />}
+                {activeTab === 'emailTemplates' && <EmailTemplatesTab />}
             </div>
         </div>
     )

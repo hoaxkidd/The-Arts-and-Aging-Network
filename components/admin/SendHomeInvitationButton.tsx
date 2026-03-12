@@ -29,7 +29,7 @@ export function SendHomeInvitationButton({
   }
 
   return (
-    <div className="flex flex-col items-end gap-1">
+    <div className="relative">
       <button
         type="button"
         onClick={handleSend}
@@ -43,9 +43,11 @@ export function SendHomeInvitationButton({
         Send Invitation
       </button>
       {message && (
-        <span className={cn('text-xs', message === 'Invitation sent' ? 'text-emerald-600' : 'text-red-600')}>
-          {message}
-        </span>
+        <div className="absolute top-full right-0 mt-1 z-50">
+          <span className={cn('text-xs whitespace-nowrap', message === 'Invitation sent' ? 'text-emerald-600' : 'text-red-600')}>
+            {message}
+          </span>
+        </div>
       )}
     </div>
   )

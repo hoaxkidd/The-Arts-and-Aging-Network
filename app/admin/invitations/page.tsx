@@ -104,12 +104,12 @@ export default async function InvitationsPage() {
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2.5 py-0.5 inline-flex text-xs font-medium rounded-full border ${
+                    <span className={`inline-flex text-xs font-medium ${
                       inv.status === 'ACCEPTED' 
-                        ? 'bg-green-100 text-green-800 border-green-200' 
+                        ? 'text-green-700' 
                         : inv.status === 'EXPIRED'
-                        ? 'bg-red-100 text-red-800 border-red-200'
-                        : 'bg-yellow-100 text-yellow-800 border-yellow-200'
+                        ? 'text-red-700'
+                        : 'text-yellow-700'
                     }`}>
                       {inv.status}
                     </span>

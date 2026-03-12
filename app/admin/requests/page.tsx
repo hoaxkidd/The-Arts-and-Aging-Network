@@ -74,9 +74,9 @@ export default async function AdminRequestsPage() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={cn(STYLES.badge, 
-                      req.status === 'APPROVED' ? 'bg-green-100 text-green-800 border-green-200' :
-                      req.status === 'REJECTED' ? 'bg-red-100 text-red-800 border-red-200' :
-                      'bg-yellow-100 text-yellow-800 border-yellow-200'
+                      req.status === 'APPROVED' ? 'text-green-700' :
+                      req.status === 'REJECTED' ? 'text-red-700' :
+                      'text-yellow-700'
                     )}>
                       {req.status}
                     </span>

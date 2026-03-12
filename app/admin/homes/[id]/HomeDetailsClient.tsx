@@ -285,7 +285,6 @@ function PersonnelModal({
 }
 
 type QuickViewTab = 'facility' | 'contact' | 'account' | 'protocol' | 'events'
-type ProtocolSubTab = 'specialNeeds' | 'emergency' | 'triggerWarnings' | 'accommodations' | 'accessibility' | 'photoPermissions' | 'feedbackFormUrl'
 
 function parseAccessibilityInfo(raw: string | null | undefined): AccessibilityInfo {
   if (!raw) return {}
@@ -310,7 +309,6 @@ export function HomeDetailsClient({ home }: { home: HomeData }) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [activeTab, setActiveTab] = useState<QuickViewTab>('facility')
-  const [protocolSubTab, setProtocolSubTab] = useState<ProtocolSubTab>('specialNeeds')
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [showPersonnelModal, setShowPersonnelModal] = useState(false)
   const [editingPersonnel, setEditingPersonnel] = useState<Personnel | undefined>()
@@ -577,15 +575,35 @@ export function HomeDetailsClient({ home }: { home: HomeData }) {
                 <p className="text-xs text-gray-500 mt-1">User account linked to this facility</p>
               </div>
               <div className="p-5 sm:p-6">
-                <div className="table-scroll-wrapper border border-gray-200 rounded-lg overflow-hidden bg-white">
-                <table className="w-full text-sm min-w-full divide-y divide-gray-200">
-                  <tbody className="divide-y divide-gray-100">
-                    <tr><td className="py-3 pr-4 text-gray-500 font-medium w-[40%]">Account name</td><td className="py-3 text-gray-900 font-medium">{home.user.name || 'Not set'}</td></tr>
-                    <tr><td className="py-3 pr-4 text-gray-500 font-medium">Email</td><td className="py-3"><a href={`mailto:${home.user.email}`} className="text-primary-600 hover:underline">{home.user.email}</a></td></tr>
-                    <tr><td className="py-3 pr-4 text-gray-500 font-medium">Status</td><td className="py-3"><span className={cn("inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium", home.user.status === 'ACTIVE' ? "bg-emerald-100 text-emerald-800" : "bg-red-100 text-red-800")}>{home.user.status}</span></td></tr>
-                    <tr><td className="py-3 pr-4 text-gray-500 font-medium">Joined</td><td className="py-3 text-gray-700">{new Date(home.user.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</td></tr>
-                  </tbody>
-                </table>
+                <div className="divide-y divide-gray-100">
+                  <div className="py-3 flex items-center gap-3">
+                    <User className="w-4 h-4 text-gray-400" />
+                    <div>
+                      <p className="text-xs text-gray-500">Account name</p>
+                      <p className="text-sm font-medium text-gray-900">{home.user.name || 'Not set'}</p>
+                    </div>
+                  </div>
+                  <div className="py-3 flex items-center gap-3">
+                    <Mail className="w-4 h-4 text-gray-400" />
+                    <div>
+                      <p className="text-xs text-gray-500">Email</p>
+                      <a href={`mailto:${home.user.email}`} className="text-sm text-primary-600 hover:underline">{home.user.email}</a>
+                    </div>
+                  </div>
+                  <div className="py-3 flex items-center gap-3">
+                    <Activity className="w-4 h-4 text-gray-400" />
+                    <div>
+                      <p className="text-xs text-gray-500">Status</p>
+                      <span className={cn("text-sm font-medium", home.user.status === 'ACTIVE' ? "text-emerald-700" : "text-red-700")}>{home.user.status}</span>
+                    </div>
+                  </div>
+                  <div className="py-3 flex items-center gap-3">
+                    <Calendar className="w-4 h-4 text-gray-400" />
+                    <div>
+                      <p className="text-xs text-gray-500">Joined</p>
+                      <p className="text-sm text-gray-700">{new Date(home.user.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</p>
+                    </div>
+                  </div>
                 </div>
                 <Link href={`/admin/users/${home.user.userCode || home.user.id}`} className={cn(STYLES.btn, STYLES.btnSecondary, "w-full justify-center mt-6")}>
                   <ExternalLink className="w-4 h-4" /> View user profile
@@ -597,58 +615,28 @@ export function HomeDetailsClient({ home }: { home: HomeData }) {
           {/* Protocol tab */}
           <div className={cn(activeTab !== 'protocol' && 'hidden')}>
             <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-              {/* Protocol sub-tabs */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:flex lg:flex-nowrap border-b border-gray-200 shrink-0 min-w-0">
-                {([
-                  ['specialNeeds', 'Special needs', AlertTriangle, 'amber'] as const,
-                  ['emergency', 'Emergency', Shield, 'red'] as const,
-                  ['triggerWarnings', 'Trigger warnings', AlertTriangle, 'purple'] as const,
-                  ['accommodations', 'Accommodations', Activity, 'gray'] as const,
-                  ['accessibility', 'Accessibility', Activity, 'sky'] as const,
-                  ['photoPermissions', 'Photo permissions', Activity, 'blue'] as const,
-                  ['feedbackFormUrl', 'Feedback form', Activity, 'gray'] as const
-                ]).map(([id, label, Icon]) => (
-                  <button
-                    key={id}
-                    type="button"
-                    onClick={() => setProtocolSubTab(id)}
-                    className={cn(
-                      "px-3 sm:px-4 py-3 text-sm font-medium border-b-2 transition-all min-w-0 text-center lg:text-left",
-                      protocolSubTab === id
-                        ? "border-primary-500 text-primary-600 bg-white"
-                        : "border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-100/80"
-                    )}
-                  >
-                    <span className="inline-flex items-center justify-center lg:justify-start gap-1.5 min-w-0">
-                      <Icon className="w-3.5 h-3.5 shrink-0 opacity-80" />
-                      <span className="truncate">{label}</span>
-                    </span>
-                  </button>
-                ))}
-              </div>
-              {/* Sub-tab content */}
-              <div className="p-5 sm:p-6 min-w-0">
-                <div className={cn(protocolSubTab !== 'specialNeeds' && 'hidden')}>
+              <div className="p-5 sm:p-6 min-w-0 space-y-6">
+                <div>
                   <h3 className="text-sm font-semibold text-amber-800 mb-2 flex items-center gap-2"><AlertTriangle className="w-4 h-4" /> Special needs & accommodations</h3>
                   <p className="text-xs text-amber-700/80 mb-3">Notes for staff and facilitators</p>
                   <textarea name="specialNeeds" defaultValue={home.specialNeeds ?? ''} rows={4} placeholder="Special considerations for events..." className={cn(STYLES.input)} />
                 </div>
-                <div className={cn(protocolSubTab !== 'emergency' && 'hidden')}>
+                <div>
                   <h3 className="text-sm font-semibold text-red-800 mb-2 flex items-center gap-2"><Shield className="w-4 h-4" /> Emergency protocol</h3>
                   <p className="text-xs text-red-700/80 mb-3">Procedures in case of emergency</p>
                   <textarea name="emergencyProtocol" defaultValue={home.emergencyProtocol ?? ''} rows={4} placeholder="Fire, medical, evacuation..." className={cn(STYLES.input)} />
                 </div>
-                <div className={cn(protocolSubTab !== 'triggerWarnings' && 'hidden')}>
+                <div>
                   <h3 className="text-sm font-semibold text-purple-800 mb-2 flex items-center gap-2"><AlertTriangle className="w-4 h-4" /> Content / trigger warnings</h3>
                   <p className="text-xs text-purple-700/80 mb-3">Topics to avoid, sensitivities</p>
                   <textarea name="triggerWarnings" defaultValue={home.triggerWarnings ?? ''} rows={3} placeholder="Topics to avoid, sensitivities..." className={cn(STYLES.input)} />
                 </div>
-                <div className={cn(protocolSubTab !== 'accommodations' && 'hidden')}>
+                <div>
                   <h3 className="text-sm font-semibold text-gray-700 mb-2">Accommodations</h3>
                   <p className="text-xs text-gray-500 mb-3">Physical or scheduling accommodations</p>
                   <textarea name="accommodations" defaultValue={home.accommodations ?? ''} rows={3} placeholder="e.g. Wheelchair access, flexible timing..." className={cn(STYLES.input)} />
                 </div>
-                <div className={cn(protocolSubTab !== 'accessibility' && 'hidden')}>
+                <div>
                   <h3 className="text-sm font-semibold text-sky-800 mb-2 flex items-center gap-2"><Activity className="w-4 h-4" /> Accessibility</h3>
                   <p className="text-xs text-sky-700/80 mb-3">On-site accessibility features</p>
                   <div className="space-y-4">
@@ -660,7 +648,7 @@ export function HomeDetailsClient({ home }: { home: HomeData }) {
                     <div><label className="block text-xs font-medium text-gray-600 mb-1">Notes</label><input name="acc_notes" defaultValue={acc.notes ?? ''} placeholder="Other accessibility notes" className={cn(STYLES.input)} /></div>
                   </div>
                 </div>
-                <div className={cn(protocolSubTab !== 'photoPermissions' && 'hidden')}>
+                <div>
                   <h3 className="text-sm font-semibold text-blue-800 mb-2 flex items-center gap-2"><Activity className="w-4 h-4" /> Photo & media permissions</h3>
                   <p className="text-xs text-blue-700/80 mb-3">Consent and restrictions for photos/videos</p>
                   <div className="space-y-4">
@@ -668,7 +656,7 @@ export function HomeDetailsClient({ home }: { home: HomeData }) {
                     <div><label className="block text-xs font-medium text-gray-600 mb-1">Restrictions / notes</label><textarea name="photo_restrictions" defaultValue={photo.restrictions ?? ''} rows={2} placeholder="e.g. No photos of residents without consent" className={cn(STYLES.input)} /></div>
                   </div>
                 </div>
-                <div className={cn(protocolSubTab !== 'feedbackFormUrl' && 'hidden')}>
+                <div>
                   <h3 className="text-sm font-semibold text-gray-700 mb-2">Feedback form URL</h3>
                   <p className="text-xs text-gray-500 mb-3">Link to post-event feedback survey (optional)</p>
                   <input name="feedbackFormUrl" type="url" defaultValue={home.feedbackFormUrl ?? ''} placeholder="https://..." className={cn(STYLES.input)} />
@@ -693,7 +681,7 @@ export function HomeDetailsClient({ home }: { home: HomeData }) {
                           <div className="font-medium text-gray-900 text-sm">{event.title}</div>
                           <div className="text-xs text-gray-500 mt-1 flex items-center gap-1"><Clock className="w-3 h-3" />{new Date(event.startDateTime).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}</div>
                         </div>
-                        <span className={cn("px-2.5 py-0.5 rounded-full text-xs font-medium", event.status === 'PUBLISHED' ? "bg-emerald-100 text-emerald-800" : event.status === 'COMPLETED' ? "bg-sky-100 text-sky-800" : event.status === 'CANCELLED' ? "bg-red-100 text-red-800" : "bg-gray-100 text-gray-700")}>{event.status}</span>
+                        <span className={cn("text-xs font-medium", event.status === 'PUBLISHED' ? "text-emerald-700" : event.status === 'COMPLETED' ? "text-sky-700" : event.status === 'CANCELLED' ? "text-red-700" : "text-gray-600")}>{event.status}</span>
                       </div>
                       <div className="text-xs text-gray-400 mt-1">{event._count.attendance} attendees</div>
                     </Link>

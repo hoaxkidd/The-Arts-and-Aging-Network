@@ -225,10 +225,10 @@ export function AdminRequestList({ requests }: { requests: Request[] }) {
                     </td>
                     <td className="px-6 py-4">
                       <span className={cn(
-                        "px-3 py-1 inline-flex text-xs font-semibold rounded-full border",
-                        req.status === 'PENDING' && "bg-amber-100 text-amber-800 border-amber-200",
-                        req.status === 'APPROVED' && "bg-green-100 text-green-800 border-green-200",
-                        req.status === 'REJECTED' && "bg-red-100 text-red-800 border-red-200"
+                        "inline-flex text-xs font-semibold",
+                        req.status === 'PENDING' && "text-amber-700",
+                        req.status === 'APPROVED' && "text-green-700",
+                        req.status === 'REJECTED' && "text-red-700"
                       )}>
                         {req.status}
                       </span>
