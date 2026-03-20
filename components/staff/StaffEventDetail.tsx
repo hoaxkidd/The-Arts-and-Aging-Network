@@ -121,8 +121,7 @@ export function StaffEventDetail({ event }: { event: EventDetail }) {
 
   return (
     <div className="h-full flex flex-col">
-      {/* Compact Header */}
-      <header className="flex-shrink-0 pb-3">
+      <div className="flex-shrink-0 pb-3">
         <Link
           href="/staff/events"
           className="inline-flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-700 mb-2"
@@ -156,8 +155,7 @@ export function StaffEventDetail({ event }: { event: EventDetail }) {
             )}
           </div>
         </div>
-        <h1 className="text-lg font-bold text-gray-900 mt-1">{event.title}</h1>
-      </header>
+      </div>
 
       {/* Content */}
       <div className="flex-1 min-h-0 overflow-auto space-y-4">

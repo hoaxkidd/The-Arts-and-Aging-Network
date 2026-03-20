@@ -76,19 +76,6 @@ export default async function PayrollDashboard() {
     <div className="h-full flex flex-col">
       <QuickActionHandler />
 
-      {/* Compact Header */}
-      <header className="flex-shrink-0 pb-3">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-primary-100 text-primary-600 flex items-center justify-center">
-            <LayoutDashboard className="w-4 h-4" />
-          </div>
-          <div>
-            <h1 className="text-lg font-bold text-gray-900">Payroll Dashboard</h1>
-            <p className="text-xs text-gray-500">Welcome back, {session?.user?.name}</p>
-          </div>
-        </div>
-      </header>
-
       <div className="flex-1 min-h-0 overflow-auto space-y-4">
         {/* Compact Stats */}
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">

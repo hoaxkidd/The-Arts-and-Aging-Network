@@ -1,7 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { MapPin, ArrowRight, Search, Filter } from "lucide-react"
+import Image from 'next/image'
+import { MapPin, ArrowRight, Search } from "lucide-react"
 import { STYLES } from "@/lib/styles"
 import { cn } from "@/lib/utils"
 import { MileageApprovalActions } from "@/app/admin/mileage/MileageApprovalActions"
@@ -40,7 +41,7 @@ export function MileageList({ entries }: { entries: MileageEntry[] }) {
     <div className="space-y-6">
       <MileageStats entries={entries} />
 
-      <div className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
+      <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
         {/* Toolbar */}
         <div className="p-4 border-b border-gray-200 flex flex-col sm:flex-row gap-4 justify-between items-center bg-gray-50/50">
             <div className="flex items-center gap-2">
@@ -49,7 +50,7 @@ export function MileageList({ entries }: { entries: MileageEntry[] }) {
                     <input 
                         type="text" 
                         placeholder="Search staff or purpose..." 
-                        className="pl-9 pr-4 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 w-64"
+                        className={cn(STYLES.input, "pl-10 w-64")}
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                     />
@@ -73,7 +74,7 @@ export function MileageList({ entries }: { entries: MileageEntry[] }) {
         </div>
 
         {/* Table */}
-        <div className="table-scroll-wrapper max-h-[calc(100vh-360px)]">
+        <div className="table-scroll-wrapper max-h-[calc(100vh-320px)]">
             <table className={STYLES.table}>
                 <thead className="bg-gray-50">
                     <tr>
@@ -85,26 +86,26 @@ export function MileageList({ entries }: { entries: MileageEntry[] }) {
                         <th className={cn(STYLES.tableHeader, "text-right")}>Actions</th>
                     </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody className="divide-y divide-gray-100">
                     {filtered.map((entry) => {
                         const displayName = entry.user.preferredName || entry.user.name || 'Unknown'
                         
                         return (
-                            <tr key={entry.id} className="hover:bg-gray-50 transition-colors">
-                                <td className="px-6 py-4 whitespace-nowrap">
+                            <tr key={entry.id} className={STYLES.tableRow}>
+                                <td className={cn(STYLES.tableCell, "whitespace-nowrap")}>
                                     <div className="flex items-center">
                                         <div className="h-8 w-8 rounded-full bg-primary-100 flex items-center justify-center text-primary-600 font-bold text-xs mr-3">
                                             {entry.user.image ? (
-                                                <img src={entry.user.image} alt="" className="h-8 w-8 rounded-full object-cover" />
+                                                <Image src={entry.user.image} alt="" width={32} height={32} className="h-8 w-8 rounded-full object-cover" unoptimized />
                                             ) : displayName.charAt(0)}
                                         </div>
                                         <div className="text-sm font-medium text-gray-900">{displayName}</div>
                                     </div>
                                 </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                <td className={cn(STYLES.tableCell, "whitespace-nowrap")}>
                                     {new Date(entry.date).toLocaleDateString()}
                                 </td>
-                                <td className="px-6 py-4">
+                                <td className={STYLES.tableCell}>
                                     <div className="flex items-center gap-2 text-sm text-gray-900">
                                         <span className="truncate max-w-[100px]" title={entry.startLocation}>{entry.startLocation}</span>
                                         <ArrowRight className="w-3 h-3 text-gray-400 flex-shrink-0" />
@@ -114,7 +115,7 @@ export function MileageList({ entries }: { entries: MileageEntry[] }) {
                                         <div className="text-xs text-gray-500 mt-1 truncate max-w-[200px]">{entry.purpose}</div>
                                     )}
                                 </td>
-                                <td className="px-6 py-4 whitespace-nowrap">
+                                <td className={cn(STYLES.tableCell, "whitespace-nowrap")}>
                                     <div className="flex items-baseline gap-1">
                                         <span className="text-sm font-bold text-gray-900">{entry.kilometers}</span>
                                         <span className="text-xs text-gray-500">km</span>
@@ -125,9 +126,9 @@ export function MileageList({ entries }: { entries: MileageEntry[] }) {
                                         </span>
                                     )}
                                 </td>
-                                <td className="px-6 py-4 whitespace-nowrap">
+                                <td className={cn(STYLES.tableCell, "whitespace-nowrap")}>
                                     <span className={cn(
-                                        "px-2 py-1 text-xs font-medium rounded-full",
+                                        "px-2 py-0.5 text-xs font-semibold rounded",
                                         entry.status === 'APPROVED' ? "bg-green-100 text-green-700" :
                                         entry.status === 'REJECTED' ? "bg-red-100 text-red-700" :
                                         "bg-yellow-100 text-yellow-700"
@@ -135,7 +136,7 @@ export function MileageList({ entries }: { entries: MileageEntry[] }) {
                                         {entry.status}
                                     </span>
                                 </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                <td className={cn(STYLES.tableCell, "text-right whitespace-nowrap")}>
                                     {entry.status === 'PENDING' && (
                                         <div className="flex justify-end">
                                             <MileageApprovalActions entryId={entry.id} />
@@ -147,7 +148,7 @@ export function MileageList({ entries }: { entries: MileageEntry[] }) {
                     })}
                     {filtered.length === 0 && (
                         <tr>
-                            <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
+                            <td colSpan={6} className={cn(STYLES.tableCell, "text-center py-12")}>
                                 No entries found matching your filters.
                             </td>
                         </tr>

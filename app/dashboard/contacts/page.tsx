@@ -14,26 +14,13 @@ export default async function ContactsPage() {
     redirect('/login')
   }
 
-  const prismaClient = prisma as any
-
-  const home = await prismaClient.geriatricHome.findUnique({
+  const home = await prisma.geriatricHome.findUnique({
     where: { userId: session.user.id }
   })
 
   if (!home) {
     return (
       <div className="h-full flex flex-col">
-        <div className="flex-shrink-0 pb-3 mb-3 border-b border-gray-200">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-primary-100 text-primary-600 flex items-center justify-center">
-              <Users className="w-5 h-5" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Contacts</h1>
-              <p className="text-sm text-gray-500 mt-1">Manage facility contacts</p>
-            </div>
-          </div>
-        </div>
         <div className="flex-1 min-h-0">
           <div className="text-center py-20 bg-white rounded-lg border border-gray-200">
               <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-400">
@@ -55,17 +42,6 @@ export default async function ContactsPage() {
 
   return (
     <div className="h-full flex flex-col">
-      <div className="flex-shrink-0 pb-3 mb-3 border-b border-gray-200">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-primary-100 text-primary-600 flex items-center justify-center">
-            <Users className="w-5 h-5" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Contacts</h1>
-            <p className="text-sm text-gray-500 mt-1">Manage facility contacts</p>
-          </div>
-        </div>
-      </div>
       <div className="flex-1 min-h-0">
         <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
           <PersonnelManager

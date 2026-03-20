@@ -17,17 +17,21 @@ model AuditLog {
 }
 
 model DirectMessage {
-  id          String    @id @default(cuid())
-  senderId    String
-  recipientId String
-  subject     String
-  content     String
-  read        Boolean   @default(false)
-  emailSent   Boolean   @default(false)
-  createdAt   DateTime  @default(now())
-  editedAt    DateTime?
-  sender      User      @relation("DirectMessage_sender", fields: [senderId], references: [id])
-  recipient   User      @relation("DirectMessage_recipient", fields: [recipientId], references: [id])
+  id           String    @id @default(cuid())
+  senderId     String
+  recipientId  String
+  subject      String
+  content      String
+  contentHtml  String?   // HTML version for rich text
+  attachments  String?   // JSON: [{"name": "file.pdf", "url": "...", "type": "application/pdf", "size": 1024}]
+  parentId     String?   // For threaded replies
+  replyToId    String?   // For quote-style references
+  read         Boolean   @default(false)
+  emailSent    Boolean   @default(false)
+  createdAt    DateTime  @default(now())
+  editedAt     DateTime?
+  sender       User      @relation("DirectMessage_sender", fields: [senderId], references: [id])
+  recipient    User      @relation("DirectMessage_recipient", fields: [recipientId], references: [id])
 
   @@index([recipientId, read])
   @@index([senderId])
@@ -468,17 +472,21 @@ model GroupMember {
 }
 
 model GroupMessage {
-  id          String            @id @default(cuid())
-  groupId     String
-  senderId    String
-  content     String
-  attachments String?
-  createdAt   DateTime          @default(now())
-  updatedAt   DateTime @updatedAt
-  editedAt    DateTime?
-  sender      User              @relation(fields: [senderId], references: [id])
-  group       MessageGroup      @relation(fields: [groupId], references: [id], onDelete: Cascade)
-  reactions   MessageReaction[]
+  id           String            @id @default(cuid())
+  groupId      String
+  senderId     String
+  content      String
+  contentHtml  String?           // HTML version for rich text
+  attachments  String?           // JSON: [{"name": "file.pdf", "url": "...", "type": "application/pdf", "size": 1024}]
+  parentId     String?           // For threaded replies
+  replyToId    String?           // For quote-style references
+  mentions     String?           // JSON: ["userId1", "userId2"] - @mentioned users
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  editedAt     DateTime?
+  sender       User              @relation(fields: [senderId], references: [id])
+  group        MessageGroup      @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  reactions    MessageReaction[]
 
   @@index([senderId])
   @@index([groupId, createdAt])
@@ -621,6 +629,96 @@ model MessageReaction {
   @@unique([messageId, userId, emoji])
   @@index([userId])
   @@index([messageId])
+}
+
+// Starred Messages - users can star important messages
+model StarredMessage {
+  id          String   @id @default(cuid())
+  userId      String
+  messageId   String
+  messageType String   // "DIRECT" or "GROUP"
+  createdAt   DateTime @default(now())
+
+  @@unique([userId, messageId])
+}
+
+// Message Templates - reusable message snippets
+model MessageTemplate {
+  id          String   @id @default(cuid())
+  title       String
+  content     String
+  contentHtml String?
+  category    String?
+  isGlobal    Boolean  @default(false) // Admin-created, available to all
+  createdBy   String
+  createdAt   DateTime @default(now())
+  usageCount  Int      @default(0)
+}
+
+// Message Reminders - remind me to respond to a message
+model MessageReminder {
+  id          String   @id @default(cuid())
+  userId      String
+  messageId   String
+  messageType String   // "DIRECT" or "GROUP"
+  remindAt    DateTime
+  note        String?
+  isCompleted Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  @@unique([userId, messageId])
+}
+
+// Scheduled Messages - send later
+model ScheduledMessage {
+  id           String   @id @default(cuid())
+  senderId     String
+  content      String
+  contentHtml  String?
+  attachments  String?
+  targetType   String   // "DIRECT" or "GROUP"
+  targetId     String
+  scheduledAt  DateTime
+  status       String   @default("PENDING") // PENDING, SENT, CANCELLED
+  createdAt    DateTime @default(now())
+}
+
+// Typing Indicators
+model UserTyping {
+  id         String   @id @default(cuid())
+  userId     String
+  targetType String   // "DIRECT" or "GROUP"
+  targetId   String
+  lastActive DateTime @default(now())
+
+  @@unique([userId, targetType, targetId])
+  @@index([targetType, targetId])
+}
+
+// Broadcast Messages - admin to multiple users
+model BroadcastMessage {
+  id           String    @id @default(cuid())
+  senderId     String
+  title        String
+  content      String
+  contentHtml  String?
+  targetRoles  String?   // "ADMIN,STAFF,FACILITATOR"
+  targetHomes String?   // Comma-separated home IDs
+  status       String    @default("DRAFT") // DRAFT, SCHEDULED, SENT, FAILED
+  scheduledAt  DateTime?
+  sentAt       DateTime?
+  createdAt    DateTime  @default(now())
+}
+
+// Broadcast Message Recipients
+model BroadcastRecipient {
+  id          String @id @default(cuid())
+  broadcastId String
+  userId      String
+  messageId   String? // Individual message created
+  status      String @default("PENDING") // PENDING, DELIVERED, FAILED
+
+  @@unique([broadcastId, userId])
 }
 
 model MileageEntry {
@@ -824,6 +922,8 @@ model User {
   headshotReceived        Boolean                @default(false)
   bioReceived             Boolean                @default(false)
   lastLoginAt             DateTime?
+  isOnline                Boolean                @default(false)
+  lastSeenAt              DateTime?
   onboardingCompletedAt   DateTime?
   onboardingSkipCount     Int                    @default(0)
   createdAt               DateTime               @default(now())
@@ -903,6 +1003,25 @@ model WorkLog {
   createdAt  DateTime  @default(now())
   updatedAt  DateTime @updatedAt
   user       User      @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+}
+
+// User Privacy Settings
+model UserPrivacy {
+  userId             String  @id
+  showOnlineStatus   Boolean @default(true)
+  showLastSeen       Boolean @default(true)
+}
+
+// Push Subscriptions for Web Push Notifications
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
 
   @@index([userId])
 }

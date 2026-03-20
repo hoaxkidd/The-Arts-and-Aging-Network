@@ -20,13 +20,6 @@ export default async function ConversationRequestsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Conversation Requests</h1>
-        <p className="text-gray-600 mt-1">
-          Review and approve requests to start conversations
-        </p>
-      </div>
-
       <ConversationRequestsList requests={result.requests} />
     </div>
   )

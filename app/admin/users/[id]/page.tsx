@@ -71,24 +71,6 @@ export default async function EditUserPage({
 
   return (
     <div className="space-y-4">
-      {/* Header */}
-      <div>
-        <Link href="/admin/users" className="text-gray-500 hover:text-gray-700 flex items-center gap-2 mb-3 text-sm">
-          <ArrowLeft className="w-4 h-4" /> Back to Users
-        </Link>
-        <div>
-          <h1 className="text-xl font-bold text-gray-900">
-            {isHomeAdmin ? 'Edit Home Admin' : 'Edit User Profile'}
-          </h1>
-          <p className="text-gray-500 text-sm">
-            {isHomeAdmin
-              ? `Manage facility profile and account for ${user.geriatricHome?.name || user.name || 'this home admin'}`
-              : `Manage details and permissions for ${user.name || user.email}`
-            }
-          </p>
-        </div>
-      </div>
-
       {/* PENDING placeholder banner */}
       {user.status === 'PENDING' && (
         <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 flex items-start gap-3">

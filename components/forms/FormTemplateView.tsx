@@ -85,7 +85,7 @@ export function FormTemplateView({
             />
           )}
           {preview ? (
-            <FieldInputPreview field={field} />
+            <FieldInputPreview field={field} value={values[field.id]} />
           ) : (
             <>
               <FieldInput
@@ -139,68 +139,87 @@ export function FormTemplateView({
   )
 }
 
-/** Read-only placeholder rendering for preview mode */
-function FieldInputPreview({ field }: { field: FormTemplateField }) {
+/** Read-only rendering for preview mode - displays submitted values */
+function FieldInputPreview({ field, value }: { field: FormTemplateField; value?: unknown }) {
   const id = `preview-${field.id}`
-  const placeholder = 'Sample answer'
+  const isEmpty = value === undefined || value === null || value === '' ||
+    (Array.isArray(value) && value.length === 0)
+  const displayValue = isEmpty ? '—' : String(value)
+
+  const formatValue = (val: unknown): string => {
+    if (val === undefined || val === null || val === '') return '—'
+    if (Array.isArray(val)) return val.join(', ')
+    if (typeof val === 'object' && val !== null && '_value' in val) {
+      let result = String((val as Record<string, unknown>)._value)
+      if ((val as Record<string, unknown>)._other) {
+        result += ` (Other: ${(val as Record<string, unknown>)._other})`
+      }
+      return result
+    }
+    if (typeof val === 'object' && val !== null && '_options' in val) {
+      let result = ((val as Record<string, unknown>)._options as string[])?.join(', ') || ''
+      if ((val as Record<string, unknown>)._other) {
+        result += ` (Other: ${(val as Record<string, unknown>)._other})`
+      }
+      return result || '—'
+    }
+    if (String(val).startsWith('data:')) return '(file uploaded)'
+    return String(val)
+  }
 
   switch (field.type) {
     case 'short_text':
       return (
-        <input
-          id={id}
-          type="text"
-          readOnly
-          disabled
-          placeholder={field.placeholder || placeholder}
-          className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm bg-gray-50 text-gray-500"
-        />
+        <div className={cn(
+          "w-full rounded-md border border-gray-200 px-3 py-2 text-sm",
+          isEmpty ? "bg-gray-50 text-gray-400" : "bg-white text-gray-900"
+        )}>
+          {isEmpty ? '—' : formatValue(value)}
+        </div>
       )
     case 'long_text':
       return (
-        <textarea
-          id={id}
-          readOnly
-          disabled
-          placeholder={field.placeholder || placeholder}
-          rows={3}
-          className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm bg-gray-50 text-gray-500"
-        />
+        <div className={cn(
+          "w-full rounded-md border border-gray-200 px-3 py-2 text-sm",
+          isEmpty ? "bg-gray-50 text-gray-400" : "bg-white text-gray-900"
+        )}>
+          {isEmpty ? '—' : formatValue(value)}
+        </div>
       )
     case 'date':
       return (
-        <input
-          id={id}
-          type="date"
-          readOnly
-          disabled
-          className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm bg-gray-50 text-gray-500"
-        />
+        <div className={cn(
+          "w-full rounded-md border border-gray-200 px-3 py-2 text-sm",
+          isEmpty ? "bg-gray-50 text-gray-400" : "bg-white text-gray-900"
+        )}>
+          {isEmpty ? '—' : formatValue(value)}
+        </div>
       )
     case 'radio': {
       const options = (field.options || []).filter(Boolean)
+      const selectedValue = typeof value === 'string' ? value : (value as Record<string, unknown>)?._value as string | undefined
       return (
         <div className="space-y-1.5">
           {options.length === 0 ? (
-            <span className="text-sm text-gray-400">(No options yet)</span>
+            <span className="text-sm text-gray-400">—</span>
           ) : (
             options.map((opt, i) => (
               <label key={`${field.id}-${i}`} className="flex items-center gap-2">
-                <input type="radio" name={id} disabled className="rounded border-gray-300" />
-                <span className="text-sm text-gray-600">{opt}</span>
+                <input
+                  type="radio"
+                  name={id}
+                  disabled
+                  checked={selectedValue === opt}
+                  className="rounded border-gray-300"
+                />
+                <span className="text-sm text-gray-900">{opt}</span>
               </label>
             ))
           )}
-          {field.allowOther && (
+          {!!field.allowOther && !!((value as Record<string, unknown>)?._other) && (
             <div className="flex items-center gap-2 pl-5">
               <span className="text-sm text-gray-500">Other:</span>
-              <input
-                type="text"
-                readOnly
-                disabled
-                placeholder="Please specify"
-                className="flex-1 rounded border border-gray-200 px-2 py-1 text-sm bg-gray-50 text-gray-400"
-              />
+              <span className="text-sm text-gray-900">{String((value as Record<string, unknown>)._other || '')}</span>
             </div>
           )}
         </div>
@@ -208,28 +227,28 @@ function FieldInputPreview({ field }: { field: FormTemplateField }) {
     }
     case 'checkbox': {
       const options = (field.options || []).filter(Boolean)
+      const selectedValues = Array.isArray(value) ? value : []
       return (
         <div className="space-y-1.5">
           {options.length === 0 ? (
-            <span className="text-sm text-gray-400">(No options yet)</span>
+            <span className="text-sm text-gray-400">—</span>
           ) : (
             options.map((opt, i) => (
               <label key={`${field.id}-${i}`} className="flex items-center gap-2">
-                <input type="checkbox" disabled className="rounded border-gray-300" />
-                <span className="text-sm text-gray-600">{opt}</span>
+                <input
+                  type="checkbox"
+                  disabled
+                  checked={selectedValues.includes(opt)}
+                  className="rounded border-gray-300"
+                />
+                <span className="text-sm text-gray-900">{opt}</span>
               </label>
             ))
           )}
-          {field.allowOther && (
+          {!!field.allowOther && !!((value as Record<string, unknown>)?._other) && (
             <div className="flex items-center gap-2 pl-5">
               <span className="text-sm text-gray-500">Other:</span>
-              <input
-                type="text"
-                readOnly
-                disabled
-                placeholder="Please specify"
-                className="flex-1 rounded border border-gray-200 px-2 py-1 text-sm bg-gray-50 text-gray-400"
-              />
+              <span className="text-sm text-gray-900">{String((value as Record<string, unknown>)._other || '')}</span>
             </div>
           )}
         </div>
@@ -237,26 +256,30 @@ function FieldInputPreview({ field }: { field: FormTemplateField }) {
     }
     case 'file':
       return (
-        <div className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm bg-gray-50 text-gray-500">
-          Choose file (preview)
+        <div className={cn(
+          "w-full rounded-md border border-gray-200 px-3 py-2 text-sm",
+          isEmpty ? "bg-gray-50 text-gray-400" : "bg-white text-gray-900"
+        )}>
+          {isEmpty ? '—' : formatValue(value)}
         </div>
       )
     case 'address':
       return (
-        <div className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm bg-gray-50 text-gray-500">
-          Address with autocomplete (preview)
+        <div className={cn(
+          "w-full rounded-md border border-gray-200 px-3 py-2 text-sm",
+          isEmpty ? "bg-gray-50 text-gray-400" : "bg-white text-gray-900"
+        )}>
+          {isEmpty ? '—' : formatValue(value)}
         </div>
       )
     default:
       return (
-        <input
-          id={id}
-          type="text"
-          readOnly
-          disabled
-          placeholder={placeholder}
-          className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm bg-gray-50 text-gray-500"
-        />
+        <div className={cn(
+          "w-full rounded-md border border-gray-200 px-3 py-2 text-sm",
+          isEmpty ? "bg-gray-50 text-gray-400" : "bg-white text-gray-900"
+        )}>
+          {isEmpty ? '—' : formatValue(value)}
+        </div>
       )
   }
 }

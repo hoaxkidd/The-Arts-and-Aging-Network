@@ -20,15 +20,6 @@ export default async function StaffMyEventsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">My Schedule</h1>
-        <p className="text-gray-600 mt-1">
-          View and manage your confirmed event attendance.
-        </p>
-      </div>
-
-      <StaffScheduleView events={result.data || []} />
-    </div>
+    <StaffScheduleView events={result.data || []} />
   )
 }

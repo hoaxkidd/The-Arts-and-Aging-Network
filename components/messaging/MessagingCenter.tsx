@@ -79,46 +79,28 @@ export function MessagingCenter({
 
   return (
     <div className="h-full flex flex-col">
-      {/* Header */}
-      <header className="flex-shrink-0 pb-4 border-b border-gray-200">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary-500 to-primary-600 text-white flex items-center justify-center shadow-lg">
-              <MessageSquare className="w-5 h-5" />
-            </div>
-            <div>
-              <h1 className="text-xl font-bold text-gray-900">Messages</h1>
-              <p className="text-sm text-gray-500">
-                {unreadDirectCount + unreadGroupCount > 0
-                  ? `${unreadDirectCount + unreadGroupCount} unread`
-                  : 'All caught up!'}
-              </p>
-            </div>
-          </div>
+      <div className="flex items-center justify-end mb-4">
+        {activeTab === 'direct' && (
+          <button
+            onClick={() => setShowComposeModal(true)}
+            className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 font-medium flex items-center gap-2 shadow-sm"
+          >
+            <Send className="w-4 h-4" />
+            New Message
+          </button>
+        )}
+        {activeTab === 'groups' && (
+          <Link
+            href="/staff/groups/new"
+            className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 font-medium flex items-center gap-2 shadow-sm"
+          >
+            <Plus className="w-4 h-4" />
+            Create Group
+          </Link>
+        )}
+      </div>
 
-          <div className="flex items-center gap-2">
-            {activeTab === 'direct' && (
-              <button
-                onClick={() => setShowComposeModal(true)}
-                className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 font-medium flex items-center gap-2 shadow-sm"
-              >
-                <Send className="w-4 h-4" />
-                New Message
-              </button>
-            )}
-            {activeTab === 'groups' && (
-              <Link
-                href="/staff/groups/new"
-                className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 font-medium flex items-center gap-2 shadow-sm"
-              >
-                <Plus className="w-4 h-4" />
-                Create Group
-              </Link>
-            )}
-          </div>
-        </div>
-
-        {/* Tabs */}
+      {/* Tabs */}
         <div className="flex items-center gap-2 border-b border-gray-200">
           <button
             onClick={() => setActiveTab('direct')}
@@ -155,7 +137,6 @@ export function MessagingCenter({
             )}
           </button>
         </div>
-      </header>
 
       {/* Content */}
       <div className="flex-1 min-h-0 overflow-auto mt-4">

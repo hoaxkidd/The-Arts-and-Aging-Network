@@ -26,14 +26,12 @@ export default async function StaffEditEventPage({ params }: { params: Promise<{
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
-       <div className="flex items-center justify-between">
-         <Link href={`/events/${id}`} className="text-gray-500 hover:text-gray-700 flex items-center gap-2">
-            <ArrowLeft className="w-4 h-4" /> Back to Event
-         </Link>
-         <h1 className="text-xl font-bold text-gray-900">Edit Event</h1>
-       </div>
-       
-       <EventForm locations={locations} initialData={event} />
+      <div className="flex items-center justify-between">
+        <Link href={`/events/${id}`} className="text-gray-500 hover:text-gray-700 flex items-center gap-2">
+          <ArrowLeft className="w-4 h-4" /> Back to Event
+        </Link>
+      </div>
+      <EventForm locations={locations} initialData={event} />
     </div>
   )
 }

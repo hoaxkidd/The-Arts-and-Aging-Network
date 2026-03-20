@@ -128,6 +128,10 @@ export async function sendDirectMessage(data: {
   recipientId: string
   subject: string
   content: string
+  contentHtml?: string
+  attachments?: Array<{ name: string; url: string; type: string; size: number }>
+  parentId?: string
+  replyToId?: string
 }) {
   const session = await auth()
   if (!session?.user?.id) {
@@ -145,7 +149,11 @@ export async function sendDirectMessage(data: {
         senderId: session.user.id,
         recipientId: data.recipientId,
         subject: data.subject,
-        content: data.content
+        content: data.content,
+        contentHtml: data.contentHtml || null,
+        attachments: data.attachments ? JSON.stringify(data.attachments) : null,
+        parentId: data.parentId || null,
+        replyToId: data.replyToId || null,
       },
       include: {
         sender: {

@@ -34,40 +34,6 @@ export default async function NotificationsPage() {
 
   return (
     <div className="h-full flex flex-col">
-      {/* Fixed Page Header */}
-      <div className="flex-shrink-0 pb-6">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="flex items-start gap-4">
-            <div className={cn(STYLES.pageIcon, "bg-primary-100 text-primary-500")}>
-              <Bell className="w-5 h-5" />
-            </div>
-            <div>
-              <h1 className={STYLES.pageTitle}>Notification Center</h1>
-              <p className={STYLES.pageDescription}>
-                Manage your alerts and communication preferences
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            {unreadCount > 0 && (
-              <div className="flex items-center gap-2 px-4 py-2 bg-primary-50 rounded-lg border border-primary-100">
-                <Sparkles className="w-4 h-4 text-primary-500" />
-                <span className="text-sm font-medium text-primary-700">
-                  {unreadCount} unread
-                </span>
-              </div>
-            )}
-            <Link
-              href={settingsPath}
-              className={cn(STYLES.btn, STYLES.btnSecondary)}
-            >
-              <Settings className="w-4 h-4" />
-              Settings
-            </Link>
-          </div>
-        </div>
-      </div>
-
       {/* Scrollable Content Area */}
       <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Feed */}

@@ -22,11 +22,6 @@ export default async function InvitationsPage() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Manage Invitations</h1>
-        <p className="text-gray-500 text-sm">Send and track invitations to new members</p>
-      </div>
-      
       {/* Create Invitation Form */}
       <div className={cn(STYLES.card, "bg-white p-6 rounded-lg shadow-sm border border-gray-100")}>
         <div className="flex items-center gap-2 mb-6 text-primary-700">

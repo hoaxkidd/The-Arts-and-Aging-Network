@@ -15,11 +15,6 @@ export default async function AdminRequestsPage() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Staff Requests</h1>
-        <p className="text-gray-500 text-sm">Manage expense reimbursements, sick days, and time off requests.</p>
-      </div>
-
       <div className={cn(STYLES.card, "p-0 overflow-hidden")}>
         <div className="table-scroll-wrapper max-h-[calc(100vh-320px)]">
           <table className={STYLES.table}>

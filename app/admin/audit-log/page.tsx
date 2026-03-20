@@ -33,7 +33,6 @@ export default async function AuditLogPage({
   const filter = resolvedParams.filter || 'all'
   const perPage = 25
 
-  // Calculate date filter
   const now = new Date()
   let dateFilter: { gte?: Date } = {}
   
@@ -57,7 +56,6 @@ export default async function AuditLogPage({
       dateFilter = {}
   }
 
-  // Build where clause
   const where: Prisma.AuditLogWhereInput = {}
   
   if (search) {
@@ -71,7 +69,6 @@ export default async function AuditLogPage({
     where.createdAt = dateFilter
   }
 
-  // Execute queries in parallel
   const [logs, total] = await Promise.all([
     prisma.auditLog.findMany({
       take: perPage,
@@ -118,7 +115,6 @@ export default async function AuditLogPage({
     const parsed = safeJsonParse<Record<string, unknown>>(details, {} as Record<string, unknown>)
     const updates = parsed.updates as Record<string, unknown> | undefined
     
-    // Handle format: {"homeId":"...","updates":{"name":"...","address":"..."}}
     if (updates && typeof updates === 'object') {
       const changes = Object.keys(updates)
       if (changes.length === 1) {
@@ -130,32 +126,16 @@ export default async function AuditLogPage({
       return `Changed ${changes.slice(0, 2).join(', ')} and ${changes.length - 2} more`
     }
     
-    // Handle format: {"name":"New Home"} - for created items
     const name = parsed.name as string | undefined
     const title = parsed.title as string | undefined
     const email = parsed.email as string | undefined
     const eventId = parsed.eventId as string | undefined
     
-    if (name) {
-      return name
-    }
+    if (name) return name
+    if (title) return title
+    if (email) return email
+    if (eventId) return 'Event action'
     
-    // Handle format: {"title":"Event Title"} 
-    if (title) {
-      return title
-    }
-    
-    // Handle user-related details
-    if (email) {
-      return email
-    }
-    
-    // Handle event details
-    if (eventId) {
-      return 'Event action'
-    }
-    
-    // Default - no details shown
     return '-'
   }
 
@@ -177,7 +157,6 @@ export default async function AuditLogPage({
     return queryString ? `/admin/audit-log?${queryString}` : '/admin/audit-log'
   }
 
-  // Generate CSV content
   const csvContent = [
     ['Action', 'User', 'Details', 'Date'].join(','),
     ...logs.map(log => [
@@ -192,19 +171,7 @@ export default async function AuditLogPage({
 
   return (
     <div className="h-full flex flex-col">
-      {/* Sticky Header */}
       <div className="flex-shrink-0 pb-3 border-b border-gray-200">
-        <div className="flex items-center gap-2 mb-3">
-          <div className="w-8 h-8 rounded-lg bg-primary-100 text-primary-600 flex items-center justify-center">
-            <FileSearch className="w-4 h-4" />
-          </div>
-          <div>
-            <h1 className="text-lg font-bold text-gray-900">Audit Log</h1>
-            <p className="text-xs text-gray-500">Track all system activity and changes</p>
-          </div>
-        </div>
-
-        {/* Search and Filter Bar */}
         <div className="flex flex-col sm:flex-row gap-3">
           <form className="flex-1" method="GET">
             <input
@@ -275,62 +242,64 @@ export default async function AuditLogPage({
 
       {/* Table */}
       <div className="flex-1 overflow-auto pt-4 pb-4">
-        <div className={STYLES.tableWrapper}>
-          <table className={STYLES.table}>
-            <thead className="sticky top-0 z-10 bg-gray-50">
-              <tr>
-                <th className="w-[20%] px-3 py-2.5 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Action</th>
-                <th className="w-[20%] px-3 py-2.5 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">User</th>
-                <th className="w-[40%] px-3 py-2.5 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Details</th>
-                <th className="w-[20%] px-3 py-2.5 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Date</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {logs.length > 0 ? (
-                logs.map((log) => (
-                  <tr key={log.id} className={STYLES.tableRow}>
-                    <td className="px-3 py-2.5">
-                      <span className={cn("inline-flex items-center gap-1 text-xs font-semibold", getActionColor(log.action))}>
-                        {(() => {
-                          const Icon = getActionIcon(log.action)
-                          return <Icon className="w-3 h-3" />
-                        })()}
-                        {formatAction(log.action)}
-                      </span>
-                    </td>
-                    <td className="px-3 py-2.5">
-                      <span className="text-sm font-medium text-gray-900">
-                        {log.user?.name || 'System'}
-                      </span>
-                    </td>
-                    <AuditLogDetailsCell details={log.details}>
-                      {formatAuditDetails(log.details)}
-                    </AuditLogDetailsCell>
-                    <td className="px-3 py-2.5">
-                      <span className="text-sm text-gray-500">
-                        {getRelativeTime(log.createdAt)}
-                      </span>
+        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+          <div className="table-scroll-wrapper max-h-[calc(100vh-320px)]">
+            <table className={STYLES.table}>
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className={cn(STYLES.tableHeader, "w-[20%]")}>Action</th>
+                  <th className={cn(STYLES.tableHeader, "w-[20%]")}>User</th>
+                  <th className={cn(STYLES.tableHeader, "w-[40%]")}>Details</th>
+                  <th className={cn(STYLES.tableHeader, "w-[20%]")}>Date</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {logs.length > 0 ? (
+                  logs.map((log) => (
+                    <tr key={log.id} className={STYLES.tableRow}>
+                      <td className={STYLES.tableCell}>
+                        <span className={cn("inline-flex items-center gap-1 text-xs font-semibold", getActionColor(log.action))}>
+                          {(() => {
+                            const Icon = getActionIcon(log.action)
+                            return <Icon className="w-3 h-3" />
+                          })()}
+                          {formatAction(log.action)}
+                        </span>
+                      </td>
+                      <td className={STYLES.tableCell}>
+                        <span className="text-sm font-medium text-gray-900">
+                          {log.user?.name || 'System'}
+                        </span>
+                      </td>
+                      <AuditLogDetailsCell details={log.details}>
+                        {formatAuditDetails(log.details)}
+                      </AuditLogDetailsCell>
+                      <td className={STYLES.tableCell}>
+                        <span className="text-sm text-gray-500">
+                          {getRelativeTime(log.createdAt)}
+                        </span>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={4} className={cn(STYLES.tableCell, "text-center py-12")}>
+                      <FileSearch className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                      <p className="text-sm text-gray-500">No audit logs found</p>
+                      {search && (
+                        <Link 
+                          href="/admin/audit-log" 
+                          className="text-xs text-primary-600 hover:text-primary-700 mt-1 inline-block"
+                        >
+                          Clear search
+                        </Link>
+                      )}
                     </td>
                   </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan={4} className="px-4 py-12 text-center">
-                    <FileSearch className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                    <p className="text-sm text-gray-500">No audit logs found</p>
-                    {search && (
-                      <Link 
-                        href="/admin/audit-log" 
-                        className="text-xs text-primary-600 hover:text-primary-700 mt-1 inline-block"
-                      >
-                        Clear search
-                      </Link>
-                    )}
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
 
         {/* Pagination */}

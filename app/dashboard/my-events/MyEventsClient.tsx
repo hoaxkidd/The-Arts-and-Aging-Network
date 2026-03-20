@@ -35,18 +35,6 @@ export function MyEventsClient({ events, tabs, initialTab }: MyEventsClientProps
 
   return (
     <div className="h-full flex flex-col">
-      <div className="flex-shrink-0 pb-3 mb-3 border-b border-gray-200">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-primary-100 text-primary-600 flex items-center justify-center">
-            <CheckCircle className="w-5 h-5" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">My Events</h1>
-            <p className="text-sm text-gray-500 mt-1">View all events your facility has participated in</p>
-          </div>
-        </div>
-      </div>
-
       {/* Tabs */}
       <div className="flex-shrink-0 border-b border-gray-200 -mb-px">
         <TabNavigation
@@ -57,7 +45,7 @@ export function MyEventsClient({ events, tabs, initialTab }: MyEventsClientProps
       </div>
 
       {/* Event List */}
-      <div className="flex-1 min-h-0 mt-5">
+      <div className="flex-1 min-h-0 mt-4">
         <HomeEventHistory events={events} activeFilter={activeFilter} />
       </div>
     </div>

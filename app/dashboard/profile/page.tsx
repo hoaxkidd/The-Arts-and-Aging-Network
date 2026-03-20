@@ -33,20 +33,8 @@ export default async function HomeProfilePage({
 
   return (
     <div className="h-full flex flex-col">
-      {/* Sticky Header - Title + Tabs together */}
-      <div className="flex-shrink-0 pb-0">
-        <div className="flex items-center gap-3 pb-3 border-b border-gray-100">
-          <div className="w-10 h-10 rounded-lg bg-primary-100 text-primary-600 flex items-center justify-center">
-            <Building2 className="w-5 h-5" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Profile & Settings</h1>
-            <p className="text-sm text-gray-500 mt-1">Manage your facility details and personal account information</p>
-          </div>
-        </div>
-
-        {/* Tab Navigation - part of sticky header */}
-        <div className="flex border-b border-gray-200 mt-3 -mb-px">
+      {/* Tab Navigation */}
+      <div className="flex-shrink-0 border-b border-gray-200 -mb-px">
           <Link
             href="/dashboard/profile?tab=facility"
             className={cn(
@@ -71,7 +59,6 @@ export default async function HomeProfilePage({
             <User className="w-4 h-4" />
             My Account
           </Link>
-        </div>
       </div>
 
       {/* Scrollable Content */}

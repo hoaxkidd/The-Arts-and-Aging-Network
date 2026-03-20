@@ -156,40 +156,6 @@ export default async function GroupMessagesPage({
 
   return (
     <div className="h-full flex flex-col">
-      {/* Header */}
-      <header className="flex-shrink-0 bg-white border-b border-gray-200 px-4 py-3">
-        <div className="flex items-center gap-3">
-          <Link
-            href="/staff/inbox"
-            className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4" />
-          </Link>
-
-          <div className={cn(
-            "w-10 h-10 rounded-lg flex items-center justify-center text-xl flex-shrink-0",
-            `bg-${group.color}-100`
-          )}>
-            {group.iconEmoji}
-          </div>
-          <div className="flex-1 min-w-0">
-            <h1 className="text-base font-bold text-gray-900 truncate">{group.name}</h1>
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-gray-500 flex items-center gap-1">
-                <Users className="w-3 h-3" />
-                {members.length} members
-              </span>
-              {group.description && (
-                <>
-                  <span className="text-gray-300">|</span>
-                  <span className="text-xs text-gray-500 truncate">{group.description}</span>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-      </header>
-
       {/* Messages Thread */}
       <div className="flex-1 min-h-0">
         <MessageThread

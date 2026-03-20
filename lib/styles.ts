@@ -1,3 +1,25 @@
+/**
+ * TABLE STANDARDS - Canonical Table Implementation
+ * 
+ * All tables across all roles MUST follow this structure for consistency.
+ * Template reference: /admin/events EventListTable
+ * 
+ * REQUIRED STRUCTURE:
+ * 1. Card wrapper: bg-white rounded-lg border border-gray-200 overflow-hidden
+ * 2. Table wrapper: table-scroll-wrapper with max-h-[calc(100vh-320px)]
+ * 3. Table element: STYLES.table
+ * 4. Header row: bg-gray-50 with STYLES.tableHeader cells
+ * 5. Body: divide-y divide-gray-100
+ * 6. Rows: STYLES.tableRow (includes hover state)
+ * 7. Cells: STYLES.tableCell (px-4 py-3)
+ * 
+ * OPTIONAL:
+ * - Mobile card view for responsive design
+ * - Search/filter controls above the table
+ * 
+ * For reusable table component, use StickyTable from components/ui/StickyTable.tsx
+ */
+
 export const STYLES = {
   // Buttons - Arts & Aging Brand
   btn: "px-4 py-2.5 rounded-lg font-medium transition-all duration-200 flex items-center justify-center gap-2 text-sm",
@@ -40,11 +62,12 @@ export const STYLES = {
   statsValue: "text-2xl font-bold text-gray-900",
   statsLabel: "text-sm font-medium text-gray-500",
 
-  // Tables - use with .table-scroll-wrapper for responsive sticky headers
+  // Tables - See TABLE STANDARDS documentation above
+  // IMPORTANT: Always wrap tables in .table-scroll-wrapper for sticky headers
   table: "w-full text-sm min-w-full divide-y divide-gray-200",
   tableWrapper: "table-scroll-wrapper border border-gray-200 rounded-lg overflow-hidden bg-white",
   tableHeader: "sticky top-0 text-left text-xs font-bold text-gray-600 uppercase tracking-wider px-3 py-2.5 bg-gray-50 border-b border-gray-200",
-  tableCell: "px-4 py-3",
+  tableCell: "px-4 py-3 text-sm text-gray-600",
   tableRow: "border-b border-gray-100 hover:bg-gray-50 transition-colors",
 
   // Empty States

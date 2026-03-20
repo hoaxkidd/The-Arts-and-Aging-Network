@@ -2,6 +2,7 @@ import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
 import { redirect, notFound } from "next/navigation"
 import Link from "next/link"
+import NextImage from "next/image"
 import {
   ArrowLeft,
   Calendar,
@@ -10,14 +11,12 @@ import {
   Users,
   Star,
   CheckCircle,
-  Image,
+  Image as ImageIcon,
   ExternalLink
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { STYLES } from "@/lib/styles"
 import { AddToCalendar } from "@/components/events/AddToCalendar"
-
-const db = prisma as any
 
 export default async function HomeEventDetailPage({
   params
@@ -30,14 +29,14 @@ export default async function HomeEventDetailPage({
   const { id } = await params
 
   // Get home for this user
-  const home = await db.geriatricHome.findUnique({
+  const home = await prisma.geriatricHome.findUnique({
     where: { userId: session.user.id }
   })
 
   if (!home) redirect('/dashboard')
 
   // Get event with all details
-  const event = await db.event.findUnique({
+  const event = await prisma.event.findUnique({
     where: { id },
     include: {
       location: true,
@@ -81,45 +80,6 @@ export default async function HomeEventDetailPage({
 
   return (
     <div className="h-full flex flex-col">
-      {/* Compact Header */}
-      <header className="flex-shrink-0 pb-3">
-        <Link
-          href="/dashboard/my-events"
-          className="inline-flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-700 mb-2"
-        >
-          <ArrowLeft className="w-3 h-3" />
-          Back to My Events
-        </Link>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className={cn(
-              "px-2 py-0.5 rounded text-[10px] font-medium",
-              isPast ? "bg-gray-100 text-gray-600" :
-              isToday ? "bg-yellow-100 text-yellow-700" :
-              "bg-green-100 text-green-700"
-            )}>
-              {isPast ? 'Completed' : isToday ? 'Today' : 'Upcoming'}
-            </span>
-            {event.origin === 'HOME_REQUESTED' && (
-              <span className="px-2 py-0.5 bg-purple-100 text-purple-700 rounded text-[10px] font-medium">
-                Your Request
-              </span>
-            )}
-          </div>
-          {/* Add to Calendar */}
-          {!isPast && (
-            <AddToCalendar event={{
-              title: event.title,
-              description: event.description,
-              location: event.location?.address || '',
-              startDateTime: event.startDateTime,
-              endDateTime: event.endDateTime
-            }} />
-          )}
-        </div>
-        <h1 className="text-lg font-bold text-gray-900 mt-1">{event.title}</h1>
-      </header>
-
       {/* Content */}
       <div className="flex-1 min-h-0 overflow-auto space-y-4">
         {/* Event Info Card */}
@@ -196,7 +156,7 @@ export default async function HomeEventDetailPage({
                 </div>
               )}
               <div className="bg-purple-50 rounded-lg p-3 text-center">
-                <Image className="w-4 h-4 text-purple-600 mx-auto mb-1" />
+                <ImageIcon className="w-4 h-4 text-purple-600 mx-auto mb-1" />
                 <p className="text-lg font-bold text-purple-700">{event._count.photos}</p>
                 <p className="text-[10px] text-purple-600">Photos</p>
               </div>
@@ -264,10 +224,13 @@ export default async function HomeEventDetailPage({
               <div className="grid grid-cols-4 gap-2">
                 {event.photos.map((photo: any) => (
                   <div key={photo.id} className="aspect-square bg-gray-100 rounded overflow-hidden">
-                    <img
+                    <NextImage
                       src={photo.url}
                       alt={photo.caption || 'Event photo'}
+                      width={320}
+                      height={320}
                       className="w-full h-full object-cover"
+                      unoptimized
                     />
                   </div>
                 ))}

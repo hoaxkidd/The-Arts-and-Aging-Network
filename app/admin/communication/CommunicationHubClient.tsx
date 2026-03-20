@@ -375,11 +375,6 @@ export function CommunicationHubClient({ groups, pendingGroupRequests, pendingCo
 
     return (
         <div className="h-full min-h-0 flex flex-col w-full max-w-full min-w-0 overflow-x-hidden">
-            <div className="flex-shrink-0 mb-4 sm:mb-5">
-                <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Communication Hub</h1>
-                <p className="text-sm text-gray-500 mt-0.5">Manage chat groups, permissions, and user invitations</p>
-            </div>
-
             <TabNavigation
                 tabs={tabs}
                 activeTab={activeTab}

@@ -62,35 +62,22 @@ export function EventManagementHubClient({ events, requests }: EventManagementHu
 
   return (
     <div className="h-full flex flex-col">
-      <header className="flex-shrink-0 pb-4 border-b border-gray-200">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-md bg-primary-100 text-primary-600 flex items-center justify-center">
-              <Calendar className="w-4 h-4" />
-            </div>
-            <div>
-              <h1 className="text-base font-semibold text-gray-900">Event Management</h1>
-              <p className="text-xs text-gray-500">Events, calendar, and request approvals</p>
-            </div>
-          </div>
-          {activeTab === 'list' && (
-            <Link href="/admin/events/new" className={cn(STYLES.btn, STYLES.btnPrimary, "self-start sm:self-auto")}>
-              <Plus className="w-4 h-4" />
-              Create Event
-            </Link>
-          )}
-        </div>
-      </header>
+      {/* Tabs with action button - header moved to layout */}
+      <div className="flex items-center justify-between mb-4">
+        <TabNavigation
+          tabs={tabs}
+          activeTab={activeTab}
+          onChange={setActiveTab}
+        />
+        {activeTab === 'list' && (
+          <Link href="/admin/events/new" className={cn(STYLES.btn, STYLES.btnPrimary)}>
+            <Plus className="w-4 h-4" />
+            Create Event
+          </Link>
+        )}
+      </div>
 
-      <div className="flex-1 min-h-0 overflow-auto pt-4">
-        <div className="mb-4">
-          <TabNavigation
-            tabs={tabs}
-            activeTab={activeTab}
-            onChange={setActiveTab}
-          />
-        </div>
-
+      <div className="flex-1 min-h-0 overflow-auto">
         {activeTab === 'list' && <EventListTable events={events as never[]} />}
         {activeTab === 'calendar' && <AdminCalendarView events={events as never[]} />}
         {activeTab === 'requests' && <AdminRequestList requests={requests as never[]} />}

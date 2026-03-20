@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Image from 'next/image'
 import { MessageThread } from "@/components/messaging/MessageThread"
 import { ChatInterface } from "@/components/messaging/ChatInterface"
 import { Plus, Users, MessageSquare, Loader2, Search, X, Send, Mail, ArrowLeft } from "lucide-react"
@@ -434,7 +435,7 @@ export function AdminMessagingPanel({ groups, currentUserId }: { groups: any[], 
 
     return (
         <>
-            <div className="flex flex-col md:flex-row flex-1 min-h-[320px] md:min-h-[400px] w-full max-w-full min-w-0 bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm">
+            <div className="flex flex-col md:flex-row flex-1 w-full max-w-full min-w-0 bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm">
                 {/* Sidebar - full width on mobile when no selection, hidden when chat shown */}
                 <div className={cn(
                     "flex flex-col bg-gray-50 min-h-0 min-w-0 shrink-0",
@@ -495,7 +496,7 @@ export function AdminMessagingPanel({ groups, currentUserId }: { groups: any[], 
                                             )}
                                         >
                                             {item.image ? (
-                                                <img src={item.image} alt="" className="w-10 h-10 rounded-full object-cover shrink-0" />
+                                                <Image src={item.image} alt="" width={40} height={40} className="w-10 h-10 rounded-full object-cover shrink-0" unoptimized />
                                             ) : (
                                                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 text-white flex items-center justify-center text-sm font-bold shrink-0">
                                                     {item.name.charAt(0)}

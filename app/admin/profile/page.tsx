@@ -17,8 +17,6 @@ export default async function ProfilePage() {
 
   return (
     <div className="w-full">
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">My Profile</h1>
-
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Left Column: Profile Card */}
         <div className={cn(STYLES.card, "text-center h-fit")}>

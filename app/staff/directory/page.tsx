@@ -35,21 +35,12 @@ export default async function StaffDirectoryPage({
 
   return (
     <div className="h-full flex flex-col">
-      {/* Header - consistent with other staff pages */}
-      <header className="flex-shrink-0 pb-3 border-b border-gray-200">
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-md bg-primary-100 text-primary-600 flex items-center justify-center">
-              <Users className="w-4 h-4" />
-            </div>
-            <div>
-              <h1 className="text-base font-semibold text-gray-900">Team Directory</h1>
-              <p className="text-xs text-gray-500">
-                {staff.length} member{staff.length !== 1 ? 's' : ''} · {groups.length} group{groups.length !== 1 ? 's' : ''}
-              </p>
-            </div>
-          </div>
-
+      {/* Search and Content */}
+      <div className="flex-1 min-h-0 pt-3">
+        <div className="flex items-center justify-between mb-3">
+          <p className="text-xs text-gray-500">
+            {staff.length} member{staff.length !== 1 ? 's' : ''} · {groups.length} group{groups.length !== 1 ? 's' : ''}
+          </p>
           <form className="relative w-48">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
             <input
@@ -61,10 +52,6 @@ export default async function StaffDirectoryPage({
             />
           </form>
         </div>
-      </header>
-
-      {/* Content */}
-      <div className="flex-1 min-h-0 pt-3">
         {search && (
           <p className="text-xs text-gray-500 mb-2">
             Results for &quot;{search}&quot;

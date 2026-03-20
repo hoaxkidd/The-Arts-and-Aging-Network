@@ -185,7 +185,7 @@ export function RequestList({
   // Desktop table view
   const DesktopTableView = () => (
     <div className="hidden md:block bg-white rounded-lg border border-gray-200 overflow-hidden">
-      <div className="table-scroll-wrapper">
+      <div className="table-scroll-wrapper max-h-[calc(100vh-320px)]">
         <table className={STYLES.table}>
           <thead className="bg-gray-50">
             <tr>
@@ -272,7 +272,7 @@ export function RequestList({
               })
             ) : (
               <tr>
-                <td colSpan={6} className={cn(STYLES.tableCell, "text-center py-8")}>
+                <td colSpan={6} className={cn(STYLES.tableCell, "text-center py-12")}>
                   <Calendar className="w-8 h-8 mx-auto text-gray-300 mb-2" />
                   <p className="text-sm text-gray-500">No requests found</p>
                 </td>

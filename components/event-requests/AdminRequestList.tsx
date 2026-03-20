@@ -177,9 +177,9 @@ export function AdminRequestList({ requests }: { requests: Request[] }) {
         Showing {filtered.length} of {requests.length} request{requests.length !== 1 ? 's' : ''}
       </div>
 
-      {/* Table - single card like User Management */}
-      <div className={cn(STYLES.card, "overflow-hidden p-0")}>
-        <div className={cn("table-scroll-wrapper", "max-h-[calc(100vh-320px)]")}>
+      {/* Table */}
+      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+        <div className="table-scroll-wrapper max-h-[calc(100vh-320px)]">
           <table className={STYLES.table}>
             <thead className="bg-gray-50">
               <tr>
@@ -191,15 +191,15 @@ export function AdminRequestList({ requests }: { requests: Request[] }) {
                 <th className={cn(STYLES.tableHeader, "text-right")}>Actions</th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="divide-y divide-gray-100">
               {filtered.map((req) => {
                 const isCustom = req.type === 'CREATE_CUSTOM'
                 const title = isCustom ? req.customTitle : req.existingEvent?.title
                 const date = isCustom ? req.customStartDateTime : req.existingEvent?.startDateTime
                 const loading = isPending && actionId === req.id
                 return (
-                  <tr key={req.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-6 py-4">
+                  <tr key={req.id} className={STYLES.tableRow}>
+                    <td className={STYLES.tableCell}>
                       <Link
                         href={`/admin/homes/${req.geriatricHome.id}`}
                         className="flex items-center gap-2 text-sm font-medium text-gray-900 hover:text-primary-600"
@@ -208,7 +208,7 @@ export function AdminRequestList({ requests }: { requests: Request[] }) {
                         {req.geriatricHome.name}
                       </Link>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className={STYLES.tableCell}>
                       <Link href={`/admin/event-requests/${req.id}`} className="font-medium text-primary-600 hover:underline">
                         {title}
                       </Link>
@@ -219,11 +219,11 @@ export function AdminRequestList({ requests }: { requests: Request[] }) {
                       )}
                       {req.notes && <p className="text-xs text-gray-500 mt-0.5 truncate max-w-xs" title={req.notes}>{req.notes}</p>}
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-600">{isCustom ? 'Custom' : 'Existing'}</td>
-                    <td className="px-6 py-4 text-sm text-gray-500">
+                    <td className={STYLES.tableCell}>{isCustom ? 'Custom' : 'Existing'}</td>
+                    <td className={STYLES.tableCell}>
                       {date ? new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—'}
                     </td>
-                    <td className="px-6 py-4">
+                    <td className={STYLES.tableCell}>
                       <span className={cn(
                         "inline-flex text-xs font-semibold",
                         req.status === 'PENDING' && "text-amber-700",
@@ -233,7 +233,7 @@ export function AdminRequestList({ requests }: { requests: Request[] }) {
                         {req.status}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-right text-sm font-medium">
+                    <td className={cn(STYLES.tableCell, "text-right")}>
                       <div className="flex items-center justify-end gap-2">
                         <Link
                           href={`/admin/event-requests/${req.id}`}
@@ -273,7 +273,7 @@ export function AdminRequestList({ requests }: { requests: Request[] }) {
               })}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
+                  <td colSpan={6} className={cn(STYLES.tableCell, "text-center py-12")}>
                     {searchQuery || filterStatus !== 'ALL' ? 'No requests match your filters.' : 'No event requests to review.'}
                   </td>
                 </tr>

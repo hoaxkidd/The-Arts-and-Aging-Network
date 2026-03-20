@@ -151,16 +151,6 @@ export default async function HomeAdminFormsPage({
 
   return (
     <div className="h-full flex flex-col">
-      {/* Header */}
-      <header className="flex-shrink-0 pb-3">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-lg font-bold text-gray-900">Forms</h1>
-            <p className="text-xs text-gray-500">Access forms assigned to your role</p>
-          </div>
-        </div>
-      </header>
-
       {/* Info Banner for Home Admins */}
       {isHomeAdmin && (
         <div className="flex-shrink-0 mb-4 bg-blue-50 border border-blue-200 rounded-lg p-3 flex items-start gap-2">

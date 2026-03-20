@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 import {
   MessageSquare,
   Image as ImageIcon,
@@ -545,7 +546,7 @@ export default function EventCommunityTabs({
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                     {photos.map(photo => (
                         <div key={photo.id} className="aspect-square bg-gray-100 rounded-lg overflow-hidden relative group">
-                            <img src={photo.url} alt={photo.caption || "Event photo"} className="w-full h-full object-cover" />
+                            <Image src={photo.url} alt={photo.caption || "Event photo"} width={400} height={400} className="w-full h-full object-cover" unoptimized />
                             <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-2">
                                 <span className="text-white text-xs truncate font-medium">{photo.uploader.name}</span>
                                 {photo.caption && <span className="text-white/80 text-[10px] truncate">{photo.caption}</span>}

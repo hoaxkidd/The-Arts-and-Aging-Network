@@ -34,24 +34,6 @@ export default async function StaffProfilePage({
 
   return (
     <div className="h-full flex flex-col">
-      {/* Header - consistent with other staff pages */}
-      <header className="flex-shrink-0 pb-3 border-b border-gray-200">
-        <div className="flex items-center gap-3">
-          <Link
-            href="/staff/directory"
-            className="w-8 h-8 rounded-md bg-primary-100 text-primary-600 flex items-center justify-center hover:bg-primary-200 transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4" />
-          </Link>
-          <div>
-            <h1 className="text-base font-semibold text-gray-900">Staff Profile</h1>
-            <p className="text-xs text-gray-500">
-              View staff member details
-            </p>
-          </div>
-        </div>
-      </header>
-
       {/* Content */}
       <div className="flex-1 min-h-0 pt-4">
         <StaffPublicProfile

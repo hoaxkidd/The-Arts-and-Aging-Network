@@ -51,17 +51,6 @@ export default async function JoinGroupPage({
 
   return (
     <div className="h-full flex flex-col">
-      <div className="flex-shrink-0 mb-6">
-        <Link
-          href="/staff/groups"
-          className="inline-flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-700 mb-2"
-        >
-          <ArrowLeft className="w-3 h-3" /> Back to Messages
-        </Link>
-        <h1 className="text-2xl font-bold text-gray-900">Join Message Group</h1>
-        <p className="text-sm text-gray-500">Request to join this group</p>
-      </div>
-
       <div className="flex-1 min-h-0 overflow-auto">
         <div className="max-w-2xl">
           {/* Group Info */}

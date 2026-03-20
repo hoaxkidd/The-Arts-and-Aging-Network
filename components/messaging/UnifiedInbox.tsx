@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { MessageSquare, Users, Plus, Lock, Clock, LogIn } from 'lucide-react'
+import { MessageSquare, Users, Plus, Lock, Clock, LogIn, Search, Star, FileText, Bell } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { STYLES } from '@/lib/styles'
 import { ConversationsList } from './ConversationsList'
@@ -139,6 +139,38 @@ export function UnifiedInbox({ conversations, groupMemberships, currentUserId, c
             Groups
             <span className="ml-1.5 text-xs">({myGroups.length})</span>
           </button>
+        </div>
+
+        {/* Quick Actions */}
+        <div className="flex items-center gap-1 mt-2 pt-2 border-t border-gray-100">
+          <Link
+            href="/staff/inbox/search"
+            className="flex-1 min-h-[36px] flex items-center justify-center gap-1 text-xs text-gray-600 hover:bg-gray-100 active:bg-gray-200 rounded-lg transition-colors"
+          >
+            <Search className="w-3.5 h-3.5" />
+            Search
+          </Link>
+          <Link
+            href="/staff/inbox/starred"
+            className="flex-1 min-h-[36px] flex items-center justify-center gap-1 text-xs text-gray-600 hover:bg-gray-100 active:bg-gray-200 rounded-lg transition-colors"
+          >
+            <Star className="w-3.5 h-3.5" />
+            Starred
+          </Link>
+          <Link
+            href="/staff/inbox/reminders"
+            className="flex-1 min-h-[36px] flex items-center justify-center gap-1 text-xs text-gray-600 hover:bg-gray-100 active:bg-gray-200 rounded-lg transition-colors"
+          >
+            <Bell className="w-3.5 h-3.5" />
+            Reminders
+          </Link>
+          <Link
+            href="/staff/inbox/templates"
+            className="flex-1 min-h-[36px] flex items-center justify-center gap-1 text-xs text-gray-600 hover:bg-gray-100 active:bg-gray-200 rounded-lg transition-colors"
+          >
+            <FileText className="w-3.5 h-3.5" />
+            Templates
+          </Link>
         </div>
       </div>
 

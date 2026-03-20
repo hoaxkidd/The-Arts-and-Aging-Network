@@ -346,3 +346,47 @@ export async function updateEventStatus(eventId: string, status: string) {
   await prisma.event.update({ where: { id: eventId }, data: { status } })
   revalidatePath('/admin/events')
 }
+
+export async function getPublishedEventTypes() {
+  try {
+    const events = await prisma.event.findMany({
+      where: { status: 'PUBLISHED' },
+      include: { 
+        requiredFormTemplate: true, 
+        location: true 
+      },
+      orderBy: { title: 'asc' }
+    })
+    return events
+  } catch (e) {
+    console.error('Error fetching published event types:', e)
+    return []
+  }
+}
+
+export async function findEventByTypeAndDate(eventId: string, date: string) {
+  try {
+    const targetDate = new Date(date)
+    const startOfDay = new Date(targetDate.setHours(0, 0, 0, 0))
+    const endOfDay = new Date(targetDate.setHours(23, 59, 59, 999))
+
+    const event = await prisma.event.findFirst({
+      where: {
+        id: eventId,
+        status: 'PUBLISHED',
+        startDateTime: {
+          gte: startOfDay,
+          lte: endOfDay
+        }
+      },
+      include: {
+        requiredFormTemplate: true,
+        location: true
+      }
+    })
+    return event
+  } catch (e) {
+    console.error('Error finding event by type and date:', e)
+    return null
+  }
+}

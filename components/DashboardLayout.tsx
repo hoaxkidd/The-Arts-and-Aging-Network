@@ -6,6 +6,7 @@ type DashboardLayoutProps = {
   children: React.ReactNode
   role: string
   title?: string
+  homeName?: string
 }
 
 async function getNotifications(userId: string) {
@@ -24,7 +25,7 @@ async function getNotifications(userId: string) {
   }
 }
 
-export default async function DashboardLayout({ children, role, title = "Arts & Aging" }: DashboardLayoutProps) {
+export default async function DashboardLayout({ children, role, title = "Arts & Aging", homeName }: DashboardLayoutProps) {
   const session = await auth()
   const currentUser = session?.user?.id
     ? await prisma.user.findUnique({
@@ -60,6 +61,7 @@ export default async function DashboardLayout({ children, role, title = "Arts & 
           name: currentUser?.name ?? session?.user?.name,
           email: currentUser?.email ?? session?.user?.email,
         }}
+        homeName={homeName}
     >
         {children}
     </DashboardLayoutClient>

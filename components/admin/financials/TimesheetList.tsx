@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Image from 'next/image'
 import { STYLES } from "@/lib/styles"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
@@ -112,7 +113,7 @@ export function TimesheetList({ timesheets }: { timesheets: Timesheet[] }) {
                         <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden">
                                 {ts.user.image ? (
-                                    <img src={ts.user.image} alt={displayName} className="w-full h-full object-cover" />
+                                    <Image src={ts.user.image} alt={displayName} width={40} height={40} className="w-full h-full object-cover" unoptimized />
                                 ) : (
                                     <span className="text-gray-500 font-bold">{displayName.charAt(0)}</span>
                                 )}

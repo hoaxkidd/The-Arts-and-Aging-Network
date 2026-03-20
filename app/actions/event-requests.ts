@@ -206,16 +206,19 @@ export async function submitEventSignUpForm(
 
 // Create a custom event request
 export async function createCustomEventRequest(data: {
-  title: string
+  title?: string
   description?: string
-  startDateTime: string
-  endDateTime: string
+  startDateTime?: string
+  endDateTime?: string
   locationName?: string
   locationAddress?: string
   notes?: string
   expectedAttendees?: number
   programType?: string
   preferredDates?: Array<{ startDateTime: string, endDateTime: string }>
+  selectedEventId?: string
+  formTemplateId?: string
+  formData?: Record<string, unknown>
 }) {
   const session = await auth()
   if (!session?.user?.id) return { error: "Unauthorized" }
@@ -226,27 +229,112 @@ export async function createCustomEventRequest(data: {
       where: { userId: session.user.id }
     })
 
+    console.log('[FORM SUBMISSION] Session user:', session.user.id, 'Home found:', home?.id)
+
     if (!home) return { error: "No home found for this user" }
 
-    // Validate required fields
+    // Handle form template submission
+    if (data.formTemplateId && data.formData) {
+      // Validate form template exists
+      const formTemplate = await db.formTemplate.findUnique({
+        where: { id: data.formTemplateId }
+      })
+
+      if (!formTemplate) return { error: "Form template not found" }
+
+      // Extract event details from form data if available
+      const eventTitle = data.formData.title as string || data.formData.EventTitle as string || formTemplate.title
+      const eventDescription = data.formData.description as string || data.formData.Description as string || null
+      const eventStartDateTime = data.formData.startDateTime as string || data.formData.StartDateTime as string || data.formData.date as string
+      const eventEndDateTime = data.formData.endDateTime as string || data.formData.EndDateTime as string
+
+      // Create the event request
+      const request = await db.eventRequest.create({
+        data: {
+          geriatricHomeId: home.id,
+          type: 'CREATE_CUSTOM',
+          requestedBy: session.user.id,
+          customTitle: eventTitle,
+          customDescription: eventDescription,
+          customStartDateTime: eventStartDateTime ? new Date(eventStartDateTime) : null,
+          customEndDateTime: eventEndDateTime ? new Date(eventEndDateTime) : null,
+          notes: (data.formData.notes as string) || (data.formData.Notes as string) || null,
+          expectedAttendees: (data.formData.expectedAttendees as number) || (data.formData.ExpectedAttendees as number) || null,
+          status: 'PENDING',
+          requestedAt: new Date(),
+          updatedAt: new Date()
+        }
+      })
+
+      console.log('[FORM SUBMISSION] Event request created:', request.id, 'Type:', request.type, 'Status:', request.status)
+
+      // Create form submission
+      const formSubmission = await db.formSubmission.create({
+        data: {
+          templateId: data.formTemplateId,
+          formData: JSON.stringify(data.formData),
+          submittedBy: session.user.id,
+          eventRequestId: request.id
+        }
+      })
+
+      console.log('[FORM SUBMISSION] Form submission created:', formSubmission.id)
+
+      // Update form template usage count
+      await db.formTemplate.update({
+        where: { id: data.formTemplateId },
+        data: { usageCount: { increment: 1 } }
+      })
+
+      // Notify admins
+      const admins = await db.user.findMany({
+        where: { role: 'ADMIN', status: 'ACTIVE' }
+      })
+
+      for (const admin of admins) {
+        await db.notification.create({
+          data: {
+            userId: admin.id,
+            type: 'EVENT_REQUEST_SUBMITTED',
+            title: 'New Event Request',
+            message: `${home.name} has submitted an event request using form: "${formTemplate.title}"`,
+            link: `/admin/event-requests/${request.id}`
+          }
+        })
+      }
+
+      // Create audit log
+      await prisma.auditLog.create({
+        data: {
+          action: 'EVENT_REQUEST_WITH_FORM_SUBMITTED',
+          details: JSON.stringify({ 
+            requestId: request.id, 
+            homeId: home.id, 
+            formTemplateId: data.formTemplateId,
+            formTitle: formTemplate.title
+          }),
+          userId: session.user.id
+        }
+      })
+
+      revalidatePath('/dashboard/requests')
+      revalidatePath('/admin/event-requests')
+
+      return { success: true, data: request }
+    }
+
+    // Legacy handling - no form template
     if (!data.title?.trim()) return { error: "Title is required" }
+    if (!data.startDateTime) return { error: "Start date/time is required" }
+    if (!data.endDateTime) return { error: "End date/time is required" }
 
     // Support either single date or multiple preferred dates
     let status = 'PENDING'
     let preferredDatesJson = null
 
     if (data.preferredDates && data.preferredDates.length > 0) {
-      // Multiple dates - need staff availability
       status = 'GATHERING_AVAILABILITY'
       preferredDatesJson = JSON.stringify(data.preferredDates)
-
-      // Use first date as default for schema fields
-      if (!data.startDateTime) data.startDateTime = data.preferredDates[0].startDateTime
-      if (!data.endDateTime) data.endDateTime = data.preferredDates[0].endDateTime
-    } else {
-      // Single date - traditional flow
-      if (!data.startDateTime) return { error: "Start date/time is required" }
-      if (!data.endDateTime) return { error: "End date/time is required" }
     }
 
     // Create request
@@ -291,7 +379,7 @@ export async function createCustomEventRequest(data: {
         })
       }
     } else {
-      // Traditional single-date request - notify admins
+      // Notify admins
       const admins = await db.user.findMany({
         where: { role: 'ADMIN', status: 'ACTIVE' }
       })
@@ -313,7 +401,11 @@ export async function createCustomEventRequest(data: {
     await prisma.auditLog.create({
       data: {
         action: 'CUSTOM_EVENT_REQUEST_CREATED',
-        details: JSON.stringify({ requestId: request.id, homeId: home.id, title: data.title }),
+        details: JSON.stringify({ 
+          requestId: request.id, 
+          homeId: home.id, 
+          title: data.title
+        }),
         userId: session.user.id
       }
     })
@@ -515,7 +607,7 @@ export async function getEventRequestDetail(requestId: string) {
           }
         },
         formSubmission: {
-          include: { template: { select: { title: true } } }
+          include: { template: { select: { title: true, formFields: true } } }
         }
       }
     })

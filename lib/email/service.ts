@@ -87,7 +87,7 @@ export async function sendEmail(params: EmailSendParams): Promise<SendEmailResul
   }
 
   // Try to get template from database
-  let dbTemplate = await prisma.emailTemplate.findUnique({
+  const dbTemplate = await prisma.emailTemplate.findUnique({
     where: { type: templateType }
   })
 

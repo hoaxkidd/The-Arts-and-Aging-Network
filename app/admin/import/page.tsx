@@ -219,13 +219,6 @@ export default function ImportStaffPage() {
 
   return (
     <div className="space-y-0">
-      <Link href="/admin" className="text-gray-500 hover:text-gray-700 flex items-center gap-2 mb-4 text-sm">
-        <ArrowLeft className="w-4 h-4" /> Back to Admin
-      </Link>
-
-      <h1 className="text-2xl font-bold text-gray-900 mb-2">Import CSV/XLSX Data</h1>
-      <p className="text-gray-500 mb-6">Bulk import staff profiles or homes from CSV/XLSX files.</p>
-
       <div className="bg-white border border-gray-200 rounded-lg p-4 mb-6">
         <div className="flex flex-wrap items-center gap-3">
           <button

@@ -16,7 +16,7 @@ type Home = {
   contactName: string
   contactPhone: string
   user: {
-    email: string
+    email: string | null
     status: string
   }
 }

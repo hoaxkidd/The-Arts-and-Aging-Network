@@ -58,8 +58,8 @@ export function ExpenseRequestList({ requests }: { requests: ExpenseRequest[] })
                 </button>
             </div>
 
-            <div className={cn(STYLES.card, "p-0 overflow-hidden")}>
-                <div className="table-scroll-wrapper max-h-[calc(100vh-360px)]">
+            <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                <div className="table-scroll-wrapper max-h-[calc(100vh-320px)]">
                 <table className={STYLES.table}>
                     <thead className="bg-gray-50">
                     <tr>
@@ -72,10 +72,10 @@ export function ExpenseRequestList({ requests }: { requests: ExpenseRequest[] })
                         <th className={cn(STYLES.tableHeader, "text-right")}>Actions</th>
                     </tr>
                     </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
+                    <tbody className="divide-y divide-gray-100">
                     {filtered.map((req) => (
-                        <tr key={req.id} className="hover:bg-gray-50 transition-colors">
-                        <td className="px-6 py-4 whitespace-nowrap">
+                        <tr key={req.id} className={STYLES.tableRow}>
+                        <td className={cn(STYLES.tableCell, "whitespace-nowrap")}>
                             <div className="flex items-center">
                             <div className="flex-shrink-0 h-8 w-8 bg-primary-100 rounded-full flex items-center justify-center text-primary-600 font-bold text-xs">
                                 {req.user.name?.[0] || 'U'}
@@ -86,7 +86,7 @@ export function ExpenseRequestList({ requests }: { requests: ExpenseRequest[] })
                             </div>
                             </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
+                        <td className={cn(STYLES.tableCell, "whitespace-nowrap")}>
                             <div className="flex items-center gap-2 text-sm text-gray-700">
                             {req.category === 'EXPENSE' ? <DollarSign className="w-4 h-4 text-green-600" /> :
                             req.category === 'SICK_DAY' ? <Calendar className="w-4 h-4 text-red-600" /> :
@@ -94,7 +94,7 @@ export function ExpenseRequestList({ requests }: { requests: ExpenseRequest[] })
                             <span className="capitalize">{req.category.replace('_', ' ').toLowerCase()}</span>
                             </div>
                         </td>
-                        <td className="px-6 py-4">
+                        <td className={STYLES.tableCell}>
                             <p className="text-sm text-gray-600 truncate max-w-xs" title={req.description}>
                             {req.description}
                             </p>
@@ -104,22 +104,23 @@ export function ExpenseRequestList({ requests }: { requests: ExpenseRequest[] })
                             </a>
                             )}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <td className={cn(STYLES.tableCell, "whitespace-nowrap")}>
                             {req.amount ? `$${req.amount.toFixed(2)}` : '-'}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <td className={cn(STYLES.tableCell, "whitespace-nowrap")}>
                             {req.createdAt.toLocaleDateString()}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                            <span className={cn(STYLES.badge, 
-                            req.status === 'APPROVED' ? 'text-green-700' :
-                            req.status === 'REJECTED' ? 'text-red-700' :
-                            'text-yellow-700'
+                        <td className={cn(STYLES.tableCell, "whitespace-nowrap")}>
+                            <span className={cn(
+                            "px-2 py-0.5 text-xs font-semibold rounded",
+                            req.status === 'APPROVED' ? "bg-green-100 text-green-700" :
+                            req.status === 'REJECTED' ? "bg-red-100 text-red-700" :
+                            "bg-yellow-100 text-yellow-700"
                             )}>
                             {req.status}
                             </span>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <td className={cn(STYLES.tableCell, "text-right whitespace-nowrap")}>
                             {req.status === 'PENDING' && (
                             <div className="flex items-center justify-end gap-2">
                                 <form action={async () => {
@@ -143,7 +144,7 @@ export function ExpenseRequestList({ requests }: { requests: ExpenseRequest[] })
                     ))}
                     {filtered.length === 0 && (
                         <tr>
-                        <td colSpan={7} className="px-6 py-12 text-center text-gray-500">
+                        <td colSpan={7} className={cn(STYLES.tableCell, "text-center py-12")}>
                             No requests found matching this filter.
                         </td>
                         </tr>

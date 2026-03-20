@@ -16,6 +16,8 @@ import { cn } from '@/lib/utils'
 import { STYLES } from '@/lib/styles'
 import { approveEventRequest, rejectEventRequest } from '@/app/actions/event-requests'
 import { triggerNotificationRefresh } from '@/lib/notification-refresh'
+import { FormTemplateView } from '@/components/forms/FormTemplateView'
+import type { FormTemplateField } from '@/lib/form-template-types'
 
 type Request = {
   id: string
@@ -32,7 +34,7 @@ type Request = {
   existingEvent: { id: string; title: string; startDateTime: Date | string; location: { name: string } | null } | null
   approvedEvent: { id: string; title: string } | null
   geriatricHome: { id: string; name: string }
-  formSubmission?: { id: string; formData: string; template: { title: string } } | null
+  formSubmission?: { id: string; formData: string; template: { title: string; formFields: string | null } } | null
 }
 
 function RejectModal({
@@ -115,26 +117,25 @@ export function EventRequestDetail({ request }: { request: Request }) {
     })
   }
 
-  const formDataRows = request.formSubmission ? (() => {
-    try {
-      const data = JSON.parse(request.formSubmission.formData) as Record<string, unknown>
-      return Object.entries(data)
-        .filter(([, val]) => val !== undefined && val !== null && val !== '')
-        .map(([key, val]) => {
-          const raw = Array.isArray(val) ? val.join(', ')
-            : typeof val === 'object' && val !== null && '_value' in val
-              ? String((val as Record<string, unknown>)._value) +
-                ((val as Record<string, unknown>)._other ? ` (Other: ${(val as Record<string, unknown>)._other})` : '')
-              : typeof val === 'object' && val !== null && '_options' in val
-                ? ((val as Record<string, unknown>)._options as string[])?.join(', ') +
-                  ((val as Record<string, unknown>)._other ? ` (Other: ${(val as Record<string, unknown>)._other})` : '')
-                : String(val)
-          return { key, display: raw.startsWith('data:') ? '(file uploaded)' : raw }
-        })
-    } catch {
-      return null
-    }
-  })() : null
+  const formFields = request.formSubmission?.template?.formFields
+    ? (() => {
+        try {
+          return JSON.parse(request.formSubmission.template.formFields) as FormTemplateField[]
+        } catch {
+          return []
+        }
+      })()
+    : []
+
+  const formValues = request.formSubmission?.formData
+    ? (() => {
+        try {
+          return JSON.parse(request.formSubmission.formData) as Record<string, unknown>
+        } catch {
+          return {}
+        }
+      })()
+    : {}
 
   return (
     <div className="space-y-4">
@@ -187,28 +188,18 @@ export function EventRequestDetail({ request }: { request: Request }) {
       </div>
 
       {/* Form responses */}
-      {request.formSubmission && (
+      {request.formSubmission && formFields.length > 0 && (
         <div className={cn(STYLES.card)}>
           <h2 className="text-base font-semibold text-gray-900 border-b border-gray-100 pb-2 mb-3 flex items-center gap-2">
             <FileText className="w-4 h-4 text-primary-600" />
             {request.formSubmission.template.title}
           </h2>
-          <dl className="space-y-2 text-sm">
-            {formDataRows && formDataRows.length > 0 ? formDataRows.map(({ key, display }) => (
-              <div key={key} className="flex gap-2">
-                <dt className="text-gray-500 shrink-0 min-w-[120px]">{key}</dt>
-                <dd className="text-gray-900 break-words">{display}</dd>
-              </div>
-            )) : <p className="text-gray-500">No responses</p>}
-          </dl>
-        </div>
-      )}
-
-      {/* Description (custom events) */}
-      {isCustom && (
-        <div className={cn(STYLES.card)}>
-          <h2 className="text-base font-semibold text-gray-900 border-b border-gray-100 pb-2 mb-3">Description</h2>
-          <p className="text-sm text-gray-600">{request.customDescription || '—'}</p>
+          <FormTemplateView
+            title={request.formSubmission.template.title}
+            fields={formFields}
+            values={formValues}
+            preview={true}
+          />
         </div>
       )}
 

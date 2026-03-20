@@ -140,15 +140,6 @@ export default async function PayrollFormsPage({
 
   return (
     <div className="h-full flex flex-col">
-      <header className="flex-shrink-0 pb-3">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-lg font-bold text-gray-900">Forms</h1>
-            <p className="text-xs text-gray-500">Access forms and track your submissions</p>
-          </div>
-        </div>
-      </header>
-
       <div className="flex-shrink-0 mt-4">
         <FormTemplateFilters
           categories={categories.map(c => ({ value: c.value, label: c.label, color: 'blue' }))}

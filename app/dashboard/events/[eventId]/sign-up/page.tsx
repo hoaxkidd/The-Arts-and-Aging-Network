@@ -2,7 +2,7 @@ import { auth } from '@/auth'
 import { redirect, notFound } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
 import { EventSignUpFormClient } from './EventSignUpFormClient'
-import { FileText, Calendar } from 'lucide-react'
+import { Calendar } from 'lucide-react'
 
 export default async function EventSignUpPage({
   params,
@@ -52,20 +52,6 @@ export default async function EventSignUpPage({
 
   return (
     <div className="h-full flex flex-col max-w-3xl mx-auto">
-      <header className="flex-shrink-0 pb-4 border-b border-gray-200">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-md bg-primary-100 text-primary-600 flex items-center justify-center">
-            <FileText className="w-4 h-4" />
-          </div>
-          <div>
-            <h1 className="text-base font-semibold text-gray-900">Event sign-up</h1>
-            <p className="text-xs text-gray-500">
-              Complete the form below to request participation
-            </p>
-          </div>
-        </div>
-      </header>
-
       <div className="flex-1 min-h-0 overflow-auto pt-6">
         <div className="flex items-center gap-2 text-sm text-gray-600 mb-4">
           <Calendar className="w-4 h-4" />

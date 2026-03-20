@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Image from 'next/image'
 import { Check, X, MessageCircle, Loader2, XCircle } from 'lucide-react'
 import { approveConversationRequest, denyConversationRequest } from '@/app/actions/conversation-requests'
 import { useRouter } from 'next/navigation'
@@ -82,7 +83,7 @@ export function ConversationRequestsList({ requests }: Props) {
               {/* Requester */}
               <div className="flex items-center gap-3">
                 {request.requester.image ? (
-                  <img src={request.requester.image} alt="" className="w-12 h-12 rounded-full object-cover shrink-0" />
+                  <Image src={request.requester.image} alt="" width={48} height={48} className="w-12 h-12 rounded-full object-cover shrink-0" unoptimized />
                 ) : (
                   <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 text-white flex items-center justify-center font-semibold text-lg shrink-0">
                     {(request.requester.preferredName || request.requester.name)?.[0]?.toUpperCase() || 'U'}
@@ -101,7 +102,7 @@ export function ConversationRequestsList({ requests }: Props) {
               {/* Requested */}
               <div className="flex items-center gap-3">
                 {request.requested.image ? (
-                  <img src={request.requested.image} alt="" className="w-12 h-12 rounded-full object-cover shrink-0" />
+                  <Image src={request.requested.image} alt="" width={48} height={48} className="w-12 h-12 rounded-full object-cover shrink-0" unoptimized />
                 ) : (
                   <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 text-white flex items-center justify-center font-semibold text-lg shrink-0">
                     {(request.requested.preferredName || request.requested.name)?.[0]?.toUpperCase() || 'U'}

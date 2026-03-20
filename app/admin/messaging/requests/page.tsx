@@ -38,17 +38,6 @@ export default async function MessagingRequestsPage() {
 
   return (
     <div className="h-full flex flex-col">
-      <div className="flex-shrink-0 mb-6">
-        <Link
-          href="/admin/messaging"
-          className="inline-flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-700 mb-2"
-        >
-          <ArrowLeft className="w-3 h-3" /> Back to Messaging
-        </Link>
-        <h1 className="text-2xl font-bold text-gray-900">Pending Access Requests</h1>
-        <p className="text-sm text-gray-500">Review and approve member requests</p>
-      </div>
-
       <div className="flex-1 min-h-0 overflow-auto">
         {pendingRequests.length === 0 ? (
           <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">

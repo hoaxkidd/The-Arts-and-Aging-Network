@@ -67,19 +67,6 @@ export default function MileagePage() {
 
   return (
     <div className="h-full flex flex-col">
-      {/* Header */}
-      <header className="flex-shrink-0 pb-4">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-green-100 text-green-600 flex items-center justify-center">
-            <Car className="w-5 h-5" />
-          </div>
-          <div>
-            <h1 className="text-xl font-bold text-gray-900">Mileage Tracking</h1>
-            <p className="text-sm text-gray-500">Log and track your travel reimbursements</p>
-          </div>
-        </div>
-      </header>
-
       <div className="flex-1 min-h-0 overflow-auto space-y-6">
         {/* Month Navigation */}
         <div className="flex items-center justify-between bg-white rounded-lg border border-gray-200 p-4">

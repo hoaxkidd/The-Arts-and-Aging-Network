@@ -94,5 +94,4 @@ const nextAuthConfig = {
 const nextAuthInstance = NextAuth(nextAuthConfig as any)
  
 export const { handlers, signIn, signOut } = nextAuthInstance
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const auth = nextAuthInstance.auth as any

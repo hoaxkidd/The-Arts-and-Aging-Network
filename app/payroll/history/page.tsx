@@ -43,11 +43,6 @@ export default async function HistoryPage() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">My History</h1>
-        <p className="text-gray-500 text-sm">View your past timesheets and daily logs</p>
-      </div>
-
       <HistoryTabs 
         historyEntries={history} 
         timesheets={timesheetsWithTotals} 

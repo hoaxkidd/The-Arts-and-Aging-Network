@@ -67,40 +67,6 @@ export default async function ManageGroupPage({
 
   return (
     <div className="h-full flex flex-col">
-      <div className="flex-shrink-0 mb-6">
-        <Link
-          href="/admin/messaging"
-          className="inline-flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-700 mb-2"
-        >
-          <ArrowLeft className="w-3 h-3" /> Back to Messaging
-        </Link>
-
-        <div className="flex items-start gap-4">
-          <div className={cn(
-            "w-16 h-16 rounded-lg flex items-center justify-center text-3xl",
-            `bg-${group.color}-100`
-          )}>
-            {group.iconEmoji}
-          </div>
-          <div className="flex-1">
-            <h1 className="text-2xl font-bold text-gray-900">{group.name}</h1>
-            {group.description && (
-              <p className="text-sm text-gray-600 mt-1">{group.description}</p>
-            )}
-            <div className="flex items-center gap-4 mt-2">
-              <span className="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded">
-                {group.type}
-              </span>
-              {group.allowAllStaff && (
-                <span className="text-xs px-2 py-1 bg-green-100 text-green-700 rounded">
-                  Open to All Staff
-                </span>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-
       {/* Stats */}
       <div className="grid grid-cols-2 gap-4 mb-6">
         <div className="bg-white rounded-lg border border-gray-200 p-4">

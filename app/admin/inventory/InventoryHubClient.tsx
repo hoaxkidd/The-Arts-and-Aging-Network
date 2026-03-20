@@ -98,25 +98,6 @@ export function InventoryHubClient({ items: initialItems }: Props) {
 
   return (
     <div className="h-full flex flex-col">
-      {/* Header */}
-      <div className="flex-shrink-0 pb-4 border-b border-gray-200">
-        <div className="flex items-center justify-between gap-4 flex-wrap">
-          <div>
-            <h1 className="text-lg font-bold text-gray-900">Inventory</h1>
-            <p className="text-xs text-gray-500">
-              Add and remove items, update quantities, view distributor details
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={() => setShowAddModal(true)}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700"
-          >
-            <Plus className="w-4 h-4" /> Add item
-          </button>
-        </div>
-      </div>
-
       {/* Stats row */}
       <div className="flex-shrink-0 flex gap-4 py-3 text-sm">
         <span className="text-gray-500">

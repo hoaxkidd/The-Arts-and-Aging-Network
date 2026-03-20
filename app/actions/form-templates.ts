@@ -79,6 +79,29 @@ export async function getFormTemplates(filters?: {
   }
 }
 
+// Get EVENT_SIGNUP form templates for home admin requests
+export async function getEventSignupForms() {
+  const session = await auth()
+  if (!session?.user?.id) {
+    return { error: "Unauthorized" }
+  }
+
+  try {
+    const templates = await prisma.formTemplate.findMany({
+      where: {
+        category: 'EVENT_SIGNUP',
+        isActive: true
+      },
+      orderBy: { title: 'asc' }
+    })
+
+    return { success: true, data: templates }
+  } catch (error) {
+    console.error("Failed to fetch event sign-up forms:", error)
+    return { error: "Failed to load event sign-up forms" }
+  }
+}
+
 // Get single template details
 export async function getFormTemplate(id: string) {
   const session = await auth()

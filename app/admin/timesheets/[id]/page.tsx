@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma"
 import { auth } from "@/auth"
 import { redirect, notFound } from "next/navigation"
+import Image from "next/image"
 import { Clock, ArrowLeft, CheckCircle, XCircle, Calendar, User, DollarSign } from "lucide-react"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
@@ -79,48 +80,6 @@ export default async function TimesheetReviewPage({ params }: Props) {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <Link
-          href="/admin/financials"
-          className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Back to Timesheets
-        </Link>
-
-        <div className="flex items-start justify-between">
-          <div className="flex items-center gap-4">
-            {timesheet.user.image ? (
-              <img
-                src={timesheet.user.image}
-                alt={displayName}
-                className="w-14 h-14 rounded-full object-cover border-2 border-gray-100"
-              />
-            ) : (
-              <div className="w-14 h-14 rounded-full bg-primary-100 flex items-center justify-center text-primary-600 text-xl font-bold">
-                {displayName.charAt(0).toUpperCase()}
-              </div>
-            )}
-            <div>
-              <h1 className="text-xl font-bold text-gray-900">{displayName}'s Timesheet</h1>
-              <p className="text-gray-500">
-                Week of {formatDate(weekStart)} • {timesheet.user.position || 'Staff'}
-              </p>
-            </div>
-          </div>
-
-          <span className={cn(
-            "px-3 py-1 rounded-full text-sm font-medium",
-            timesheet.status === 'SUBMITTED' ? 'bg-yellow-100 text-yellow-700' :
-            timesheet.status === 'APPROVED' ? 'bg-green-100 text-green-700' :
-            'bg-gray-100 text-gray-600'
-          )}>
-            {timesheet.status}
-          </span>
-        </div>
-      </div>
-
       {/* Summary Cards */}
       <div className="grid grid-cols-3 gap-4">
         <div className={cn(STYLES.card, "p-4")}>

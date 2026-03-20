@@ -24,19 +24,6 @@ export default async function AdminEventRequestDetailPage({
 
   return (
     <div className="space-y-4">
-      <div>
-        <Link
-          href="/admin/events?tab=requests"
-          className="text-gray-500 hover:text-gray-700 flex items-center gap-2 mb-3 text-sm"
-        >
-          <ArrowLeft className="w-4 h-4" /> Back to Event Requests
-        </Link>
-        <h1 className="text-xl font-bold text-gray-900">Event Request Details</h1>
-        <p className="text-gray-500 text-sm">
-          Review and approve or decline this request
-        </p>
-      </div>
-
       <EventRequestDetail request={request} />
     </div>
   )

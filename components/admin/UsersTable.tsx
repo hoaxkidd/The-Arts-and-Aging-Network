@@ -47,7 +47,6 @@ export default function UsersTable({ users: initialUsers }: { users: UserWithCou
   const [viewUser, setViewUser] = useState<UserWithCounts | null>(null)
   const router = useRouter()
 
-  // Filter and search users
   const filteredUsers = useMemo(() => {
     const result = users.filter(user => {
       const matchesSearch = searchQuery === '' ||
@@ -61,7 +60,6 @@ export default function UsersTable({ users: initialUsers }: { users: UserWithCou
       return matchesSearch && matchesRole && matchesStatus
     })
 
-    // Sort users
     result.sort((a, b) => {
       let comparison = 0
       
@@ -91,7 +89,6 @@ export default function UsersTable({ users: initialUsers }: { users: UserWithCou
     return result
   }, [users, searchQuery, roleFilter, statusFilter, sortField, sortDirection])
 
-  // Get unique roles for filter
   const roles = useMemo(() => {
     const uniqueRoles = Array.from(new Set(users.map(u => u.role)))
     return uniqueRoles.sort()
@@ -102,7 +99,6 @@ export default function UsersTable({ users: initialUsers }: { users: UserWithCou
     const result = await toggleUserStatus(userId)
 
     if (result.success && result.user) {
-      // Update local state
       setUsers(prev => prev.map(u => u.id === userId ? result.user! : u))
       router.refresh()
     }
@@ -136,9 +132,7 @@ export default function UsersTable({ users: initialUsers }: { users: UserWithCou
 
   return (
     <div className="space-y-4">
-      {/* Search and Filters */}
       <div className="flex flex-col sm:flex-row gap-4">
-        {/* Search */}
         <div className="flex-1 relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
           <input
@@ -153,7 +147,6 @@ export default function UsersTable({ users: initialUsers }: { users: UserWithCou
           />
         </div>
 
-        {/* Role Filter */}
         <select
           value={roleFilter}
           onChange={(e) => setRoleFilter(e.target.value)}
@@ -165,7 +158,6 @@ export default function UsersTable({ users: initialUsers }: { users: UserWithCou
           ))}
         </select>
 
-        {/* Status Filter */}
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
@@ -178,7 +170,6 @@ export default function UsersTable({ users: initialUsers }: { users: UserWithCou
           <option value="SUSPENDED">Suspended</option>
         </select>
 
-        {/* Clear Filters */}
         {hasActiveFilters && (
           <button
             onClick={clearFilters}
@@ -190,14 +181,13 @@ export default function UsersTable({ users: initialUsers }: { users: UserWithCou
         )}
       </div>
 
-      {/* Results count */}
       <div className="text-sm text-gray-600">
         Showing {filteredUsers.length} of {users.length} users
       </div>
 
       {/* Table */}
-      <div className={cn(STYLES.card, "overflow-hidden p-0")}>
-        <div className={cn("table-scroll-wrapper", "max-h-[calc(100vh-320px)]")}>
+      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+        <div className="table-scroll-wrapper max-h-[calc(100vh-320px)]">
           <table className={STYLES.table}>
             <thead className="bg-gray-50">
               <tr>
@@ -249,10 +239,10 @@ export default function UsersTable({ users: initialUsers }: { users: UserWithCou
                 <th className={cn(STYLES.tableHeader, "text-right")}>Actions</th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="divide-y divide-gray-100">
               {filteredUsers.map((user) => (
-                <tr key={user.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-6 py-4 whitespace-nowrap">
+                <tr key={user.id} className={STYLES.tableRow}>
+                  <td className={cn(STYLES.tableCell, "whitespace-nowrap")}>
                     <div className="flex items-center">
                       <div className="flex-shrink-0 h-10 w-10 relative">
                         {user.image ? (
@@ -275,7 +265,7 @@ export default function UsersTable({ users: initialUsers }: { users: UserWithCou
                       </div>
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className={cn(STYLES.tableCell, "whitespace-nowrap")}>
                     {user.userCode ? (
                       <span className="font-mono text-xs font-semibold text-primary-700 bg-primary-50 border border-primary-100 rounded px-2 py-1">
                         {user.userCode}
@@ -286,30 +276,30 @@ export default function UsersTable({ users: initialUsers }: { users: UserWithCou
                       </span>
                     )}
                   </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="inline-flex text-xs leading-5 font-semibold text-gray-700">
+                  <td className={cn(STYLES.tableCell, "whitespace-nowrap")}>
+                    <span className="text-xs font-semibold text-gray-700">
                       {user.role}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                  <td className={cn(STYLES.tableCell, "whitespace-nowrap")}>
+                    <span className={`px-2 py-0.5 inline-flex text-xs font-semibold rounded ${
                       user.status === 'ACTIVE'
-                        ? 'text-green-700'
+                        ? 'bg-green-100 text-green-700'
                         : user.status === 'PENDING'
-                        ? 'text-amber-700'
-                        : 'text-red-700'
+                        ? 'bg-yellow-100 text-yellow-700'
+                        : 'bg-red-100 text-red-700'
                     }`}>
                       {user.status}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <td className={cn(STYLES.tableCell, "whitespace-nowrap")}>
                     {user.lastLoginAt ? (
-                      formatDateTime(user.lastLoginAt)
+                      <span className="text-sm text-gray-500">{formatDateTime(user.lastLoginAt)}</span>
                     ) : (
-                      <span className="text-gray-400">Never</span>
+                      <span className="text-sm text-gray-400">Never</span>
                     )}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                  <td className={cn(STYLES.tableCell, "text-right whitespace-nowrap")}>
                     <div className="flex items-center justify-end gap-2">
                       <button
                         onClick={() => setViewUser(user)}
@@ -347,7 +337,7 @@ export default function UsersTable({ users: initialUsers }: { users: UserWithCou
               ))}
               {filteredUsers.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
+                  <td colSpan={6} className={cn(STYLES.tableCell, "text-center py-12")}>
                     No users found matching your filters.
                   </td>
                 </tr>
@@ -356,7 +346,6 @@ export default function UsersTable({ users: initialUsers }: { users: UserWithCou
           </table>
         </div>
       </div>
-      {/* View User Modal */}
       <UserDetailModal 
         user={viewUser} 
         isOpen={!!viewUser} 

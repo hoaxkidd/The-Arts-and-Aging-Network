@@ -42,17 +42,11 @@ export default async function AdminMileagePage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Mileage Review</h1>
-          <p className="text-gray-500 text-sm">Review and approve staff mileage claims</p>
-        </div>
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-yellow-100 text-yellow-700 rounded-full text-sm font-medium">
-            <AlertCircle className="w-4 h-4" />
-            {pending.length} Pending ({pendingKm.toFixed(1)} km)
-          </div>
+      {/* Pending Summary */}
+      <div className="flex items-center gap-4 mb-4">
+        <div className="flex items-center gap-2 px-3 py-1.5 bg-yellow-100 text-yellow-700 rounded-full text-sm font-medium">
+          <AlertCircle className="w-4 h-4" />
+          {pending.length} Pending ({pendingKm.toFixed(1)} km)
         </div>
       </div>
 

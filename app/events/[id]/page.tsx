@@ -104,48 +104,6 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
 
   return (
     <div className="h-full flex flex-col">
-      {/* Header */}
-      <header className="flex-shrink-0 pb-3">
-        <Link
-          href={session?.user?.role === 'HOME_ADMIN' ? '/dashboard/events' : '/events'}
-          className="inline-flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-700 mb-2"
-        >
-          <ArrowLeft className="w-3 h-3" /> Back to Events
-        </Link>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className={cn(
-              "px-2 py-0.5 rounded text-[10px] font-medium",
-              event.status === 'PUBLISHED' ? 'bg-green-100 text-green-700' :
-              event.status === 'CANCELLED' ? 'bg-red-100 text-red-700' :
-              'bg-gray-100 text-gray-600'
-            )}>
-              {event.status === 'PUBLISHED' ? 'Active' : event.status}
-            </span>
-            {isPast && <span className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded text-[10px] font-medium">Past</span>}
-            {isEventDay && !isPast && <span className="px-2 py-0.5 bg-yellow-100 text-yellow-700 rounded text-[10px] font-medium animate-pulse">Today</span>}
-            {isCheckedIn && (
-              <span className="px-2 py-0.5 bg-purple-100 text-purple-700 rounded text-[10px] font-medium flex items-center gap-0.5">
-                <CheckCircle className="w-2.5 h-2.5" /> Attended
-              </span>
-            )}
-          </div>
-          {canManage && (
-            <div className="flex items-center gap-1">
-              <Link href={`/events/${event.id}/edit`} className="p-1.5 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded-lg">
-                <Edit2 className="w-3.5 h-3.5" />
-              </Link>
-              <form action={async () => { 'use server'; await deleteEvent(event.id) }}>
-                <button className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg">
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
-              </form>
-            </div>
-          )}
-        </div>
-        <h1 className="text-lg font-bold text-gray-900 mt-1">{event.title}</h1>
-      </header>
-
       {/* Content */}
       <div className="flex-1 min-h-0 overflow-auto space-y-3">
         {/* Event Info - Always Visible */}

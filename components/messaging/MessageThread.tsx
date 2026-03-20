@@ -1,8 +1,9 @@
 'use client'
 
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { Send, Users as UsersIcon, X, LogOut, UserMinus } from 'lucide-react'
+import { Send, Users as UsersIcon, X, LogOut, UserMinus, AtSign, Star } from 'lucide-react'
 import { sendGroupMessage, getGroupMessages, removeGroupMember, leaveGroup } from '@/app/actions/messaging'
+import { starMessage, unstarMessage, isMessageStarred } from '@/app/actions/starred-messages'
 import { cn } from '@/lib/utils'
 import { MessageActions } from './MessageActions'
 import { MessageReactions } from './MessageReactions'
@@ -11,9 +12,11 @@ import { useRouter } from 'next/navigation'
 type Message = {
   id: string
   content: string
+  contentHtml?: string | null
   editedAt?: Date | null
   createdAt: Date
   senderId: string
+  mentions?: string | null
   sender: {
     id: string
     name: string | null
@@ -63,6 +66,7 @@ export function MessageThread({
   const [sending, setSending] = useState(false)
   const [showMembers, setShowMembers] = useState(false)
   const [removingUserId, setRemovingUserId] = useState<string | null>(null)
+  const [starredMessages, setStarredMessages] = useState<Set<string>>(new Set())
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const router = useRouter()
@@ -72,6 +76,21 @@ export function MessageThread({
   // Sync with new initialMessages when they change (e.g. parent re-fetches)
   useEffect(() => {
     setMessages(initialMessages)
+  }, [initialMessages])
+
+  // Load starred status for messages
+  useEffect(() => {
+    async function loadStarredStatus() {
+      const newStarred = new Set<string>()
+      for (const msg of initialMessages) {
+        const result = await isMessageStarred(msg.id)
+        if (result.success && result.isStarred) {
+          newStarred.add(msg.id)
+        }
+      }
+      setStarredMessages(newStarred)
+    }
+    loadStarredStatus()
   }, [initialMessages])
 
   const scrollToBottom = () => {
@@ -146,6 +165,26 @@ export function MessageThread({
     }
   }
 
+  async function toggleStar(messageId: string) {
+    const isStarred = starredMessages.has(messageId)
+    
+    if (isStarred) {
+      const result = await unstarMessage(messageId)
+      if (!result.error) {
+        setStarredMessages(prev => {
+          const newSet = new Set(prev)
+          newSet.delete(messageId)
+          return newSet
+        })
+      }
+    } else {
+      const result = await starMessage(messageId, 'GROUP')
+      if (!result.error) {
+        setStarredMessages(prev => new Set(prev).add(messageId))
+      }
+    }
+  }
+
   return (
     <div className="h-full flex flex-col relative">
       {/* Messages Area */}
@@ -199,9 +238,23 @@ export function MessageThread({
                             : "bg-gray-100 text-gray-900"
                         )}>
                           <p className="text-sm whitespace-pre-wrap break-words">
-                            {message.content}
+                            {highlightMentions(message.content, currentUserId)}
                           </p>
                         </div>
+
+                        {/* Star button - visible to all */}
+                        <button
+                          onClick={() => toggleStar(message.id)}
+                          className={cn(
+                            "flex items-center justify-center w-6 h-6 rounded-full opacity-0 group-hover/msg:opacity-100 transition-opacity",
+                            starredMessages.has(message.id) 
+                              ? "text-yellow-500" 
+                              : "text-gray-400 hover:text-yellow-500"
+                          )}
+                          title={starredMessages.has(message.id) ? "Unstar" : "Star"}
+                        >
+                          <Star className={cn("w-4 h-4", starredMessages.has(message.id) && "fill-yellow-500")} />
+                        </button>
 
                         {isCurrentUser && (
                           <MessageActions
@@ -337,4 +390,25 @@ export function MessageThread({
       </div>
     </div>
   )
+}
+
+// Helper function to highlight @mentions in message content
+function highlightMentions(content: string, currentUserId: string): React.ReactNode {
+  const parts = content.split(/(@\w+(?:\s\w+)*)/g)
+  
+  return parts.map((part, index) => {
+    if (part.startsWith('@')) {
+      const username = part.slice(1)
+      // Check if this is a valid mention (you could add more validation)
+      return (
+        <span 
+          key={index} 
+          className="bg-blue-100 text-blue-700 px-1 rounded font-medium"
+        >
+          @{username}
+        </span>
+      )
+    }
+    return part
+  })
 }

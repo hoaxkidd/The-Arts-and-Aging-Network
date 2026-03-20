@@ -153,7 +153,13 @@ export async function getConversation(partnerIdentifier: string) {
 }
 
 // Send message in a conversation
-export async function sendMessage(recipientId: string, content: string) {
+export async function sendMessage(
+  recipientId: string, 
+  content: string,
+  contentHtml?: string,
+  attachments?: Array<{ name: string; url: string; type: string; size: number }>,
+  replyToId?: string
+) {
   const session = await auth()
   if (!session?.user?.id) {
     return { error: 'Unauthorized' }
@@ -171,6 +177,9 @@ export async function sendMessage(recipientId: string, content: string) {
         recipientId,
         subject: 'Direct Message',
         content,
+        contentHtml: contentHtml || null,
+        attachments: attachments ? JSON.stringify(attachments) : null,
+        replyToId: replyToId || null,
         read: false
       },
       include: {

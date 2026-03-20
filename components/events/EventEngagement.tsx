@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 import {
   MessageSquare,
   Heart,
@@ -211,7 +212,7 @@ function CommentItem({
         {/* Avatar */}
         <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-sm font-medium text-gray-600 flex-shrink-0">
           {comment.user.image ? (
-            <img src={comment.user.image} alt="" className="w-8 h-8 rounded-full object-cover" />
+            <Image src={comment.user.image} alt="" width={32} height={32} className="w-8 h-8 rounded-full object-cover" unoptimized />
           ) : (
             comment.user.name?.charAt(0) || '?'
           )}
@@ -528,10 +529,13 @@ function PhotoGallery({
               onClick={() => setSelectedPhoto(photo)}
               className="aspect-square bg-gray-100 rounded-lg overflow-hidden cursor-pointer hover:ring-2 hover:ring-primary-300 transition-all"
             >
-              <img
+              <Image
                 src={photo.url}
                 alt={photo.caption || 'Event photo'}
+                width={400}
+                height={400}
                 className="w-full h-full object-cover"
+                unoptimized
               />
             </div>
           ))}
@@ -555,10 +559,13 @@ function PhotoGallery({
               <X className="w-5 h-5" />
             </button>
 
-            <img
+            <Image
               src={selectedPhoto.url}
-              alt={selectedPhoto.caption || ''}
+              alt={selectedPhoto.caption || 'Event photo'}
+              width={1200}
+              height={800}
               className="w-full max-h-[70vh] object-contain bg-black"
+              unoptimized
             />
 
             <div className="p-4">

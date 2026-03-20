@@ -404,7 +404,12 @@ export async function getPendingAccessRequests() {
 // ============================================
 
 // Send message to group
-export async function sendGroupMessage(groupId: string, content: string, attachments?: string[]) {
+export async function sendGroupMessage(
+  groupId: string, 
+  content: string, 
+  attachments?: string[],
+  contentHtml?: string
+) {
   const session = await auth()
   if (!session?.user?.id) {
     return { error: "Unauthorized" }
@@ -418,6 +423,14 @@ export async function sendGroupMessage(groupId: string, content: string, attachm
   if (!groupId) {
     console.error("[sendGroupMessage] Missing groupId")
     return { error: "Group ID is required" }
+  }
+
+  // Parse @mentions from content
+  const mentionRegex = /@(\w+(?:\s\w+)*)/g
+  const mentionedUsernames: string[] = []
+  let match
+  while ((match = mentionRegex.exec(content)) !== null) {
+    mentionedUsernames.push(match[1])
   }
 
   try {
@@ -450,12 +463,31 @@ export async function sendGroupMessage(groupId: string, content: string, attachm
       return { error: "You are muted in this group" }
     }
 
+    // Find mentioned users by username or preferredName
+    let mentionedUserIds: string[] = []
+    if (mentionedUsernames.length > 0) {
+      const mentionedUsers = await prisma.user.findMany({
+        where: {
+          OR: mentionedUsernames.map(name => ({
+            OR: [
+              { name: { equals: name, mode: 'insensitive' } },
+              { preferredName: { equals: name, mode: 'insensitive' } }
+            ]
+          }))
+        },
+        select: { id: true }
+      })
+      mentionedUserIds = mentionedUsers.map(u => u.id)
+    }
+
     const message = await prisma.groupMessage.create({
       data: {
         group: { connect: { id: groupId } },
         sender: { connect: { id: session.user.id } },
         content,
-        attachments: attachments && attachments.length > 0 ? JSON.stringify(attachments) : null
+        contentHtml: contentHtml || null,
+        attachments: attachments && attachments.length > 0 ? JSON.stringify(attachments) : null,
+        mentions: mentionedUserIds.length > 0 ? JSON.stringify(mentionedUserIds) : null
       },
       include: {
         sender: {
@@ -493,16 +525,26 @@ export async function sendGroupMessage(groupId: string, content: string, attachm
     if (otherMembers.length > 0 && group) {
       const senderName = message.sender.preferredName || message.sender.name || 'Someone'
       const preview = content.length > 50 ? content.slice(0, 50) + '...' : content
-      await prisma.notification.createMany({
-        data: otherMembers.map(m => ({
+      
+      // Create notifications for all group members
+      const notifications = otherMembers.map(m => {
+        // Check if this user was mentioned
+        const isMentioned = mentionedUserIds.includes(m.userId)
+        return {
           userId: m.userId,
-          type: 'GROUP_MESSAGE',
-          title: `New message in ${group.name}`,
-          message: `${senderName}: ${preview}`,
+          type: isMentioned ? 'GROUP_MENTION' : 'GROUP_MESSAGE',
+          title: isMentioned 
+            ? `${senderName} mentioned you in ${group.name}`
+            : `New message in ${group.name}`,
+          message: isMentioned 
+            ? content.slice(0, 100) 
+            : `${senderName}: ${preview}`,
           link: `/staff/groups/${groupId}`,
           read: false
-        }))
+        }
       })
+      
+      await prisma.notification.createMany({ data: notifications })
     }
 
     revalidatePath(`/staff/groups/${groupId}`)

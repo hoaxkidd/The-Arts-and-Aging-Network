@@ -38,33 +38,20 @@ export function RequestListClient({ requests, tabs, initialTab }: RequestListCli
 
   return (
     <div className="h-full flex flex-col">
-      <div className="flex-shrink-0 pb-3 mb-3 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-primary-100 text-primary-600 flex items-center justify-center">
-            <ClipboardList className="w-5 h-5" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">My Event Requests</h1>
-            <p className="text-sm text-gray-500 mt-1">Track your event participation requests</p>
-          </div>
-        </div>
-        <Link href="/dashboard/requests/new" className={cn(STYLES.btn, STYLES.btnPrimary, "self-start sm:self-auto")}>
-          <Plus className="w-4 h-4" />
-          New Request
-        </Link>
-      </div>
-
-      {/* Tabs */}
-      <div className="flex-shrink-0 border-b border-gray-200 -mb-px">
+      <div className="flex items-center justify-between mb-4">
         <TabNavigation
           tabs={tabs}
           activeTab={activeTab}
           onChange={setActiveTab}
         />
+        <Link href="/dashboard/requests/new" className={cn(STYLES.btn, STYLES.btnPrimary)}>
+          <Plus className="w-4 h-4" />
+          New Request
+        </Link>
       </div>
 
       {/* Request List */}
-      <div className="flex-1 min-h-0 mt-5">
+      <div className="flex-1 min-h-0">
         <RequestList requests={requests} userRole="HOME_ADMIN" activeFilter={activeFilter} />
       </div>
     </div>

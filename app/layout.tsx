@@ -8,12 +8,21 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  viewportFit: "cover", // Safe area for notched devices (iPhone X+)
+  viewportFit: "cover",
 };
 
 export const metadata: Metadata = {
-  title: "Arts & Aging Admin Panel",
-  description: "Administrative interface for Arts & Aging Network",
+  title: "The Arts & Aging Network",
+  description: "Administrative interface for The Arts & Aging Network",
+  icons: {
+    icon: '/favicon-192.png',
+    apple: '/apple-touch-icon.png',
+  },
+  openGraph: {
+    title: "The Arts & Aging Network",
+    description: "Administrative interface for The Arts & Aging Network",
+    images: ['/og-image.png'],
+  },
 };
 
 export default function RootLayout({
