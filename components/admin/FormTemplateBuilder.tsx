@@ -537,18 +537,6 @@ export function FormTemplateBuilder({
                       placeholder="Question or field label"
                     />
                   </div>
-                  <div className="flex items-center gap-4">
-                    <label className="flex items-center gap-2 text-sm text-gray-700">
-                      <input
-                        type="checkbox"
-                        checked={field.required}
-                        onChange={(e) =>
-                          updateField(index, { required: e.target.checked })
-                        }
-                      />
-                      Required
-                    </label>
-                  </div>
                   <div>
                     <label className="block text-xs font-medium text-gray-600 mb-1">
                       Placeholder (optional)
@@ -579,6 +567,32 @@ export function FormTemplateBuilder({
                       placeholder="Additional instructions for this field"
                       minHeight={60}
                     />
+                  </div>
+                  <div className="flex items-center gap-4 flex-wrap">
+                    <label className="flex items-center gap-2 text-sm text-gray-700">
+                      <input
+                        type="checkbox"
+                        checked={field.required}
+                        onChange={(e) =>
+                          updateField(index, { required: e.target.checked })
+                        }
+                      />
+                      Required
+                    </label>
+                    {'date' === field.type && (
+                      <label className="flex items-center gap-2 text-sm text-amber-700 bg-amber-50 px-2 py-1 rounded border border-amber-200 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={(field as { isDateOfBirth?: boolean }).isDateOfBirth ?? false}
+                          onChange={(e) =>
+                            updateField(index, {
+                              isDateOfBirth: e.target.checked,
+                            } as any)
+                          }
+                        />
+                        Date of Birth
+                      </label>
+                    )}
                   </div>
                   {(field.type === 'radio' || field.type === 'checkbox') && (
                     <>

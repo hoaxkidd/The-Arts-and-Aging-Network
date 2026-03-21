@@ -13,6 +13,7 @@ interface DateInputProps {
   disabled?: boolean
   className?: string
   label?: string
+  isDateOfBirth?: boolean
 }
 
 const MONTHS = [
@@ -26,12 +27,14 @@ export function DateInput({
   name,
   value,
   onChange,
-  placeholder = 'DD-MM-YYYY',
+  placeholder,
   required = false,
   disabled = false,
   className = '',
-  label
+  label,
+  isDateOfBirth = false
 }: DateInputProps) {
+  const displayPlaceholder = placeholder ?? (isDateOfBirth ? 'DD-MM-YYYY (Date of Birth)' : 'DD-MM-YYYY')
   const [inputValue, setInputValue] = useState('')
   const [showPicker, setShowPicker] = useState(false)
   const [viewMonth, setViewMonth] = useState(new Date().getMonth())
@@ -39,6 +42,10 @@ export function DateInput({
   const [error, setError] = useState('')
   const containerRef = useRef<HTMLDivElement>(null)
   const isUserTyping = useRef(false)
+
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const maxYear = isDateOfBirth ? today.getFullYear() - 1 : undefined
 
   // Initialize from value
   useEffect(() => {
@@ -108,6 +115,14 @@ export function DateInput({
   // Handle day selection
   const handleDayClick = (day: number) => {
     const selectedDate = new Date(viewYear, viewMonth, day)
+    selectedDate.setHours(0, 0, 0, 0)
+    
+    // Validate for DOB fields
+    if (isDateOfBirth && selectedDate >= today) {
+      setError('Date of birth must be in the past')
+      return
+    }
+    
     const formatted = toInputDate(selectedDate)
     setInputValue(formatted)
     setError('')
@@ -176,9 +191,15 @@ export function DateInput({
     if (val.length === 10 && val.includes('-')) {
       const parsed = parseISODate(val)
       if (parsed) {
-        const formatted = toInputDate(parsed)
-        setInputValue(formatted)
-        onChange?.(formatted)
+        parsed.setHours(0, 0, 0, 0)
+        if (isDateOfBirth && parsed >= today) {
+          setError('Date of birth must be in the past')
+        } else {
+          const formatted = toInputDate(parsed)
+          setInputValue(formatted)
+          setError('')
+          onChange?.(formatted)
+        }
       } else {
         setError('Invalid date')
       }
@@ -196,11 +217,17 @@ export function DateInput({
     if (inputValue.match(/^\d{2}-\d{2}-\d{4}$/)) {
       const parsed = parseISODate(inputValue)
       if (parsed) {
-        const formatted = toInputDate(parsed)
-        setInputValue(formatted)
-        setViewMonth(parsed.getMonth())
-        setViewYear(parsed.getFullYear())
-        onChange?.(formatted)
+        parsed.setHours(0, 0, 0, 0)
+        if (isDateOfBirth && parsed >= today) {
+          setError('Date of birth must be in the past')
+        } else {
+          const formatted = toInputDate(parsed)
+          setInputValue(formatted)
+          setViewMonth(parsed.getMonth())
+          setViewYear(parsed.getFullYear())
+          onChange?.(formatted)
+          setError('')
+        }
       } else {
         setError('Invalid date format')
       }
@@ -209,10 +236,16 @@ export function DateInput({
       const converted = `${day}-${month}-${year}`
       const parsed = parseISODate(converted)
       if (parsed) {
-        setInputValue(converted)
-        setViewMonth(parsed.getMonth())
-        setViewYear(parsed.getFullYear())
-        onChange?.(converted)
+        parsed.setHours(0, 0, 0, 0)
+        if (isDateOfBirth && parsed >= today) {
+          setError('Date of birth must be in the past')
+        } else {
+          setInputValue(converted)
+          setViewMonth(parsed.getMonth())
+          setViewYear(parsed.getFullYear())
+          onChange?.(converted)
+          setError('')
+        }
       } else {
         setError('Invalid date')
       }
@@ -258,7 +291,7 @@ export function DateInput({
           value={inputValue}
           onChange={handleTextChange}
           onBlur={handleTextBlur}
-          placeholder={placeholder}
+          placeholder={displayPlaceholder}
           disabled={disabled}
           required={required}
           className={`
@@ -341,6 +374,10 @@ export function DateInput({
                 return <div key={`empty-${idx}`} className="h-8" />
               }
               
+              const selectedDateObj = new Date(viewYear, viewMonth, day)
+              selectedDateObj.setHours(0, 0, 0, 0)
+              const isFutureDate = isDateOfBirth && selectedDateObj > today
+              
               const isSelected = selectedDate && 
                 selectedDate.getDate() === day && 
                 selectedDate.getMonth() === viewMonth && 
@@ -355,11 +392,13 @@ export function DateInput({
                   key={day}
                   type="button"
                   onClick={() => handleDayClick(day)}
+                  disabled={isFutureDate}
                   className={`
                     h-8 w-8 flex items-center justify-center rounded-full text-sm
                     ${isSelected ? 'bg-primary-500 text-white' : ''}
-                    ${!isSelected && isToday ? 'bg-primary-100 text-primary-700 font-medium' : ''}
-                    ${!isSelected && !isToday ? 'hover:bg-gray-100 text-gray-700' : ''}
+                    ${!isSelected && isToday && !isFutureDate ? 'bg-primary-100 text-primary-700 font-medium' : ''}
+                    ${!isSelected && !isToday && !isFutureDate ? 'hover:bg-gray-100 text-gray-700' : ''}
+                    ${isFutureDate ? 'opacity-30 cursor-not-allowed text-gray-400' : ''}
                   `}
                 >
                   {day}
@@ -378,13 +417,17 @@ export function DateInput({
               <X className="w-3 h-3" />
               Clear
             </button>
-            <button
-              type="button"
-              onClick={handleToday}
-              className="px-3 py-1 text-sm bg-primary-500 text-white rounded hover:bg-primary-600"
-            >
-              Today
-            </button>
+            {isDateOfBirth ? (
+              <span className="text-xs text-gray-500">Select a past date</span>
+            ) : (
+              <button
+                type="button"
+                onClick={handleToday}
+                className="px-3 py-1 text-sm bg-primary-500 text-white rounded hover:bg-primary-600"
+              >
+                Today
+              </button>
+            )}
           </div>
         </div>
       )}

@@ -4,6 +4,7 @@ import type { FormTemplateField } from '@/lib/form-template-types'
 import { cn } from '@/lib/utils'
 import { AddressAutocomplete } from '@/components/ui/AddressAutocomplete'
 import { sanitizeHtml } from "@/lib/dompurify"
+import { DateInput } from '@/components/ui/DateInput'
 
 export type FormTemplateViewProps = {
   title: string
@@ -186,15 +187,22 @@ function FieldInputPreview({ field, value }: { field: FormTemplateField; value?:
           {isEmpty ? '—' : formatValue(value)}
         </div>
       )
-    case 'date':
+    case 'date': {
+      const dateField = field as Extract<typeof field, { type: 'date' }>
       return (
-        <div className={cn(
-          "w-full rounded-md border border-gray-200 px-3 py-2 text-sm",
-          isEmpty ? "bg-gray-50 text-gray-400" : "bg-white text-gray-900"
-        )}>
-          {isEmpty ? '—' : formatValue(value)}
+        <div className="space-y-1">
+          <div className={cn(
+            "w-full rounded-md border border-gray-200 px-3 py-2 text-sm",
+            isEmpty ? "bg-gray-50 text-gray-400" : "bg-white text-gray-900"
+          )}>
+            {isEmpty ? '—' : formatValue(value)}
+          </div>
+          {dateField.isDateOfBirth && (
+            <span className="text-xs text-gray-500">Date of Birth (must be in the past)</span>
+          )}
         </div>
       )
+    }
     case 'radio': {
       const options = (field.options || []).filter(Boolean)
       const selectedValue = typeof value === 'string' ? value : (value as Record<string, unknown>)?._value as string | undefined
@@ -319,16 +327,19 @@ function FieldInput({
           className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
         />
       )
-    case 'date':
+    case 'date': {
+      const dateField = field as Extract<typeof field, { type: 'date' }>
       return (
-        <input
-          id={id}
-          type="date"
+        <DateInput
+          name={id}
           value={(value as string) ?? ''}
-          onChange={(e) => onChange(e.target.value)}
-          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+          onChange={(v) => onChange(v)}
+          placeholder={dateField.placeholder}
+          required={dateField.required}
+          isDateOfBirth={dateField.isDateOfBirth ?? false}
         />
       )
+    }
     case 'address':
       return (
         <AddressAutocomplete

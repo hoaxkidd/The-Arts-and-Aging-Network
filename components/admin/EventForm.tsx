@@ -4,11 +4,12 @@ import { useRef, useState } from 'react'
 import Link from 'next/link'
 import { createEvent } from "@/app/actions/events"
 import { getFormTemplates } from "@/app/actions/form-templates"
-import { CheckCircle, AlertTriangle, Plus, Search, Calendar, Clock, FileText, ExternalLink } from "lucide-react"
+import { CheckCircle, AlertTriangle, Plus, Search, Calendar, Clock, FileText, ExternalLink, Pencil } from "lucide-react"
 import { STYLES } from "@/lib/styles"
 import { cn } from "@/lib/utils"
 import { AddressAutocomplete } from "@/components/ui/AddressAutocomplete"
 import { FormTemplateBuilder } from "@/components/admin/FormTemplateBuilder"
+import { LocationEditModal } from "@/components/admin/LocationEditModal"
 import { DateTimeInput } from "@/components/ui/DateTimeInput"
 import { toInputDateTime } from "@/lib/date-utils"
 import { useRouter } from 'next/navigation'
@@ -37,6 +38,7 @@ export function EventForm({
   const [address, setAddress] = useState(initialData?.newLocationAddress ?? '')
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null)
   const [showCreateTemplateModal, setShowCreateTemplateModal] = useState(false)
+  const [showLocationEditModal, setShowLocationEditModal] = useState(false)
   const [templates, setTemplates] = useState<FormTemplateOption[]>(formTemplates)
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>(initialData?.requiredFormTemplateId ?? '')
 
@@ -187,17 +189,27 @@ export function EventForm({
         <div className="border-t border-b border-gray-100 py-4 my-4 space-y-4 bg-gray-50/50 p-4 rounded-lg">
           <div className="flex items-center justify-between">
             <label className="block text-sm font-semibold text-gray-700">Location</label>
-            <button 
-              type="button" 
-              onClick={() => {
-                setIsNewLocation(!isNewLocation)
-                clearAddress()
-              }}
-              className="text-xs text-primary-600 hover:underline font-medium flex items-center gap-1"
-            >
-              {isNewLocation ? <Search className="w-3 h-3" /> : <Plus className="w-3 h-3" />}
-              {isNewLocation ? "Select Existing" : "Create New Location"}
-            </button>
+            <div className="flex items-center gap-2">
+              <button 
+                type="button" 
+                onClick={() => setShowLocationEditModal(true)}
+                className="text-xs text-gray-500 hover:text-primary-600 font-medium flex items-center gap-1 px-2 py-1 rounded hover:bg-primary-50 transition-colors"
+              >
+                <Pencil className="w-3 h-3" />
+                Edit Locations
+              </button>
+              <button 
+                type="button" 
+                onClick={() => {
+                  setIsNewLocation(!isNewLocation)
+                  clearAddress()
+                }}
+                className="text-xs text-primary-600 hover:underline font-medium flex items-center gap-1"
+              >
+                {isNewLocation ? <Search className="w-3 h-3" /> : <Plus className="w-3 h-3" />}
+                {isNewLocation ? "Select Existing" : "Create New"}
+              </button>
+            </div>
           </div>
 
           {!isNewLocation ? (
@@ -444,6 +456,16 @@ export function EventForm({
           {isSubmitting ? (initialData ? "Updating..." : "Publishing...") : (initialData ? "Update Event" : "Publish Event")}
         </button>
       </form>
+
+      {/* Location Edit Modal */}
+      <LocationEditModal
+        isOpen={showLocationEditModal}
+        onClose={() => setShowLocationEditModal(false)}
+        onLocationsChange={() => {
+          // Refresh the page to get updated locations
+          router.refresh()
+        }}
+      />
     </div>
   )
 }

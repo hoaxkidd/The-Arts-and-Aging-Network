@@ -115,7 +115,7 @@ export function HomeEventHistory({
       ) : (
         <div className="bg-white rounded-lg border border-gray-200 p-6 text-center">
           <Calendar className="w-8 h-8 mx-auto text-gray-300 mb-2" />
-          <p className="text-sm font-medium text-gray-900">No events found</p>
+          <p className="text-sm font-medium text-gray-900">No events found.</p>
         </div>
       )}
     </div>

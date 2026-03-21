@@ -290,17 +290,39 @@ export async function deleteEvent(eventId: string) {
     }
 
     await prisma.$transaction(async (tx) => {
-      // Delete all related records first to avoid foreign key constraints
-      // Delete reactions on comments first (nested dependency)
-      await tx.eventReaction.deleteMany({
-        where: { comment: { eventId } }
+      // Delete all related records in correct dependency order
+      // 1. EventRequest (cascades to EventRequestResponse, FormSubmission via eventRequestId)
+      await tx.eventRequest.deleteMany({ where: { existingEventId: eventId } })
+      await tx.eventRequest.updateMany({
+        where: { approvedEventId: eventId },
+        data: { approvedEventId: null }
       })
+      
+      // 2. FormSubmission with direct eventId
+      await tx.formSubmission.deleteMany({ where: { eventId } })
+      
+      // 3. MessageGroup
+      await tx.messageGroup.deleteMany({ where: { eventId } })
+      
+      // 4. Testimonial
+      await tx.testimonial.deleteMany({ where: { eventId } })
+      
+      // 5. Reactions on comments (nested dependency)
+      await tx.eventReaction.deleteMany({ where: { comment: { eventId } } })
+      
+      // 6. Comments
       await tx.eventComment.deleteMany({ where: { eventId } })
+      
+      // 7. Reactions on photos (nested dependency)
       await tx.eventReaction.deleteMany({ where: { photo: { eventId } } })
+      
+      // 8. Photos
       await tx.eventPhoto.deleteMany({ where: { eventId } })
+      
+      // 9. Attendance records
       await tx.eventAttendance.deleteMany({ where: { eventId } })
-
-      // Now delete the event
+      
+      // 10. Now delete the event (EmailReminder cascades automatically)
       await tx.event.delete({ where: { id: eventId } })
 
       await tx.auditLog.create({

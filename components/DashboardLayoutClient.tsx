@@ -599,7 +599,7 @@ export function DashboardLayoutClient({ children, role, title = "Arts & Aging", 
                                  'max-w-7xl'
             
             return (
-              <div className={cn(maxWidthClass, "mx-auto w-full min-w-0 overflow-x-hidden flex-1 flex flex-col")}>
+              <div className={cn(maxWidthClass, "mx-auto w-full overflow-x-hidden flex-1 flex flex-col")}>
                 {children}
               </div>
             )

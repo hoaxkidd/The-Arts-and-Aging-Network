@@ -47,6 +47,7 @@ export interface FormTemplateFieldCheckbox extends FormTemplateFieldBase {
 
 export interface FormTemplateFieldDate extends FormTemplateFieldBase {
   type: 'date'
+  isDateOfBirth?: boolean
 }
 
 export interface FormTemplateFieldFile extends FormTemplateFieldBase {

@@ -210,7 +210,7 @@ export default async function HomeAdminFormsPage({
               <Link
                 href="/dashboard/forms?tab=browse&category=ALL"
                 className={cn(
-                  "px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap",
+                  "px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap flex-shrink-0 min-w-[90px] text-center",
                   categoryFilter === 'ALL'
                     ? "bg-primary-600 text-white"
                     : "bg-gray-100 text-gray-600 hover:bg-gray-200"
@@ -223,7 +223,7 @@ export default async function HomeAdminFormsPage({
                   key={cat.value}
                   href={`/dashboard/forms?tab=browse&category=${cat.value}`}
                   className={cn(
-                    "px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap",
+                    "px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap flex-shrink-0 min-w-[100px] text-center",
                     categoryFilter === cat.value
                       ? "bg-primary-600 text-white"
                       : "bg-gray-100 text-gray-600 hover:bg-gray-200"
@@ -316,23 +316,11 @@ export default async function HomeAdminFormsPage({
       {activeTab === 'submissions' && (
         <>
           {/* Submission Stats */}
-          <div className="flex-shrink-0 mb-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <div className="bg-white rounded-lg border border-gray-200 p-3">
-              <p className="text-xs text-gray-500">Total</p>
-              <p className="text-xl font-bold text-gray-900">{submissionStats.total}</p>
-            </div>
-            <div className="bg-white rounded-lg border border-yellow-200 p-3">
-              <p className="text-xs text-yellow-600">Pending</p>
-              <p className="text-xl font-bold text-yellow-600">{submissionStats.pending}</p>
-            </div>
-            <div className="bg-white rounded-lg border border-blue-200 p-3">
-              <p className="text-xs text-blue-600">Reviewed</p>
-              <p className="text-xl font-bold text-blue-600">{submissionStats.reviewed}</p>
-            </div>
-            <div className="bg-white rounded-lg border border-green-200 p-3">
-              <p className="text-xs text-green-600">Approved</p>
-              <p className="text-xl font-bold text-green-600">{submissionStats.approved}</p>
-            </div>
+          <div className="flex-shrink-0 mb-4 flex items-center gap-4 text-sm">
+            <span><span className="font-medium text-gray-700">Total:</span> {submissionStats.total}</span>
+            <span className="text-yellow-600"><span className="font-medium">Pending:</span> {submissionStats.pending}</span>
+            <span className="text-blue-600"><span className="font-medium">Reviewed:</span> {submissionStats.reviewed}</span>
+            <span className="text-green-600"><span className="font-medium">Approved:</span> {submissionStats.approved}</span>
           </div>
 
           {/* Submissions List */}
