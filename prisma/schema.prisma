@@ -30,8 +30,8 @@ model DirectMessage {
   emailSent    Boolean   @default(false)
   createdAt    DateTime  @default(now())
   editedAt     DateTime?
-  sender       User      @relation("DirectMessage_sender", fields: [senderId], references: [id])
-  recipient    User      @relation("DirectMessage_recipient", fields: [recipientId], references: [id])
+  sender       User      @relation("DirectMessage_sender", fields: [senderId], references: [id], onDelete: Cascade)
+  recipient    User     @relation("DirectMessage_recipient", fields: [recipientId], references: [id], onDelete: Cascade)
 
   @@index([recipientId, read])
   @@index([senderId])
@@ -47,8 +47,8 @@ model DirectMessageRequest {
   reviewNote   String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
-  requested    User     @relation("DirectMessageRequest_requested", fields: [requestedId], references: [id])
-  requester    User     @relation("DirectMessageRequest_requester", fields: [requesterId], references: [id])
+  requested    User     @relation("DirectMessageRequest_requested", fields: [requestedId], references: [id], onDelete: Cascade)
+  requester    User     @relation("DirectMessageRequest_requester", fields: [requesterId], references: [id], onDelete: Cascade)
 
   @@unique([requesterId, requestedId])
   @@index([status])
@@ -201,7 +201,7 @@ model EventAttendance {
   isAnonymous     Boolean   @default(false)
   createdAt       DateTime  @default(now())
   updatedAt       DateTime @updatedAt
-  user            User      @relation(fields: [userId], references: [id])
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   event           Event     @relation(fields: [eventId], references: [id])
 
   @@unique([eventId, userId])
@@ -217,7 +217,7 @@ model EventComment {
   updatedAt DateTime @updatedAt
   parent    EventComment?  @relation("EventCommentToEventComment", fields: [parentId], references: [id])
   replies   EventComment[] @relation("EventCommentToEventComment")
-  user      User           @relation(fields: [userId], references: [id])
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   event     Event          @relation(fields: [eventId], references: [id])
   reactions EventReaction[]
 
@@ -231,7 +231,7 @@ model EventPhoto {
   url       String
   caption   String?
   createdAt DateTime        @default(now())
-  uploader  User            @relation(fields: [uploaderId], references: [id])
+  uploader  User            @relation(fields: [uploaderId], references: [id], onDelete: Cascade)
   event     Event           @relation(fields: [eventId], references: [id])
   reactions EventReaction[]
 }
@@ -245,7 +245,7 @@ model EventReaction {
   createdAt DateTime      @default(now())
   photo     EventPhoto?   @relation(fields: [photoId], references: [id], onDelete: Cascade)
   comment   EventComment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
-  user      User          @relation(fields: [userId], references: [id])
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, photoId])
   @@unique([userId, commentId])
@@ -284,8 +284,8 @@ model EventRequest {
   approvedEvent       Event?                 @relation("EventRequest_approvedEvent", fields: [approvedEventId], references: [id])
   existingEvent       Event?                 @relation("EventRequest_existingEvent", fields: [existingEventId], references: [id])
   geriatricHome       GeriatricHome          @relation(fields: [geriatricHomeId], references: [id])
-  requester           User                   @relation("EventRequest_requester", fields: [requestedBy], references: [id])
-  reviewer            User?                  @relation("EventRequest_reviewer", fields: [reviewedBy], references: [id])
+  requester           User                   @relation("EventRequest_requester", fields: [requestedBy], references: [id], onDelete: Cascade)
+  reviewer            User?                  @relation("EventRequest_reviewer", fields: [reviewedBy], references: [id], onDelete: Cascade)
   responses           EventRequestResponse[]
   formSubmission      FormSubmission?
 
@@ -301,7 +301,7 @@ model EventRequestResponse {
   availability String
   notes        String?
   respondedAt  DateTime     @default(now())
-  user         User         @relation(fields: [staffId], references: [id])
+  user         User         @relation(fields: [staffId], references: [id], onDelete: Cascade)
   request      EventRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
 
   @@unique([requestId, staffId])
@@ -320,7 +320,7 @@ model ExpenseRequest {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   attachments String?
-  user        User     @relation(fields: [userId], references: [id])
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([status])
@@ -348,7 +348,7 @@ model FormSubmission {
   reviewer       User?         @relation("FormSubmission_reviewer", fields: [reviewedBy], references: [id])
   event          Event?       @relation(fields: [eventId], references: [id])
   eventRequest   EventRequest? @relation(fields: [eventRequestId], references: [id])
-  submitter      User          @relation("FormSubmission_submitter", fields: [submittedBy], references: [id])
+  submitter      User          @relation("FormSubmission_submitter", fields: [submittedBy], references: [id], onDelete: Cascade)
   template       FormTemplate  @relation(fields: [templateId], references: [id], onDelete: Cascade)
 
   @@index([eventId])
@@ -378,7 +378,7 @@ model FormTemplate {
   createdAt     DateTime         @default(now())
   updatedAt     DateTime         @updatedAt
   submissions   FormSubmission[]
-  uploader      User             @relation(fields: [uploadedBy], references: [id])
+  uploader      User             @relation(fields: [uploadedBy], references: [id], onDelete: Cascade)
   events        Event[]
 
   @@index([isActive, createdAt])
@@ -402,7 +402,7 @@ model PayrollForm {
   createdAt     DateTime                @default(now())
   updatedAt     DateTime                @updatedAt
   submissions   PayrollFormSubmission[]
-  uploader      User                    @relation(fields: [uploadedBy], references: [id])
+  uploader      User                    @relation(fields: [uploadedBy], references: [id], onDelete: Cascade)
 
   @@index([formType, isActive])
 }
@@ -419,7 +419,7 @@ model PayrollFormSubmission {
   reviewedBy    String?
   reviewedAt    DateTime?
   form          PayrollForm   @relation(fields: [formId], references: [id], onDelete: Cascade)
-  user          User          @relation(fields: [userId], references: [id])
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([formId, userId])
   @@index([userId, status])
@@ -458,7 +458,7 @@ model GeriatricHome {
   documents          Document[]
   events             Event[]
   eventRequests      EventRequest[]
-  user               User           @relation(fields: [userId], references: [id])
+  user               User           @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model GroupMember {
@@ -470,7 +470,7 @@ model GroupMember {
   isMuted    Boolean      @default(false)
   lastReadAt DateTime?
   joinedAt   DateTime     @default(now())
-  user       User         @relation(fields: [userId], references: [id])
+  user       User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   group      MessageGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
 
   @@unique([groupId, userId])
@@ -490,7 +490,7 @@ model GroupMessage {
   createdAt    DateTime          @default(now())
   updatedAt    DateTime          @updatedAt
   editedAt     DateTime?
-  sender       User              @relation(fields: [senderId], references: [id])
+  sender       User              @relation(fields: [senderId], references: [id], onDelete: Cascade)
   group        MessageGroup      @relation(fields: [groupId], references: [id], onDelete: Cascade)
   reactions    MessageReaction[]
 
@@ -539,7 +539,7 @@ model InventoryTransaction {
   notes        String?
   userId       String
   createdAt    DateTime      @default(now())
-  user         User          @relation(fields: [userId], references: [id])
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   item         InventoryItem @relation(fields: [itemId], references: [id])
 
   @@index([type, createdAt])
@@ -547,18 +547,22 @@ model InventoryTransaction {
 }
 
 model Invitation {
-  id          String   @id @default(cuid())
-  email       String
-  role        String
-  token       String   @unique
-  expiresAt   DateTime
-  status      String   @default("PENDING")
-  createdById String
-  userId      String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  createdBy   User     @relation("InvitationsCreated", fields: [createdById], references: [id])
-  user        User?    @relation("InvitedUser", fields: [userId], references: [id])
+  id                     String    @id @default(cuid())
+  email                  String
+  role                   String
+  inviteCode             String    @unique  // INV001, INV002, etc.
+  token                  String    @unique
+  expiresAt              DateTime
+  status                 String    @default("PENDING")
+  createdById            String
+  userId                 String?
+  requestedEmail         String?   // New email requested by user
+  emailChangeStatus      String?   // PENDING, APPROVED, REJECTED
+  emailChangeRequestedAt DateTime?
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+  createdBy              User      @relation("InvitationsCreated", fields: [createdById], references: [id], onDelete: Cascade)
+  user                  User?     @relation("InvitedUser", fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model PasswordResetToken {
@@ -608,8 +612,8 @@ model MeetingRequest {
   notes         String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime @updatedAt
-  requested     User      @relation("MeetingRequest_requested", fields: [requestedId], references: [id])
-  requester     User      @relation("MeetingRequest_requester", fields: [requesterId], references: [id])
+  requested     User      @relation("MeetingRequest_requested", fields: [requestedId], references: [id], onDelete: Cascade)
+  requester     User      @relation("MeetingRequest_requester", fields: [requesterId], references: [id], onDelete: Cascade)
 }
 
 model MessageGroup {
@@ -627,7 +631,7 @@ model MessageGroup {
   updatedAt     DateTime @updatedAt
   members       GroupMember[]
   messages      GroupMessage[]
-  creator       User           @relation(fields: [createdBy], references: [id])
+  creator       User           @relation(fields: [createdBy], references: [id], onDelete: Cascade)
   event         Event?         @relation(fields: [eventId], references: [id])
 
   @@index([eventId])
@@ -640,7 +644,7 @@ model MessageReaction {
   userId    String
   emoji     String
   createdAt DateTime     @default(now())
-  user      User         @relation(fields: [userId], references: [id])
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   message   GroupMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
 
   @@unique([messageId, userId, emoji])
@@ -755,7 +759,7 @@ model MileageEntry {
   rejectionNote String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime @updatedAt
-  user          User      @relation(fields: [userId], references: [id])
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, year, month])
 }
@@ -783,8 +787,8 @@ model PhoneRequest {
   message     String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  requested   User     @relation("PhoneRequest_requested", fields: [requestedId], references: [id])
-  requester   User     @relation("PhoneRequest_requester", fields: [requesterId], references: [id])
+  requested   User     @relation("PhoneRequest_requested", fields: [requestedId], references: [id], onDelete: Cascade)
+  requester   User     @relation("PhoneRequest_requester", fields: [requesterId], references: [id], onDelete: Cascade)
 
   @@unique([requesterId, requestedId])
 }
@@ -837,7 +841,7 @@ model TimeEntry {
   status    String   @default("PENDING")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  user      User     @relation(fields: [userId], references: [id])
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([status, date])
@@ -854,7 +858,7 @@ model Timesheet {
   rejectionNote String?
   createdAt     DateTime         @default(now())
   updatedAt     DateTime @updatedAt
-  user          User             @relation(fields: [userId], references: [id])
+  user          User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   entries       TimesheetEntry[]
 
   @@unique([userId, weekStart])
@@ -876,7 +880,7 @@ model TimesheetEntry {
   notes        String?
   createdAt    DateTime  @default(now())
   updatedAt    DateTime @updatedAt
-  user         User      @relation(fields: [userId], references: [id])
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   timesheet    Timesheet @relation(fields: [timesheetId], references: [id], onDelete: Cascade)
 
   @@index([timesheetId, date])
@@ -944,6 +948,9 @@ model User {
   lastSeenAt              DateTime?
   onboardingCompletedAt   DateTime?
   onboardingSkipCount     Int                    @default(0)
+  volunteerReviewStatus   String?                // PENDING_REVIEW, APPROVED, REQUEST_CORRECTIONS
+  volunteerAvailability  String?                // JSON: {days, times}
+  volunteerReferralSource String?                // How they heard about us
   createdAt               DateTime               @default(now())
   updatedAt               DateTime               @updatedAt
   auditLogs               AuditLog[]
@@ -1002,8 +1009,8 @@ model EmailChangeRequest {
   cancelledAt    DateTime?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
-  user           User     @relation("EmailChangeRequest_targetUser", fields: [userId], references: [id])
-  requestedBy    User     @relation("EmailChangeRequest_requestedBy", fields: [requestedById], references: [id])
+  user           User     @relation("EmailChangeRequest_targetUser", fields: [userId], references: [id], onDelete: Cascade)
+  requestedBy    User     @relation("EmailChangeRequest_requestedBy", fields: [requestedById], references: [id], onDelete: Cascade)
 
   @@index([userId, status])
   @@index([requestedEmail, status])
@@ -1021,7 +1028,7 @@ model WorkLog {
   notes      String?
   createdAt  DateTime  @default(now())
   updatedAt  DateTime @updatedAt
-  user       User      @relation(fields: [userId], references: [id])
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
 }

@@ -7,10 +7,61 @@ import { revalidatePath } from 'next/cache'
 import { randomBytes } from 'crypto'
 import { hash } from 'bcryptjs'
 import { createUserWithGeneratedCode } from '@/lib/user-code'
-import { sendEmail, sendEmailWithRetry } from '@/lib/email/service'
+import { generateNextInviteCode } from '@/lib/invite-code'
+import { sendEmail, sendEmailWithRetry, sendEmailWithCustomContent } from '@/lib/email/service'
 import { logger } from '@/lib/logger'
 
 const APP_URL = process.env.NEXTAUTH_URL || 'https://artsandaging.com'
+
+async function notifyAdminsOfEmailChangeRequest(invitationId: string, originalEmail: string, newEmail: string) {
+  try {
+    // Get admin users
+    const admins = await prisma.user.findMany({
+      where: { role: 'ADMIN', status: 'ACTIVE' }
+    })
+
+    if (admins.length === 0) return
+
+    // Create in-app notifications
+    await prisma.notification.createMany({
+      data: admins.map(admin => ({
+        userId: admin.id,
+        type: 'EMAIL_CHANGE_REQUEST',
+        title: 'Email Change Request',
+        message: `User requested to change invitation from ${originalEmail} to ${newEmail}`,
+        link: '/admin/invitations?filter=email-changes'
+      }))
+    })
+
+    // Send email notifications to admins
+    for (const admin of admins) {
+      if (admin.email) {
+        const htmlContent = `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="background: #F5E050; padding: 20px; text-align: center; border-radius: 8px 8px 0 0;">
+              <h1 style="color: #1F2937; margin: 0;">Email Change Request</h1>
+            </div>
+            <div style="background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px;">
+              <p style="margin: 0 0 20px; color: #111827;">A user has requested to change their invitation email.</p>
+              <div style="background: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                <p style="margin: 5px 0;"><strong>Original Email:</strong> ${originalEmail}</p>
+                <p style="margin: 5px 0;"><strong>Requested Email:</strong> ${newEmail}</p>
+              </div>
+              <p style="margin: 20px 0 0; color: #6b7280;">Please review and approve or reject this request in the admin panel.</p>
+            </div>
+          </div>
+        `
+        await sendEmailWithCustomContent(
+          admin.email,
+          'Email Change Request - Action Required',
+          htmlContent
+        ).catch(() => {})
+      }
+    }
+  } catch (error) {
+    logger.serverAction('Failed to notify admins of email change request', error)
+  }
+}
 
 const inviteSchema = z.object({
   email: z.string().email(),
@@ -47,6 +98,7 @@ export async function createInvitation(formData: FormData) {
   // We can just create a new one or error out. Let's create new.
   
   const token = randomBytes(32).toString('hex')
+  const inviteCode = await generateNextInviteCode()
   const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days
 
   try {
@@ -54,6 +106,7 @@ export async function createInvitation(formData: FormData) {
       data: {
         email,
         role,
+        inviteCode,
         token,
         expiresAt,
         createdById: session.user.id,
@@ -76,7 +129,7 @@ export async function createInvitation(formData: FormData) {
 
     // Send invitation email directly (bypass user preferences for invitations)
     const base = 'https://the-arts-and-aging-network.vercel.app'
-    const inviteUrl = `${base}/invite/${token}`
+    const inviteUrl = `${base}/invite/${inviteCode}`
 
     console.log('[Invitation] Attempting to send invitation email:', {
       to: email,
@@ -92,6 +145,7 @@ export async function createInvitation(formData: FormData) {
         inviteUrl,
         role,
         name: existingUser?.name || email,
+        appUrl: 'https://the-arts-and-aging-network.vercel.app',
       }
     })
 
@@ -144,6 +198,7 @@ export async function sendHomeInvitation(homeId: string) {
   }
 
   const token = randomBytes(32).toString('hex')
+  const inviteCode = await generateNextInviteCode()
   const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
 
   try {
@@ -151,6 +206,7 @@ export async function sendHomeInvitation(homeId: string) {
       data: {
         email: recipientEmail,
         role: 'HOME_ADMIN',
+        inviteCode,
         token,
         expiresAt,
         createdById: session.user.id,
@@ -221,6 +277,26 @@ export async function cancelInvitation(id: string) {
 export async function acceptInvitation(token: string, formData: FormData) {
   const password = formData.get('password') as string
   const name = formData.get('name') as string
+  const phone = formData.get('phone') as string
+  const role = formData.get('role') as string
+  
+  // Role-specific fields
+  const skillsStr = formData.get('skills') as string
+  const skills = skillsStr ? JSON.parse(skillsStr) : []
+  const referralSource = formData.get('referralSource') as string
+  const emergencyContactName = formData.get('emergencyContactName') as string
+  const emergencyContactPhone = formData.get('emergencyContactPhone') as string
+  const emergencyContactRelationship = formData.get('emergencyContactRelationship') as string
+  const position = formData.get('position') as string
+  const employmentType = formData.get('employmentType') as string
+  const organizationName = formData.get('organizationName') as string
+  const organizationType = formData.get('organizationType') as string
+  const boardPosition = formData.get('boardPosition') as string
+  const termStart = formData.get('termStart') as string
+  const facilityName = formData.get('facilityName') as string
+  const selectedFacilityId = formData.get('selectedFacilityId') as string
+  const requestNewFacility = formData.get('requestNewFacility') === 'true'
+  const requestedEmail = formData.get('requestedEmail') as string
 
   if (!password || password.length < 6) return { error: 'Password too short' }
   if (!name) return { error: 'Name required' }
@@ -233,11 +309,108 @@ export async function acceptInvitation(token: string, formData: FormData) {
     return { error: 'Invalid or expired invitation' }
   }
 
+  // Handle email change request
+  if (requestedEmail && requestedEmail !== invitation.email) {
+    // Validate email format
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(requestedEmail)) {
+      return { error: 'Invalid email format' }
+    }
+    
+    // Check if email is already in use
+    const existingUser = await prisma.user.findUnique({ where: { email: requestedEmail } })
+    if (existingUser) {
+      return { error: 'This email is already in use' }
+    }
+    
+    // Check if there's already a pending request
+    const existingPending = await prisma.invitation.findFirst({
+      where: { 
+        requestedEmail: requestedEmail,
+        emailChangeStatus: 'PENDING'
+      }
+    })
+    if (existingPending) {
+      return { error: 'A request for this email is already pending' }
+    }
+    
+    // Update invitation with email change request
+    await prisma.invitation.update({
+      where: { id: invitation.id },
+      data: {
+        requestedEmail,
+        emailChangeStatus: 'PENDING',
+        emailChangeRequestedAt: new Date()
+      }
+    })
+    
+    // Notify admins of email change request
+    await notifyAdminsOfEmailChangeRequest(invitation.id, invitation.email, requestedEmail)
+    
+    return { 
+      success: true, 
+      pendingEmailChange: true,
+      message: 'Email change request submitted. Admin will review and send new invitation if approved.'
+    }
+  }
+
   const hashedPassword = await hash(password, 12)
+
+  // Handle HOME_ADMIN facility linking
+  // For HOME_ADMIN: mark as PENDING_APPROVAL, admin will link facility after approval
+  let userStatus: string = 'ACTIVE'
+  let facilityLinkRequested = false
+  let requestedFacilityName = ''
+  
+  if (role === 'HOME_ADMIN') {
+    if (requestNewFacility && facilityName) {
+      userStatus = 'PENDING_APPROVAL'
+      facilityLinkRequested = true
+      requestedFacilityName = facilityName
+    } else if (selectedFacilityId) {
+      // Directly link to selected facility (admin pre-approved)
+      facilityLinkRequested = false
+      // Will link after user is created
+    } else {
+      userStatus = 'PENDING_APPROVAL'
+    }
+  }
+
+  // Build emergency contact JSON if provided
+  let emergencyContact: string | undefined
+  if (emergencyContactName && emergencyContactPhone && emergencyContactRelationship) {
+    emergencyContact = JSON.stringify({
+      name: emergencyContactName,
+      phone: emergencyContactPhone,
+      relationship: emergencyContactRelationship
+    })
+  }
+
+  // Build roleData JSON
+  const roleData: Record<string, any> = {}
+  if (skills.length > 0) roleData.skills = skills
+  if (referralSource) roleData.referralSource = referralSource
+  if (position) roleData.position = position
+  if (employmentType) roleData.employmentType = employmentType
+  if (organizationName) roleData.organizationName = organizationName
+  if (organizationType) roleData.organizationType = organizationType
+  if (boardPosition) roleData.boardPosition = boardPosition
+  if (termStart) roleData.termStart = termStart
 
   try {
     const invitationUserId = invitation.userId
     let userId: string | null = null
+
+    // Add facility info to roleData for HOME_ADMIN
+    if (role === 'HOME_ADMIN' && requestedFacilityName) {
+      roleData.requestedFacilityName = requestedFacilityName
+      roleData.facilityApprovalPending = true
+    }
+
+    // For volunteers, set initial review status
+    let volunteerReviewStatus: string | undefined
+    if (role === 'VOLUNTEER') {
+      volunteerReviewStatus = 'PENDING_REVIEW'
+    }
 
     if (invitationUserId) {
       await prisma.$transaction(async (tx) => {
@@ -248,12 +421,16 @@ export async function acceptInvitation(token: string, formData: FormData) {
             name,
             password: hashedPassword,
             role: invitation.role,
-            status: 'ACTIVE',
+            status: userStatus,
+            phone: phone || undefined,
+            emergencyContact,
+            roleData: Object.keys(roleData).length > 0 ? JSON.stringify(roleData) : undefined,
+            volunteerReviewStatus,
           },
         })
         await tx.invitation.update({
           where: { id: invitation.id },
-          data: { status: 'ACCEPTED' },
+          data: { status: userStatus === 'PENDING_APPROVAL' ? 'PENDING_APPROVAL' : 'ACCEPTED' },
         })
       })
       userId = invitationUserId
@@ -264,11 +441,15 @@ export async function acceptInvitation(token: string, formData: FormData) {
           name,
           password: hashedPassword,
           role: invitation.role,
-          status: 'ACTIVE',
+          status: userStatus,
+          phone: phone || undefined,
+          emergencyContact,
+          roleData: Object.keys(roleData).length > 0 ? JSON.stringify(roleData) : undefined,
+          volunteerReviewStatus,
         })
         await tx.invitation.update({
           where: { id: invitation.id },
-          data: { status: 'ACCEPTED' },
+          data: { status: userStatus === 'PENDING_APPROVAL' ? 'PENDING_APPROVAL' : 'ACCEPTED' },
         })
         return user
       })
@@ -277,17 +458,24 @@ export async function acceptInvitation(token: string, formData: FormData) {
 
     // Send welcome email
     if (userId && invitation.email) {
+      const welcomeMessage = invitation.role === 'VOLUNTEER' 
+        ? 'Welcome to Arts and Aging! Please complete your volunteer profile to get started.'
+        : 'Welcome to Arts and Aging! We\'re excited to have you join our community.'
+      
       await sendEmailWithRetry({
         to: invitation.email,
         templateType: 'WELCOME',
         variables: {
           name,
-          message: 'Welcome to Arts and Aging! We\'re excited to have you join our community.'
+          message: welcomeMessage
         }
       }, { userId })
     }
 
-    return { success: true }
+    // For volunteers, redirect to onboarding
+    const redirectUrl = invitation.role === 'VOLUNTEER' ? '/staff/onboarding?new=true' : null
+    
+    return { success: true, redirectUrl }
   } catch (error) {
     logger.serverAction('acceptInvitation error', error)
     return { error: 'Failed to create or activate user' }

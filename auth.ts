@@ -70,7 +70,30 @@ const nextAuthConfig = {
         token.role = user.role
         token.onboardingCompletedAt = user.onboardingCompletedAt?.toISOString() ?? undefined
         token.onboardingSkipCount = user.onboardingSkipCount ?? 0
+        token.volunteerReviewStatus = user.volunteerReviewStatus ?? null
+        return token
       }
+
+      if (token.id) {
+        try {
+          const dbUser = await prisma.user.findUnique({
+            where: { id: token.id },
+            select: { id: true, status: true, volunteerReviewStatus: true }
+          })
+          if (!dbUser) {
+            console.log('[Auth] User deleted, invalidating session:', token.id)
+            return null
+          }
+          if (dbUser.status !== 'ACTIVE') {
+            console.log('[Auth] User deactivated, invalidating session:', token.id)
+            return null
+          }
+          token.volunteerReviewStatus = dbUser.volunteerReviewStatus
+        } catch (error) {
+          console.error('[Auth] Database check failed:', error)
+        }
+      }
+
       return token
     },
     async session({ session, token }: { session: any; token: any }) {
@@ -80,6 +103,7 @@ const nextAuthConfig = {
         session.user.name = token.name
         session.user.onboardingCompletedAt = token.onboardingCompletedAt
         session.user.onboardingSkipCount = token.onboardingSkipCount
+        session.user.volunteerReviewStatus = token.volunteerReviewStatus
       }
       return session
     },

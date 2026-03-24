@@ -1,10 +1,11 @@
 import { prisma } from "@/lib/prisma"
 import { createInvitation, cancelInvitation } from "@/app/actions/invitation"
-import { Mail, Send, Calendar, User, Clock, Trash2, Link2 } from "lucide-react"
+import { Mail, Send, Calendar, User, Clock, Trash2, Link2, Copy, Check } from "lucide-react"
 import { STYLES } from "@/lib/styles"
 import { cn } from "@/lib/utils"
 import { formatDateShort } from "@/lib/date-utils"
 import { logger } from "@/lib/logger"
+import { CopyInviteButton } from "@/components/admin/CopyInviteButton"
 
 export const revalidate = 30
 
@@ -111,18 +112,7 @@ export default async function InvitationsPage() {
                   </td>
                   <td className={STYLES.tableCell}>
                     {inv.status === 'PENDING' ? (
-                      <div className="flex items-center gap-1.5">
-                        <Link2 className="w-4 h-4 text-gray-400 shrink-0" />
-                        <a
-                          href={inviteUrl(inv.token)}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-xs text-primary-600 hover:underline truncate max-w-[180px]"
-                          title="Copy link"
-                        >
-                          Open invite link
-                        </a>
-                      </div>
+                      <CopyInviteButton url={inviteUrl(inv.token)} />
                     ) : (
                       <span className="text-xs text-gray-400">—</span>
                     )}

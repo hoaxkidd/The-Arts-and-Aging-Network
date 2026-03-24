@@ -48,7 +48,7 @@ export async function POST(
       variables: {
         name: 'Test User',
         appUrl: process.env.NEXTAUTH_URL || 'https://artsandaging.com',
-        supportEmail: 'support@artsandaging.com',
+        supportEmail: 'info@artsandaging.com',
         message: 'This is a test email to verify your template is working correctly.',
         role: 'Staff',
         eventTitle: 'Test Event',

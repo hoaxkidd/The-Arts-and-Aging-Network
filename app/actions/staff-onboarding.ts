@@ -6,6 +6,7 @@ import { auth } from '@/auth'
 import { revalidatePath } from 'next/cache'
 import { randomBytes } from 'crypto'
 import { createUserWithGeneratedCode } from '@/lib/user-code'
+import { generateNextInviteCode } from '@/lib/invite-code'
 import { sendEmail } from '@/lib/email/service'
 import { logger } from '@/lib/logger'
 
@@ -232,11 +233,13 @@ export async function createPlaceholderStaffUser(formData: FormData) {
 
     const userEmail = user.email || ''
     const userRole = user.role || 'VOLUNTEER'
+    const inviteCode = await generateNextInviteCode()
 
     await prisma.invitation.create({
       data: {
         email: userEmail,
         role: userRole,
+        inviteCode,
         token,
         expiresAt,
         createdById: session.user.id,

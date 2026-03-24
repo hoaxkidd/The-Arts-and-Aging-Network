@@ -8,6 +8,10 @@
     "postinstall": "prisma generate",
     "start": "next start",
     "lint": "eslint",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest --coverage",
     "db:push": "node scripts/with-env.js .env.local -- npx prisma db push",
     "db:seed": "npx prisma db seed",
     "import-staff": "npx tsx scripts/import-staff-profiles.ts"

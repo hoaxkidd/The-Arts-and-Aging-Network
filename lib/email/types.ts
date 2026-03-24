@@ -53,7 +53,7 @@ export interface EmailVariable {
 export const EMAIL_VARIABLES: Record<string, EmailVariable> = {
   name: { key: '{{name}}', description: 'Recipient name', example: 'John Doe' },
   appUrl: { key: '{{appUrl}}', description: 'Application URL', example: 'https://artsandaging.com' },
-  supportEmail: { key: '{{supportEmail}}', description: 'Support email', example: 'support@artsandaging.com' },
+  supportEmail: { key: '{{supportEmail}}', description: 'Support email', example: 'info@artsandaging.com' },
   inviteUrl: { key: '{{inviteUrl}}', description: 'Invitation/reset link', example: 'https://artsandaging.com/invite/abc123' },
   eventTitle: { key: '{{eventTitle}}', description: 'Event title', example: 'Art Therapy Session' },
   eventDate: { key: '{{eventDate}}', description: 'Event date', example: 'January 15, 2024' },

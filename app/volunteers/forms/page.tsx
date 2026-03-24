@@ -18,6 +18,16 @@ export default async function VolunteerFormsPage({
   const session = await auth()
   if (!session?.user?.id) redirect('/login')
 
+  // Check volunteer approval status
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { role: true, volunteerReviewStatus: true }
+  })
+  
+  if (user?.role === 'VOLUNTEER' && user.volunteerReviewStatus !== 'APPROVED') {
+    redirect('/staff/onboarding')
+  }
+
   const userRole = session.user.role || ''
 
   const params = await searchParams

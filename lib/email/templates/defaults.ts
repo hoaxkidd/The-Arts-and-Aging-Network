@@ -13,9 +13,9 @@ export const DEFAULT_TEMPLATES: DefaultTemplate[] = [
     name: 'Account Invitation',
     subject: "You're invited to join {{appUrl}}",
     content: `<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-      <div style="background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%); padding: 30px; text-align: center; border-radius: 12px 12px 0 0;">
-        <h1 style="color: white; margin: 0; font-size: 28px;">{{appUrl}}</h1>
-        <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0;">Welcome to our community</p>
+      <div style="background: linear-gradient(135deg, #F5E050 0%, #EACC00 100%); padding: 30px; text-align: center; border-radius: 12px 12px 0 0;">
+        <h1 style="color: #1F2937; margin: 0; font-size: 28px;">{{appUrl}}</h1>
+        <p style="color: #374151; margin: 10px 0 0;">Welcome to our community</p>
       </div>
       <div style="background: #ffffff; padding: 40px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 12px 12px;">
         <p style="margin: 0 0 20px; color: #111827; font-size: 16px;">Hi {{name}},</p>
@@ -26,7 +26,7 @@ export const DEFAULT_TEMPLATES: DefaultTemplate[] = [
           Click the button below to set your password and activate your account.
         </p>
         <div style="text-align: center; margin: 0 0 30px;">
-          <a href="{{inviteUrl}}" style="display: inline-block; background: #4F46E5; color: white; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: 600; font-size: 15px;">
+          <a href="{{inviteUrl}}" style="display: inline-block; background: #F5E050; color: #1F2937; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: 600; font-size: 15px;">
             Accept Invitation
           </a>
         </div>

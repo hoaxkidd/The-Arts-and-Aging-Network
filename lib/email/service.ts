@@ -6,7 +6,7 @@ import { logger } from '@/lib/logger'
 const MAILCHIMP_TRANSACTIONAL_API_KEY = process.env.MAILCHIMP_TRANSACTIONAL_API_KEY
 const MAILCHIMP_FROM_EMAIL = process.env.MAILCHIMP_FROM_EMAIL || 'noreply@artsandaging.com'
 const MAILCHIMP_FROM_NAME = process.env.MAILCHIMP_FROM_NAME || 'Arts and Aging'
-const SUPPORT_EMAIL = process.env.SUPPORT_EMAIL || 'support@artsandaging.com'
+const SUPPORT_EMAIL = process.env.SUPPORT_EMAIL || 'info@artsandaging.com'
 const APP_URL = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || 'https://artsandaging.com'
 
 export interface SendEmailResult {

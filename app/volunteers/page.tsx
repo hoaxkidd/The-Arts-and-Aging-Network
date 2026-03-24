@@ -21,6 +21,16 @@ export default async function VolunteersDashboard() {
 
   if (!userId) redirect("/login")
 
+  // Check volunteer approval status
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { role: true, volunteerReviewStatus: true }
+  })
+  
+  if (user?.role === 'VOLUNTEER' && user.volunteerReviewStatus !== 'APPROVED') {
+    redirect("/staff/onboarding")
+  }
+
   let upcomingEvents: { id: string; title: string; startDateTime: Date }[] = []
   let recentSubmissions: { id: string; status: string; createdAt: Date; template: { title: string } }[] = []
 

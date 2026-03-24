@@ -558,25 +558,25 @@ export function DashboardLayoutClient({ children, role, title = "Arts & Aging", 
       )}
 
       <div className="flex-1 flex flex-col">
-        <header className="bg-white border-b border-gray-200 px-4 md:px-6 py-3 flex items-center shadow-sm">
+        <header className="bg-secondary-400 border-b-2 border-secondary-500 px-4 md:px-6 py-4 flex items-center shadow-sm">
           <button
             onClick={() => setSidebarOpen(true)}
-            className="md:hidden p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+            className="md:hidden p-2 text-gray-800 hover:text-gray-900 hover:bg-secondary-300 rounded-lg transition-colors"
             aria-label="Open menu"
           >
-            <Menu className="w-5 h-5" />
+            <Menu className="w-6 h-6" />
           </button>
 
-          <div className="flex items-center gap-3 ml-2 flex-1 min-w-0">
-            <div className="w-10 h-10 rounded-xl bg-primary-100 text-primary-600 flex items-center justify-center">
+          <div className="flex items-center gap-4 ml-2 flex-1 min-w-0">
+            <div className="w-12 h-12 rounded-xl bg-white text-primary-600 flex items-center justify-center shadow-sm">
               {(() => {
                 const Icon = getPageIcon(pathname)
-                return <Icon className="w-5 h-5" />
+                return <Icon className="w-6 h-6" />
               })()}
             </div>
             <div className="min-w-0">
-              <h1 className="text-lg font-bold text-gray-900 truncate">{currentTitle}</h1>
-              <p className="text-sm text-gray-500 hidden sm:block truncate">
+              <h1 className="text-xl font-bold text-gray-900 truncate">{currentTitle}</h1>
+              <p className="text-base text-gray-800 hidden sm:block truncate font-medium">
                 {getPageSubtitle(pathname)}
               </p>
             </div>

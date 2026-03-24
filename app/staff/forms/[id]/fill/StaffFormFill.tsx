@@ -27,9 +27,10 @@ type SubmissionData = {
 type Props = {
   template: TemplateForRender
   existingSubmission?: SubmissionData | null
+  redirectUrl?: string
 }
 
-export function StaffFormFill({ template, existingSubmission }: Props) {
+export function StaffFormFill({ template, existingSubmission, redirectUrl }: Props) {
   const router = useRouter()
   const fields = parseFormFields(template.formFields)
   
@@ -120,7 +121,8 @@ export function StaffFormFill({ template, existingSubmission }: Props) {
       if (result.error) {
         setError(result.error)
       } else {
-        router.push('/staff/forms?tab=submissions')
+        const destination = redirectUrl || '/staff/forms?tab=submissions'
+        router.push(destination)
       }
     } catch (e) {
       setError('Failed to submit form. Please try again.')

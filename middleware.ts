@@ -7,7 +7,7 @@ const authMiddleware = auth
 export default authMiddleware((req: { nextUrl: URL; auth: unknown; headers: Headers }) => {
   const isLoggedIn = !!req.auth
   const { pathname } = req.nextUrl
-  const user = req.auth as { user?: { role?: string; onboardingCompletedAt?: string; onboardingSkipCount?: number } } | undefined
+  const user = req.auth as { user?: { role?: string; onboardingCompletedAt?: string; onboardingSkipCount?: number; volunteerReviewStatus?: string } } | undefined
   const userRole = user?.user?.role
   const authUser = user?.user
 
@@ -110,7 +110,7 @@ export default authMiddleware((req: { nextUrl: URL; auth: unknown; headers: Head
     }
   }
 
-  // Protect volunteers routes (VOLUNTEER only)
+  // Protect volunteers routes (VOLUNTEER only - must be approved)
   if (pathname.startsWith('/volunteers')) {
     if (!isLoggedIn) return NextResponse.redirect(new URL('/login', req.nextUrl))
     if (userRole !== 'VOLUNTEER') {
@@ -121,6 +121,11 @@ export default authMiddleware((req: { nextUrl: URL; auth: unknown; headers: Head
         return NextResponse.redirect(new URL('/staff', req.nextUrl))
       }
       return NextResponse.redirect(new URL('/', req.nextUrl))
+    }
+    // Check volunteer approval status - must be APPROVED to access volunteer portal
+    const volunteerStatus = authUser?.volunteerReviewStatus
+    if (volunteerStatus !== 'APPROVED') {
+      return NextResponse.redirect(new URL('/staff/onboarding', req.nextUrl))
     }
   }
 

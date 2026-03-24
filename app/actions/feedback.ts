@@ -112,7 +112,7 @@ export async function sendFeedbackRequests(hoursAfterEvent: number = 1): Promise
               feedbackUrl,
               appUrl: APP_URL,
               appUrlDisplay: APP_URL.replace(/^https?:\/\//, ''),
-              supportEmail: 'support@artsandaging.com',
+              supportEmail: 'info@artsandaging.com',
             },
           },
           { userId: user.id }
@@ -214,7 +214,7 @@ export async function sendFeedbackForEvent(
             feedbackUrl: url,
             appUrl: APP_URL,
             appUrlDisplay: APP_URL.replace(/^https?:\/\//, ''),
-            supportEmail: 'support@artsandaging.com',
+            supportEmail: 'info@artsandaging.com',
           },
         },
         { userId: user.id }

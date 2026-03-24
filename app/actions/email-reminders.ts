@@ -8,7 +8,7 @@ import { logger } from "@/lib/logger"
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://artsandaging.com'
 const FROM_EMAIL = process.env.MAILCHIMP_FROM_EMAIL || 'noreply@artsandaging.com'
 const FROM_NAME = process.env.MAILCHIMP_FROM_NAME || 'Arts and Aging'
-const SUPPORT_EMAIL = process.env.SUPPORT_EMAIL || 'support@artsandaging.com'
+const SUPPORT_EMAIL = process.env.SUPPORT_EMAIL || 'info@artsandaging.com'
 
 // Send email via Mandrill Transactional
 async function sendEmail(to: string, subject: string, html: string) {

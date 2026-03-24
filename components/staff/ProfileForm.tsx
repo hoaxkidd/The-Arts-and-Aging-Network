@@ -66,6 +66,8 @@ type UserData = {
   signatureDate: Date | null
   headshotReceived: boolean
   bioReceived: boolean
+  // Role data (for volunteers - contains skills from signup)
+  roleData: string | null
 }
 
 type ProfileFormProps = {
@@ -89,8 +91,17 @@ export function ProfileForm({ user, documents, isAdmin = false, visibleTabs, emb
   const ec = safeJsonParse(user.emergencyContact, {} as Record<string, string>)
   const intake = safeJsonParse(user.intakeAnswers, { skills: [], tasks: [], hobbies: '' } as { skills?: string[], tasks?: { name: string, rating: number }[], hobbies?: string })
   
+  // Also check roleData for volunteer skills (from signup)
+  const roleData = safeJsonParse(user.roleData, {} as Record<string, any>)
+  const roleDataSkills = Array.isArray(roleData.skills) ? roleData.skills : []
+  
+  // Use intake skills, fallback to roleData skills if empty
+  const initialSkills = (Array.isArray(intake.skills) && intake.skills.length > 0) 
+    ? intake.skills 
+    : roleDataSkills
+  
   // Dynamic State for Intake
-  const [skills, setSkills] = useState<string[]>(Array.isArray(intake.skills) ? intake.skills : [])
+  const [skills, setSkills] = useState<string[]>(initialSkills)
   const [newSkill, setNewSkill] = useState('')
   
   const [tasks, setTasks] = useState<{name: string, rating: number}[]>(Array.isArray(intake.tasks) ? intake.tasks : [])

@@ -31,6 +31,28 @@ export async function deleteUser(userId: string) {
 
     // Delete related records first (cascade delete)
     await prisma.$transaction([
+      // Delete geriatricHome if exists (for HOME_ADMIN users)
+      prisma.geriatricHome.deleteMany({ where: { userId } }),
+      // Delete timesheets and entries
+      prisma.timesheet.deleteMany({ where: { userId } }),
+      prisma.timesheetEntry.deleteMany({ where: { userId } }),
+      // Delete event relations
+      prisma.eventAttendance.deleteMany({ where: { userId } }),
+      prisma.eventReaction.deleteMany({ where: { userId } }),
+      prisma.eventComment.deleteMany({ where: { userId } }),
+      // Delete other user data
+      prisma.expenseRequest.deleteMany({ where: { userId } }),
+      prisma.payrollFormSubmission.deleteMany({ where: { userId } }),
+      prisma.mileageEntry.deleteMany({ where: { userId } }),
+      prisma.timeEntry.deleteMany({ where: { userId } }),
+      prisma.workLog.deleteMany({ where: { userId } }),
+      // Delete message-related data
+      prisma.messageReaction.deleteMany({ where: { userId } }),
+      prisma.starredMessage.deleteMany({ where: { userId } }),
+      prisma.messageReminder.deleteMany({ where: { userId } }),
+      prisma.userTyping.deleteMany({ where: { userId } }),
+      prisma.broadcastRecipient.deleteMany({ where: { userId } }),
+      prisma.pushSubscription.deleteMany({ where: { userId } }),
       // Delete notifications
       prisma.notification.deleteMany({ where: { userId } }),
       // Delete direct messages sent/received
@@ -48,6 +70,42 @@ export async function deleteUser(userId: string) {
       prisma.groupMessage.deleteMany({ where: { senderId: userId } }),
       // Delete group memberships
       prisma.groupMember.deleteMany({ where: { userId } }),
+      // Delete meeting requests
+      prisma.meetingRequest.deleteMany({
+        where: {
+          OR: [
+            { requesterId: userId },
+            { requestedId: userId }
+          ]
+        }
+      }),
+      // Delete email change requests
+      prisma.emailChangeRequest.deleteMany({
+        where: {
+          OR: [
+            { userId: userId },
+            { requestedById: userId }
+          ]
+        }
+      }),
+      // Delete phone requests
+      prisma.phoneRequest.deleteMany({
+        where: {
+          OR: [
+            { requesterId: userId },
+            { requestedId: userId }
+          ]
+        }
+      }),
+      // Delete invitations
+      prisma.invitation.deleteMany({
+        where: {
+          OR: [
+            { createdById: userId },
+            { userId: userId }
+          ]
+        }
+      }),
       // Finally delete the user
       prisma.user.delete({ where: { id: userId } })
     ])
