@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache"
 import bcrypt from "bcryptjs"
 import type { Prisma } from "@prisma/client"
 import { reassignUserCodeForName, shouldReassignUserCode } from "@/lib/user-code"
+import { logger } from "@/lib/logger"
 
 /**
  * Delete a user (Admin only)
@@ -54,7 +55,7 @@ export async function deleteUser(userId: string) {
     revalidatePath('/admin/users')
     return { success: true, message: 'User deleted successfully' }
   } catch (error) {
-    console.error('Delete user error:', error)
+    logger.serverAction('Delete user error:', error)
     return { error: 'Failed to delete user' }
   }
 }
@@ -120,7 +121,7 @@ export async function updateUser(userId: string, data: {
     revalidatePath(`/staff/inbox/${user.userCode || userId}`)
     return { success: true, user }
   } catch (error) {
-    console.error('Update user error:', error)
+    logger.serverAction('Update user error:', error)
     return { error: 'Failed to update user' }
   }
 }
@@ -155,7 +156,7 @@ export async function toggleUserStatus(userId: string) {
     revalidatePath('/admin/users')
     return { success: true, user: updatedUser }
   } catch (error) {
-    console.error('Toggle status error:', error)
+    logger.serverAction('Toggle status error:', error)
     return { error: 'Failed to toggle user status' }
   }
 }
@@ -189,7 +190,7 @@ export async function searchUsers(query: string) {
 
     return { success: true, users }
   } catch (error) {
-    console.error('Search users error:', error)
+    logger.serverAction('Search users error:', error)
     return { error: 'Failed to search users' }
   }
 }
@@ -227,7 +228,7 @@ export async function getUserStats() {
       }
     }
   } catch (error) {
-    console.error('Get user stats error:', error)
+    logger.serverAction('Get user stats error:', error)
     return { error: 'Failed to get user statistics' }
   }
 }

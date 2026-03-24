@@ -83,22 +83,22 @@ export default async function InvitationsPage() {
                 <th className={STYLES.tableHeader}>Sent By</th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="divide-y divide-gray-100">
               {invitations.map((inv) => (
-                <tr key={inv.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-6 py-4 whitespace-nowrap">
+                <tr key={inv.id} className={STYLES.tableRow}>
+                  <td className={STYLES.tableCell}>
                     <div className="flex items-center gap-2">
                       <Mail className="w-4 h-4 text-gray-400" />
                       <span className="text-sm font-medium text-gray-900">{inv.email}</span>
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className={STYLES.tableCell}>
                     <div className="flex items-center gap-2">
                       <User className="w-4 h-4 text-gray-400" />
                       <span className="text-sm text-gray-600">{inv.role}</span>
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className={STYLES.tableCell}>
                     <span className={`inline-flex text-xs font-medium ${
                       inv.status === 'ACCEPTED' 
                         ? 'text-green-700' 
@@ -109,7 +109,7 @@ export default async function InvitationsPage() {
                       {inv.status}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className={STYLES.tableCell}>
                     {inv.status === 'PENDING' ? (
                       <div className="flex items-center gap-1.5">
                         <Link2 className="w-4 h-4 text-gray-400 shrink-0" />
@@ -127,13 +127,13 @@ export default async function InvitationsPage() {
                       <span className="text-xs text-gray-400">—</span>
                     )}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className={STYLES.tableCell}>
                     <div className="flex items-center gap-2 text-sm text-gray-500">
                       <Clock className="w-4 h-4" />
                       {formatDateShort(new Date(inv.expiresAt))}
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <td className={STYLES.tableCell}>
                     <div className="flex items-center justify-between">
                       <span>{inv.createdBy?.name || 'Unknown'}</span>
                       {inv.status === 'PENDING' && (

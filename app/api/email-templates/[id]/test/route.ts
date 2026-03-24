@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { getDefaultTemplate } from '@/lib/email/templates/defaults'
 import { sendEmail, isMailchimpConfigured } from '@/lib/email/service'
 import { EmailTemplateType } from '@/lib/email/types'
+import { logger } from '@/lib/logger'
 
 export async function POST(
   request: NextRequest,
@@ -68,7 +69,7 @@ export async function POST(
 
     return NextResponse.json({ success: true, messageId: result.messageId })
   } catch (error) {
-    console.error('Error sending test email:', error)
+    logger.serverAction('Error sending test email:', error)
     return NextResponse.json({ error: 'Failed to send test email' }, { status: 500 })
   }
 }

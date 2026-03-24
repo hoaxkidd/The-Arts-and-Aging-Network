@@ -8,6 +8,7 @@ import { Plus, Users, MessageSquare, Loader2, Search, X, Send, Mail, ArrowLeft }
 import { STYLES } from "@/lib/styles"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
+import { logger } from "@/lib/logger"
 import { getGroupMessages } from "@/app/actions/messaging"
 import { searchUsers, sendDirectMessage } from "@/app/actions/direct-messages"
 import { getConversations, getConversation } from "@/app/actions/conversations"
@@ -264,7 +265,7 @@ function AdminGroupChat({ groupId, currentUserId }: { groupId: string, currentUs
                     setMessages(result.data)
                 }
             } catch (error) {
-                console.error("Failed to fetch messages", error)
+                logger.serverAction("Failed to fetch messages", error)
             } finally {
                 if (mounted) setLoading(false)
             }
@@ -313,7 +314,7 @@ function AdminDMChat({ partnerId, currentUserId, onBack }: { partnerId: string, 
                     setMessages(result.messages)
                 }
             } catch (error) {
-                console.error("Failed to fetch DM conversation", error)
+                logger.serverAction("Failed to fetch DM conversation", error)
             } finally {
                 if (mounted) setLoading(false)
             }
@@ -378,7 +379,7 @@ export function AdminMessagingPanel({ groups, currentUserId }: { groups: any[], 
                     setDmConversations(dmItems)
                 }
             } catch (error) {
-                console.error("Failed to fetch DMs:", error)
+                logger.serverAction("Failed to fetch DMs:", error)
             } finally {
                 setLoadingDMs(false)
             }
@@ -427,7 +428,7 @@ export function AdminMessagingPanel({ groups, currentUserId }: { groups: any[], 
                 }
             }
         } catch (error) {
-            console.error("Failed to refresh DMs:", error)
+            logger.serverAction("Failed to refresh DMs:", error)
         }
     }
 

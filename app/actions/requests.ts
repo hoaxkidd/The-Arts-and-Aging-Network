@@ -7,6 +7,7 @@ import { z } from "zod"
 import { join } from "path"
 import { mkdir, writeFile } from "fs/promises"
 import { notifyAdminsAboutExpense } from "@/lib/notifications"
+import { logger } from "@/lib/logger"
 
 const requestSchema = z.object({
   category: z.enum(['SICK_DAY', 'OFF_DAY', 'EXPENSE']),
@@ -83,7 +84,7 @@ export async function submitRequest(formData: FormData) {
       // Store relative URL for database
       receiptUrl = `/uploads/${fileName}`
     } catch (e) {
-      console.error('File upload error:', e)
+      logger.serverAction('File upload error:', e)
       return { error: 'Failed to upload file' }
     }
   }
@@ -118,7 +119,7 @@ export async function submitRequest(formData: FormData) {
         description: validation.data.description
       })
     } catch (notifyError) {
-      console.error('Failed to send expense notification:', notifyError)
+      logger.serverAction('Failed to send expense notification:', notifyError)
     }
 
     revalidatePath('/payroll/requests')

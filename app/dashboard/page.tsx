@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma"
 import { Calendar, Clock, ArrowUpRight, ArrowUp, ArrowDown, MapPin, Plus, Users, FileText, Settings, CheckCircle } from "lucide-react"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
+import { logger } from "@/lib/logger"
 
 const quickActions = [
   { label: "New Request", icon: Plus, href: "/dashboard/requests/new", color: "bg-primary-500", hover: "hover:bg-primary-600" },
@@ -40,7 +41,7 @@ export default async function HomeAdminDashboard() {
       orderBy: { startDateTime: 'asc' }
     })
   } catch (e) {
-    console.error("Failed to fetch dashboard events:", e)
+    logger.serverAction("Failed to fetch dashboard events:", e)
   }
 
   const now = new Date()

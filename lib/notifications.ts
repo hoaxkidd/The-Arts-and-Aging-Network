@@ -169,7 +169,7 @@ export async function notifyAllStaffAboutEvent(event: {
           subject: title,
           content: message,
           link
-        }).catch(e => console.error(`Failed to email ${staff.email}`, e))
+        }).catch(e => logger.error(`Failed to email ${staff.email}`, e))
       )
     }
 
@@ -178,7 +178,7 @@ export async function notifyAllStaffAboutEvent(event: {
         sendSMS({
           to: staff.phone,
           message: `${title}: ${message}`
-        }).catch(e => console.error(`Failed to sms ${staff.phone}`, e))
+        }).catch(e => logger.error(`Failed to sms ${staff.phone}`, e))
       )
     }
   }
@@ -245,7 +245,7 @@ export async function notifyAllStaffAboutEventUpdate(event: {
             subject: title,
             content: message,
             link
-            }).catch(e => console.error(`Failed to email ${staff.email}`, e))
+            }).catch(e => logger.error(`Failed to email ${staff.email}`, e))
         )
       }
 
@@ -254,7 +254,7 @@ export async function notifyAllStaffAboutEventUpdate(event: {
             sendSMS({
             to: staff.phone,
             message: `${title}: ${message}`
-            }).catch(e => console.error(`Failed to sms ${staff.phone}`, e))
+            }).catch(e => logger.error(`Failed to sms ${staff.phone}`, e))
         )
       }
     }
@@ -316,7 +316,7 @@ export async function notifyAllStaffAboutEventCancellation(event: {
             subject: title,
             content: message,
             link: ''
-            }).catch(e => console.error(`Failed to email ${staff.email}`, e))
+            }).catch(e => logger.error(`Failed to email ${staff.email}`, e))
         )
       }
 
@@ -325,7 +325,7 @@ export async function notifyAllStaffAboutEventCancellation(event: {
             sendSMS({
             to: staff.phone,
             message: `${title}: ${message}`
-            }).catch(e => console.error(`Failed to sms ${staff.phone}`, e))
+            }).catch(e => logger.error(`Failed to sms ${staff.phone}`, e))
         )
       }
     }

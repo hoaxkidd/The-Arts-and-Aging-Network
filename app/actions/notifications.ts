@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma"
 import { auth } from "@/auth"
 import { revalidatePath } from "next/cache"
+import { logger } from "@/lib/logger"
 
 // Create a notification for a specific user
 export async function createNotification(data: {
@@ -36,7 +37,7 @@ export async function createNotification(data: {
 
     return { success: true, notification }
   } catch (error) {
-    console.error('Create notification error:', error)
+    logger.serverAction('Create notification error:', error)
     return { error: 'Failed to create notification' }
   }
 }

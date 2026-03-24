@@ -2,91 +2,49 @@
 
 import { prisma } from "@/lib/prisma"
 import { auth } from "@/auth"
+import { formatEventTime, formatEventDateRange, generateCalendarLinks } from "@/lib/email/calendar"
+import { logger } from "@/lib/logger"
 
-// Mailchimp configuration
-const MAILCHIMP_API_KEY = process.env.MAILCHIMP_API_KEY
-const MAILCHIMP_SERVER_PREFIX = process.env.MAILCHIMP_SERVER_PREFIX // e.g., 'us1'
-const MAILCHIMP_LIST_ID = process.env.MAILCHIMP_LIST_ID
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://artsandaging.com'
+const FROM_EMAIL = process.env.MAILCHIMP_FROM_EMAIL || 'noreply@artsandaging.com'
+const FROM_NAME = process.env.MAILCHIMP_FROM_NAME || 'Arts and Aging'
+const SUPPORT_EMAIL = process.env.SUPPORT_EMAIL || 'support@artsandaging.com'
 
-// Helper to send email via Mailchimp
-async function sendMailchimpEmail(data: {
-  to: string
-  subject: string
-  htmlContent: string
-  fromName?: string
-}) {
-  if (!MAILCHIMP_API_KEY || !MAILCHIMP_SERVER_PREFIX) {
-    console.warn('Mailchimp not configured, skipping email send')
-    return { success: false, error: 'Mailchimp not configured' }
+// Send email via Mandrill Transactional
+async function sendEmail(to: string, subject: string, html: string) {
+  const API_KEY = process.env.MAILCHIMP_TRANSACTIONAL_API_KEY
+  if (!API_KEY) {
+    logger.error('Mandrill API key not configured')
+    return { success: false, error: 'API key not configured' }
   }
 
   try {
-    // Create a campaign via Mailchimp API
-    const campaignResponse = await fetch(
-      `https://${MAILCHIMP_SERVER_PREFIX}.api.mailchimp.com/3.0/campaigns`,
-      {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${MAILCHIMP_API_KEY}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          type: 'regular',
-          recipients: {
-            list_id: MAILCHIMP_LIST_ID
-          },
-          settings: {
-            subject_line: data.subject,
-            from_name: data.fromName || 'Arts and Aging',
-            reply_to: process.env.SUPPORT_EMAIL || 'noreply@artsandaging.com'
-          }
-        })
-      }
-    )
-
-    if (!campaignResponse.ok) {
-      const error = await campaignResponse.text()
-      throw new Error(`Mailchimp campaign creation failed: ${error}`)
-    }
-
-    const campaign = await campaignResponse.json()
-
-    // Set campaign content
-    await fetch(
-      `https://${MAILCHIMP_SERVER_PREFIX}.api.mailchimp.com/3.0/campaigns/${campaign.id}/content`,
-      {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${MAILCHIMP_API_KEY}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          html: data.htmlContent
-        })
-      }
-    )
-
-    // Send the campaign
-    await fetch(
-      `https://${MAILCHIMP_SERVER_PREFIX}.api.mailchimp.com/3.0/campaigns/${campaign.id}/actions/send`,
-      {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${MAILCHIMP_API_KEY}`
+    const response = await fetch('https://mandrillapp.com/api/1.0/messages/send.json', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        key: API_KEY,
+        message: {
+          from_email: FROM_EMAIL,
+          from_name: FROM_NAME,
+          to: [{ email: to, type: 'to' }],
+          subject,
+          html,
         }
-      }
-    )
+      })
+    })
 
-    return {
-      success: true,
-      campaignId: campaign.id
+    const data = await response.json() as Array<{ status?: string; _id?: string; reject_reason?: string }>
+    const first = Array.isArray(data) ? data[0] : null
+    
+    if (!first || (first.status !== 'sent' && first.status !== 'queued')) {
+      return { success: false, error: first?.reject_reason || 'Unknown error' }
     }
+
+    return { success: true, messageId: first._id }
   } catch (error) {
-    console.error('Mailchimp email error:', error)
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error'
-    }
+    logger.error('Failed to send email:', error)
+    return { success: false, error: `Failed to send: ${error}` }
   }
 }
 
@@ -113,32 +71,30 @@ export async function scheduleEventReminders(eventId: string) {
     const eventDate = new Date(event.startDateTime)
     const now = new Date()
 
+    // Get reminder days from event, default to 5 for home admin and 3 for staff
+    const homeAdminReminderDays = event.homeAdminReminderDays || 5
+    const staffReminderDays = event.staffReminderDays || 3
+
     // Calculate reminder dates
-    const sevenDaysBefore = new Date(eventDate)
-    sevenDaysBefore.setDate(sevenDaysBefore.getDate() - 7)
+    const homeAdminReminderDate = new Date(eventDate)
+    homeAdminReminderDate.setDate(homeAdminReminderDate.getDate() - homeAdminReminderDays)
 
-    const fiveDaysBefore = new Date(eventDate)
-    fiveDaysBefore.setDate(fiveDaysBefore.getDate() - 5)
+    const staffReminderDate = new Date(eventDate)
+    staffReminderDate.setDate(staffReminderDate.getDate() - staffReminderDays)
 
-    const threeDaysBefore = new Date(eventDate)
-    threeDaysBefore.setDate(threeDaysBefore.getDate() - 3)
-
-    const oneDayBefore = new Date(eventDate)
-    oneDayBefore.setDate(oneDayBefore.getDate() - 1)
-
-    // Schedule reminders for HOME_ADMIN (5-7 days before)
-    if (event.geriatricHome && sevenDaysBefore > now) {
+    // Schedule reminder for HOME_ADMIN
+    if (event.geriatricHome && homeAdminReminderDate > now) {
       await prisma.emailReminder.upsert({
         where: {
           eventId_recipientType_recipientId_reminderType: {
             eventId: event.id,
             recipientType: 'HOME_ADMIN',
             recipientId: event.geriatricHome.userId,
-            reminderType: '7_DAY',
+            reminderType: 'HOME_ADMIN_REMINDER',
           },
         },
         update: {
-          scheduledFor: sevenDaysBefore,
+          scheduledFor: homeAdminReminderDate,
           status: 'PENDING',
           error: null,
         },
@@ -146,59 +102,31 @@ export async function scheduleEventReminders(eventId: string) {
           eventId: event.id,
           recipientType: 'HOME_ADMIN',
           recipientId: event.geriatricHome.userId,
-          reminderType: '7_DAY',
-          scheduledFor: sevenDaysBefore,
+          reminderType: 'HOME_ADMIN_REMINDER',
+          scheduledFor: homeAdminReminderDate,
           status: 'PENDING',
-          updatedAt: new Date(),
         }
       })
     }
 
-    if (event.geriatricHome && fiveDaysBefore > now) {
-      await prisma.emailReminder.upsert({
-        where: {
-          eventId_recipientType_recipientId_reminderType: {
-            eventId: event.id,
-            recipientType: 'HOME_ADMIN',
-            recipientId: event.geriatricHome.userId,
-            reminderType: '5_DAY',
-          },
-        },
-        update: {
-          scheduledFor: fiveDaysBefore,
-          status: 'PENDING',
-          error: null,
-        },
-        create: {
-          eventId: event.id,
-          recipientType: 'HOME_ADMIN',
-          recipientId: event.geriatricHome.userId,
-          reminderType: '5_DAY',
-          scheduledFor: fiveDaysBefore,
-          status: 'PENDING',
-          updatedAt: new Date(),
-        }
-      })
-    }
-
-    // Schedule reminders for STAFF (3-4 days before)
+    // Schedule reminder for STAFF (using dynamic days from event)
     const confirmedStaff = event.attendances.filter(a =>
       a.user.role && ['FACILITATOR'].includes(a.user.role)
     )
 
     for (const attendance of confirmedStaff) {
-      if (threeDaysBefore > now) {
+      if (staffReminderDate > now) {
         await prisma.emailReminder.upsert({
           where: {
             eventId_recipientType_recipientId_reminderType: {
               eventId: event.id,
               recipientType: 'STAFF',
               recipientId: attendance.userId,
-              reminderType: '3_DAY',
+              reminderType: 'STAFF_REMINDER',
             },
           },
           update: {
-            scheduledFor: threeDaysBefore,
+            scheduledFor: staffReminderDate,
             status: 'PENDING',
             error: null,
           },
@@ -206,34 +134,8 @@ export async function scheduleEventReminders(eventId: string) {
             eventId: event.id,
             recipientType: 'STAFF',
             recipientId: attendance.userId,
-            reminderType: '3_DAY',
-            scheduledFor: threeDaysBefore,
-            status: 'PENDING',
-          }
-        })
-      }
-
-      if (oneDayBefore > now) {
-        await prisma.emailReminder.upsert({
-          where: {
-            eventId_recipientType_recipientId_reminderType: {
-              eventId: event.id,
-              recipientType: 'STAFF',
-              recipientId: attendance.userId,
-              reminderType: '1_DAY',
-            },
-          },
-          update: {
-            scheduledFor: oneDayBefore,
-            status: 'PENDING',
-            error: null,
-          },
-          create: {
-            eventId: event.id,
-            recipientType: 'STAFF',
-            recipientId: attendance.userId,
-            reminderType: '1_DAY',
-            scheduledFor: oneDayBefore,
+            reminderType: 'STAFF_REMINDER',
+            scheduledFor: staffReminderDate,
             status: 'PENDING',
           }
         })
@@ -242,7 +144,7 @@ export async function scheduleEventReminders(eventId: string) {
 
     return { success: true, message: 'Reminders scheduled' }
   } catch (error) {
-    console.error('Schedule reminders error:', error)
+    logger.error('Schedule reminders error:', error)
     return { error: "Failed to schedule reminders" }
   }
 }
@@ -258,7 +160,6 @@ export async function processPendingReminders(options?: { trustedCron?: boolean 
   try {
     const now = new Date()
 
-    // Get all pending reminders that are due
     const dueReminders = await prisma.emailReminder.findMany({
       where: {
         status: 'PENDING',
@@ -274,7 +175,7 @@ export async function processPendingReminders(options?: { trustedCron?: boolean 
           }
         }
       },
-      take: 50 // Process in batches
+      take: 50
     })
 
     const results = {
@@ -287,7 +188,6 @@ export async function processPendingReminders(options?: { trustedCron?: boolean 
       results.processed++
 
       try {
-        // Get recipient info
         const recipient = reminder.recipientId
           ? await prisma.user.findUnique({
               where: { id: reminder.recipientId },
@@ -307,19 +207,17 @@ export async function processPendingReminders(options?: { trustedCron?: boolean 
           continue
         }
 
-        // Generate email content based on reminder type and recipient type
         const emailContent = generateReminderEmail({
           reminder,
           recipient,
           event: reminder.event
         })
 
-        // Send via Mailchimp
-        const sendResult = await sendMailchimpEmail({
-          to: recipient.email,
-          subject: emailContent.subject,
-          htmlContent: emailContent.html
-        })
+        const sendResult = await sendEmail(
+          recipient.email,
+          emailContent.subject,
+          emailContent.html
+        )
 
         if (sendResult.success) {
           await prisma.emailReminder.update({
@@ -327,8 +225,6 @@ export async function processPendingReminders(options?: { trustedCron?: boolean 
             data: {
               status: 'SENT',
               sentAt: new Date(),
-              mailchimpCampaignId: sendResult.campaignId,
-              mailchimpStatus: 'sent'
             }
           })
           results.sent++
@@ -343,7 +239,7 @@ export async function processPendingReminders(options?: { trustedCron?: boolean 
           results.failed++
         }
       } catch (error) {
-        console.error(`Failed to process reminder ${reminder.id}:`, error)
+        logger.error(`Failed to process reminder ${reminder.id}:`, error)
         await prisma.emailReminder.update({
           where: { id: reminder.id },
           data: {
@@ -360,138 +256,143 @@ export async function processPendingReminders(options?: { trustedCron?: boolean 
       results
     }
   } catch (error) {
-    console.error('Process reminders error:', error)
+    logger.error('Process reminders error:', error)
     return { error: "Failed to process reminders" }
   }
 }
 
-// Generate email content
 interface ReminderData {
   reminder: { id: string; eventId: string; recipientType: string; reminderType: string; scheduledFor: Date }
   recipient: { name: string | null; preferredName: string | null; email: string | null }
-  event: { id: string; title: string; description: string | null; startDateTime: Date; endDateTime: Date; location: { name: string; address: string }; geriatricHome: { name: string } | null }
+  event: { 
+    id: string; 
+    title: string; 
+    description: string | null;
+    reminderMessage: string | null;
+    startDateTime: Date; 
+    endDateTime: Date; 
+    location: { name: string; address: string } | null; 
+    geriatricHome: { name: string } | null 
+  }
 }
 
 function generateReminderEmail(data: ReminderData) {
   const { reminder, recipient, event } = data
   const recipientName = recipient.preferredName || recipient.name || 'there'
-  const eventDate = new Date(event.startDateTime)
-  const eventTime = eventDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
-  const eventDateStr = eventDate.toLocaleDateString('en-US', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  })
-
-  let daysUntil = 0
-  if (reminder.reminderType === '7_DAY') daysUntil = 7
-  else if (reminder.reminderType === '5_DAY') daysUntil = 5
-  else if (reminder.reminderType === '3_DAY') daysUntil = 3
-  else if (reminder.reminderType === '1_DAY') daysUntil = 1
+  
+  const startDateTime = new Date(event.startDateTime)
+  const endDateTime = new Date(event.endDateTime)
+  const eventTime = formatEventTime(startDateTime, endDateTime)
+  const eventDateStr = formatEventDateRange(startDateTime, endDateTime)
 
   const isHomeAdmin = reminder.recipientType === 'HOME_ADMIN'
+  
+  // Calculate days until event
+  const now = new Date()
+  const eventDate = new Date(event.startDateTime)
+  const diffTime = eventDate.getTime() - now.getTime()
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+  const daysUntil = diffDays > 0 ? diffDays : 0
 
   const subject = isHomeAdmin
-    ? `Reminder: ${event.title} is ${daysUntil} ${daysUntil === 1 ? 'day' : 'days'} away`
+    ? `Reminder: ${event.title} - ${daysUntil} ${daysUntil === 1 ? 'day' : 'days'} away`
     : `Event Reminder: ${event.title} - ${daysUntil} ${daysUntil === 1 ? 'day' : 'days'} away`
 
-  const html = `
-<!DOCTYPE html>
+  const calendarLinks = generateCalendarLinks({
+    title: event.title,
+    description: event.description || '',
+    startDateTime,
+    endDateTime,
+    location: event.location?.address,
+    url: `${APP_URL}/events/${event.id}`
+  })
+
+  const googleMapsUrl = event.location?.address 
+    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.location.address)}`
+    : ''
+
+  // Use admin's custom message if provided, otherwise use default
+  const reminderText = event.reminderMessage 
+    ? event.reminderMessage 
+    : (isHomeAdmin 
+      ? `This is a friendly reminder that your event is coming up in ${daysUntil} ${daysUntil === 1 ? 'day' : 'days'}!`
+      : `Don't forget! You're scheduled to facilitate an event in ${daysUntil} ${daysUntil === 1 ? 'day' : 'days'}.`)
+
+  const html = `<!DOCTYPE html>
 <html>
 <head>
-  <style>
-    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-    .header { background-color: #4F46E5; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
-    .content { background-color: #f9f9f9; padding: 30px; border-radius: 0 0 8px 8px; }
-    .event-details { background-color: white; padding: 20px; border-radius: 8px; margin: 20px 0; }
-    .detail-row { margin: 10px 0; }
-    .label { font-weight: bold; color: #555; }
-    .button { display: inline-block; background-color: #4F46E5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 20px 0; }
-    .footer { text-align: center; margin-top: 30px; color: #666; font-size: 12px; }
-  </style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Event Reminder</title>
 </head>
-<body>
-  <div class="container">
-    <div class="header">
-      <h1>${isHomeAdmin ? '📅 Event Reminder' : '🎭 You Have an Event Coming Up!'}</h1>
+<body style="font-family: Arial, Helvetica, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9fafb;">
+  <div style="background: linear-gradient(135deg, #F59E0B 0%, #EF4444 100%); padding: 30px; text-align: center; border-radius: 12px 12px 0 0;">
+    <h1 style="color: white; margin: 0; font-size: 28px;">&#128336; Event Reminder</h1>
+  </div>
+  
+  <div style="background: #ffffff; padding: 35px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 12px 12px;">
+    <p style="margin: 0 0 20px; color: #111827; font-size: 16px;">Hi ${recipientName},</p>
+    
+    <p style="margin: 0 0 25px; color: #374151; font-size: 16px;">
+      ${reminderText}
+    </p>
+    
+    <div style="background: #f9fafb; padding: 20px; border-radius: 10px; margin: 0 0 25px; border-left: 4px solid #F59E0B;">
+      <h2 style="margin: 0 0 15px; color: #111827; font-size: 18px;">${event.title}</h2>
+      <p style="margin: 0 0 10px; color: #111827; font-size: 15px;"><strong>&#128197; Date:</strong> ${eventDateStr}</p>
+      <p style="margin: 0 0 10px; color: #111827; font-size: 15px;"><strong>&#128337; Time:</strong> ${eventTime}</p>
+      ${event.location ? `<p style="margin: 0; color: #111827; font-size: 15px;"><strong>&#128205; Location:</strong> <a href="${googleMapsUrl}" target="_blank" rel="noopener" style="color: #4F46E5; text-decoration: underline;">${event.location.name}</a></p>` : ''}
     </div>
-    <div class="content">
-      <p>Hi ${recipientName},</p>
-
-      <p>${isHomeAdmin
-        ? `This is a friendly reminder that your event is coming up in ${daysUntil} ${daysUntil === 1 ? 'day' : 'days'}!`
-        : `Don't forget! You're scheduled to facilitate an event in ${daysUntil} ${daysUntil === 1 ? 'day' : 'days'}.`
-      }</p>
-
-      <div class="event-details">
-        <h2>${event.title}</h2>
-
-        <div class="detail-row">
-          <span class="label">📅 Date:</span> ${eventDateStr}
-        </div>
-
-        <div class="detail-row">
-          <span class="label">🕐 Time:</span> ${eventTime}
-        </div>
-
-        ${event.location ? `
-        <div class="detail-row">
-          <span class="label">📍 Location:</span> ${event.location.name}
-          <br><span style="margin-left: 20px; color: #666;">${event.location.address}</span>
-        </div>
-        ` : ''}
-
-        ${event.geriatricHome && !isHomeAdmin ? `
-        <div class="detail-row">
-          <span class="label">🏠 Facility:</span> ${event.geriatricHome.name}
-        </div>
-        ` : ''}
-
-        ${event.description ? `
-        <div class="detail-row" style="margin-top: 15px;">
-          <span class="label">📝 Description:</span>
-          <p style="margin: 5px 0 0 20px; color: #666;">${event.description}</p>
-        </div>
-        ` : ''}
+    
+    ${isHomeAdmin ? `
+    <p style="margin: 0 0 15px; color: #374151; font-size: 15px;">Please ensure:</p>
+    <ul style="margin: 0 0 20px; padding-left: 20px; color: #374151; font-size: 15px;">
+      <li>&#10003; Your facility is prepared for the event</li>
+      <li>&#10003; Residents who plan to attend are informed</li>
+      <li>&#10003; Any special accommodations are ready</li>
+    </ul>
+    ` : `
+    <p style="margin: 0 0 15px; color: #374151; font-size: 15px;">Please remember to:</p>
+    <ul style="margin: 0 0 20px; padding-left: 20px; color: #374151; font-size: 15px;">
+      <li>&#10003; Review any facility-specific notes in the app</li>
+      <li>&#10003; Check-in when you arrive (24 hours before event)</li>
+      <li>&#10003; Bring any necessary materials</li>
+    </ul>
+    `}
+    
+    <div style="text-align: center; margin: 0 0 30px;">
+      <a href="${APP_URL}/events/${event.id}" style="display: inline-block; background: #4F46E5; color: white; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: 600; font-size: 15px; font-family: Arial, sans-serif;">
+        View Event Details
+      </a>
+    </div>
+    
+    <div style="margin: 25px 0; padding: 20px; background: #f9fafb; border-radius: 12px;">
+      <h3 style="color: #111827; margin: 0 0 15px; text-align: center; font-size: 18px; font-family: Arial, sans-serif;">Add to Your Calendar</h3>
+      
+      <div style="text-align: center; margin: 0 0 15px;">
+        <a href="${calendarLinks.google}" target="_blank" rel="noopener" style="display: inline-block; background: #4285f4; color: white; text-decoration: none; padding: 12px 20px; border-radius: 6px; font-weight: 500; margin: 5px; font-size: 14px; font-family: Arial, sans-serif;">Google Calendar</a>
+        <a href="${calendarLinks.outlook}" target="_blank" rel="noopener" style="display: inline-block; background: #0078d4; color: white; text-decoration: none; padding: 12px 20px; border-radius: 6px; font-weight: 500; margin: 5px; font-size: 14px; font-family: Arial, sans-serif;">Outlook</a>
+        <a href="${calendarLinks.office365}" target="_blank" rel="noopener" style="display: inline-block; background: #0078d4; color: white; text-decoration: none; padding: 12px 20px; border-radius: 6px; font-weight: 500; margin: 5px; font-size: 14px; font-family: Arial, sans-serif;">Office 365</a>
+        <a href="${calendarLinks.yahoo}" target="_blank" rel="noopener" style="display: inline-block; background: #6001d2; color: white; text-decoration: none; padding: 12px 20px; border-radius: 6px; font-weight: 500; margin: 5px; font-size: 14px; font-family: Arial, sans-serif;">Yahoo</a>
+        <a href="${calendarLinks.webcal}" download="event.ics" style="display: inline-block; background: #6b7280; color: white; text-decoration: none; padding: 12px 20px; border-radius: 6px; font-weight: 500; margin: 5px; font-size: 14px; font-family: Arial, sans-serif;">Apple Calendar</a>
       </div>
-
-      ${isHomeAdmin ? `
-        <p>Please ensure:</p>
-        <ul>
-          <li>✅ Your facility is prepared for the event</li>
-          <li>✅ Residents who plan to attend are informed</li>
-          <li>✅ Any special accommodations are ready</li>
-        </ul>
-      ` : `
-        <p>Please remember to:</p>
-        <ul>
-          <li>✅ Review any facility-specific notes in the app</li>
-          <li>✅ Check-in when you arrive (24 hours before event)</li>
-          <li>✅ Bring any necessary materials</li>
-        </ul>
-      `}
-
-      <div style="text-align: center;">
-        <a href="${process.env.NEXT_PUBLIC_APP_URL}/events/${event.id}" class="button">
-          View Event Details
-        </a>
-      </div>
-
-      <p>If you have any questions or need to make changes, please contact us as soon as possible.</p>
-
-      <p>Thank you!<br>Arts and Aging Team</p>
+      
+      <p style="margin: 0; color: #6b7280; font-size: 12px; text-align: center; font-family: Arial, sans-serif;">
+        Click a button above to add this event to your calendar
+      </p>
     </div>
-
-    <div class="footer">
-      <p>This is an automated reminder. Please do not reply to this email.</p>
-      <p>Arts and Aging | ${process.env.SUPPORT_EMAIL || 'info@artsandaging.com'}</p>
-    </div>
+    
+    <p style="margin: 20px 0 0; color: #9ca3af; font-size: 13px; text-align: center; font-family: Arial, sans-serif;">
+      If you have any questions or need to make changes, please contact us as soon as possible.
+    </p>
+  </div>
+  
+  <div style="text-align: center; padding: 20px; color: #9ca3af; font-size: 12px;">
+    <p style="margin: 0; font-family: Arial, sans-serif;">${APP_URL.replace('https://', '')} | ${SUPPORT_EMAIL}</p>
+    <p style="margin: 5px 0 0; font-family: Arial, sans-serif;">This is an automated reminder. Please do not reply to this email.</p>
   </div>
 </body>
-</html>
-  `
+</html>`
 
   return { subject, html }
 }
@@ -511,7 +412,7 @@ export async function cancelEventReminders(eventId: string) {
 
     return { success: true }
   } catch (error) {
-    console.error('Cancel reminders error:', error)
+    logger.error('Cancel reminders error:', error)
     return { error: "Failed to cancel reminders" }
   }
 }
@@ -550,7 +451,7 @@ export async function getEventReminderStatus(eventId: string) {
       data: { reminders, stats }
     }
   } catch (error) {
-    console.error('Get reminder status error:', error)
+    logger.error('Get reminder status error:', error)
     return { error: "Failed to get reminder status" }
   }
 }

@@ -6,6 +6,7 @@ import { redirect } from "next/navigation"
 import { headers } from "next/headers"
 import { rateLimit } from "@/lib/rate-limit"
 import { createUserWithGeneratedCode } from "@/lib/user-code"
+import { logger } from "@/lib/logger"
 
 export async function registerGeriatricHome(formData: FormData) {
   // Rate Limiting
@@ -98,7 +99,7 @@ export async function registerGeriatricHome(formData: FormData) {
     })
 
   } catch (error) {
-    console.error("Registration error:", error)
+    logger.serverAction("Registration error:", error)
     // Log system failure if possible (outside tx if connection alive)
     try {
         // Sanitize error details to prevent leaking stack traces or sensitive info in logs

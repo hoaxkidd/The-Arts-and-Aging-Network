@@ -5,6 +5,7 @@ import { auth } from "@/auth"
 import { revalidatePath } from "next/cache"
 import { isPayrollOrAdminRole } from "@/lib/roles"
 import { Prisma } from "@prisma/client"
+import { logger } from "@/lib/logger"
 
 export async function startWork(data: { type: string, notes?: string }) {
   const session = await auth()
@@ -51,7 +52,7 @@ export async function startWork(data: { type: string, notes?: string }) {
     if (e instanceof Error && e.message === 'ACTIVE_SESSION_EXISTS') {
       return { error: 'You already have an active work session.' }
     }
-    console.error(e)
+    logger.serverAction(e instanceof Error ? e.message : String(e))
     return { error: 'Failed to start work session' }
   }
 }

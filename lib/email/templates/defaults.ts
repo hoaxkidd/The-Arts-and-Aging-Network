@@ -74,28 +74,32 @@ export const DEFAULT_TEMPLATES: DefaultTemplate[] = [
     type: 'RSVP_CONFIRMATION',
     name: 'RSVP Confirmation',
     subject: 'RSVP Confirmed: {{eventTitle}}',
-    content: `<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-      <div style="background: #10B981; padding: 20px; text-align: center; border-radius: 12px 12px 0 0;">
-        <h1 style="color: white; margin: 0; font-size: 24px;">✓ RSVP Confirmed</h1>
+    content: `<div style="font-family: Arial, Helvetica, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9fafb;">
+      <div style="background: #10B981; padding: 25px; text-align: center; border-radius: 12px 12px 0 0;">
+        <h1 style="color: white; margin: 0; font-size: 28px;">✓ RSVP Confirmed</h1>
       </div>
-      <div style="background: #ffffff; padding: 40px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 12px 12px;">
+      <div style="background: #ffffff; padding: 35px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 12px 12px;">
         <p style="margin: 0 0 20px; color: #111827; font-size: 16px;">Hi {{name}},</p>
-        <p style="margin: 0 0 20px; color: #374151; font-size: 15px;">
-          Your RSVP to <strong>{{eventTitle}}</strong> has been confirmed!
+        <p style="margin: 0 0 25px; color: #374151; font-size: 16px;">
+          Your RSVP to <strong style="color: #4F46E5;">{{eventTitle}}</strong> has been confirmed! We look forward to seeing you there.
         </p>
-        <div style="background: #f9fafb; padding: 20px; border-radius: 8px; margin: 0 0 20px;">
-          <p style="margin: 0 0 10px; color: #111827;"><strong>📅 Date:</strong> {{eventDate}}</p>
-          <p style="margin: 0 0 10px; color: #111827;"><strong>🕐 Time:</strong> {{eventTime}}</p>
-          <p style="margin: 0; color: #111827;"><strong>📍 Location:</strong> {{eventLocation}}</p>
+        <div style="background: #f9fafb; padding: 20px; border-radius: 10px; margin: 0 0 25px; border-left: 4px solid #4F46E5;">
+          <p style="margin: 0 0 12px; color: #111827; font-size: 15px;"><strong>📅 Date:</strong> <time datetime="{{eventDateISO}}">{{eventDate}}</time></p>
+          <p style="margin: 0 0 12px; color: #111827; font-size: 15px;"><strong>🕐 Time:</strong> <time datetime="{{eventTimeISO}}">{{eventTime}}</time></p>
+          <p style="margin: 0; color: #111827; font-size: 15px;"><strong>📍 Location:</strong> <a href="{{googleMapsUrl}}" target="_blank" style="color: #4F46E5; text-decoration: underline;">{{eventLocation}}</a></p>
         </div>
         <div style="text-align: center; margin: 0 0 30px;">
-          <a href="{{eventLink}}" style="display: inline-block; background: #4F46E5; color: white; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: 600;">
+          <a href="{{eventLink}}" style="display: inline-block; background: #4F46E5; color: white; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: 600; font-size: 15px;">
             View Event Details
           </a>
         </div>
-        <p style="margin: 0; color: #9ca3af; font-size: 12px;">
-          Need to cancel? You can update your RSVP from the event page.
+        {{calendarSection}}
+        <p style="margin: 20px 0 0; color: #9ca3af; font-size: 13px; text-align: center;">
+          Need to cancel? Update your RSVP from the event page.
         </p>
+      </div>
+      <div style="text-align: center; padding: 20px; color: #9ca3af; font-size: 12px;">
+        <p style="margin: 0;"><a href="{{appUrl}}" style="color: #6b7280;">{{appUrlDisplay}}</a> | {{supportEmail}}</p>
       </div>
     </div>`,
   },
@@ -148,28 +152,66 @@ export const DEFAULT_TEMPLATES: DefaultTemplate[] = [
     type: 'EVENT_REMINDER',
     name: 'Event Reminder',
     subject: 'Reminder: {{eventTitle}} is coming up!',
-    content: `<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+    content: `<div style="font-family: Arial, Helvetica, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9fafb;">
       <div style="background: linear-gradient(135deg, #F59E0B 0%, #EF4444 100%); padding: 30px; text-align: center; border-radius: 12px 12px 0 0;">
         <h1 style="color: white; margin: 0; font-size: 24px;">⏰ Event Reminder</h1>
       </div>
-      <div style="background: #ffffff; padding: 40px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 12px 12px;">
+      <div style="background: #ffffff; padding: 35px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 12px 12px;">
         <p style="margin: 0 0 20px; color: #111827; font-size: 16px;">Hi {{name}},</p>
-        <p style="margin: 0 0 20px; color: #374151; font-size: 15px;">
-          Don't forget! You're scheduled for <strong>{{eventTitle}}</strong> coming up soon.
+        <p style="margin: 0 0 25px; color: #374151; font-size: 16px;">
+          Don't forget! You're scheduled for <strong style="color: #4F46E5;">{{eventTitle}}</strong> coming up soon.
         </p>
-        <div style="background: #f9fafb; padding: 20px; border-radius: 8px; margin: 0 0 20px;">
-          <p style="margin: 0 0 10px; color: #111827;"><strong>📅 Date:</strong> {{eventDate}}</p>
-          <p style="margin: 0 0 10px; color: #111827;"><strong>🕐 Time:</strong> {{eventTime}}</p>
-          <p style="margin: 0; color: #111827;"><strong>📍 Location:</strong> {{eventLocation}}</p>
+        <div style="background: #f9fafb; padding: 20px; border-radius: 10px; margin: 0 0 25px; border-left: 4px solid #F59E0B;">
+          <p style="margin: 0 0 12px; color: #111827; font-size: 15px;"><strong>📅 Date:</strong> <time datetime="{{eventDateISO}}">{{eventDate}}</time></p>
+          <p style="margin: 0 0 12px; color: #111827; font-size: 15px;"><strong>🕐 Time:</strong> <time datetime="{{eventTimeISO}}">{{eventTime}}</time></p>
+          <p style="margin: 0; color: #111827; font-size: 15px;"><strong>📍 Location:</strong> <a href="{{googleMapsUrl}}" target="_blank" style="color: #4F46E5; text-decoration: underline;">{{eventLocation}}</a></p>
         </div>
         <div style="text-align: center; margin: 0 0 30px;">
-          <a href="{{eventLink}}" style="display: inline-block; background: #4F46E5; color: white; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: 600;">
+          <a href="{{eventLink}}" style="display: inline-block; background: #4F46E5; color: white; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: 600; font-size: 15px;">
             View Event Details
           </a>
         </div>
-        <p style="margin: 0; color: #9ca3af; font-size: 12px;">
+        {{calendarSection}}
+        <p style="margin: 20px 0 0; color: #9ca3af; font-size: 12px;">
           Remember to check in 24 hours before the event!
         </p>
+      </div>
+      <div style="text-align: center; padding: 20px; color: #9ca3af; font-size: 12px;">
+        <p style="margin: 0;"><a href="{{appUrl}}" style="color: #6b7280;">{{appUrlDisplay}}</a> | {{supportEmail}}</p>
+      </div>
+    </div>`,
+  },
+  {
+    type: 'EVENT_REQUEST_APPROVED',
+    name: 'Event Request Approved',
+    subject: 'Your event request has been approved!',
+    content: `<div style="font-family: Arial, Helvetica, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9fafb;">
+      <div style="background: linear-gradient(135deg, #10B981 0%, #059669 100%); padding: 30px; text-align: center; border-radius: 12px 12px 0 0;">
+        <h1 style="color: white; margin: 0; font-size: 28px;">✓ Event Approved!</h1>
+        <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0; font-size: 16px;">Your request has been confirmed</p>
+      </div>
+      <div style="background: #ffffff; padding: 35px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 12px 12px;">
+        <p style="margin: 0 0 20px; color: #111827; font-size: 16px;">Hi {{name}},</p>
+        <p style="margin: 0 0 25px; color: #374151; font-size: 16px;">
+          Great news! Your event request for <strong style="color: #4F46E5;">{{eventTitle}}</strong> has been approved!
+        </p>
+        <div style="background: #f0fdf4; padding: 20px; border-radius: 10px; margin: 0 0 25px; border-left: 4px solid #10B981;">
+          <p style="margin: 0 0 12px; color: #111827; font-size: 15px;"><strong>📅 Date:</strong> <time datetime="{{eventDateISO}}">{{eventDate}}</time></p>
+          <p style="margin: 0 0 12px; color: #111827; font-size: 15px;"><strong>🕐 Time:</strong> <time datetime="{{eventTimeISO}}">{{eventTime}}</time></p>
+          <p style="margin: 0; color: #111827; font-size: 15px;"><strong>📍 Location:</strong> <a href="{{googleMapsUrl}}" target="_blank" style="color: #4F46E5; text-decoration: underline;">{{eventLocation}}</a></p>
+        </div>
+        <div style="text-align: center; margin: 0 0 30px;">
+          <a href="{{eventLink}}" style="display: inline-block; background: #4F46E5; color: white; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: 600; font-size: 15px;">
+            View Event Details
+          </a>
+        </div>
+        {{calendarSection}}
+        <p style="margin: 20px 0 0; color: #9ca3af; font-size: 12px;">
+          We look forward to seeing you at the event!
+        </p>
+      </div>
+      <div style="text-align: center; padding: 20px; color: #9ca3af; font-size: 12px;">
+        <p style="margin: 0;"><a href="{{appUrl}}" style="color: #6b7280;">{{appUrlDisplay}}</a> | {{supportEmail}}</p>
       </div>
     </div>`,
   },
@@ -290,6 +332,42 @@ export const DEFAULT_TEMPLATES: DefaultTemplate[] = [
         <p style="margin: 0; color: #9ca3af; font-size: 12px;">
           If you didn't request this, please ignore this email.
         </p>
+      </div>
+    </div>`,
+  },
+  {
+    type: 'FEEDBACK_REQUEST',
+    name: 'Post-Event Feedback',
+    subject: 'How was {{eventTitle}}? Share your feedback!',
+    content: `<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <div style="background: linear-gradient(135deg, #8B5CF6 0%, #6366F1 100%); padding: 30px; text-align: center; border-radius: 12px 12px 0 0;">
+        <h1 style="color: white; margin: 0; font-size: 28px;">We'd Love Your Feedback!</h1>
+        <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0; font-size: 16px;">Help us improve future events</p>
+      </div>
+      <div style="background: #ffffff; padding: 40px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 12px 12px;">
+        <p style="margin: 0 0 20px; color: #111827; font-size: 16px;">Hi {{name}},</p>
+        <p style="margin: 0 0 25px; color: #374151; font-size: 16px;">
+          Thank you for attending <strong style="color: #4F46E5;">{{eventTitle}}</strong>! Your participation made the event special.
+        </p>
+        <div style="background: #f9fafb; padding: 20px; border-radius: 10px; margin: 0 0 25px; border-left: 4px solid #8B5CF6;">
+          <p style="margin: 0 0 12px; color: #111827; font-size: 15px;"><strong>📅 Date:</strong> <time datetime="{{eventDateISO}}">{{eventDate}}</time></p>
+          <p style="margin: 0 0 12px; color: #111827; font-size: 15px;"><strong>🕐 Time:</strong> <time datetime="{{eventTimeISO}}">{{eventTime}}</time></p>
+          <p style="margin: 0; color: #111827; font-size: 15px;"><strong>📍 Location:</strong> {{eventLocation}}</p>
+        </div>
+        <p style="margin: 0 0 25px; color: #374151; font-size: 15px;">
+          Your feedback helps us create better experiences for everyone. Please take a moment to share your thoughts!
+        </p>
+        <div style="text-align: center; margin: 0 0 30px;">
+          <a href="{{feedbackUrl}}" style="display: inline-block; background: linear-gradient(135deg, #8B5CF6 0%, #6366F1 100%); color: white; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: 600; font-size: 15px;">
+            Share Your Feedback
+          </a>
+        </div>
+        <p style="margin: 0; color: #9ca3af; font-size: 12px;">
+          This feedback form takes about 2 minutes to complete. Your responses are confidential and help us improve.
+        </p>
+      </div>
+      <div style="text-align: center; padding: 20px; color: #9ca3af; font-size: 12px;">
+        <p style="margin: 0;"><a href="{{appUrl}}" style="color: #6b7280;">{{appUrlDisplay}}</a> | {{supportEmail}}</p>
       </div>
     </div>`,
   },

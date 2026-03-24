@@ -1,5 +1,6 @@
 import { auth } from "@/auth"
 import { redirect } from "next/navigation"
+import { logger } from "@/lib/logger"
 
 export const dynamic = 'force-dynamic'
 
@@ -8,7 +9,7 @@ export default async function Home() {
   try {
     session = await auth()
   } catch (err) {
-    console.error("Home auth error:", err)
+    logger.serverAction("Home auth error:", err)
     redirect("/login")
   }
 

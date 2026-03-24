@@ -1,4 +1,5 @@
 import webpush from 'web-push'
+import { logger } from './logger'
 
 const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || ''
 const vapidPrivateKey = process.env.VAPID_PRIVATE_KEY || ''
@@ -40,7 +41,7 @@ export async function sendPushNotification(
     )
     return { success: true }
   } catch (error) {
-    console.error('Push notification error:', error)
+    logger.error('Push notification error:', error)
     return { success: false, error: 'Failed to send notification' }
   }
 }

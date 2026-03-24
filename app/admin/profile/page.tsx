@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma"
 import { auth } from "@/auth"
+import Image from "next/image"
 import { updateStaffProfile } from "@/app/actions/staff"
 import { Save, UserCircle, Phone, Mail, FileText, Camera } from "lucide-react"
 import { STYLES } from "@/lib/styles"
@@ -22,7 +23,13 @@ export default async function ProfilePage() {
         <div className={cn(STYLES.card, "text-center h-fit")}>
           <div className="relative inline-block mb-4 group cursor-pointer">
             {user.image ? (
-              <img src={user.image} alt={user.name || 'User'} className="w-32 h-32 rounded-full object-cover border-4 border-primary-50 mx-auto" />
+              <Image
+                src={user.image}
+                alt={user.name || 'User'}
+                width={128}
+                height={128}
+                className="rounded-full object-cover border-4 border-primary-50 mx-auto"
+              />
             ) : (
               <div className="w-32 h-32 rounded-full bg-primary-100 flex items-center justify-center text-primary-600 text-4xl font-bold border-4 border-white shadow-inner mx-auto">
                 {user.name?.[0] || 'U'}

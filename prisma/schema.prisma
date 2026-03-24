@@ -166,6 +166,9 @@ model Event {
   geriatricHomeId         String?
   programId               String?
   requiredFormTemplateId  String?
+  reminderMessage         String?             // Custom reminder message from admin
+  homeAdminReminderDays   Int?                // Days before event to remind home admin (0 or null = use default)
+  staffReminderDays       Int?                // Days before event to remind staff (0 or null = use default)
   createdAt               DateTime            @default(now())
   updatedAt               DateTime            @updatedAt
   emailReminders          EmailReminder[]
@@ -273,6 +276,9 @@ model EventRequest {
   notes               String?
   expectedAttendees   Int?
   programType         String?
+  homeAdminReminderDays Int?    // Days before event to remind home admin (0 or null = use default)
+  staffReminderDays    Int?     // Days before event to remind staff (0 or null = use default)
+  reminderMessage     String?   // Custom reminder message
   createdAt           DateTime               @default(now())
   updatedAt           DateTime @updatedAt
   approvedEvent       Event?                 @relation("EventRequest_approvedEvent", fields: [approvedEventId], references: [id])
@@ -553,6 +559,17 @@ model Invitation {
   updatedAt   DateTime @updatedAt
   createdBy   User     @relation("InvitationsCreated", fields: [createdById], references: [id])
   user        User?    @relation("InvitedUser", fields: [userId], references: [id])
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  email     String
+  token     String   @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+  user      User?    @relation(fields: [userId], references: [id])
+  userId    String?
 }
 
 model EmailTemplate {
@@ -879,6 +896,7 @@ model User {
   bio                     String?
   roleData                String?
   notificationPreferences String?
+  emailDigestTime         String?                @default("08:00")
   pronouns                String?
   preferredName           String?
   birthDate               DateTime?
@@ -956,6 +974,7 @@ model User {
   inventoryTransactions   InventoryTransaction[]
   invitationsCreated      Invitation[]           @relation("InvitationsCreated")
   invitationsAsUser       Invitation[]           @relation("InvitedUser")
+  passwordResetTokens     PasswordResetToken[]
   meetingRequestsReceived MeetingRequest[]       @relation("MeetingRequest_requested")
   meetingRequestsSent     MeetingRequest[]       @relation("MeetingRequest_requester")
   messageGroups           MessageGroup[]

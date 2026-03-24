@@ -10,6 +10,7 @@ import { DateInput } from '@/components/ui/DateInput'
 import { toInputDate } from '@/lib/date-utils'
 import { safeJsonParse } from '@/lib/utils'
 import { toast } from 'sonner'
+import { logger } from '@/lib/logger'
 
 type UserData = {
   id: string
@@ -182,7 +183,7 @@ export function ProfileForm({ user, documents, isAdmin = false, visibleTabs, emb
         router.refresh() // Sync sidebar and other UI
       }
     } catch (err) {
-      console.error('Form submission error:', err)
+      logger.serverAction('Form submission error:', err)
       setStatusMessage('Error saving profile. Please try again.')
     } finally {
       setIsPending(false)

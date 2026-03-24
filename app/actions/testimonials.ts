@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma"
 import { auth } from "@/auth"
 import { revalidatePath } from "next/cache"
 import type { Prisma } from "@prisma/client"
+import { logger } from "@/lib/logger"
 
 // Get all testimonials (filtered)
 export async function getTestimonials(filters?: {
@@ -58,7 +59,7 @@ export async function getTestimonials(filters?: {
 
     return { success: true, data: testimonials }
   } catch (error) {
-    console.error("Failed to fetch testimonials:", error)
+    logger.serverAction("Failed to fetch testimonials:", error)
     return { error: "Failed to load testimonials" }
   }
 }
@@ -115,7 +116,7 @@ export async function createTestimonial(data: {
 
     return { success: true, data: testimonial }
   } catch (error) {
-    console.error("Failed to create testimonial:", error)
+    logger.serverAction("Failed to create testimonial:", error)
     return { error: "Failed to create testimonial" }
   }
 }
@@ -161,7 +162,7 @@ export async function updateTestimonial(
 
     return { success: true, data: testimonial }
   } catch (error) {
-    console.error("Failed to update testimonial:", error)
+    logger.serverAction("Failed to update testimonial:", error)
     return { error: "Failed to update testimonial" }
   }
 }
@@ -188,7 +189,7 @@ export async function deleteTestimonial(id: string) {
 
     return { success: true }
   } catch (error) {
-    console.error("Failed to delete testimonial:", error)
+    logger.serverAction("Failed to delete testimonial:", error)
     return { error: "Failed to delete testimonial" }
   }
 }

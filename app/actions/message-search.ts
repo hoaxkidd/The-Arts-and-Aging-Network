@@ -1,6 +1,7 @@
 'use server'
 
 import { prisma } from "@/lib/prisma"
+import { logger } from "@/lib/logger"
 import { auth } from "@/auth"
 import { revalidatePath } from "next/cache"
 
@@ -166,7 +167,7 @@ export async function searchMessages(query: string, filters?: SearchFilters) {
 
     return { success: true, data: highlightedResults }
   } catch (error) {
-    console.error("Search error:", error)
+    logger.serverAction("Search error:", error)
     return { error: "Failed to search messages" }
   }
 }

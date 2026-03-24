@@ -4,6 +4,7 @@ import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
 import { canMessageUser } from './conversation-requests'
+import { logger } from '@/lib/logger'
 
 // Get all conversations for current user
 export async function getConversations() {
@@ -80,7 +81,7 @@ export async function getConversations() {
 
     return { conversations }
   } catch (error) {
-    console.error('Get conversations error:', error)
+    logger.serverAction('Get conversations error:', error)
     return { error: 'Failed to get conversations' }
   }
 }
@@ -147,7 +148,7 @@ export async function getConversation(partnerIdentifier: string) {
 
     return { partner, messages }
   } catch (error) {
-    console.error('Get conversation error:', error)
+    logger.serverAction('Get conversation error:', error)
     return { error: 'Failed to get conversation' }
   }
 }
@@ -218,7 +219,7 @@ export async function sendMessage(
 
     return { success: true, message }
   } catch (error) {
-    console.error('Send message error:', error)
+    logger.serverAction('Send message error:', error)
     const errorMessage = error instanceof Error ? error.message : 'Failed to send message'
     return { error: errorMessage }
   }

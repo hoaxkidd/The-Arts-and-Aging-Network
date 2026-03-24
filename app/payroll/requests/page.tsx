@@ -1,5 +1,6 @@
 import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
+import { logger } from "@/lib/logger"
 import { submitRequest } from "@/app/actions/requests"
 import { FileText, PlusCircle, DollarSign, Calendar } from "lucide-react"
 import { RequestFilters } from "@/components/RequestFilters"
@@ -25,7 +26,7 @@ export default async function RequestsPage(props: { searchParams: Promise<{ cate
       orderBy: { createdAt: 'desc' },
     })
   } catch (err) {
-    console.error("[Payroll requests] DB error:", err instanceof Error ? err.message : err)
+    logger.serverAction("[Payroll requests] DB error:", err instanceof Error ? err.message : String(err))
   }
 
   return (

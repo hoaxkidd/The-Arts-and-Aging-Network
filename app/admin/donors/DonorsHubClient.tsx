@@ -11,6 +11,7 @@ import {
   X,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { STYLES } from '@/lib/styles'
 
 type DonationRow = {
   id: string
@@ -128,33 +129,33 @@ export function DonorsHubClient({ donors: initialDonors }: Props) {
         </select>
       </div>
 
-      <div className="flex-1 min-h-0 border border-gray-200 rounded-lg overflow-hidden">
+      <div className="flex-1 min-h-0 bg-white rounded-lg border border-gray-200 overflow-hidden">
         <div className="table-scroll-wrapper h-full max-h-[calc(100vh-360px)]">
-        <table className="min-w-full divide-y divide-gray-200 text-sm">
+        <table className={STYLES.table}>
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Donor / Organization</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Type</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Tier</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Payment method</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Campaign / Event</th>
-              <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Total donated</th>
-              <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Donations</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Last donation</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
+              <th className={STYLES.tableHeader}>Donor / Organization</th>
+              <th className={STYLES.tableHeader}>Type</th>
+              <th className={STYLES.tableHeader}>Tier</th>
+              <th className={STYLES.tableHeader}>Payment method</th>
+              <th className={STYLES.tableHeader}>Campaign / Event</th>
+              <th className={`${STYLES.tableHeader} text-right`}>Total donated</th>
+              <th className={`${STYLES.tableHeader} text-center`}>Donations</th>
+              <th className={STYLES.tableHeader}>Last donation</th>
+              <th className={STYLES.tableHeader}>Status</th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-100">
+          <tbody className="divide-y divide-gray-100">
             {filtered.length === 0 ? (
               <tr>
-                <td colSpan={9} className="px-4 py-12 text-center text-sm text-gray-500">
+                <td colSpan={9} className={`${STYLES.tableCell} text-center`}>
                   {initialDonors.length === 0 ? 'No donors yet.' : 'No donors match your filters.'}
                 </td>
               </tr>
             ) : (
               filtered.map((donor) => (
-                <tr key={donor.id} className="hover:bg-gray-50/50">
-                  <td className="px-4 py-3">
+                <tr key={donor.id} className={STYLES.tableRow}>
+                  <td className={STYLES.tableCell}>
                     <div className="flex items-center gap-2">
                       <Heart className="w-4 h-4 text-pink-500 flex-shrink-0" />
                       <div>
@@ -165,15 +166,15 @@ export function DonorsHubClient({ donors: initialDonors }: Props) {
                       </div>
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-sm text-gray-600">{donor.type}</td>
-                  <td className="px-4 py-3">
+                  <td className={STYLES.tableCell}>{donor.type}</td>
+                  <td className={STYLES.tableCell}>
                     <span className={cn('text-xs px-2 py-1 rounded font-medium', TIER_STYLES[donor.tier] || 'bg-gray-100 text-gray-700')}>
                       {donor.tier}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-sm text-gray-600">{latestMethod(donor)}</td>
-                  <td className="px-4 py-3 text-sm text-gray-600">{latestCampaign(donor)}</td>
-                  <td className="px-4 py-3 text-right">
+                  <td className={STYLES.tableCell}>{latestMethod(donor)}</td>
+                  <td className={STYLES.tableCell}>{latestCampaign(donor)}</td>
+                  <td className={`${STYLES.tableCell} text-right`}>
                     <button
                       type="button"
                       onClick={() => setDonationHistoryDonor(donor)}
@@ -183,13 +184,13 @@ export function DonorsHubClient({ donors: initialDonors }: Props) {
                       <History className="w-4 h-4" aria-hidden />
                     </button>
                   </td>
-                  <td className="px-4 py-3 text-center text-sm text-gray-900">{donor.donationCount}</td>
-                  <td className="px-4 py-3 text-sm text-gray-600">
+                  <td className={`${STYLES.tableCell} text-center`}>{donor.donationCount}</td>
+                  <td className={STYLES.tableCell}>
                     {donor.lastDonation
                       ? new Date(donor.lastDonation).toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' })
                       : '—'}
                   </td>
-                  <td className="px-4 py-3">
+                  <td className={STYLES.tableCell}>
                     <span
                       className={cn(
                         'text-xs px-2 py-1 rounded',

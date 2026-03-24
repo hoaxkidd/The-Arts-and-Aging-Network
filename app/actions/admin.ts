@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma"
 import { auth } from "@/auth"
 import { revalidatePath } from "next/cache"
 import { notifyStaffAboutExpenseStatus } from "@/lib/notifications"
+import { logger } from "@/lib/logger"
 
 export async function updateRequestStatus(requestId: string, status: 'APPROVED' | 'REJECTED') {
   const session = await auth()
@@ -35,7 +36,7 @@ export async function updateRequestStatus(requestId: string, status: 'APPROVED' 
         status
       })
     } catch (notifyError) {
-      console.error('Failed to send expense status notification:', notifyError)
+      logger.serverAction('Failed to send expense status notification:', notifyError)
     }
 
     revalidatePath('/admin/requests')

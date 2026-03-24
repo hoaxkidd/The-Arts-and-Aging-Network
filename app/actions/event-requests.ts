@@ -6,6 +6,8 @@ import { revalidatePath } from "next/cache"
 import type { Prisma, PrismaClient } from "@prisma/client"
 import { scheduleEventReminders } from "./email-reminders"
 import { logger } from "@/lib/logger"
+import { sendEmailWithRetry } from "@/lib/email/service"
+import { generateCalendarLinks, formatEventTime } from "@/lib/email/calendar"
 
 // Type-safe prisma client reference
 const db = prisma as PrismaClient & Record<string, unknown>
@@ -96,7 +98,7 @@ export async function requestExistingEvent(
 
     return { success: true, data: request }
   } catch (error) {
-    console.error("Failed to request event:", error)
+    logger.serverAction("Failed to request event", error)
     const msg = error instanceof Error ? error.message : "Unknown error"
     return { error: process.env.NODE_ENV === "development" ? `Failed to submit event request: ${msg}` : "Failed to submit event request" }
   }
@@ -198,7 +200,7 @@ export async function submitEventSignUpForm(
 
     return { success: true, data: { request, submission } }
   } catch (error) {
-    console.error("Submit event sign-up form error:", error)
+    logger.serverAction("Submit event sign-up form error", error)
     const msg = error instanceof Error ? error.message : "Unknown error"
     return { error: process.env.NODE_ENV === "development" ? `Failed to submit event request: ${msg}` : "Failed to submit event request" }
   }
@@ -228,8 +230,6 @@ export async function createCustomEventRequest(data: {
     const home = await db.geriatricHome.findUnique({
       where: { userId: session.user.id }
     })
-
-    console.log('[FORM SUBMISSION] Session user:', session.user.id, 'Home found:', home?.id)
 
     if (!home) return { error: "No home found for this user" }
 
@@ -266,8 +266,6 @@ export async function createCustomEventRequest(data: {
         }
       })
 
-      console.log('[FORM SUBMISSION] Event request created:', request.id, 'Type:', request.type, 'Status:', request.status)
-
       // Create form submission
       const formSubmission = await db.formSubmission.create({
         data: {
@@ -277,8 +275,6 @@ export async function createCustomEventRequest(data: {
           eventRequestId: request.id
         }
       })
-
-      console.log('[FORM SUBMISSION] Form submission created:', formSubmission.id)
 
       // Update form template usage count
       await db.formTemplate.update({
@@ -417,7 +413,7 @@ export async function createCustomEventRequest(data: {
 
     return { success: true, data: request }
   } catch (error) {
-    console.error("Failed to create custom event request:", error)
+    logger.serverAction("Failed to create custom event request", error)
     return { error: "Failed to submit event request" }
   }
 }
@@ -461,7 +457,7 @@ export async function cancelEventRequest(requestId: string) {
 
     return { success: true }
   } catch (error) {
-    console.error("Failed to cancel request:", error)
+    logger.serverAction("Failed to cancel request", error)
     return { error: "Failed to cancel request" }
   }
 }
@@ -509,7 +505,7 @@ export async function getHomeEventRequests(homeId?: string) {
 
     return { success: true, data: requests }
   } catch (error) {
-    console.error("Failed to get requests:", error)
+    logger.serverAction("Failed to get requests", error)
     return { error: "Failed to load requests" }
   }
 }
@@ -575,7 +571,7 @@ export async function getAllEventRequests(filters?: {
 
     return { success: true, data }
   } catch (error) {
-    console.error("Failed to get requests:", error)
+    logger.serverAction("Failed to get requests", error)
     return { error: "Failed to load requests" }
   }
 }
@@ -626,7 +622,7 @@ export async function getEventRequestDetail(requestId: string) {
 
     return { success: true, data: request }
   } catch (error) {
-    console.error("Failed to get request detail:", error)
+    logger.serverAction("Failed to get request detail", error)
     return { error: "Failed to load request" }
   }
 }
@@ -640,6 +636,9 @@ export async function approveEventRequest(
     startDateTime?: string
     endDateTime?: string
     locationId?: string
+    homeAdminReminderDays?: number
+    staffReminderDays?: number
+    reminderMessage?: string
   }
 ) {
   const session = await auth()
@@ -713,6 +712,9 @@ export async function approveEventRequest(
           geriatricHomeId: request.geriatricHomeId,
           status: 'PUBLISHED',
           origin: 'HOME_REQUESTED',
+          homeAdminReminderDays: modifications?.homeAdminReminderDays || request.homeAdminReminderDays || 5,
+          staffReminderDays: modifications?.staffReminderDays || request.staffReminderDays || 3,
+          reminderMessage: modifications?.reminderMessage || request.reminderMessage || null,
           updatedAt: new Date()
         }
       })
@@ -751,6 +753,59 @@ export async function approveEventRequest(
       }
     })
 
+    // Send approval email to home admin
+    const homeUser = await db.user.findUnique({
+      where: { id: request.geriatricHome.userId },
+      select: { email: true, name: true, preferredName: true }
+    })
+
+    if (homeUser?.email) {
+      let event: { startDateTime: Date; endDateTime: Date; location: { name: string | null; address: string | null } | null } | null = null
+      
+      if (request.type === 'CREATE_CUSTOM' && approvedEventId) {
+        event = await db.event.findUnique({ where: { id: approvedEventId }, include: { location: true } })
+      } else if (request.existingEventId) {
+        event = await db.event.findUnique({ where: { id: request.existingEventId }, include: { location: true } })
+      }
+
+      const eventTitle = (request.type === 'CREATE_CUSTOM' ? request.customTitle : request.existingEvent?.title) || 'Event'
+      const eventDate = event?.startDateTime
+        ? new Date(event.startDateTime).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
+        : ''
+      const eventTime = (event?.startDateTime && event?.endDateTime)
+        ? formatEventTime(new Date(event.startDateTime), new Date(event.endDateTime))
+        : ''
+      const eventLocation = event?.location?.name || event?.location?.address || 'TBD'
+      const eventLink = `${process.env.NEXTAUTH_URL || ''}/dashboard/my-events`
+
+      const emailVariables: Record<string, string> = {
+        name: homeUser.preferredName || homeUser.name || 'User',
+        eventTitle: eventTitle,
+        eventDate,
+        eventTime,
+        eventLocation,
+        eventLink
+      }
+
+      if (event?.startDateTime && event?.endDateTime) {
+        const calendarLinks = generateCalendarLinks({
+          title: eventTitle,
+          startDateTime: new Date(event.startDateTime),
+          endDateTime: new Date(event.endDateTime),
+          location: eventLocation,
+          url: eventLink
+        })
+        emailVariables.calendarLink = calendarLinks.webcal
+        emailVariables.googleCalendarLink = calendarLinks.google
+      }
+
+      await sendEmailWithRetry({
+        to: homeUser.email,
+        templateType: 'EVENT_REQUEST_APPROVED',
+        variables: emailVariables
+      }, { userId: request.geriatricHome.userId })
+    }
+
     // Notify staff about new approved event
     const staff = await db.user.findMany({
       where: {
@@ -786,9 +841,9 @@ export async function approveEventRequest(
     if (approvedEventId) {
       try {
         await scheduleEventReminders(approvedEventId)
-        logger.log('✅ Email reminders scheduled for approved event:', approvedEventId)
+        logger.log('Email reminders scheduled for approved event', { eventId: approvedEventId }, 'server-action')
       } catch (reminderError) {
-        console.error('❌ Failed to schedule reminders:', reminderError)
+        logger.error('Failed to schedule reminders', reminderError)
       }
     }
 
@@ -800,7 +855,7 @@ export async function approveEventRequest(
 
     return { success: true, approvedEventId }
   } catch (error) {
-    console.error("Failed to approve request:", error)
+    logger.serverAction("Failed to approve request", error)
     return { error: "Failed to approve request" }
   }
 }
@@ -845,6 +900,24 @@ export async function rejectEventRequest(requestId: string, reason: string) {
       }
     })
 
+    // Send rejection email to home admin
+    const homeUser = await db.user.findUnique({
+      where: { id: request.geriatricHome.userId },
+      select: { email: true, name: true, preferredName: true }
+    })
+
+    if (homeUser?.email) {
+      await sendEmailWithRetry({
+        to: homeUser.email,
+        templateType: 'EXPENSE_REJECTED',
+        variables: {
+          name: homeUser.preferredName || homeUser.name || 'User',
+          eventTitle: eventTitle || 'Event',
+          message: reason
+        }
+      }, { userId: request.geriatricHome.userId })
+    }
+
     // Create audit log
     await prisma.auditLog.create({
       data: {
@@ -859,7 +932,7 @@ export async function rejectEventRequest(requestId: string, reason: string) {
 
     return { success: true }
   } catch (error) {
-    console.error("Failed to reject request:", error)
+    logger.serverAction("Failed to reject request", error)
     return { error: "Failed to reject request" }
   }
 }
@@ -1008,7 +1081,7 @@ export async function getHomeEventHistory(homeId?: string) {
 
     return { success: true, data: events }
   } catch (error) {
-    console.error("Failed to get home event history:", error)
+    logger.serverAction("Failed to get home event history", error)
     return { error: "Failed to load event history" }
   }
 }
@@ -1093,7 +1166,7 @@ export async function submitStaffAvailability(data: {
     revalidatePath('/staff/events')
     return { success: true }
   } catch (error) {
-    console.error("Failed to submit availability:", error)
+    logger.serverAction("Failed to submit availability", error)
     return { error: "Failed to submit availability" }
   }
 }
@@ -1125,7 +1198,7 @@ export async function getPendingRequestsForStaff() {
 
     return { success: true, data: requests }
   } catch (error) {
-    console.error("Failed to get pending requests:", error)
+    logger.serverAction("Failed to get pending requests", error)
     return { error: "Failed to load requests" }
   }
 }
@@ -1193,7 +1266,7 @@ export async function getRequestWithResponses(requestId: string) {
       }
     }
   } catch (error) {
-    console.error("Failed to get request with responses:", error)
+    logger.serverAction("Failed to get request with responses", error)
     return { error: "Failed to load request" }
   }
 }
@@ -1340,7 +1413,7 @@ export async function approveRequestWithSelectedDate(data: {
 
     return { success: true, eventId: event.id }
   } catch (error) {
-    console.error("Failed to approve request:", error)
+    logger.serverAction("Failed to approve request", error)
     return { error: "Failed to approve request" }
   }
 }

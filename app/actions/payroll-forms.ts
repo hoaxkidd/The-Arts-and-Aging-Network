@@ -7,6 +7,7 @@ import { z } from "zod"
 import { join } from "path"
 import { writeFile, mkdir, unlink } from "fs/promises"
 import { isPayrollOrAdminRole } from "@/lib/roles"
+import { logger } from "@/lib/logger"
 
 const PayrollFormSchema = z.object({
   title: z.string().min(1, "Title is required"),
@@ -39,7 +40,7 @@ export async function getPayrollForms() {
 
     return { success: true, data: forms }
   } catch (error) {
-    console.error("Failed to fetch payroll forms:", error)
+    logger.serverAction("Failed to fetch payroll forms:", error)
     return { error: "Failed to fetch forms" }
   }
 }
@@ -66,7 +67,7 @@ export async function getPayrollFormById(id: string) {
 
     return { success: true, data: form }
   } catch (error) {
-    console.error("Failed to fetch payroll form:", error)
+    logger.serverAction("Failed to fetch payroll form:", error)
     return { error: "Failed to fetch form" }
   }
 }
@@ -103,7 +104,7 @@ export async function getMyPayrollFormSubmissions() {
 
     return { success: true, data: formsWithStatus }
   } catch (error) {
-    console.error("Failed to fetch my form submissions:", error)
+    logger.serverAction("Failed to fetch my form submissions:", error)
     return { error: "Failed to fetch your forms" }
   }
 }
@@ -207,7 +208,7 @@ export async function createPayrollForm(formData: FormData) {
     revalidatePath("/admin/payroll-forms")
     return { success: true, data: form }
   } catch (error) {
-    console.error("Failed to create payroll form:", error)
+    logger.serverAction("Failed to create payroll form:", error)
     return { error: "Failed to create form" }
   }
 }
@@ -246,7 +247,7 @@ export async function deletePayrollForm(id: string) {
     revalidatePath("/admin/payroll-forms")
     return { success: true }
   } catch (error) {
-    console.error("Failed to delete payroll form:", error)
+    logger.serverAction("Failed to delete payroll form:", error)
     return { error: "Failed to delete form" }
   }
 }
@@ -312,7 +313,7 @@ export async function submitPayrollForm(formId: string, signature: string) {
     revalidatePath("/payroll/forms")
     return { success: true, data: submission }
   } catch (error) {
-    console.error("Failed to submit payroll form:", error)
+    logger.serverAction("Failed to submit payroll form:", error)
     return { error: "Failed to submit form" }
   }
 }
@@ -354,7 +355,7 @@ export async function getPayrollFormStats() {
       }
     }
   } catch (error) {
-    console.error("Failed to fetch payroll form stats:", error)
+    logger.serverAction("Failed to fetch payroll form stats:", error)
     return { error: "Failed to fetch stats" }
   }
 }

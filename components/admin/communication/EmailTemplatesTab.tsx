@@ -15,6 +15,7 @@ import {
 import { cn } from '@/lib/utils'
 import { STYLES } from '@/lib/styles'
 import { EMAIL_TEMPLATE_INFO, EmailVariable } from '@/lib/email/types'
+import { logger } from '@/lib/logger'
 
 type EmailTemplate = {
   id: string
@@ -223,10 +224,10 @@ export function EmailTemplatesTab() {
         const data = await res.json()
         setTemplates(data)
       } else {
-        console.error('Failed to fetch templates:', res.status)
+        logger.serverAction('Failed to fetch templates:', res.status)
       }
     } catch (error) {
-      console.error('Failed to fetch templates:', error)
+      logger.serverAction('Failed to fetch templates:', error)
     } finally {
       setLoading(false)
     }
@@ -280,7 +281,7 @@ export function EmailTemplatesTab() {
         fetchTemplates()
       }
     } catch (error) {
-      console.error('Failed to toggle template:', error)
+      logger.serverAction('Failed to toggle template:', error)
     }
   }
 

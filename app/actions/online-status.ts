@@ -1,6 +1,7 @@
 'use server'
 
 import { prisma } from "@/lib/prisma"
+import { logger } from "@/lib/logger"
 import { auth } from "@/auth"
 
 export async function updateOnlineStatus(isOnline: boolean) {
@@ -20,7 +21,7 @@ export async function updateOnlineStatus(isOnline: boolean) {
 
     return { success: true }
   } catch (error) {
-    console.error("Failed to update online status:", error)
+    logger.serverAction("Failed to update online status:", error)
     return { error: "Failed to update status" }
   }
 }
@@ -37,7 +38,7 @@ export async function getOnlineStatus(userId: string) {
 
     return { success: true, data: user }
   } catch (error) {
-    console.error("Failed to get online status:", error)
+    logger.serverAction("Failed to get online status:", error)
     return { error: "Failed to get status" }
   }
 }
@@ -57,7 +58,7 @@ export async function getOnlineUsers(userIds: string[]) {
 
     return { success: true, data: users }
   } catch (error) {
-    console.error("Failed to get online users:", error)
+    logger.serverAction("Failed to get online users:", error)
     return { error: "Failed to get users" }
   }
 }
@@ -87,7 +88,7 @@ export async function setUserPrivacy(settings: {
 
     return { success: true }
   } catch (error) {
-    console.error("Failed to set privacy:", error)
+    logger.serverAction("Failed to set privacy:", error)
     return { error: "Failed to update privacy" }
   }
 }
@@ -115,7 +116,7 @@ export async function getUserPrivacy() {
 
     return { success: true, data: privacy }
   } catch (error) {
-    console.error("Failed to get privacy:", error)
+    logger.serverAction("Failed to get privacy:", error)
     return { error: "Failed to get privacy" }
   }
 }

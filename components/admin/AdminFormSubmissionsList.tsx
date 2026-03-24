@@ -5,7 +5,9 @@ import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { FileText, Search, Filter, Check, X, Edit, Loader2, ArrowUpDown, ChevronLeft, ChevronRight, Eye, CheckCircle, XCircle, Clock } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { STYLES } from '@/lib/styles'
 import { approveEditRequest, reviewFormSubmission } from '@/app/actions/form-templates'
+import { logger } from '@/lib/logger'
 
 type Submission = {
   id: string
@@ -108,7 +110,7 @@ export function AdminFormSubmissionsList({
       await approveEditRequest(submissionId, true)
       router.refresh()
     } catch (error) {
-      console.error('Failed to approve:', error)
+      logger.serverAction('Failed to approve:', error)
     } finally {
       setProcessingId(null)
     }
@@ -122,7 +124,7 @@ export function AdminFormSubmissionsList({
       setDenyReason('')
       router.refresh()
     } catch (error) {
-      console.error('Failed to deny:', error)
+      logger.serverAction('Failed to deny:', error)
     } finally {
       setProcessingId(null)
     }
@@ -167,7 +169,7 @@ export function AdminFormSubmissionsList({
       setReviewNotes('')
       router.refresh()
     } catch (error) {
-      console.error('Failed to review:', error)
+      logger.serverAction('Failed to review:', error)
     } finally {
       setReviewing(false)
     }
@@ -296,10 +298,10 @@ export function AdminFormSubmissionsList({
             <p className="text-sm text-gray-500">No submissions found</p>
           </div>
         ) : (
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
+          <table className={STYLES.table}>
+            <thead className="bg-gray-50">
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                <th className={STYLES.tableHeader}>
                   <button 
                     onClick={() => handleSort('form')}
                     className="flex items-center hover:text-gray-700"
@@ -307,7 +309,7 @@ export function AdminFormSubmissionsList({
                     Form {getSortIcon('form')}
                   </button>
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                <th className={STYLES.tableHeader}>
                   <button 
                     onClick={() => handleSort('user')}
                     className="flex items-center hover:text-gray-700"
@@ -315,8 +317,8 @@ export function AdminFormSubmissionsList({
                     Submitter {getSortIcon('user')}
                   </button>
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Event</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                <th className={STYLES.tableHeader}>Event</th>
+                <th className={STYLES.tableHeader}>
                   <button 
                     onClick={() => handleSort('status')}
                     className="flex items-center hover:text-gray-700"
@@ -324,7 +326,7 @@ export function AdminFormSubmissionsList({
                     Status {getSortIcon('status')}
                   </button>
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                <th className={STYLES.tableHeader}>
                   <button 
                     onClick={() => handleSort('createdAt')}
                     className="flex items-center hover:text-gray-700"
@@ -332,13 +334,13 @@ export function AdminFormSubmissionsList({
                     Date {getSortIcon('createdAt')}
                   </button>
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                <th className={STYLES.tableHeader}>Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200">
+            <tbody className="divide-y divide-gray-100">
               {filteredSubmissions.map((submission) => (
-                <tr key={submission.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3">
+                <tr key={submission.id} className={STYLES.tableRow}>
+                  <td className={STYLES.tableCell}>
                     <Link 
                       href={`/admin/form-templates/${submission.template.id}/edit`}
                       className="text-sm font-medium text-gray-900 hover:text-primary-600"
@@ -347,18 +349,18 @@ export function AdminFormSubmissionsList({
                     </Link>
                     <p className="text-xs text-gray-500">{categoryLabels[submission.template.category] || submission.template.category}</p>
                   </td>
-                  <td className="px-4 py-3">
+                  <td className={STYLES.tableCell}>
                     <p className="text-sm text-gray-900">{submission.submitter.name || 'Unknown'}</p>
                     <p className="text-xs text-gray-500">{submission.submitter.email}</p>
                   </td>
-                  <td className="px-4 py-3">
+                  <td className={STYLES.tableCell}>
                     {submission.event ? (
                       <span className="text-xs text-gray-600">{submission.event.title}</span>
                     ) : (
                       <span className="text-xs text-gray-400">-</span>
                     )}
                   </td>
-                  <td className="px-4 py-3">
+                  <td className={STYLES.tableCell}>
                     <div className="flex flex-col gap-1">
                       <span className={cn(
                         "inline-flex px-2 py-0.5 rounded text-xs font-medium",
@@ -377,14 +379,14 @@ export function AdminFormSubmissionsList({
                       )}
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-sm text-gray-500">
+                  <td className={STYLES.tableCell}>
                     {new Date(submission.createdAt).toLocaleDateString('en-US', {
                       month: 'short',
                       day: 'numeric',
                       year: 'numeric'
                     })}
                   </td>
-                  <td className="px-4 py-3">
+                  <td className={STYLES.tableCell}>
                     <div className="flex items-center gap-1">
                       <button
                         onClick={() => setShowDetailsModal(submission)}

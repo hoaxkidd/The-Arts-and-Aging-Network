@@ -124,7 +124,7 @@ export function HomeEventHistory({
   // Desktop table view
   const DesktopTableView = () => (
     <div className="hidden md:block bg-white rounded-lg border border-gray-200 overflow-hidden">
-      <div className="table-scroll-wrapper">
+      <div className="table-scroll-wrapper max-h-[calc(100vh-320px)]">
         <table className={STYLES.table}>
           <thead className="bg-gray-50">
             <tr>

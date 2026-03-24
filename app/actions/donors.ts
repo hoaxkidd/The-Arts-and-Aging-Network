@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma"
 import { auth } from "@/auth"
 import { revalidatePath } from "next/cache"
 import type { Prisma } from "@prisma/client"
+import { logger } from "@/lib/logger"
 
 // Get all donors
 export async function getDonors(filters?: {
@@ -44,7 +45,7 @@ export async function getDonors(filters?: {
 
     return { success: true, data: donors }
   } catch (error) {
-    console.error("Failed to fetch donors:", error)
+    logger.serverAction("Failed to fetch donors:", error)
     return { error: "Failed to load donors" }
   }
 }
@@ -95,7 +96,7 @@ export async function createDonor(data: {
 
     return { success: true, data: donor }
   } catch (error) {
-    console.error("Failed to create donor:", error)
+    logger.serverAction("Failed to create donor:", error)
     return { error: "Failed to create donor" }
   }
 }
@@ -176,7 +177,7 @@ export async function recordDonation(data: {
 
     return { success: true, data: donation }
   } catch (error) {
-    console.error("Failed to record donation:", error)
+    logger.serverAction("Failed to record donation:", error)
     return { error: "Failed to record donation" }
   }
 }
@@ -205,7 +206,7 @@ export async function getDonorDetails(id: string) {
 
     return { success: true, data: donor }
   } catch (error) {
-    console.error("Failed to fetch donor:", error)
+    logger.serverAction("Failed to fetch donor:", error)
     return { error: "Failed to load donor" }
   }
 }

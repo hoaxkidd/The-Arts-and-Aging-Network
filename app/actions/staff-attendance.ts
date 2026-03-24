@@ -5,6 +5,7 @@ import { auth } from "@/auth"
 import { revalidatePath } from "next/cache"
 import type { PrismaClient } from "@prisma/client"
 import { checkInNotOpenMessage, getCheckInWindowMinutes, getCheckInWindowStart } from "@/lib/event-checkin"
+import { logger } from "@/lib/logger"
 
 // Type-safe prisma client reference
 const db = prisma as PrismaClient & Record<string, unknown>
@@ -97,7 +98,7 @@ export async function confirmStaffAttendance(eventId: string, _notes?: string) {
 
     return { success: true, data: attendance }
   } catch (error) {
-    console.error("Failed to confirm attendance:", error)
+    logger.serverAction("Failed to confirm attendance:", error)
     return { error: "Failed to confirm attendance" }
   }
 }
@@ -147,7 +148,7 @@ export async function withdrawStaffAttendance(eventId: string) {
 
     return { success: true }
   } catch (error) {
-    console.error("Failed to withdraw attendance:", error)
+    logger.serverAction("Failed to withdraw attendance:", error)
     return { error: "Failed to withdraw attendance" }
   }
 }
@@ -196,7 +197,7 @@ export async function getAvailableEventsForStaff() {
 
     return { success: true, data: eventsWithStatus }
   } catch (error) {
-    console.error("Failed to get available events:", error)
+    logger.serverAction("Failed to get available events:", error)
     return { error: "Failed to load events" }
   }
 }
@@ -257,7 +258,7 @@ export async function getMyConfirmedEvents() {
 
     return { success: true, data: events }
   } catch (error) {
-    console.error("Failed to get confirmed events:", error)
+    logger.serverAction("Failed to get confirmed events:", error)
     return { error: "Failed to load events" }
   }
 }
@@ -349,7 +350,7 @@ export async function staffCheckIn(eventId: string) {
 
     return { success: true }
   } catch (error) {
-    console.error("Failed to check in:", error)
+    logger.serverAction("Failed to check in:", error)
     return { error: "Failed to check in" }
   }
 }
@@ -448,7 +449,7 @@ export async function getStaffEventDetail(eventId: string) {
       }
     }
   } catch (error) {
-    console.error("Failed to get event detail:", error)
+    logger.serverAction("Failed to get event detail:", error)
     return { error: "Failed to load event" }
   }
 }

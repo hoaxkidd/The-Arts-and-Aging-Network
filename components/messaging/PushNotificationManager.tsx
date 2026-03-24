@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { Bell, BellOff, Loader2 } from 'lucide-react'
+import { logger } from '@/lib/logger'
 
 export function PushNotificationManager() {
   const [isSupported, setIsSupported] = useState(false)
@@ -54,7 +55,7 @@ export function PushNotificationManager() {
 
       setIsEnabled(true)
     } catch (error) {
-      console.error('Subscribe error:', error)
+      logger.serverAction('Subscribe error:', error)
       alert('Failed to enable push notifications')
     }
     setSubscribing(false)
@@ -78,7 +79,7 @@ export function PushNotificationManager() {
 
       setIsEnabled(false)
     } catch (error) {
-      console.error('Unsubscribe error:', error)
+      logger.serverAction('Unsubscribe error:', error)
       alert('Failed to disable push notifications')
     }
     setSubscribing(false)

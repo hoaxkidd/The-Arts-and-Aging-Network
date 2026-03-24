@@ -1,5 +1,6 @@
 import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
+import { logger } from "@/lib/logger"
 import {
   Clock,
   AlertCircle,
@@ -69,7 +70,7 @@ export default async function PayrollDashboard() {
       ...recentExpenses.map(e => ({ type: 'EXPENSE', ...e, date: new Date(e.createdAt) }))
     ].sort((a, b) => b.date.getTime() - a.date.getTime()).slice(0, 5)
   } catch (err) {
-    console.error("[PayrollDashboard] DB error:", err instanceof Error ? err.message : err)
+    logger.serverAction("[PayrollDashboard] DB error:", err instanceof Error ? err.message : String(err))
   }
 
   return (

@@ -20,8 +20,7 @@ export function OnlineStatusTracker() {
     window.addEventListener('mousemove', handleActivity)
     window.addEventListener('keydown', handleActivity)
 
-    let interval: NodeJS.Timeout
-    interval = setInterval(() => {
+    const interval = setInterval(() => {
       updateOnlineStatus(true)
     }, 30000)
 

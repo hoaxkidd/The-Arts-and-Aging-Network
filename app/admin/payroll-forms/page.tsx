@@ -8,6 +8,7 @@ import {
 } from 'lucide-react'
 import { createPayrollForm, deletePayrollForm, getPayrollFormStats } from '@/app/actions/payroll-forms'
 import { STYLES } from '@/lib/styles'
+import { logger } from '@/lib/logger'
 import { cn } from '@/lib/utils'
 import { DateInput } from '@/components/ui/DateInput'
 import { toInputDate } from '@/lib/date-utils'
@@ -66,7 +67,7 @@ export default function PayrollFormsPage() {
       const data = await res.json()
       if (data.success) setForms(data.data)
     } catch (e) {
-      console.error('Failed to load forms:', e)
+      logger.serverAction('Failed to load forms:', e)
     }
     setLoading(false)
   }
@@ -77,7 +78,7 @@ export default function PayrollFormsPage() {
       const data = await res.json()
       if (data.success) setStats(data.data)
     } catch (e) {
-      console.error('Failed to load stats:', e)
+      logger.serverAction('Failed to load stats:', e)
     }
   }
 
@@ -143,8 +144,8 @@ export default function PayrollFormsPage() {
             </button>
           </div>
         ) : (
-          <div className="table-scroll-wrapper">
-            <table className="divide-y divide-gray-200">
+          <div className="table-scroll-wrapper max-h-[calc(100vh-320px)]">
+            <table className={STYLES.table}>
               <thead className="bg-gray-50">
                 <tr>
                   <th className={STYLES.tableHeader}>Form</th>
@@ -154,10 +155,10 @@ export default function PayrollFormsPage() {
                   <th className={STYLES.tableHeader}>Actions</th>
                 </tr>
               </thead>
-            <tbody className="divide-y divide-gray-200">
+            <tbody className="divide-y divide-gray-100">
               {forms.map((form) => (
-                <tr key={form.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4">
+                <tr key={form.id} className={STYLES.tableRow}>
+                  <td className={STYLES.tableCell}>
                     <div className="flex items-center gap-3">
                       <FileText className="w-5 h-5 text-gray-400" />
                       <div>
@@ -166,7 +167,7 @@ export default function PayrollFormsPage() {
                       </div>
                     </div>
                   </td>
-                  <td className="px-6 py-4">
+                  <td className={STYLES.tableCell}>
                     <span className={cn(
                       "inline-flex items-center px-2 py-1 rounded-full text-xs font-medium",
                       form.formType === 'COMPLIANCE' && "bg-red-100 text-red-800",
@@ -178,7 +179,7 @@ export default function PayrollFormsPage() {
                       {form.formType.replace('_', ' ')}
                     </span>
                   </td>
-                  <td className="px-6 py-4">
+                  <td className={STYLES.tableCell}>
                     <div className="flex flex-wrap gap-1">
                       {form.roles.map((role) => (
                         <span key={role} className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded">
@@ -187,10 +188,10 @@ export default function PayrollFormsPage() {
                       ))}
                     </div>
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-600">
+                  <td className={STYLES.tableCell}>
                     {form._count.submissions}
                   </td>
-                  <td className="px-6 py-4">
+                  <td className={STYLES.tableCell}>
                     <div className="flex items-center gap-2">
                       <a
                         href={form.fileUrl}
@@ -208,12 +209,12 @@ export default function PayrollFormsPage() {
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
         )}
       </div>
 

@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils'
 import { markAsRead, deleteNotification, markAllAsRead, clearAllNotifications } from '@/app/actions/notifications'
 import { NOTIFICATION_REFRESH_EVENT } from '@/lib/notification-refresh'
 import Link from 'next/link'
+import { logger } from '@/lib/logger'
 
 type Notification = {
   id: string
@@ -104,7 +105,7 @@ export function NotificationList({ initialNotifications, compact = false, onNoti
       const { notifications: latest } = await res.json()
       setNotifications(latest)
     } catch (e) {
-      console.error(e)
+      logger.serverAction(e instanceof Error ? e.message : String(e))
     }
   }, [])
 

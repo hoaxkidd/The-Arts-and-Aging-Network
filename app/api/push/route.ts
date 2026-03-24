@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 import { vapidPublicKey } from '@/lib/push-notifications'
+import { logger } from '@/lib/logger'
 
 export async function GET() {
   return NextResponse.json({ 
@@ -44,7 +45,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('Push subscription error:', error)
+    logger.serverAction('Push subscription error:', error)
     return NextResponse.json({ error: 'Failed to subscribe' }, { status: 500 })
   }
 }
@@ -72,7 +73,7 @@ export async function DELETE(request: Request) {
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('Push unsubscription error:', error)
+    logger.serverAction('Push unsubscription error:', error)
     return NextResponse.json({ error: 'Failed to unsubscribe' }, { status: 500 })
   }
 }

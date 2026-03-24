@@ -8,6 +8,7 @@ import { ROLE_LABELS } from "@/lib/roles"
 import { FormTemplateCard } from "@/components/admin/FormTemplateCard"
 import { FormTemplateFilters } from "@/components/admin/FormTemplateFilters"
 import { StickyTable } from "@/components/ui/StickyTable"
+import { STYLES } from "@/lib/styles"
 
 export default async function PayrollFormsPage({
   searchParams
@@ -224,8 +225,8 @@ export default async function PayrollFormsPage({
                   const category = categories.find(c => c.value === template.category)
                   const accessLabel = template.isPublic ? 'All' : (template.allowedRoles ? template.allowedRoles.split(',').map(r => ROLE_LABELS[r as keyof typeof ROLE_LABELS] || r).join(', ') : 'All')
                   return (
-                    <tr key={template.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-3">
+                    <tr key={template.id} className={STYLES.tableRow}>
+                      <td className={STYLES.tableCell}>
                         <Link href={`/payroll/forms/${template.id}`} className="block">
                           <span className="text-sm font-medium text-gray-900 hover:text-primary-600">{template.title}</span>
                           {template.description && (
@@ -233,12 +234,12 @@ export default async function PayrollFormsPage({
                           )}
                         </Link>
                       </td>
-                      <td className="px-4 py-3">
+                      <td className={STYLES.tableCell}>
                         <span className="inline-flex items-center gap-1 text-xs font-medium text-gray-700">
                           {category?.icon} {category?.label || template.category}
                         </span>
                       </td>
-                      <td className="px-4 py-3">
+                      <td className={STYLES.tableCell}>
                         <span className={cn(
                           "inline-flex text-xs font-medium",
                           template.isActive ? "text-green-700" : "text-gray-500"
@@ -246,7 +247,7 @@ export default async function PayrollFormsPage({
                               {template.isActive ? 'Active' : 'Archived'}
                             </span>
                       </td>
-                          <td className="px-4 py-3">
+                          <td className={STYLES.tableCell}>
                             <span className={cn(
                               "inline-flex px-2 py-1 rounded-full text-xs font-medium",
                               template.isPublic ? "bg-blue-100 text-blue-700" : "bg-purple-100 text-purple-700"
@@ -254,7 +255,7 @@ export default async function PayrollFormsPage({
                               {accessLabel}
                             </span>
                           </td>
-                          <td className="px-4 py-3">
+                          <td className={STYLES.tableCell}>
                             <span className="text-sm text-gray-900">{template._count.submissions}</span>
                           </td>
                         </tr>

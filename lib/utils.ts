@@ -1,5 +1,6 @@
 import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
+import { logger } from "./logger"
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -10,7 +11,7 @@ export function safeJsonParse<T>(str: string | null | undefined, fallback: T): T
   try {
     return JSON.parse(str) as T
   } catch (error) {
-    console.error(`JSON parse error:`, error)
+    logger.error(`JSON parse error:`, error)
     return fallback
   }
 }

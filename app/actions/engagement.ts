@@ -4,6 +4,7 @@ import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
+import { logger } from "@/lib/logger"
 
 const CommentSchema = z.object({
   eventId: z.string(),
@@ -86,22 +87,28 @@ export async function uploadPhoto(formData: FormData) {
   if (!file.type.startsWith('image/')) return { error: 'Invalid file type' }
 
   try {
-    // In a real app, upload to S3/Cloudinary here.
-    // For this demo, we'll pretend we got a URL.
-    const mockUrl = `https://placehold.co/600x400?text=${encodeURIComponent(file.name)}`
-
+    const bytes = await file.arrayBuffer()
+    const buffer = Buffer.from(bytes)
+    
+    const { uploadToR2, getFileExtension } = await import('@/lib/r2')
+    const extension = getFileExtension(file.name)
+    const uniqueName = `${eventId}/${Date.now()}.${extension}`
+    
+    const uploaded = await uploadToR2(buffer, uniqueName, file.type, 'event-photos')
+    
     await prisma.eventPhoto.create({
       data: {
         eventId,
         uploaderId: session.user.id,
-        url: mockUrl,
+        url: uploaded.url,
         caption
       }
     })
     
     revalidatePath(`/events/${eventId}`)
-    return { success: true }
+    return { success: true, url: uploaded.url }
   } catch (e) {
+    logger.upload('Photo upload error', e)
     return { error: 'Failed to upload photo' }
   }
 }

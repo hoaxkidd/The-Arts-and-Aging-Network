@@ -1,6 +1,7 @@
 'use server'
 
 import { prisma } from "@/lib/prisma"
+import { logger } from "@/lib/logger"
 import { auth } from "@/auth"
 import { revalidatePath } from "next/cache"
 
@@ -56,7 +57,7 @@ export async function createBroadcast(data: {
 
     return { success: true, data: broadcast, recipientCount: users.length }
   } catch (error) {
-    console.error("Failed to create broadcast:", error)
+    logger.serverAction("Failed to create broadcast:", error)
     return { error: "Failed to create broadcast" }
   }
 }
@@ -90,7 +91,7 @@ export async function getBroadcasts() {
 
     return { success: true, data: broadcastsWithCount }
   } catch (error) {
-    console.error("Failed to get broadcasts:", error)
+    logger.serverAction("Failed to get broadcasts:", error)
     return { error: "Failed to get broadcasts" }
   }
 }
@@ -137,7 +138,7 @@ export async function sendBroadcast(broadcastId: string) {
 
     return { success: true }
   } catch (error) {
-    console.error("Failed to send broadcast:", error)
+    logger.serverAction("Failed to send broadcast:", error)
     return { error: "Failed to send broadcast" }
   }
 }
@@ -165,7 +166,7 @@ export async function deleteBroadcast(broadcastId: string) {
 
     return { success: true }
   } catch (error) {
-    console.error("Failed to delete broadcast:", error)
+    logger.serverAction("Failed to delete broadcast:", error)
     return { error: "Failed to delete broadcast" }
   }
 }
@@ -196,7 +197,7 @@ export async function getUserBroadcasts() {
 
     return { success: true, data: results }
   } catch (error) {
-    console.error("Failed to get user broadcasts:", error)
+    logger.serverAction("Failed to get user broadcasts:", error)
     return { error: "Failed to get broadcasts" }
   }
 }

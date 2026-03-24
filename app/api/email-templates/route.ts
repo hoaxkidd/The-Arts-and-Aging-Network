@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { getDefaultTemplate } from '@/lib/email/templates/defaults'
 import { sendEmail, isMailchimpConfigured } from '@/lib/email/service'
 import { EmailTemplateType } from '@/lib/email/types'
+import { logger } from '@/lib/logger'
 
 export async function GET() {
   try {
@@ -18,8 +19,10 @@ export async function GET() {
 
     const defaultTypes = [
       'INVITATION', 'WELCOME', 'RSVP_CONFIRMATION', 'RSVP_CANCELLED',
-      'NEW_MESSAGE', 'EVENT_REMINDER', 'EXPENSE_APPROVED', 'EXPENSE_REJECTED',
+      'NEW_MESSAGE', 'EVENT_REMINDER', 'EVENT_REQUEST_APPROVED',
+      'EXPENSE_APPROVED', 'EXPENSE_REJECTED',
       'TIMESHEET_APPROVED', 'TIMESHEET_REJECTED', 'PASSWORD_RESET',
+      'FEEDBACK_REQUEST',
       'GROUP_ACCESS_REQUEST', 'GROUP_ACCESS_APPROVED', 'GROUP_ACCESS_DENIED'
     ] as EmailTemplateType[]
 
@@ -56,7 +59,7 @@ export async function GET() {
 
     return NextResponse.json(templates)
   } catch (error) {
-    console.error('Error fetching email templates:', error)
+    logger.serverAction('Error fetching email templates:', error)
     return NextResponse.json({ error: 'Failed to fetch templates' }, { status: 500 })
   }
 }
@@ -95,7 +98,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(template)
   } catch (error) {
-    console.error('Error creating email template:', error)
+    logger.serverAction('Error creating email template:', error)
     return NextResponse.json({ error: 'Failed to create template' }, { status: 500 })
   }
 }

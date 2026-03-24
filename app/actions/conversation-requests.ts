@@ -4,6 +4,8 @@ import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
 import { createNotification } from './notifications'
+import { sendEmailWithRetry } from '@/lib/email/service'
+import { logger } from '@/lib/logger'
 
 // Request to start a conversation with someone
 export async function requestConversation(requestedId: string, message?: string) {
@@ -75,7 +77,7 @@ export async function requestConversation(requestedId: string, message?: string)
 
     return { success: true, request }
   } catch (error) {
-    console.error('Request conversation error:', error)
+    logger.serverAction('Request conversation error', error)
     return { error: 'Failed to send request' }
   }
 }
@@ -115,7 +117,7 @@ export async function getPendingConversationRequests() {
 
     return { requests }
   } catch (error) {
-    console.error('Get requests error:', error)
+    logger.serverAction('Get requests error', error)
     return { error: 'Failed to get requests' }
   }
 }
@@ -163,12 +165,29 @@ export async function approveConversationRequest(requestId: string) {
       metadata: JSON.stringify({ requestId: request.id })
     })
 
+    // Send approval email
+    const requester = await prisma.user.findUnique({
+      where: { id: request.requesterId },
+      select: { email: true, name: true, preferredName: true }
+    })
+
+    if (requester?.email) {
+      await sendEmailWithRetry({
+        to: requester.email,
+        templateType: 'GROUP_ACCESS_APPROVED',
+        variables: {
+          name: requester.preferredName || requester.name || 'User',
+          groupName: request.requested.preferredName || request.requested.name || 'User'
+        }
+      }, { userId: request.requesterId })
+    }
+
     revalidatePath('/admin/conversation-requests')
     revalidatePath('/staff/inbox')
 
     return { success: true }
   } catch (error) {
-    console.error('Approve request error:', error)
+    logger.serverAction('Approve request error', error)
     return { error: 'Failed to approve request' }
   }
 }
@@ -207,11 +226,29 @@ export async function denyConversationRequest(requestId: string, note?: string) 
       metadata: JSON.stringify({ requestId: request.id })
     })
 
+    // Send denial email
+    const requester = await prisma.user.findUnique({
+      where: { id: request.requesterId },
+      select: { email: true, name: true, preferredName: true }
+    })
+
+    if (requester?.email) {
+      await sendEmailWithRetry({
+        to: requester.email,
+        templateType: 'GROUP_ACCESS_DENIED',
+        variables: {
+          name: requester.preferredName || requester.name || 'User',
+          groupName: 'this conversation',
+          message: note || 'Your conversation request was not approved'
+        }
+      }, { userId: request.requesterId })
+    }
+
     revalidatePath('/admin/conversation-requests')
 
     return { success: true }
   } catch (error) {
-    console.error('Deny request error:', error)
+    logger.serverAction('Deny request error', error)
     return { error: 'Failed to deny request' }
   }
 }

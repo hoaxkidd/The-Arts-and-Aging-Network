@@ -1,6 +1,7 @@
 'use server'
 
 import { prisma } from "@/lib/prisma"
+import { logger } from "@/lib/logger"
 import { auth } from "@/auth"
 
 export async function setTyping(targetType: 'DIRECT' | 'GROUP', targetId: string) {
@@ -38,7 +39,7 @@ export async function setTyping(targetType: 'DIRECT' | 'GROUP', targetId: string
 
     return { success: true }
   } catch (error) {
-    console.error("Failed to set typing:", error)
+    logger.serverAction("Failed to set typing:", error)
     return { error: "Failed to set typing" }
   }
 }
@@ -60,7 +61,7 @@ export async function clearTyping(targetType: 'DIRECT' | 'GROUP', targetId: stri
 
     return { success: true }
   } catch (error) {
-    console.error("Failed to clear typing:", error)
+    logger.serverAction("Failed to clear typing:", error)
     return { error: "Failed to clear typing" }
   }
 }
@@ -95,7 +96,7 @@ export async function getTypingUsers(targetType: 'DIRECT' | 'GROUP', targetId: s
 
     return { success: true, data: result }
   } catch (error) {
-    console.error("Failed to get typing users:", error)
+    logger.serverAction("Failed to get typing users:", error)
     return { error: "Failed to get typing users" }
   }
 }

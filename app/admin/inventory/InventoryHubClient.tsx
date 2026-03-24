@@ -15,6 +15,7 @@ import {
   Pencil,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { STYLES } from '@/lib/styles'
 import {
   createInventoryItem,
   createInventoryTransaction,
@@ -140,59 +141,37 @@ export function InventoryHubClient({ items: initialItems }: Props) {
       </div>
 
       {/* Table */}
-      <div className="flex-1 min-h-0 border border-gray-200 rounded-lg overflow-hidden">
+      <div className="flex-1 min-h-0 bg-white rounded-lg border border-gray-200 overflow-hidden">
         <div className="table-scroll-wrapper h-full max-h-[calc(100vh-360px)]">
-        <table className="min-w-full divide-y divide-gray-200 text-sm">
+        <table className={STYLES.table}>
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                Item
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                Category
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">
-                Quantity
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">
-                Unit
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">
-                Min
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">
-                Max
-              </th>
-              <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase">
-                Cost (per unit)
-              </th>
-              <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase">
-                Price (per unit)
-              </th>
-              <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase">
-                Total value
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">
-                Distributor
-              </th>
-              <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase">
-                Actions
-              </th>
+              <th className={STYLES.tableHeader}>Item</th>
+              <th className={STYLES.tableHeader}>Category</th>
+              <th className={STYLES.tableHeader}>Quantity</th>
+              <th className={STYLES.tableHeader}>Unit</th>
+              <th className={STYLES.tableHeader}>Min</th>
+              <th className={STYLES.tableHeader}>Max</th>
+              <th className={`${STYLES.tableHeader} text-right`}>Cost (per unit)</th>
+              <th className={`${STYLES.tableHeader} text-right`}>Price (per unit)</th>
+              <th className={`${STYLES.tableHeader} text-right`}>Total value</th>
+              <th className={STYLES.tableHeader}>Distributor</th>
+              <th className={`${STYLES.tableHeader} text-right`}>Actions</th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-100">
+          <tbody className="divide-y divide-gray-100">
             {filtered.length === 0 ? (
               <tr>
-                <td colSpan={11} className="px-4 py-12 text-center text-sm text-gray-500">
+                <td colSpan={11} className={`${STYLES.tableCell} text-center`}>
                   {initialItems.length === 0
-                    ? 'No inventory items yet. Click “Add item” to create one.'
+                    ? 'No inventory items yet. Click "Add item" to create one.'
                     : 'No items match your search.'}
                 </td>
               </tr>
             ) : (
               filtered.map((item) => (
-                <tr key={item.id} className="hover:bg-gray-50/50">
-                  <td className="px-4 py-3">
+                <tr key={item.id} className={STYLES.tableRow}>
+                  <td className={STYLES.tableCell}>
                     <div className="flex items-center gap-2">
                       <Package className="w-4 h-4 text-gray-400 flex-shrink-0" />
                       <div>
@@ -203,8 +182,8 @@ export function InventoryHubClient({ items: initialItems }: Props) {
                       </div>
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-sm text-gray-600">{item.category}</td>
-                  <td className="px-4 py-3">
+                  <td className={STYLES.tableCell}>{item.category}</td>
+                  <td className={STYLES.tableCell}>
                     <div className="flex items-center gap-2">
                       <span
                         className={cn(
@@ -238,25 +217,25 @@ export function InventoryHubClient({ items: initialItems }: Props) {
                       )}
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-sm text-gray-600">{item.unit}</td>
-                  <td className="px-4 py-3 text-sm text-gray-600">{item.minQuantity}</td>
-                  <td className="px-4 py-3 text-sm text-gray-600">{item.maxQuantity ?? '—'}</td>
-                  <td className="px-4 py-3 text-sm text-gray-600 text-right">
+                  <td className={STYLES.tableCell}>{item.unit}</td>
+                  <td className={STYLES.tableCell}>{item.minQuantity}</td>
+                  <td className={STYLES.tableCell}>{item.maxQuantity ?? '—'}</td>
+                  <td className={`${STYLES.tableCell} text-right`}>
                     {item.cost != null ? `$${item.cost.toFixed(2)}` : '—'}
                   </td>
-                  <td className="px-4 py-3 text-sm text-right">
+                  <td className={`${STYLES.tableCell} text-right`}>
                     {item.price != null ? (
                       <span className="text-green-600 font-medium">${item.price.toFixed(2)}</span>
                     ) : (
                       '—'
                     )}
                   </td>
-                  <td className="px-4 py-3 text-sm text-right font-medium text-gray-900">
+                  <td className={`${STYLES.tableCell} text-right font-medium`}>
                     {item.cost != null
                       ? `$${((item.cost || 0) * item.quantity).toFixed(2)}`
                       : '—'}
                   </td>
-                  <td className="px-4 py-3">
+                  <td className={STYLES.tableCell}>
                     {item.supplier || item.supplierEmail || item.supplierPhone ? (
                       <div className="flex items-center gap-2">
                         <button
@@ -290,7 +269,7 @@ export function InventoryHubClient({ items: initialItems }: Props) {
                       <span className="text-xs text-gray-400">—</span>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-right">
+                  <td className={`${STYLES.tableCell} text-right`}>
                     <div className="flex items-center justify-end gap-1">
                       <button
                         type="button"

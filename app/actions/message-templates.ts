@@ -1,6 +1,7 @@
 'use server'
 
 import { prisma } from "@/lib/prisma"
+import { logger } from "@/lib/logger"
 import { auth } from "@/auth"
 import { revalidatePath } from "next/cache"
 
@@ -38,7 +39,7 @@ export async function createMessageTemplate(data: {
 
     return { success: true, data: template }
   } catch (error) {
-    console.error("Failed to create template:", error)
+    logger.serverAction("Failed to create template:", error)
     return { error: "Failed to create template" }
   }
 }
@@ -83,7 +84,7 @@ export async function updateMessageTemplate(id: string, data: {
 
     return { success: true, data: updated }
   } catch (error) {
-    console.error("Failed to update template:", error)
+    logger.serverAction("Failed to update template:", error)
     return { error: "Failed to update template" }
   }
 }
@@ -116,7 +117,7 @@ export async function deleteMessageTemplate(id: string) {
 
     return { success: true }
   } catch (error) {
-    console.error("Failed to delete template:", error)
+    logger.serverAction("Failed to delete template:", error)
     return { error: "Failed to delete template" }
   }
 }
@@ -143,7 +144,7 @@ export async function getMessageTemplates() {
 
     return { success: true, data: templates }
   } catch (error) {
-    console.error("Failed to get templates:", error)
+    logger.serverAction("Failed to get templates:", error)
     return { error: "Failed to get templates" }
   }
 }
@@ -176,7 +177,7 @@ export async function useMessageTemplate(id: string) {
       } 
     }
   } catch (error) {
-    console.error("Failed to use template:", error)
+    logger.serverAction("Failed to use template:", error)
     return { error: "Failed to use template" }
   }
 }

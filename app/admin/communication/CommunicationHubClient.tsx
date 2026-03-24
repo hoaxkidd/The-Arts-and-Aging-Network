@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Image from "next/image"
 import { MessageSquare, UserPlus, Mail, Users, Check, X, Loader2, FileText } from "lucide-react"
 import { TabNavigation } from "@/components/admin/shared/TabNavigation"
 import { cn } from "@/lib/utils"
@@ -164,7 +165,7 @@ function GroupRequestsList({ requests }: { requests: GroupRequest[] }) {
                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                             <div className="flex items-center gap-3 min-w-0">
                                 {req.user?.image ? (
-                                    <img src={req.user.image} alt="" className="w-12 h-12 rounded-full object-cover shrink-0" />
+                                    <Image src={req.user.image} alt="" width={48} height={48} className="rounded-full object-cover shrink-0" />
                                 ) : (
                                     <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 text-white flex items-center justify-center font-semibold text-lg shrink-0">
                                         {(req.user?.preferredName || req.user?.name)?.[0]?.toUpperCase() || 'U'}
@@ -293,22 +294,22 @@ function InvitationsList({ invitations }: { invitations: Invitation[] }) {
                     </div>
                 ) : (
                     <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-                        <div className="table-scroll-wrapper max-h-[400px]">
-                            <table className="min-w-full divide-y divide-gray-200 text-sm">
+                        <div className="table-scroll-wrapper max-h-[calc(100vh-320px)]">
+                            <table className={STYLES.table}>
                                 <thead className="bg-gray-50">
                                     <tr>
-                                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Email</th>
-                                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Role</th>
-                                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
-                                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Sent By</th>
+                                        <th className={STYLES.tableHeader}>Email</th>
+                                        <th className={STYLES.tableHeader}>Role</th>
+                                        <th className={STYLES.tableHeader}>Status</th>
+                                        <th className={STYLES.tableHeader}>Sent By</th>
                                     </tr>
                                 </thead>
-                                <tbody className="bg-white divide-y divide-gray-200">
+                                <tbody className="divide-y divide-gray-100">
                                     {invitations.map(inv => (
-                                        <tr key={inv.id}>
-                                            <td className="px-6 py-4 text-sm text-gray-900">{inv.email}</td>
-                                            <td className="px-6 py-4 text-sm text-gray-600">{inv.role}</td>
-                                            <td className="px-6 py-4">
+                                        <tr key={inv.id} className={STYLES.tableRow}>
+                                            <td className={STYLES.tableCell}>{inv.email}</td>
+                                            <td className={STYLES.tableCell}>{inv.role}</td>
+                                            <td className={STYLES.tableCell}>
                                                 <span className={cn("text-xs font-medium",
                                                     inv.status === 'ACCEPTED' ? "text-green-700" :
                                                     inv.status === 'PENDING' ? "text-yellow-700" :
@@ -317,7 +318,7 @@ function InvitationsList({ invitations }: { invitations: Invitation[] }) {
                                                     {inv.status}
                                                 </span>
                                             </td>
-                                            <td className="px-6 py-4 text-sm text-gray-500">{inv.createdBy?.name}</td>
+                                            <td className={STYLES.tableCell}>{inv.createdBy?.name}</td>
                                         </tr>
                                     ))}
                                 </tbody>

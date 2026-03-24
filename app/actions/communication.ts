@@ -3,6 +3,8 @@
 import { prisma } from "@/lib/prisma"
 import { auth } from "@/auth"
 import { revalidatePath } from "next/cache"
+import { sendEmailWithRetry } from "@/lib/email/service"
+import { logger } from "@/lib/logger"
 
 // Send a direct message (email relay)
 export async function sendDirectMessage(recipientId: string, subject: string, content: string) {
@@ -40,16 +42,36 @@ export async function sendDirectMessage(recipientId: string, subject: string, co
       }
     })
 
-    // TODO: Send actual email via email service
-    await prisma.directMessage.update({
-      where: { id: message.id },
-      data: { emailSent: true }
-    })
+    // Send email notification
+    if (message.recipient.email) {
+      const messagePreview = content.length > 200 
+        ? content.substring(0, 200) + '...' 
+        : content
+      
+      const emailResult = await sendEmailWithRetry({
+        to: message.recipient.email,
+        templateType: 'NEW_MESSAGE',
+        variables: {
+          name: message.recipient.name || 'User',
+          message: messagePreview
+        }
+      }, { userId: recipientId })
+
+      await prisma.directMessage.update({
+        where: { id: message.id },
+        data: { emailSent: emailResult.success }
+      })
+    } else {
+      await prisma.directMessage.update({
+        where: { id: message.id },
+        data: { emailSent: false }
+      })
+    }
 
     revalidatePath('/staff/inbox')
     return { success: true, messageId: message.id }
   } catch (e) {
-    console.error('sendDirectMessage error:', e)
+    logger.serverAction('sendDirectMessage error', e)
     return { error: "Failed to send message" }
   }
 }
@@ -112,7 +134,7 @@ export async function requestPhoneNumber(staffId: string, message?: string) {
     revalidatePath(`/staff/directory/${staff.userCode || staff.id}`)
     return { success: true }
   } catch (e) {
-    console.error('requestPhoneNumber error:', e)
+    logger.serverAction('requestPhoneNumber error', e)
     return { error: "Failed to send request" }
   }
 }
@@ -158,7 +180,7 @@ export async function respondToPhoneRequest(requestId: string, approved: boolean
     revalidatePath('/staff/settings')
     return { success: true }
   } catch (e) {
-    console.error('respondToPhoneRequest error:', e)
+    logger.serverAction('respondToPhoneRequest error', e)
     return { error: "Failed to respond to request" }
   }
 }
@@ -211,7 +233,7 @@ export async function createMeetingRequest(staffId: string, proposedDates: strin
     revalidatePath(`/staff/directory/${staff.userCode || staff.id}`)
     return { success: true, requestId: request.id }
   } catch (e) {
-    console.error('createMeetingRequest error:', e)
+    logger.serverAction('createMeetingRequest error', e)
     return { error: "Failed to create meeting request" }
   }
 }
@@ -264,7 +286,7 @@ export async function respondToMeetingRequest(
     revalidatePath('/staff/settings')
     return { success: true }
   } catch (e) {
-    console.error('respondToMeetingRequest error:', e)
+    logger.serverAction('respondToMeetingRequest error', e)
     return { error: "Failed to respond to meeting request" }
   }
 }

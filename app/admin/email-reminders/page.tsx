@@ -4,6 +4,7 @@ import { redirect } from "next/navigation"
 import { Prisma } from "@prisma/client"
 import { Mail, CheckCircle, XCircle, Clock, AlertCircle, Users, Home } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { STYLES } from "@/lib/styles"
 import Link from "next/link"
 import { ManualReminderTrigger } from "@/components/admin/ManualReminderTrigger"
 import { EmailReminderFilters } from "@/components/admin/EmailReminderFilters"
@@ -146,30 +147,30 @@ export default async function EmailRemindersPage({
 
       {/* Reminders Table */}
       <div className="flex-1 min-h-0 bg-white rounded-lg border border-gray-200 overflow-hidden">
-        <div className="table-scroll-wrapper h-full max-h-[calc(100vh-420px)]">
-        <table className="min-w-full divide-y divide-gray-200 text-sm">
+        <div className="table-scroll-wrapper max-h-[calc(100vh-420px)]">
+        <table className={STYLES.table}>
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Event</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Recipient</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Type</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Timing</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Scheduled For</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Sent At</th>
+              <th className={STYLES.tableHeader}>Event</th>
+              <th className={STYLES.tableHeader}>Recipient</th>
+              <th className={STYLES.tableHeader}>Type</th>
+              <th className={STYLES.tableHeader}>Timing</th>
+              <th className={STYLES.tableHeader}>Scheduled For</th>
+              <th className={STYLES.tableHeader}>Status</th>
+              <th className={STYLES.tableHeader}>Sent At</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
             {remindersWithRecipients.length === 0 ? (
               <tr>
-                <td colSpan={7} className="px-4 py-8 text-center text-sm text-gray-400">
+                <td colSpan={7} className={`${STYLES.tableCell} text-center`}>
                   No reminders found
                 </td>
               </tr>
             ) : (
               remindersWithRecipients.map((reminder) => (
-                <tr key={reminder.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3">
+                <tr key={reminder.id} className={STYLES.tableRow}>
+                  <td className={STYLES.tableCell}>
                     <Link
                       href={`/events/${reminder.event.id}`}
                       className="text-sm font-medium text-primary-600 hover:text-primary-700"
@@ -190,7 +191,7 @@ export default async function EmailRemindersPage({
                       })}
                     </p>
                   </td>
-                  <td className="px-4 py-3">
+                  <td className={STYLES.tableCell}>
                     <div className="flex items-center gap-2">
                       <div className="w-6 h-6 rounded-full bg-primary-100 text-primary-600 flex items-center justify-center text-xs font-medium">
                         {reminder.recipientName[0] || '?'}
@@ -198,7 +199,7 @@ export default async function EmailRemindersPage({
                       <span className="text-sm text-gray-900">{reminder.recipientName}</span>
                     </div>
                   </td>
-                  <td className="px-4 py-3">
+                  <td className={STYLES.tableCell}>
                     <span className={cn(
                       "inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium",
                       reminder.recipientType === 'HOME_ADMIN'
@@ -212,12 +213,12 @@ export default async function EmailRemindersPage({
                       )}
                     </span>
                   </td>
-                  <td className="px-4 py-3">
+                  <td className={STYLES.tableCell}>
                     <span className="text-sm text-gray-600">
                       {reminder.reminderType.replace('_', ' ')}
                     </span>
                   </td>
-                  <td className="px-4 py-3">
+                  <td className={STYLES.tableCell}>
                     <span className="text-sm text-gray-900">
                       {reminder.scheduledFor.toLocaleDateString('en-US', {
                         month: 'short',
@@ -231,7 +232,7 @@ export default async function EmailRemindersPage({
                       })}
                     </span>
                   </td>
-                  <td className="px-4 py-3">
+                  <td className={STYLES.tableCell}>
                     <span className={cn(
                       "inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium",
                       reminder.status === 'SENT' && "bg-green-100 text-green-700",
@@ -251,7 +252,7 @@ export default async function EmailRemindersPage({
                       </p>
                     )}
                   </td>
-                  <td className="px-4 py-3">
+                  <td className={STYLES.tableCell}>
                     {reminder.sentAt ? (
                       <>
                         <span className="text-sm text-gray-900">

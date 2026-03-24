@@ -1,8 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { Mail, MessageSquare, Bell, Save, CheckCircle2, AlertCircle, Settings } from 'lucide-react'
-import { updateNotificationPreferences } from '@/app/actions/user'
+import { Mail, MessageSquare, Bell, Save, CheckCircle2, AlertCircle, Settings, Send, Clock, Zap } from 'lucide-react'
+import { updateNotificationPreferences, updateEmailDigestTime, sendTestEmail } from '@/app/actions/user'
 import { cn } from '@/lib/utils'
 import { STYLES } from '@/lib/styles'
 
@@ -10,15 +10,35 @@ type Preferences = {
   email: boolean
   sms: boolean
   inApp: boolean
+  emailFrequency?: string
+  emailDigestTime?: string
 }
 
 export function NotificationPreferences({ initialPreferences }: { initialPreferences: Preferences }) {
-  const [prefs, setPrefs] = useState(initialPreferences)
+  const [prefs, setPrefs] = useState<Preferences>({
+    email: initialPreferences.email ?? true,
+    sms: initialPreferences.sms ?? false,
+    inApp: initialPreferences.inApp ?? true,
+    emailFrequency: initialPreferences.emailFrequency ?? 'immediate',
+    emailDigestTime: initialPreferences.emailDigestTime ?? '08:00'
+  })
   const [loading, setLoading] = useState(false)
   const [status, setStatus] = useState<'idle' | 'success' | 'error'>('idle')
+  const [testStatus, setTestStatus] = useState<'idle' | 'sending' | 'success' | 'error'>('idle')
+  const [testMessage, setTestMessage] = useState('')
 
   const handleToggle = (key: keyof Preferences) => {
     setPrefs(prev => ({ ...prev, [key]: !prev[key] }))
+    setStatus('idle')
+  }
+
+  const handleFrequencyChange = (frequency: string) => {
+    setPrefs(prev => ({ ...prev, emailFrequency: frequency }))
+    setStatus('idle')
+  }
+
+  const handleDigestTimeChange = (time: string) => {
+    setPrefs(prev => ({ ...prev, emailDigestTime: time }))
     setStatus('idle')
   }
 
@@ -27,15 +47,48 @@ export function NotificationPreferences({ initialPreferences }: { initialPrefere
     setStatus('idle')
 
     try {
-      const res = await updateNotificationPreferences(prefs)
+      const res = await updateNotificationPreferences({
+        email: prefs.email ?? true,
+        sms: prefs.sms ?? false,
+        inApp: prefs.inApp ?? true,
+        emailFrequency: prefs.emailFrequency
+      })
       if (res.error) throw new Error(res.error)
+      
+      if (prefs.emailFrequency === 'daily' || prefs.emailFrequency === 'weekly') {
+        const timeRes = await updateEmailDigestTime(prefs.emailDigestTime || '08:00')
+        if (timeRes.error) throw new Error(timeRes.error)
+      }
+      
       setStatus('success')
-      // Reset success message after 3 seconds
       setTimeout(() => setStatus('idle'), 3000)
     } catch (e) {
       setStatus('error')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleSendTestEmail = async () => {
+    setTestStatus('sending')
+    setTestMessage('')
+
+    try {
+      const res = await sendTestEmail()
+      if (res.error) {
+        setTestStatus('error')
+        setTestMessage(res.error)
+      } else {
+        setTestStatus('success')
+        setTestMessage('Test email sent! Check your inbox.')
+        setTimeout(() => {
+          setTestStatus('idle')
+          setTestMessage('')
+        }, 5000)
+      }
+    } catch (e) {
+      setTestStatus('error')
+      setTestMessage('Failed to send test email')
     }
   }
 
@@ -76,6 +129,89 @@ export function NotificationPreferences({ initialPreferences }: { initialPrefere
             </p>
           </div>
         </div>
+
+        {/* Email Frequency (only show if email is enabled) */}
+        {prefs.email && (
+          <>
+            <div className="ml-14 space-y-3">
+              <div className="flex items-center gap-2">
+                <Zap className="w-4 h-4 text-primary-500" />
+                <span className="text-sm font-medium text-gray-700">Email Frequency</span>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {[
+                  { value: 'immediate', label: 'Immediate' },
+                  { value: 'daily', label: 'Daily Digest' },
+                  { value: 'weekly', label: 'Weekly Digest' },
+                  { value: 'never', label: 'Never' },
+                ].map(option => (
+                  <button
+                    key={option.value}
+                    onClick={() => handleFrequencyChange(option.value)}
+                    className={cn(
+                      "px-3 py-1.5 text-sm rounded-full border transition-colors",
+                      prefs.emailFrequency === option.value
+                        ? "bg-primary-500 text-white border-primary-500"
+                        : "bg-white text-gray-600 border-gray-300 hover:border-gray-400"
+                    )}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Digest Time Picker */}
+              {(prefs.emailFrequency === 'daily' || prefs.emailFrequency === 'weekly') && (
+                <div className="flex items-center gap-3 mt-3">
+                  <Clock className="w-4 h-4 text-gray-400" />
+                  <label className="text-sm text-gray-600">Digest time:</label>
+                  <input
+                    type="time"
+                    value={prefs.emailDigestTime || '08:00'}
+                    onChange={(e) => handleDigestTimeChange(e.target.value)}
+                    className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  />
+                </div>
+              )}
+
+              {/* Test Email Button */}
+              <div className="flex items-center gap-3 mt-3">
+                <button
+                  onClick={handleSendTestEmail}
+                  disabled={testStatus === 'sending'}
+                  className={cn(
+                    "flex items-center gap-2 px-3 py-1.5 text-sm rounded-lg border transition-colors",
+                    testStatus === 'success'
+                      ? "bg-green-50 text-green-600 border-green-200"
+                      : testStatus === 'error'
+                      ? "bg-red-50 text-red-600 border-red-200"
+                      : "bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100"
+                  )}
+                >
+                  {testStatus === 'sending' ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                      Sending...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="w-4 h-4" />
+                      Send Test Email
+                    </>
+                  )}
+                </button>
+                {testMessage && (
+                  <span className={cn(
+                    "text-sm",
+                    testStatus === 'success' ? "text-green-600" : "text-red-600"
+                  )}>
+                    {testMessage}
+                  </span>
+                )}
+              </div>
+            </div>
+          </>
+        )}
 
         <div className="h-px bg-gray-100" />
 

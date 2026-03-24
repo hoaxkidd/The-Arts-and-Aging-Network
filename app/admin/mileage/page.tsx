@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma"
 import { auth } from "@/auth"
+import Image from "next/image"
 import { redirect } from "next/navigation"
 import { MapPin, CheckCircle, XCircle, AlertCircle, Car } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -109,10 +110,12 @@ export default async function AdminMileagePage() {
                     <div className="flex items-start gap-4">
                       <div className="flex-shrink-0">
                         {entry.user.image ? (
-                          <img
+                          <Image
                             src={entry.user.image}
                             alt={displayName}
-                            className="w-10 h-10 rounded-full object-cover"
+                            width={40}
+                            height={40}
+                            className="rounded-full object-cover"
                           />
                         ) : (
                           <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center text-primary-600 font-bold">

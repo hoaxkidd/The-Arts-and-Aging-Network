@@ -68,13 +68,13 @@ export function HistoryTabs({ historyEntries, timesheets }: Props) {
                   <th className={STYLES.tableHeader}>Status</th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="divide-y divide-gray-100">
                 {historyEntries.map((item) => (
-                  <tr key={`${item.type}-${item.id}`} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <tr key={`${item.type}-${item.id}`} className={STYLES.tableRow}>
+                    <td className={STYLES.tableCell}>
                       {new Date(item.date).toLocaleDateString()}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className={STYLES.tableCell}>
                       <div className="flex items-center gap-2 text-sm text-gray-900">
                         {item.type === 'TIME_ENTRY' ? (
                           <>
@@ -91,7 +91,7 @@ export function HistoryTabs({ historyEntries, timesheets }: Props) {
                         )}
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-600">
+                    <td className={STYLES.tableCell}>
                       {item.type === 'TIME_ENTRY' ? (
                         `${item.hours} hours logged`
                       ) : (
@@ -101,7 +101,7 @@ export function HistoryTabs({ historyEntries, timesheets }: Props) {
                         </>
                       )}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className={STYLES.tableCell}>
                       <span className={cn(STYLES.badge, 
                         item.status === 'APPROVED' ? 'bg-green-100 text-green-800 border-green-200' :
                         item.status === 'REJECTED' ? 'bg-red-100 text-red-800 border-red-200' :
@@ -114,7 +114,7 @@ export function HistoryTabs({ historyEntries, timesheets }: Props) {
                 ))}
                 {historyEntries.length === 0 && (
                   <tr>
-                    <td colSpan={4} className="px-6 py-12 text-center text-gray-500">
+                    <td colSpan={4} className={`${STYLES.tableCell} text-center`}>
                       No history found.
                     </td>
                   </tr>

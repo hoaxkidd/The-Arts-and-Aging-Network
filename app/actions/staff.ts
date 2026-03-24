@@ -371,7 +371,7 @@ export async function updateStaffProfile(formData: FormData) {
     revalidatePath('/dashboard/settings')
     return { success: true, userId: updatedUser.id, userIdentifier: updatedUser.userCode || updatedUser.id }
   } catch (e) {
-    console.error(e)
+    logger.serverAction('Failed to update profile', e)
     return { error: "Failed to update profile" }
   }
 }
@@ -387,13 +387,19 @@ export async function uploadDocument(formData: FormData) {
     if (!file || !type) return { error: "Missing file or type" }
 
     try {
-        // Mock upload - in prod use S3/Blob storage
-        const mockUrl = `https://placehold.co/600x800?text=${encodeURIComponent(name || type)}`
+        const bytes = await file.arrayBuffer()
+        const buffer = Buffer.from(bytes)
+        
+        const { uploadToR2, getFileExtension } = await import('@/lib/r2')
+        const extension = getFileExtension(file.name)
+        const uniqueName = `${session.user.id}/${type}/${Date.now()}.${extension}`
+        
+        const uploaded = await uploadToR2(buffer, uniqueName, file.type, 'documents')
         
         await prisma.document.create({
             data: {
                 name: name || file.name,
-                url: mockUrl,
+                url: uploaded.url,
                 type,
                 userId: session.user.id,
                 verified: false 
@@ -401,8 +407,9 @@ export async function uploadDocument(formData: FormData) {
         })
 
         revalidatePath('/payroll/profile')
-        return { success: true }
-    } catch {
+        return { success: true, url: uploaded.url }
+    } catch (error) {
+        logger.upload('Document upload error', error)
         return { error: "Failed to upload document" }
     }
 }

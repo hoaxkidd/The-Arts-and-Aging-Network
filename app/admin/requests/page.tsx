@@ -29,10 +29,10 @@ export default async function AdminRequestsPage() {
                 <th className={cn(STYLES.tableHeader, "text-right")}>Actions</th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="divide-y divide-gray-100">
               {requests.map((req) => (
-                <tr key={req.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-6 py-4 whitespace-nowrap">
+                <tr key={req.id} className={STYLES.tableRow}>
+                  <td className={STYLES.tableCell}>
                     <div className="flex items-center">
                       <div className="flex-shrink-0 h-8 w-8 bg-primary-100 rounded-full flex items-center justify-center text-primary-600 font-bold text-xs">
                         {req.user.name?.[0] || 'U'}
@@ -43,7 +43,7 @@ export default async function AdminRequestsPage() {
                       </div>
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className={STYLES.tableCell}>
                     <div className="flex items-center gap-2 text-sm text-gray-700">
                       {req.category === 'EXPENSE' ? <DollarSign className="w-4 h-4 text-green-600" /> :
                        req.category === 'SICK_DAY' ? <Calendar className="w-4 h-4 text-red-600" /> :
@@ -51,7 +51,7 @@ export default async function AdminRequestsPage() {
                       <span className="capitalize">{req.category.replace('_', ' ').toLowerCase()}</span>
                     </div>
                   </td>
-                  <td className="px-6 py-4">
+                  <td className={STYLES.tableCell}>
                     <p className="text-sm text-gray-600 truncate max-w-xs" title={req.description}>
                       {req.description}
                     </p>
@@ -61,13 +61,13 @@ export default async function AdminRequestsPage() {
                       </a>
                     )}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <td className={STYLES.tableCell}>
                     {req.amount ? `$${req.amount.toFixed(2)}` : '-'}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <td className={STYLES.tableCell}>
                     {formatDateShort(new Date(req.createdAt))}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className={STYLES.tableCell}>
                     <span className={cn(STYLES.badge, 
                       req.status === 'APPROVED' ? 'text-green-700' :
                       req.status === 'REJECTED' ? 'text-red-700' :
@@ -76,7 +76,7 @@ export default async function AdminRequestsPage() {
                       {req.status}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                  <td className={`${STYLES.tableCell} text-right`}>
                     {req.status === 'PENDING' && (
                       <div className="flex items-center justify-end gap-2">
                         <form action={async () => {
@@ -102,7 +102,7 @@ export default async function AdminRequestsPage() {
               ))}
               {requests.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="px-6 py-12 text-center text-gray-500">
+                  <td colSpan={7} className={`${STYLES.tableCell} text-center`}>
                     No requests found.
                   </td>
                 </tr>

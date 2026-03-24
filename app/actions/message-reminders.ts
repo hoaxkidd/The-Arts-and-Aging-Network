@@ -1,6 +1,7 @@
 'use server'
 
 import { prisma } from "@/lib/prisma"
+import { logger } from "@/lib/logger"
 import { auth } from "@/auth"
 import { revalidatePath } from "next/cache"
 
@@ -31,7 +32,7 @@ export async function createMessageReminder(data: {
 
     return { success: true, data: reminder }
   } catch (error) {
-    console.error("Failed to create reminder:", error)
+    logger.serverAction("Failed to create reminder:", error)
     return { error: "Failed to create reminder" }
   }
 }
@@ -113,7 +114,7 @@ export async function getMessageReminders() {
 
     return { success: true, data: results }
   } catch (error) {
-    console.error("Failed to get reminders:", error)
+    logger.serverAction("Failed to get reminders:", error)
     return { error: "Failed to get reminders" }
   }
 }
@@ -135,7 +136,7 @@ export async function completeReminder(id: string) {
 
     return { success: true }
   } catch (error) {
-    console.error("Failed to complete reminder:", error)
+    logger.serverAction("Failed to complete reminder:", error)
     return { error: "Failed to complete reminder" }
   }
 }
@@ -156,7 +157,7 @@ export async function deleteReminder(id: string) {
 
     return { success: true }
   } catch (error) {
-    console.error("Failed to delete reminder:", error)
+    logger.serverAction("Failed to delete reminder:", error)
     return { error: "Failed to delete reminder" }
   }
 }
@@ -180,7 +181,7 @@ export async function getUpcomingReminders() {
 
     return { success: true, data: reminders }
   } catch (error) {
-    console.error("Failed to get upcoming reminders:", error)
+    logger.serverAction("Failed to get upcoming reminders:", error)
     return { error: "Failed to get reminders" }
   }
 }

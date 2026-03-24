@@ -1,6 +1,7 @@
 'use server'
 
 import { prisma } from "@/lib/prisma"
+import { logger } from "@/lib/logger"
 import { auth } from "@/auth"
 import { revalidatePath } from "next/cache"
 
@@ -37,7 +38,7 @@ export async function createScheduledMessage(data: {
 
     return { success: true, data: message }
   } catch (error) {
-    console.error("Failed to schedule message:", error)
+    logger.serverAction("Failed to schedule message:", error)
     return { error: "Failed to schedule message" }
   }
 }
@@ -82,7 +83,7 @@ export async function getScheduledMessages() {
 
     return { success: true, data: results }
   } catch (error) {
-    console.error("Failed to get scheduled messages:", error)
+    logger.serverAction("Failed to get scheduled messages:", error)
     return { error: "Failed to get scheduled messages" }
   }
 }
@@ -115,7 +116,7 @@ export async function cancelScheduledMessage(id: string) {
 
     return { success: true }
   } catch (error) {
-    console.error("Failed to cancel scheduled message:", error)
+    logger.serverAction("Failed to cancel scheduled message:", error)
     return { error: "Failed to cancel scheduled message" }
   }
 }

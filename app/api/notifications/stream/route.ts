@@ -1,6 +1,7 @@
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 import { NextRequest } from 'next/server'
+import { logger } from '@/lib/logger'
 
 /**
  * Server-Sent Events (SSE) stream for real-time notifications.
@@ -48,7 +49,7 @@ export async function GET(request: NextRequest) {
       try {
         await poll()
       } catch (err) {
-        console.error('Notification stream poll error:', err)
+        logger.serverAction('Notification stream poll error:', err)
         controller.close()
         return
       }
@@ -58,7 +59,7 @@ export async function GET(request: NextRequest) {
         try {
           await poll()
         } catch (err) {
-          console.error('Notification stream poll error:', err)
+          logger.serverAction('Notification stream poll error:', err)
           clearInterval(interval)
           controller.close()
         }

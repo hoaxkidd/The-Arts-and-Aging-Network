@@ -5,6 +5,7 @@ import { Building2, MapPin, Search, Eye, Phone, Zap } from 'lucide-react'
 import Link from 'next/link'
 import { HomeQuickView } from './HomeQuickView'
 import { cn } from '@/lib/utils'
+import { STYLES } from '@/lib/styles'
 import { SendHomeInvitationButton } from './SendHomeInvitationButton'
 
 type Home = {
@@ -101,23 +102,23 @@ export function HomeList({ initialHomes }: { initialHomes: Home[] }) {
       </div>
 
       {/* Desktop table */}
-      <div className="hidden md:block bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+      <div className="hidden md:block bg-white rounded-lg border border-gray-200 overflow-hidden">
         <div className="table-scroll-wrapper max-h-[calc(100vh-320px)]">
-          <table className="w-full text-left text-sm min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50 border-b border-gray-100">
+          <table className={STYLES.table}>
+            <thead className="bg-gray-50">
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Facility Name</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Location</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Capacity</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Contact</th>
-                <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
+                <th className={STYLES.tableHeader}>Facility Name</th>
+                <th className={STYLES.tableHeader}>Location</th>
+                <th className={STYLES.tableHeader}>Capacity</th>
+                <th className={STYLES.tableHeader}>Contact</th>
+                <th className={STYLES.tableHeader}>Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-50">
+            <tbody className="divide-y divide-gray-100">
               {filteredHomes.length > 0 ? (
                 filteredHomes.map(home => (
-                  <tr key={home.id} className="hover:bg-gray-50/50 transition-colors group">
-                    <td className="px-6 py-4">
+                  <tr key={home.id} className={STYLES.tableRow}>
+                    <td className={STYLES.tableCell}>
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center">
                           <Building2 className="w-5 h-5" />
@@ -128,13 +129,13 @@ export function HomeList({ initialHomes }: { initialHomes: Home[] }) {
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className={STYLES.tableCell}>
                       <div className="flex items-center gap-1.5 text-gray-600">
                         <MapPin className="w-4 h-4 text-gray-400" />
                         <span className="truncate max-w-[200px]">{home.address}</span>
                       </div>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className={STYLES.tableCell}>
                       <div className="flex items-center gap-2">
                         <div className="w-full max-w-[80px] h-2 bg-gray-100 rounded-full overflow-hidden">
                           <div
@@ -150,7 +151,7 @@ export function HomeList({ initialHomes }: { initialHomes: Home[] }) {
                         </span>
                       </div>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className={STYLES.tableCell}>
                       <div className="space-y-0.5">
                         <div className="font-medium text-gray-900">{home.contactName}</div>
                         <div className="flex items-center gap-1.5 text-xs text-gray-500">
@@ -158,7 +159,7 @@ export function HomeList({ initialHomes }: { initialHomes: Home[] }) {
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-right">
+                    <td className={`${STYLES.tableCell} text-right`}>
                       <div className="flex items-center justify-end gap-2">
                         {/* Quick View Button */}
                         <button
@@ -182,7 +183,7 @@ export function HomeList({ initialHomes }: { initialHomes: Home[] }) {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center text-gray-500">
+                  <td colSpan={5} className={`${STYLES.tableCell} text-center`}>
                     No homes found matching your search.
                   </td>
                 </tr>

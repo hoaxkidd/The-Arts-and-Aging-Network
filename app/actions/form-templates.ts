@@ -5,6 +5,7 @@ import { auth } from "@/auth"
 import { revalidatePath } from "next/cache"
 import type { Prisma } from "@prisma/client"
 import { createNotification } from "./notifications"
+import { logger } from "@/lib/logger"
 
 function hasTemplateAccess(template: { isActive: boolean; isPublic: boolean; allowedRoles: string | null }, role?: string | null) {
   if (role === 'ADMIN') return true
@@ -74,7 +75,7 @@ export async function getFormTemplates(filters?: {
 
     return { success: true, data: templates }
   } catch (error) {
-    console.error("Failed to fetch form templates:", error)
+    logger.serverAction("Failed to fetch form templates:", error)
     return { error: "Failed to load form templates" }
   }
 }
@@ -97,7 +98,7 @@ export async function getEventSignupForms() {
 
     return { success: true, data: templates }
   } catch (error) {
-    console.error("Failed to fetch event sign-up forms:", error)
+    logger.serverAction("Failed to fetch event sign-up forms:", error)
     return { error: "Failed to load event sign-up forms" }
   }
 }
@@ -150,7 +151,7 @@ export async function getFormTemplate(id: string) {
 
     return { success: true, data: template }
   } catch (error) {
-    console.error("Failed to fetch template:", error)
+    logger.serverAction("Failed to fetch template:", error)
     return { error: "Failed to load template" }
   }
 }
@@ -219,7 +220,7 @@ export async function createFormTemplate(data: {
 
     return { success: true, data: template }
   } catch (error) {
-    console.error("Failed to create template:", error)
+    logger.serverAction("Failed to create template:", error)
     return { error: "Failed to create template" }
   }
 }
@@ -290,7 +291,7 @@ export async function updateFormTemplate(
 
     return { success: true, data: template }
   } catch (error) {
-    console.error("Failed to update template:", error)
+    logger.serverAction("Failed to update template:", error)
     return { error: "Failed to update template" }
   }
 }
@@ -336,7 +337,7 @@ export async function deleteFormTemplate(id: string) {
 
     return { success: true }
   } catch (error) {
-    console.error("Failed to delete template:", error)
+    logger.serverAction("Failed to delete template:", error)
     return { error: "Failed to delete template" }
   }
 }
@@ -415,7 +416,7 @@ export async function submitForm(data: {
 
     return { success: true, data: submission }
   } catch (error) {
-    console.error("Failed to submit form:", error)
+    logger.serverAction("Failed to submit form:", error)
     return { error: "Failed to submit form" }
   }
 }
@@ -478,7 +479,7 @@ export async function requestEditAccess(submissionId: string) {
 
     return { success: true }
   } catch (error) {
-    console.error("Failed to request edit access:", error)
+    logger.serverAction("Failed to request edit access:", error)
     return { error: "Failed to request edit access" }
   }
 }
@@ -561,7 +562,7 @@ export async function approveEditRequest(
 
     return { success: true }
   } catch (error) {
-    console.error("Failed to process edit request:", error)
+    logger.serverAction("Failed to process edit request:", error)
     return { error: "Failed to process edit request" }
   }
 }
@@ -617,7 +618,7 @@ export async function updateFormSubmission(
 
     return { success: true }
   } catch (error) {
-    console.error("Failed to update submission:", error)
+    logger.serverAction("Failed to update submission:", error)
     return { error: "Failed to update submission" }
   }
 }
@@ -674,7 +675,7 @@ export async function getMyFormSubmissions(filters?: {
 
     return { success: true, data: submissions }
   } catch (error) {
-    console.error("Failed to fetch submissions:", error)
+    logger.serverAction("Failed to fetch submissions:", error)
     return { error: "Failed to load submissions" }
   }
 }
@@ -743,7 +744,7 @@ export async function getAllFormSubmissions(filters?: {
 
     return { success: true, data: submissions }
   } catch (error) {
-    console.error("Failed to fetch submissions:", error)
+    logger.serverAction("Failed to fetch submissions:", error)
     return { error: "Failed to load submissions" }
   }
 }
@@ -796,7 +797,7 @@ export async function reviewFormSubmission(
 
     return { success: true, data: submission }
   } catch (error) {
-    console.error("Failed to review submission:", error)
+    logger.serverAction("Failed to review submission:", error)
     return { error: "Failed to review submission" }
   }
 }
@@ -829,7 +830,7 @@ export async function updateFormTemplateRoles(templateId: string, allowedRoles: 
 
     return { success: true, data: template }
   } catch (error) {
-    console.error("Failed to update form template roles:", error)
+    logger.serverAction("Failed to update form template roles:", error)
     return { error: "Failed to update roles" }
   }
 }

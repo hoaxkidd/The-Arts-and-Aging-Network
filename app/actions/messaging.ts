@@ -81,7 +81,7 @@ export async function createMessageGroup(data: {
 
     return { success: true, data: group }
   } catch (error) {
-    console.error("Failed to create group:", error)
+    logger.serverAction("Failed to create group:", error)
     return { error: "Failed to create message group" }
   }
 }
@@ -160,7 +160,7 @@ export async function requestGroupAccess(groupId: string, message?: string) {
 
     return { success: true, pending: true }
   } catch (error) {
-    console.error("Failed to request access:", error)
+    logger.serverAction("Failed to request access:", error)
     return { error: "Failed to request access" }
   }
 }
@@ -206,7 +206,7 @@ export async function approveGroupAccess(groupId: string, userId: string) {
 
     return { success: true }
   } catch (error) {
-    console.error("Failed to approve access:", error)
+    logger.serverAction("Failed to approve access:", error)
     return { error: "Failed to approve access" }
   }
 }
@@ -250,7 +250,7 @@ export async function denyGroupAccess(groupId: string, userId: string) {
 
     return { success: true }
   } catch (error) {
-    console.error("Failed to deny access:", error)
+    logger.serverAction("Failed to deny access:", error)
     return { error: "Failed to deny access" }
   }
 }
@@ -312,7 +312,7 @@ export async function getMyGroups() {
 
     return { success: true, data: groups }
   } catch (error) {
-    console.error("Failed to get groups:", error)
+    logger.serverAction("Failed to get groups:", error)
     return { error: "Failed to load groups" }
   }
 }
@@ -352,7 +352,7 @@ export async function getAllGroups() {
 
     return { success: true, data: groups }
   } catch (error) {
-    console.error("Failed to get groups:", error)
+    logger.serverAction("Failed to get groups:", error)
     return { error: "Failed to load groups" }
   }
 }
@@ -394,7 +394,7 @@ export async function getPendingAccessRequests() {
 
     return { success: true, data: pendingRequests }
   } catch (error) {
-    console.error("Failed to get pending requests:", error)
+    logger.serverAction("Failed to get pending requests:", error)
     return { error: "Failed to load pending requests" }
   }
 }
@@ -421,7 +421,7 @@ export async function sendGroupMessage(
 
   // Explicit validation for groupId
   if (!groupId) {
-    console.error("[sendGroupMessage] Missing groupId")
+    logger.serverAction("[sendGroupMessage] Missing groupId")
     return { error: "Group ID is required" }
   }
 
@@ -552,7 +552,7 @@ export async function sendGroupMessage(
 
     return { success: true, data: message }
   } catch (error) {
-    console.error("Failed to send message:", error)
+    logger.serverAction("Failed to send message:", error)
     // Return specific error message if available, otherwise generic
     const errorMessage = error instanceof Error ? error.message : "Failed to send message"
     return { error: errorMessage }
@@ -616,7 +616,7 @@ export async function getGroupMessages(groupId: string, limit = 50) {
 
     return { success: true, data: messages.reverse() }
   } catch (error) {
-    console.error("Failed to get messages:", error)
+    logger.serverAction("Failed to get messages:", error)
     return { error: "Failed to load messages" }
   }
 }
@@ -659,7 +659,7 @@ export async function addGroupMember(groupId: string, userId: string, role: stri
 
     return { success: true }
   } catch (error) {
-    console.error("Failed to add member:", error)
+    logger.serverAction("Failed to add member:", error)
     return { error: "Failed to add member" }
   }
 }
@@ -700,7 +700,7 @@ export async function removeGroupMember(groupId: string, userId: string) {
 
     return { success: true }
   } catch (error) {
-    console.error("Failed to remove member:", error)
+    logger.serverAction("Failed to remove member:", error)
     return { error: "Failed to remove member" }
   }
 }
@@ -758,7 +758,7 @@ export async function leaveGroup(groupId: string) {
 
     return { success: true }
   } catch (error) {
-    console.error("Failed to leave group:", error)
+    logger.serverAction("Failed to leave group:", error)
     return { error: "Failed to leave group" }
   }
 }
@@ -782,7 +782,7 @@ export async function updateMemberRole(groupId: string, userId: string, role: st
 
     return { success: true }
   } catch (error) {
-    console.error("Failed to update role:", error)
+    logger.serverAction("Failed to update role:", error)
     return { error: "Failed to update role" }
   }
 }
@@ -810,7 +810,7 @@ export async function updateMessageGroup(groupId: string, data: {
 
     return { success: true }
   } catch (error) {
-    console.error("Failed to update group:", error)
+    logger.serverAction("Failed to update group:", error)
     return { error: "Failed to update group" }
   }
 }
@@ -836,7 +836,7 @@ export async function deleteMessageGroup(groupId: string) {
 
     return { success: true }
   } catch (error) {
-    console.error("Failed to delete group:", error)
+    logger.serverAction("Failed to delete group:", error)
     return { error: "Failed to delete group" }
   }
 }

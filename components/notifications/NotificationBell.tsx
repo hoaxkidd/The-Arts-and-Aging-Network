@@ -8,6 +8,7 @@ import { NotificationList } from './NotificationList'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import { NOTIFICATION_REFRESH_EVENT } from '@/lib/notification-refresh'
+import { logger } from '@/lib/logger'
 
 type Notification = {
   id: string
@@ -40,7 +41,7 @@ export function NotificationBell({ initialNotifications, initialUnreadCount }: N
       setNotifications(data)
       setUnreadCount(count)
     } catch (error) {
-      console.error('Failed to fetch notifications:', error)
+      logger.serverAction('Failed to fetch notifications:', error)
     }
   }, [])
 

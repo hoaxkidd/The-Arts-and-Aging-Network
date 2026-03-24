@@ -11,6 +11,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import EmojiPicker from 'emoji-picker-react'
+import { logger } from '@/lib/logger'
 
 type Attachment = {
   name: string
@@ -174,7 +175,7 @@ export function ChatInterface({ partner, messages, currentUserId, onBack }: Prop
           }])
         }
       } catch (error) {
-        console.error('Upload error:', error)
+        logger.serverAction('Upload error:', error)
         alert('Failed to upload file')
       }
     }

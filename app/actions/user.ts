@@ -7,11 +7,14 @@ import { z } from "zod"
 import bcrypt from "bcryptjs"
 import { VALID_ROLES } from "@/lib/roles"
 import { randomBytes } from "crypto"
+import { sendEmail } from "@/lib/email/service"
+import { logger } from "@/lib/logger"
 
 const PrefsSchema = z.object({
   email: z.boolean(),
   sms: z.boolean(),
   inApp: z.boolean(),
+  emailFrequency: z.enum(['immediate', 'daily', 'weekly', 'never']).optional(),
 })
 
 const VALID_STATUSES = ['ACTIVE', 'PENDING', 'INACTIVE', 'SUSPENDED'] as const
@@ -33,7 +36,7 @@ const ChangePasswordSchema = z.object({
   }
 )
 
-export async function updateNotificationPreferences(prefs: { email: boolean, sms: boolean, inApp: boolean }) {
+export async function updateNotificationPreferences(prefs: { email: boolean, sms: boolean, inApp: boolean, emailFrequency?: string }) {
   const session = await auth()
   if (!session?.user?.id) return { error: 'Unauthorized' }
 
@@ -41,11 +44,26 @@ export async function updateNotificationPreferences(prefs: { email: boolean, sms
   if (!validated.success) return { error: 'Invalid preferences' }
 
   try {
+    const updateData: Record<string, unknown> = {
+      notificationPreferences: JSON.stringify({
+        email: validated.data.email,
+        sms: validated.data.sms,
+        inApp: validated.data.inApp,
+        emailFrequency: validated.data.emailFrequency || 'immediate'
+      })
+    }
+
+    if (prefs.emailFrequency === 'daily' || prefs.emailFrequency === 'weekly') {
+      const user = await prisma.user.findUnique({
+        where: { id: session.user.id },
+        select: { emailDigestTime: true }
+      })
+      updateData.emailDigestTime = user?.emailDigestTime || '08:00'
+    }
+
     await prisma.user.update({
       where: { id: session.user.id },
-      data: {
-        notificationPreferences: JSON.stringify(validated.data)
-      }
+      data: updateData
     })
 
     revalidatePath('/admin/settings')
@@ -54,8 +72,68 @@ export async function updateNotificationPreferences(prefs: { email: boolean, sms
     revalidatePath('/payroll/settings')
     return { success: true }
   } catch (error) {
-    console.error('Failed to update preferences:', error)
+    logger.serverAction('Failed to update preferences', error)
     return { error: 'Failed to update preferences' }
+  }
+}
+
+export async function updateEmailDigestTime(digestTime: string): Promise<{ success?: boolean; error?: string }> {
+  const session = await auth()
+  if (!session?.user?.id) return { error: 'Unauthorized' }
+
+  const timeRegex = /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/
+  if (!timeRegex.test(digestTime)) {
+    return { error: 'Invalid time format. Use HH:MM format.' }
+  }
+
+  try {
+    await prisma.user.update({
+      where: { id: session.user.id },
+      data: { emailDigestTime: digestTime }
+    })
+
+    revalidatePath('/admin/settings')
+    revalidatePath('/dashboard/settings')
+    revalidatePath('/staff/settings')
+    revalidatePath('/payroll/settings')
+    return { success: true }
+  } catch (error) {
+    logger.serverAction('Failed to update digest time', error)
+    return { error: 'Failed to update digest time' }
+  }
+}
+
+export async function sendTestEmail(): Promise<{ success?: boolean; error?: string }> {
+  const session = await auth()
+  if (!session?.user?.id) return { error: 'Unauthorized' }
+
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { email: true, name: true }
+  })
+
+  if (!user?.email) {
+    return { error: 'No email on file' }
+  }
+
+  try {
+    const result = await sendEmail({
+      to: user.email,
+      templateType: 'WELCOME',
+      variables: {
+        name: user.name || 'Test User',
+        message: 'This is a test email to verify your notification settings. If you received this, your email notifications are working correctly!'
+      }
+    })
+
+    if (result.success) {
+      return { success: true }
+    } else {
+      return { error: result.error || 'Failed to send test email' }
+    }
+  } catch (error) {
+    logger.serverAction('Failed to send test email', error)
+    return { error: 'Failed to send test email' }
   }
 }
 
@@ -109,7 +187,7 @@ export async function changePassword(formData: FormData) {
 
     return { success: true }
   } catch (error) {
-    console.error("Failed to change password:", error)
+    logger.serverAction("Failed to change password:", error)
     return { error: "Failed to change password" }
   }
 }
@@ -120,18 +198,39 @@ export async function getNotificationPreferences() {
 
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { notificationPreferences: true }
+    select: {
+      notificationPreferences: true,
+      emailDigestTime: true
+    }
   })
 
+  const defaults = {
+    email: true,
+    sms: false,
+    inApp: true,
+    emailFrequency: 'immediate' as const
+  }
+
   if (!user?.notificationPreferences) {
-    // Return defaults
-    return { email: true, sms: false, inApp: true }
+    return {
+      ...defaults,
+      emailDigestTime: user?.emailDigestTime || '08:00'
+    }
   }
 
   try {
-    return JSON.parse(user.notificationPreferences)
+    const parsed = JSON.parse(user.notificationPreferences)
+    return {
+      ...defaults,
+      ...parsed,
+      emailFrequency: parsed.emailFrequency || 'immediate',
+      emailDigestTime: user?.emailDigestTime || '08:00'
+    }
   } catch {
-    return { email: true, sms: false, inApp: true }
+    return {
+      ...defaults,
+      emailDigestTime: user?.emailDigestTime || '08:00'
+    }
   }
 }
 
@@ -265,7 +364,7 @@ export async function updateUser(id: string, formData: FormData) {
         : undefined,
     }
   } catch (error) {
-    console.error('Failed to update user:', error)
+    logger.serverAction('Failed to update user', error)
     return { error: 'Failed to update user' }
   }
 }
@@ -285,7 +384,7 @@ export async function cancelPendingEmailChange(userId: string) {
     revalidatePath(`/admin/users/${userId}`)
     return { success: true, cancelled: result.count }
   } catch (error) {
-    console.error('Failed to cancel pending email change:', error)
+    logger.serverAction('Failed to cancel pending email change', error)
     return { error: 'Failed to cancel pending email change' }
   }
 }

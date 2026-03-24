@@ -4,7 +4,12 @@ import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/auth'
 import { revalidatePath } from 'next/cache'
+import { randomBytes } from 'crypto'
 import { createUserWithGeneratedCode } from '@/lib/user-code'
+import { sendEmail } from '@/lib/email/service'
+import { logger } from '@/lib/logger'
+
+const APP_URL = process.env.NEXTAUTH_URL || 'https://artsandaging.com'
 
 const optionalString = z.string().optional().nullable()
 const optionalDate = z.string().optional().nullable()
@@ -221,10 +226,57 @@ export async function createPlaceholderStaffUser(formData: FormData) {
       },
     })
 
+    // Create invitation and send email
+    const token = randomBytes(32).toString('hex')
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days
+
+    const userEmail = user.email || ''
+    const userRole = user.role || 'VOLUNTEER'
+
+    await prisma.invitation.create({
+      data: {
+        email: userEmail,
+        role: userRole,
+        token,
+        expiresAt,
+        createdById: session.user.id,
+        userId: user.id,
+      },
+    })
+
+    // Send invitation email directly (bypass user preferences for invitations)
+    const base = 'https://the-arts-and-aging-network.vercel.app'
+    const inviteUrl = `${base}/invite/${token}`
+
+    console.log('[Staff Onboarding] Attempting to send invitation email:', {
+      to: userEmail,
+      inviteUrl,
+      role: userRole,
+      name: user.name || userEmail
+    })
+
+    const emailResult = await sendEmail({
+      to: userEmail,
+      templateType: 'INVITATION',
+      variables: {
+        inviteUrl,
+        role: userRole,
+        name: user.name || userEmail,
+      }
+    })
+
+    console.log('[Staff Onboarding] Email result:', emailResult)
+
+    if (!emailResult.success) {
+      logger.serverAction('Failed to send invitation email for new staff profile', emailResult.error)
+      revalidatePath('/admin/users')
+      return { success: true, userId: user.id, userIdentifier: user.userCode || user.id, emailSent: false, emailError: emailResult.error }
+    }
+
     revalidatePath('/admin/users')
-    return { success: true, userId: user.id, userIdentifier: user.userCode || user.id }
+    return { success: true, userId: user.id, userIdentifier: user.userCode || user.id, emailSent: true }
   } catch (e) {
-    console.error('createPlaceholderStaffUser error:', e)
+    logger.serverAction('createPlaceholderStaffUser error:', e)
     return { error: 'Failed to create staff profile' }
   }
 }
@@ -243,7 +295,7 @@ export async function completeOnboarding() {
     revalidatePath('/dashboard')
     return { success: true }
   } catch (e) {
-    console.error('completeOnboarding error:', e)
+    logger.serverAction('completeOnboarding error:', e)
     return { error: 'Failed to save' }
   }
 }
@@ -260,7 +312,7 @@ export async function skipOnboarding() {
     revalidatePath('/staff/onboarding')
     return { success: true }
   } catch (e) {
-    console.error('skipOnboarding error:', e)
+    logger.serverAction('skipOnboarding error:', e)
     return { error: 'Failed to save' }
   }
 }

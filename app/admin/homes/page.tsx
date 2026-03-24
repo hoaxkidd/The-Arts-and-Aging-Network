@@ -3,6 +3,7 @@ import { auth } from "@/auth"
 import { HomeList } from "@/components/admin/HomeList"
 import { Building } from "lucide-react"
 import { AddHomeButton } from "@/components/admin/AddHomeButton"
+import { logger } from "@/lib/logger"
 
 export const revalidate = 60
 
@@ -42,7 +43,7 @@ export default async function AdminHomesPage() {
         </div>
     )
   } catch (error) {
-    console.error("Failed to load homes:", error)
+    logger.serverAction("Failed to load homes:", error)
     return (
         <div className="p-6 bg-red-50 border border-red-100 rounded-lg text-red-700">
             <h3 className="font-bold mb-2">Error Loading Homes</h3>

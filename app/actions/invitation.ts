@@ -7,11 +7,10 @@ import { revalidatePath } from 'next/cache'
 import { randomBytes } from 'crypto'
 import { hash } from 'bcryptjs'
 import { createUserWithGeneratedCode } from '@/lib/user-code'
+import { sendEmail, sendEmailWithRetry } from '@/lib/email/service'
+import { logger } from '@/lib/logger'
 
-const MAILCHIMP_TRANSACTIONAL_API_KEY = process.env.MAILCHIMP_TRANSACTIONAL_API_KEY
-const MAILCHIMP_FROM_EMAIL = process.env.MAILCHIMP_FROM_EMAIL
-const MAILCHIMP_FROM_NAME = process.env.MAILCHIMP_FROM_NAME || 'Arts and Aging'
-const SUPPORT_EMAIL = process.env.SUPPORT_EMAIL || 'noreply@artsandaging.com'
+const APP_URL = process.env.NEXTAUTH_URL || 'https://artsandaging.com'
 
 const inviteSchema = z.object({
   email: z.string().email(),
@@ -51,7 +50,7 @@ export async function createInvitation(formData: FormData) {
   const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days
 
   try {
-    await prisma.invitation.create({
+    const invitation = await prisma.invitation.create({
       data: {
         email,
         role,
@@ -65,7 +64,7 @@ export async function createInvitation(formData: FormData) {
           : undefined,
       },
     })
-    
+
     // Log audit
     await prisma.auditLog.create({
       data: {
@@ -75,69 +74,42 @@ export async function createInvitation(formData: FormData) {
       }
     })
 
-    revalidatePath('/admin/invitations')
-    return { success: true, token } // Return token to display (since no email service)
-  } catch (error) {
-    console.error(error)
-    return { error: 'Failed to create invitation' }
-  }
-}
+    // Send invitation email directly (bypass user preferences for invitations)
+    const base = 'https://the-arts-and-aging-network.vercel.app'
+    const inviteUrl = `${base}/invite/${token}`
 
-async function sendInvitationViaMailchimpTransactional(params: {
-  toEmail: string
-  inviteUrl: string
-  role: string
-}) {
-  if (!MAILCHIMP_TRANSACTIONAL_API_KEY || !MAILCHIMP_FROM_EMAIL) {
-    return { success: false, error: 'Mailchimp Transactional not configured' }
-  }
+    console.log('[Invitation] Attempting to send invitation email:', {
+      to: email,
+      inviteUrl,
+      role,
+      name: existingUser?.name || email
+    })
 
-  const html = `
-    <div style="font-family: Arial, sans-serif; line-height: 1.5; color: #111827;">
-      <h2 style="margin: 0 0 12px;">You are invited to Arts and Aging</h2>
-      <p style="margin: 0 0 12px;">You have been invited as <strong>${params.role}</strong>.</p>
-      <p style="margin: 0 0 16px;">Click the button below to set your password and activate your account.</p>
-      <p style="margin: 0 0 16px;">
-        <a href="${params.inviteUrl}" style="display: inline-block; background: #2563eb; color: #fff; text-decoration: none; padding: 10px 16px; border-radius: 8px; font-weight: 600;">Accept Invitation</a>
-      </p>
-      <p style="margin: 0 0 8px; font-size: 13px; color: #4b5563;">If the button does not work, use this link:</p>
-      <p style="margin: 0 0 16px; font-size: 13px;"><a href="${params.inviteUrl}">${params.inviteUrl}</a></p>
-      <p style="margin: 0; font-size: 12px; color: #6b7280;">If you were not expecting this invitation, you can ignore this email.</p>
-    </div>
-  `
-
-  const response = await fetch('https://mandrillapp.com/api/1.0/messages/send.json', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      key: MAILCHIMP_TRANSACTIONAL_API_KEY,
-      message: {
-        from_email: MAILCHIMP_FROM_EMAIL,
-        from_name: MAILCHIMP_FROM_NAME,
-        to: [{ email: params.toEmail, type: 'to' }],
-        subject: 'Your invitation to Arts and Aging',
-        html,
-        headers: {
-          'Reply-To': SUPPORT_EMAIL
-        }
+    const emailResult = await sendEmail({
+      to: email,
+      templateType: 'INVITATION',
+      variables: {
+        inviteUrl,
+        role,
+        name: existingUser?.name || email,
       }
     })
-  })
 
-  if (!response.ok) {
-    const errorText = await response.text()
-    return { success: false, error: `Mailchimp Transactional error: ${errorText}` }
+    console.log('[Invitation] Email result:', emailResult)
+
+    if (!emailResult.success) {
+      logger.serverAction('Failed to send invitation email', emailResult.error)
+      // Still return success for invitation creation, but note email failure
+      revalidatePath('/admin/invitations')
+      return { success: true, token, emailSent: false, emailError: emailResult.error }
+    }
+
+    revalidatePath('/admin/invitations')
+    return { success: true, token, emailSent: true }
+  } catch (error) {
+    logger.serverAction('Failed to create invitation', error)
+    return { error: 'Failed to create invitation' }
   }
-
-  const body = await response.json() as Array<{ status?: string; _id?: string; reject_reason?: string }>
-  const first = Array.isArray(body) ? body[0] : null
-  if (!first || (first.status !== 'sent' && first.status !== 'queued')) {
-    return { success: false, error: `Mailchimp Transactional rejected message: ${first?.reject_reason || 'unknown'}` }
-  }
-
-  return { success: true, messageId: first._id }
 }
 
 export async function sendHomeInvitation(homeId: string) {
@@ -186,12 +158,16 @@ export async function sendHomeInvitation(homeId: string) {
       }
     })
 
-    const base = (process.env.NEXTAUTH_URL ?? '').replace(/\/$/, '')
-    const inviteUrl = base ? `${base}/invite/${token}` : `/invite/${token}`
-    const sendResult = await sendInvitationViaMailchimpTransactional({
-      toEmail: recipientEmail,
-      inviteUrl,
-      role: 'HOME_ADMIN'
+    const base = APP_URL.replace(/\/$/, '')
+    const inviteUrl = `${base}/invite/${token}`
+
+    const sendResult = await sendEmail({
+      to: recipientEmail,
+      templateType: 'INVITATION',
+      variables: {
+        inviteUrl,
+        role: 'HOME_ADMIN'
+      }
     })
 
     if (!sendResult.success) {
@@ -201,7 +177,7 @@ export async function sendHomeInvitation(homeId: string) {
     await prisma.auditLog.create({
       data: {
         action: 'INVITATION_SENT',
-        details: JSON.stringify({ homeId, email: recipientEmail, provider: 'mailchimp-transactional' }),
+        details: JSON.stringify({ homeId, email: recipientEmail, provider: 'unified-email-service' }),
         userId: session.user.id,
       }
     })
@@ -211,7 +187,7 @@ export async function sendHomeInvitation(homeId: string) {
 
     return { success: true }
   } catch (error) {
-    console.error('sendHomeInvitation error:', error)
+    logger.serverAction('sendHomeInvitation error', error)
     return { error: 'Failed to send invitation' }
   }
 }
@@ -261,9 +237,9 @@ export async function acceptInvitation(token: string, formData: FormData) {
 
   try {
     const invitationUserId = invitation.userId
+    let userId: string | null = null
 
     if (invitationUserId) {
-      // Activate an existing placeholder user linked to this invitation
       await prisma.$transaction(async (tx) => {
         await tx.user.update({
           where: { id: invitationUserId },
@@ -280,10 +256,10 @@ export async function acceptInvitation(token: string, formData: FormData) {
           data: { status: 'ACCEPTED' },
         })
       })
+      userId = invitationUserId
     } else {
-      // Create a brand new user as before
-      await prisma.$transaction(async (tx) => {
-        await createUserWithGeneratedCode(tx, {
+      const newUser = await prisma.$transaction(async (tx) => {
+        const user = await createUserWithGeneratedCode(tx, {
           email: invitation.email,
           name,
           password: hashedPassword,
@@ -294,12 +270,26 @@ export async function acceptInvitation(token: string, formData: FormData) {
           where: { id: invitation.id },
           data: { status: 'ACCEPTED' },
         })
+        return user
       })
+      userId = newUser.id
+    }
+
+    // Send welcome email
+    if (userId && invitation.email) {
+      await sendEmailWithRetry({
+        to: invitation.email,
+        templateType: 'WELCOME',
+        variables: {
+          name,
+          message: 'Welcome to Arts and Aging! We\'re excited to have you join our community.'
+        }
+      }, { userId })
     }
 
     return { success: true }
   } catch (error) {
-    console.error('acceptInvitation error:', error)
+    logger.serverAction('acceptInvitation error', error)
     return { error: 'Failed to create or activate user' }
   }
 }

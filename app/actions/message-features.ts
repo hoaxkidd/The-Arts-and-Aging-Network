@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma"
 import { auth } from "@/auth"
 import { revalidatePath } from "next/cache"
+import { logger } from "@/lib/logger"
 
 interface ReactionGroup {
   emoji: string
@@ -85,7 +86,7 @@ export async function editDirectMessage(messageId: string, newContent: string) {
     revalidatePath('/staff/inbox')
     return { success: true, message: updatedMessage }
   } catch (error) {
-    console.error('Edit message error:', error)
+    logger.serverAction('Edit message error:', error)
     return { error: 'Failed to edit message' }
   }
 }
@@ -127,7 +128,7 @@ export async function deleteDirectMessage(messageId: string) {
     revalidatePath('/staff/inbox')
     return { success: true }
   } catch (error) {
-    console.error('Delete message error:', error)
+    logger.serverAction('Delete message error:', error)
     return { error: 'Failed to delete message' }
   }
 }
@@ -178,7 +179,7 @@ export async function editGroupMessage(messageId: string, newContent: string) {
     revalidatePath('/admin/messaging')
     return { success: true, message: updatedMessage }
   } catch (error) {
-    console.error('Edit group message error:', error)
+    logger.serverAction('Edit group message error:', error)
     return { error: 'Failed to edit message' }
   }
 }
@@ -227,7 +228,7 @@ export async function deleteGroupMessage(messageId: string) {
     revalidatePath('/admin/messaging')
     return { success: true }
   } catch (error) {
-    console.error('Delete group message error:', error)
+    logger.serverAction('Delete group message error:', error)
     return { error: 'Failed to delete message' }
   }
 }
@@ -279,7 +280,7 @@ export async function addMessageReaction(messageId: string, emoji: string) {
     revalidatePath('/admin/messaging')
     return { success: true, reaction, removed: false }
   } catch (error) {
-    console.error('Add reaction error:', error)
+    logger.serverAction('Add reaction error:', error)
     return { error: 'Failed to add reaction' }
   }
 }
@@ -332,7 +333,7 @@ export async function getMessageReactions(messageId: string) {
 
     return { success: true, reactions: Object.values(groupedReactions) }
   } catch (error) {
-    console.error('Get reactions error:', error)
+    logger.serverAction('Get reactions error:', error)
     return { error: 'Failed to get reactions' }
   }
 }
@@ -396,7 +397,7 @@ export async function autoJoinGroup(groupId: string) {
     revalidatePath('/admin/messaging')
     return { success: true, alreadyMember: false }
   } catch (error) {
-    console.error('Auto-join group error:', error)
+    logger.serverAction('Auto-join group error:', error)
     return { error: 'Failed to join group' }
   }
 }

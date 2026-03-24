@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
+import { logger } from "@/lib/logger"
 
 export async function getLocations() {
   try {
@@ -26,7 +27,7 @@ export async function getLocations() {
     })
     return { success: true, data: locations }
   } catch (error) {
-    console.error('Failed to fetch locations:', error)
+    logger.serverAction('Failed to fetch locations', error)
     return { success: false, error: 'Failed to fetch locations' }
   }
 }
@@ -63,7 +64,7 @@ export async function createLocation(data: {
     
     return { success: true, data: location }
   } catch (error) {
-    console.error('Failed to create location:', error)
+    logger.serverAction('Failed to create location', error)
     return { success: false, error: 'Failed to create location' }
   }
 }
@@ -103,7 +104,7 @@ export async function updateLocation(id: string, data: {
     
     return { success: true, data: location }
   } catch (error) {
-    console.error('Failed to update location:', error)
+    logger.serverAction('Failed to update location', error)
     return { success: false, error: 'Failed to update location' }
   }
 }
@@ -136,7 +137,7 @@ export async function deleteLocation(id: string) {
     
     return { success: true }
   } catch (error) {
-    console.error('Failed to delete location:', error)
+    logger.serverAction('Failed to delete location', error)
     return { success: false, error: 'Failed to delete location' }
   }
 }

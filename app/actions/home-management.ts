@@ -5,6 +5,7 @@ import { auth } from "@/auth"
 import { revalidatePath } from "next/cache"
 import type { PrismaClient } from "@prisma/client"
 import { createUserWithGeneratedCode } from "@/lib/user-code"
+import { logger } from "@/lib/logger"
 
 // Type-safe prisma client reference
 const db = prisma as PrismaClient & Record<string, unknown>
@@ -15,7 +16,7 @@ function safeJsonParse<T>(json: string | null | undefined, defaultValue: T): T {
   try {
     return JSON.parse(json) as T
   } catch {
-    console.error('Failed to parse JSON:', json?.substring(0, 100))
+    logger.serverAction('Failed to parse JSON:', json?.substring(0, 100))
     return defaultValue
   }
 }
@@ -85,7 +86,7 @@ export async function createFacilityProfile(formData: FormData) {
 
     return { success: true }
   } catch (error) {
-    console.error("Failed to create facility profile:", error)
+    logger.serverAction("Failed to create facility profile:", error)
     return { error: "Failed to create facility profile" }
   }
 }
@@ -141,7 +142,7 @@ export async function getHomeDetails(homeId: string) {
 
     return { success: true, data: home }
   } catch (error) {
-    console.error("Failed to fetch home details:", error)
+    logger.serverAction("Failed to fetch home details:", error)
     return { error: "Failed to load home details" }
   }
 }
@@ -247,7 +248,7 @@ export async function updateHomeDetails(formData: FormData) {
 
     return { success: true }
   } catch (error) {
-    console.error("Failed to update home:", error)
+    logger.serverAction("Failed to update home:", error)
     return { error: "Failed to update home details" }
   }
 }
@@ -335,7 +336,7 @@ export async function updateHome(data: {
 
     return { success: true }
   } catch (error) {
-    console.error("Failed to update home:", error)
+    logger.serverAction("Failed to update home:", error)
     return { error: "Failed to update home details" }
   }
 }
@@ -403,7 +404,7 @@ export async function updateHomeField(
 
     return { success: true }
   } catch (error) {
-    console.error("Failed to update field:", error)
+    logger.serverAction("Failed to update field:", error)
     return { error: "Failed to update" }
   }
 }
@@ -446,7 +447,7 @@ export async function updatePrimaryContact(
 
     return { success: true }
   } catch (error) {
-    console.error("Failed to update primary contact:", error)
+    logger.serverAction("Failed to update primary contact:", error)
     return { error: "Failed to update primary contact" }
   }
 }
@@ -566,7 +567,7 @@ export async function createAdminHome(formData: FormData) {
 
     return { success: true, homeId: home.id }
   } catch (error) {
-    console.error('Failed to create admin home:', error)
+    logger.serverAction('Failed to create admin home:', error)
     return { error: 'Failed to create home' }
   }
 }
@@ -619,7 +620,7 @@ export async function addPersonnel(homeId: string, personnel: Omit<Personnel, 'i
 
     return { success: true, data: newContact }
   } catch (error) {
-    console.error("Failed to add personnel:", error)
+    logger.serverAction("Failed to add personnel:", error)
     return { error: "Failed to add personnel" }
   }
 }
@@ -667,7 +668,7 @@ export async function updatePersonnel(homeId: string, personnelId: string, updat
 
     return { success: true }
   } catch (error) {
-    console.error("Failed to update personnel:", error)
+    logger.serverAction("Failed to update personnel:", error)
     return { error: "Failed to update personnel" }
   }
 }
@@ -712,7 +713,7 @@ export async function removePersonnel(homeId: string, personnelId: string) {
 
     return { success: true }
   } catch (error) {
-    console.error("Failed to remove personnel:", error)
+    logger.serverAction("Failed to remove personnel:", error)
     return { error: "Failed to remove personnel" }
   }
 }
@@ -792,7 +793,7 @@ export async function deleteHome(homeId: string, confirmationText: string) {
 
     return { success: true, deletedHome: deletionInfo }
   } catch (error) {
-    console.error("Failed to delete home:", error)
+    logger.serverAction("Failed to delete home:", error)
     return { error: "Failed to delete home. Please try again." }
   }
 }

@@ -5,6 +5,7 @@ import { auth } from "@/auth"
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
 import { isPayrollOrAdminRole } from "@/lib/roles"
+import { logger } from "@/lib/logger"
 
 const timeEntrySchema = z.object({
   hours: z.number().min(0).max(24),
@@ -40,7 +41,7 @@ export async function quickCheckIn() {
     revalidatePath('/payroll/check-in')
     return { success: true, timestamp: now }
   } catch (e) {
-    console.error("Check-in failed:", e)
+    logger.serverAction("Check-in failed:", e)
     return { error: "Failed to record check-in" }
   }
 }

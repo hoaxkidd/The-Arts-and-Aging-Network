@@ -1,6 +1,7 @@
 'use server'
 
 import { prisma } from "@/lib/prisma"
+import { logger } from "@/lib/logger"
 import { auth } from "@/auth"
 import { revalidatePath } from "next/cache"
 
@@ -38,7 +39,7 @@ export async function starMessage(messageId: string, messageType: 'DIRECT' | 'GR
 
     return { success: true }
   } catch (error) {
-    console.error("Failed to star message:", error)
+    logger.serverAction("Failed to star message:", error)
     return { error: "Failed to star message" }
   }
 }
@@ -62,7 +63,7 @@ export async function unstarMessage(messageId: string) {
 
     return { success: true }
   } catch (error) {
-    console.error("Failed to unstar message:", error)
+    logger.serverAction("Failed to unstar message:", error)
     return { error: "Failed to unstar message" }
   }
 }
@@ -137,7 +138,7 @@ export async function getStarredMessages() {
 
     return { success: true, data: results }
   } catch (error) {
-    console.error("Failed to get starred messages:", error)
+    logger.serverAction("Failed to get starred messages:", error)
     return { error: "Failed to get starred messages" }
   }
 }

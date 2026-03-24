@@ -3,6 +3,8 @@
 import { prisma } from "@/lib/prisma"
 import { auth } from "@/auth"
 import { revalidatePath } from "next/cache"
+import { sendEmailWithRetry } from "@/lib/email/service"
+import { logger } from "@/lib/logger"
 
 // Search users
 export async function searchUsers(query: string) {
@@ -48,7 +50,7 @@ export async function searchUsers(query: string) {
 
     return { success: true, data: users }
   } catch (error) {
-    console.error("Failed to search users:", error)
+    logger.serverAction("Failed to search users", error)
     return { error: "Failed to search users" }
   }
 }
@@ -118,7 +120,7 @@ export async function searchFacilitatorsWithSharedEvents() {
 
     return { success: true, data: facilitators }
   } catch (error) {
-    console.error("Failed to search facilitators:", error)
+    logger.serverAction("Failed to search facilitators", error)
     return { error: "Failed to search facilitators" }
   }
 }
@@ -185,12 +187,31 @@ export async function sendDirectMessage(data: {
       }
     })
 
-    // TODO: Send email notification (integrate with your email service)
-    // For now, just mark as sent
-    await prisma.directMessage.update({
-      where: { id: message.id },
-      data: { emailSent: true }
-    })
+    // Send email notification
+    if (message.recipient.email) {
+      const messagePreview = data.content.length > 200 
+        ? data.content.substring(0, 200) + '...' 
+        : data.content
+      
+      const emailResult = await sendEmailWithRetry({
+        to: message.recipient.email,
+        templateType: 'NEW_MESSAGE',
+        variables: {
+          name: message.recipient.preferredName || message.recipient.name || 'User',
+          message: messagePreview
+        }
+      }, { userId: data.recipientId })
+
+      await prisma.directMessage.update({
+        where: { id: message.id },
+        data: { emailSent: emailResult.success }
+      })
+    } else {
+      await prisma.directMessage.update({
+        where: { id: message.id },
+        data: { emailSent: false }
+      })
+    }
 
     await prisma.auditLog.create({
       data: {
@@ -208,7 +229,7 @@ export async function sendDirectMessage(data: {
 
     return { success: true, data: message }
   } catch (error) {
-    console.error("Failed to send message:", error)
+    logger.serverAction("Failed to send message", error)
     return { error: "Failed to send message" }
   }
 }
@@ -233,7 +254,7 @@ export async function markMessageAsRead(messageId: string) {
 
     return { success: true }
   } catch (error) {
-    console.error("Failed to mark as read:", error)
+    logger.serverAction("Failed to mark as read", error)
     return { error: "Failed to mark as read" }
   }
 }
@@ -258,7 +279,7 @@ export async function deleteMessage(messageId: string) {
 
     return { success: true }
   } catch (error) {
-    console.error("Failed to delete message:", error)
+    logger.serverAction("Failed to delete message", error)
     return { error: "Failed to delete message" }
   }
 }

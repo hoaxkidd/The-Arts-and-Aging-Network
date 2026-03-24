@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils'
 import { MessageActions } from './MessageActions'
 import { MessageReactions } from './MessageReactions'
 import { useRouter } from 'next/navigation'
+import { logger } from '@/lib/logger'
 
 type Message = {
   id: string
@@ -109,7 +110,7 @@ export function MessageThread({
         setMessages(result.data)
       }
     } catch (e) {
-      console.error('Failed to refresh messages:', e)
+      logger.serverAction('Failed to refresh messages:', e)
     }
   }, [groupId])
 

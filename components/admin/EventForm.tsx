@@ -452,6 +452,63 @@ export function EventForm({
           </div>
         </div>
 
+        {/* Reminders & Notifications */}
+        <div className="border-t border-gray-100 pt-4 mt-4 space-y-4">
+          <h3 className="text-sm font-semibold text-gray-700">Reminders & Notifications</h3>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1">
+                Days before to remind Home Admin
+              </label>
+              <input
+                type="number"
+                name="homeAdminReminderDays"
+                min="1"
+                max="30"
+                defaultValue={initialData?.homeAdminReminderDays || 5}
+                className="block w-full rounded-md border-gray-300 focus:border-primary-500 focus:ring-primary-500 text-sm px-3 py-2 border bg-white placeholder:text-gray-400"
+                placeholder="5"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Default: 5 days before event
+              </p>
+            </div>
+            
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1">
+                Days before to remind Staff
+              </label>
+              <input
+                type="number"
+                name="staffReminderDays"
+                min="1"
+                max="30"
+                defaultValue={initialData?.staffReminderDays || 3}
+                className="block w-full rounded-md border-gray-300 focus:border-primary-500 focus:ring-primary-500 text-sm px-3 py-2 border bg-white placeholder:text-gray-400"
+                placeholder="3"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Default: 3 days before event
+              </p>
+            </div>
+          </div>
+          
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1">Custom Reminder Message</label>
+            <textarea
+              name="reminderMessage"
+              rows={3}
+              defaultValue={initialData?.reminderMessage}
+              className="block w-full rounded-md border-gray-300 focus:border-primary-500 focus:ring-primary-500 text-sm px-3 py-2 border bg-white placeholder:text-gray-400"
+              placeholder="Custom message for event reminders (optional). Leave blank for default."
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              This message will be sent in all reminder emails for this event.
+            </p>
+          </div>
+        </div>
+
         <button type="submit" disabled={isSubmitting} className={cn(STYLES.btn, STYLES.btnPrimary, "w-full")}>
           {isSubmitting ? (initialData ? "Updating..." : "Publishing...") : (initialData ? "Update Event" : "Publish Event")}
         </button>

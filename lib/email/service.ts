@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma'
-import { EmailTemplateType, EmailSendParams } from './types'
+import { EmailTemplateType, EmailSendParams, EmailFrequency } from './types'
 import { getDefaultTemplate } from './templates/defaults'
+import { logger } from '@/lib/logger'
 
 const MAILCHIMP_TRANSACTIONAL_API_KEY = process.env.MAILCHIMP_TRANSACTIONAL_API_KEY
 const MAILCHIMP_FROM_EMAIL = process.env.MAILCHIMP_FROM_EMAIL || 'noreply@artsandaging.com'
@@ -12,6 +13,55 @@ export interface SendEmailResult {
   success: boolean
   messageId?: string
   error?: string
+  skipped?: boolean
+}
+
+export interface UserEmailPreferences {
+  email: boolean
+  sms: boolean
+  inApp: boolean
+  emailFrequency: EmailFrequency
+  emailDigestTime?: string
+}
+
+function parsePreferences(prefsString: string | null | undefined): UserEmailPreferences {
+  const defaults: UserEmailPreferences = {
+    email: true,
+    sms: false,
+    inApp: true,
+    emailFrequency: 'immediate'
+  }
+  
+  if (!prefsString) return defaults
+  
+  try {
+    const parsed = JSON.parse(prefsString)
+    return {
+      ...defaults,
+      ...parsed,
+      emailFrequency: parsed.emailFrequency || 'immediate'
+    }
+  } catch {
+    return defaults
+  }
+}
+
+export async function getUserEmailPreferences(userId: string): Promise<UserEmailPreferences> {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      notificationPreferences: true,
+      emailDigestTime: true
+    }
+  })
+  
+  const prefs = parsePreferences(user?.notificationPreferences)
+  
+  if (user?.emailDigestTime) {
+    prefs.emailDigestTime = user.emailDigestTime
+  }
+  
+  return prefs
 }
 
 function replaceVariables(content: string, variables: Record<string, string>): string {
@@ -71,7 +121,7 @@ async function sendViaMailchimpTransactional(to: string, subject: string, html: 
 
     return { success: true, messageId: first._id }
   } catch (error) {
-    console.error('Mailchimp send error:', error)
+    logger.error('Mailchimp send error:', error)
     return { success: false, error: `Failed to send email: ${error}` }
   }
 }
@@ -152,4 +202,98 @@ export function getEmailVariables(): Record<string, { key: string; description: 
 
 export function isMailchimpConfigured(): boolean {
   return !!(MAILCHIMP_TRANSACTIONAL_API_KEY && MAILCHIMP_FROM_EMAIL)
+}
+
+async function delay(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms))
+}
+
+export async function sendEmailWithRetry(
+  params: EmailSendParams,
+  options: {
+    maxRetries?: number
+    userId?: string
+    logContext?: Record<string, unknown>
+  } = {}
+): Promise<SendEmailResult> {
+  const { maxRetries = 2, userId, logContext } = options
+  
+  if (userId) {
+    try {
+      const prefs = await getUserEmailPreferences(userId)
+      
+      if (!prefs.email) {
+        console.log('[Email] Skipped - email notifications disabled', { to: params.to, ...logContext })
+        return { success: true, skipped: true }
+      }
+      
+      if (prefs.emailFrequency === 'never') {
+        console.log('[Email] Skipped - email frequency set to never', { to: params.to, ...logContext })
+        return { success: true, skipped: true }
+      }
+      
+      if (prefs.emailFrequency !== 'immediate') {
+        console.log('[Email] Skipped - digest mode', { to: params.to, frequency: prefs.emailFrequency, ...logContext })
+        return { success: true, skipped: true }
+      }
+    } catch (error) {
+      logger.error('[Email] Failed to check preferences, proceeding anyway:', error)
+    }
+  }
+  
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const result = await sendEmail(params)
+      
+      if (result.success) {
+        console.log('[Email] Sent successfully', { to: params.to, templateType: params.templateType, messageId: result.messageId, ...logContext })
+        return result
+      }
+      
+      if (attempt < maxRetries) {
+        const backoffMs = 1000 * attempt
+        console.log(`[Email] Attempt ${attempt} failed, retrying in ${backoffMs}ms...`, { error: result.error, to: params.to })
+        await delay(backoffMs)
+      } else {
+        logger.error('[Email] All retry attempts failed', { to: params.to, templateType: params.templateType, error: result.error, ...logContext })
+      }
+      
+      return result
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      logger.error(`[Email] Attempt ${attempt} threw error:`, errorMessage)
+      
+      if (attempt < maxRetries) {
+        const backoffMs = 1000 * attempt
+        await delay(backoffMs)
+      } else {
+        logger.error('[Email] All retry attempts failed after throwing', { to: params.to, templateType: params.templateType, error: errorMessage, ...logContext })
+        return { success: false, error: errorMessage }
+      }
+    }
+  }
+  
+  return { success: false, error: 'Max retries exceeded' }
+}
+
+export async function sendEmailToUser(
+  userId: string,
+  templateType: EmailTemplateType,
+  variables: Record<string, string>
+): Promise<SendEmailResult> {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { email: true }
+  })
+  
+  if (!user?.email) {
+    console.log('[Email] No email found for user', { userId })
+    return { success: false, error: 'User has no email' }
+  }
+  
+  return sendEmailWithRetry({
+    to: user.email,
+    templateType,
+    variables
+  }, { userId })
 }

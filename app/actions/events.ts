@@ -79,6 +79,9 @@ const EventSchema = z.object({
   organizerEmail: z.string().optional(),
   organizerPhone: z.string().optional(),
   requiredFormTemplateId: z.string().optional(),
+  reminderMessage: z.string().optional(),
+  homeAdminReminderDays: z.coerce.number().min(1).max(30).optional(),
+  staffReminderDays: z.coerce.number().min(1).max(30).optional(),
 })
 
 export async function createEvent(formData: FormData) {
@@ -155,6 +158,9 @@ export async function createEvent(formData: FormData) {
                 organizerEmail: validated.data.organizerEmail || null,
                 organizerPhone: validated.data.organizerPhone || null,
                 requiredFormTemplateId,
+                reminderMessage: validated.data.reminderMessage?.trim() || null,
+                homeAdminReminderDays: validated.data.homeAdminReminderDays || null,
+                staffReminderDays: validated.data.staffReminderDays || null,
             }
         })
         
@@ -175,7 +181,7 @@ export async function createEvent(formData: FormData) {
                 changes: 'Details have been modified by an administrator.' // Could be more granular diff logic later
             })
         } catch (e) {
-            console.error('Failed to send update notification', e)
+            logger.email('Failed to send update notification', e)
         }
 
         await notifyAdminsAboutNearbyEvents({
@@ -201,6 +207,9 @@ export async function createEvent(formData: FormData) {
                 organizerPhone: validated.data.organizerPhone || null,
                 status: 'PUBLISHED',
                 requiredFormTemplateId,
+                reminderMessage: validated.data.reminderMessage?.trim() || null,
+                homeAdminReminderDays: validated.data.homeAdminReminderDays || null,
+                staffReminderDays: validated.data.staffReminderDays || null,
                 updatedAt: new Date()
             },
             include: { location: true }
@@ -225,7 +234,7 @@ export async function createEvent(formData: FormData) {
             })
             logger.log('✅ Notification result:', result)
         } catch (notifyError) {
-            console.error('❌ Failed to send notifications:', notifyError)
+            logger.email('Failed to send notifications', notifyError)
             // Don't fail the event creation if notifications fail
         }
 
@@ -234,7 +243,7 @@ export async function createEvent(formData: FormData) {
             await scheduleEventReminders(event.id)
             logger.log('✅ Email reminders scheduled for event:', event.id)
         } catch (reminderError) {
-            console.error('❌ Failed to schedule reminders:', reminderError)
+            logger.serverAction('❌ Failed to schedule reminders:', reminderError)
             // Don't fail the event creation if reminder scheduling fails
         }
 
@@ -260,7 +269,7 @@ export async function createEvent(formData: FormData) {
     revalidatePath('/staff/events')
     return { success: true, eventId: id }
   } catch (e) {
-    console.error(e)
+    logger.serverAction('Failed to save event', e)
     return { error: 'Failed to save event' }
   }
 }
@@ -286,7 +295,7 @@ export async function deleteEvent(eventId: string) {
     try {
       await cancelEventReminders(eventId)
     } catch (e) {
-      console.error('Failed to cancel reminders:', e)
+      logger.serverAction('Failed to cancel reminders', e)
     }
 
     await prisma.$transaction(async (tx) => {
@@ -341,7 +350,7 @@ export async function deleteEvent(eventId: string) {
             date: eventDate
         })
     } catch (e) {
-        console.error('Failed to send cancellation notification', e)
+        logger.email('Failed to send cancellation notification', e)
     }
 
     revalidatePath('/admin/events')
@@ -352,7 +361,7 @@ export async function deleteEvent(eventId: string) {
     revalidatePath('/staff/events')
     return { success: true }
   } catch (e) {
-    console.error('Delete event error:', e)
+    logger.serverAction('Delete event error', e)
     return { error: 'Failed to delete event' }
   }
 }
@@ -381,7 +390,7 @@ export async function getPublishedEventTypes() {
     })
     return events
   } catch (e) {
-    console.error('Error fetching published event types:', e)
+    logger.serverAction('Error fetching published event types', e)
     return []
   }
 }
@@ -408,7 +417,7 @@ export async function findEventByTypeAndDate(eventId: string, date: string) {
     })
     return event
   } catch (e) {
-    console.error('Error finding event by type and date:', e)
+    logger.serverAction('Error finding event by type and date', e)
     return null
   }
 }

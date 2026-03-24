@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { processPendingReminders } from '@/app/actions/email-reminders'
+import { logger } from '@/lib/logger'
 
 // API route for cron job to process pending email reminders
 // Configure your cron service (Vercel Cron, GitHub Actions, etc.) to call this endpoint
@@ -35,7 +36,7 @@ export async function GET(request: NextRequest) {
       timestamp: new Date().toISOString()
     })
   } catch (error) {
-    console.error('Cron job error:', error)
+    logger.serverAction('Cron job error:', error)
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

@@ -5,6 +5,8 @@ import { auth } from "@/auth"
 import { revalidatePath } from "next/cache"
 import type { Prisma } from "@prisma/client"
 import { isPayrollOrAdminRole } from "@/lib/roles"
+import { sendEmailWithRetry } from "@/lib/email/service"
+import { logger } from "@/lib/logger"
 
 // Helper to parse date string in YYYY-MM-DD or DD-MM-YYYY format
 function parseDateString(dateStr: string): Date | null {
@@ -60,7 +62,7 @@ export async function getWeeklyTimesheet(weekStartDate?: Date) {
 
     return { timesheet: timesheet || null }
   } catch (e) {
-    console.error('getWeeklyTimesheet error:', e)
+    logger.serverAction('getWeeklyTimesheet error', e)
     return { error: "Failed to get timesheet" }
   }
 }
@@ -103,7 +105,7 @@ export async function createWeeklyTimesheet(weekStartDate?: Date) {
 
     return { timesheet }
   } catch (e) {
-    console.error('createWeeklyTimesheet error:', e)
+    logger.serverAction('createWeeklyTimesheet error', e)
     return { error: "Failed to create timesheet" }
   }
 }
@@ -206,7 +208,7 @@ export async function saveTimesheetEntry(
     revalidatePath('/payroll/timesheet')
     return { success: true }
   } catch (e) {
-    console.error('saveTimesheetEntry error:', e)
+    logger.serverAction('saveTimesheetEntry error', e)
     return { error: "Failed to save entry" }
   }
 }
@@ -233,7 +235,7 @@ export async function deleteTimesheetEntry(entryId: string) {
     revalidatePath('/payroll/timesheet')
     return { success: true }
   } catch (e) {
-    console.error('deleteTimesheetEntry error:', e)
+    logger.serverAction('deleteTimesheetEntry error', e)
     return { error: "Failed to delete entry" }
   }
 }
@@ -289,7 +291,7 @@ export async function submitTimesheet(timesheetId: string) {
     revalidatePath('/payroll/timesheet')
     return { success: true }
   } catch (e) {
-    console.error('submitTimesheet error:', e)
+    logger.serverAction('submitTimesheet error', e)
     return { error: "Failed to submit timesheet" }
   }
 }
@@ -324,7 +326,7 @@ export async function getTimesheetsForAdmin(status?: string) {
 
     return { timesheets }
   } catch (e) {
-    console.error('getTimesheetsForAdmin error:', e)
+    logger.serverAction('getTimesheetsForAdmin error', e)
     return { error: "Failed to get timesheets" }
   }
 }
@@ -368,10 +370,33 @@ export async function approveTimesheet(timesheetId: string) {
       }
     })
 
+    // Send approval email
+    const staff = await prisma.user.findUnique({
+      where: { id: timesheet.userId },
+      select: { email: true, name: true, preferredName: true }
+    })
+
+    if (staff?.email) {
+      const weekStartDate = new Date(timesheet.weekStart).toLocaleDateString('en-US', {
+        month: 'long',
+        day: 'numeric',
+        year: 'numeric'
+      })
+
+      await sendEmailWithRetry({
+        to: staff.email,
+        templateType: 'TIMESHEET_APPROVED',
+        variables: {
+          name: staff.preferredName || staff.name || 'User',
+          timesheetWeek: weekStartDate
+        }
+      }, { userId: timesheet.userId })
+    }
+
     revalidatePath('/admin/timesheets')
     return { success: true }
   } catch (e) {
-    console.error('approveTimesheet error:', e)
+    logger.serverAction('approveTimesheet error', e)
     return { error: "Failed to approve timesheet" }
   }
 }
@@ -414,10 +439,34 @@ export async function rejectTimesheet(timesheetId: string, notes: string) {
       }
     })
 
+    // Send rejection email
+    const staff = await prisma.user.findUnique({
+      where: { id: timesheet.userId },
+      select: { email: true, name: true, preferredName: true }
+    })
+
+    if (staff?.email) {
+      const weekStartDate = new Date(timesheet.weekStart).toLocaleDateString('en-US', {
+        month: 'long',
+        day: 'numeric',
+        year: 'numeric'
+      })
+
+      await sendEmailWithRetry({
+        to: staff.email,
+        templateType: 'TIMESHEET_REJECTED',
+        variables: {
+          name: staff.preferredName || staff.name || 'User',
+          timesheetWeek: weekStartDate,
+          message: notes
+        }
+      }, { userId: timesheet.userId })
+    }
+
     revalidatePath('/admin/timesheets')
     return { success: true }
   } catch (e) {
-    console.error('rejectTimesheet error:', e)
+    logger.serverAction('rejectTimesheet error', e)
     return { error: "Failed to reject timesheet" }
   }
 }
@@ -458,7 +507,7 @@ export async function deleteTimesheet(timesheetId: string) {
     revalidatePath('/payroll/timesheet')
     return { success: true }
   } catch (e) {
-    console.error('deleteTimesheet error:', e)
+    logger.serverAction('deleteTimesheet error', e)
     return { error: "Failed to delete timesheet" }
   }
 }

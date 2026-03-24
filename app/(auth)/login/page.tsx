@@ -8,6 +8,7 @@ import { AlertCircle, Eye, EyeOff, LogIn, Building2 } from 'lucide-react'
 import { STYLES } from "@/lib/styles"
 import { cn } from "@/lib/utils"
 import { HomeRegistrationForm } from '@/components/forms/HomeRegistrationForm'
+import Link from 'next/link'
 
 function LoginButton() {
   const { pending } = useFormStatus()
@@ -131,6 +132,15 @@ function LoginForm({ searchParams, router, tabParam }: { searchParams: ReturnTyp
                 )}
                 
                 <LoginButton />
+                
+                <div className="text-center">
+                  <Link 
+                    href="/auth/forgot-password"
+                    className="text-sm text-primary-600 hover:text-primary-700 hover:underline"
+                  >
+                    Forgot Password?
+                  </Link>
+                </div>
               </form>
             </div>
           ) : (

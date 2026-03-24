@@ -1,5 +1,6 @@
 import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
+import { logger } from "@/lib/logger"
 import {
   Calendar,
   FileText,
@@ -49,7 +50,7 @@ export default async function VolunteersDashboard() {
       }
     })
   } catch (err) {
-    console.error("[VolunteersDashboard] DB error:", err instanceof Error ? err.message : err)
+    logger.serverAction("[VolunteersDashboard] DB error:", err instanceof Error ? err.message : String(err))
   }
 
   return (

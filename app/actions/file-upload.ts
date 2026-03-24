@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma"
 import { auth } from "@/auth"
 import { revalidatePath } from "next/cache"
 import { isPayrollOrAdminRole } from "@/lib/roles"
+import { logger } from "@/lib/logger"
 
 // Upload file attachment to expense/mileage request
 export async function attachFileToRequest(data: {
@@ -59,7 +60,7 @@ export async function attachFileToRequest(data: {
 
     return { success: true }
   } catch (error) {
-    console.error("Failed to attach file:", error)
+    logger.upload("Failed to attach file", error)
     return { error: "Failed to attach file" }
   }
 }
@@ -99,20 +100,19 @@ export async function removeFileAttachment(requestId: string, fileId: string) {
 
     return { success: true }
   } catch (error) {
-    console.error("Failed to remove file:", error)
+    logger.upload("Failed to remove file", error)
     return { error: "Failed to remove file" }
   }
 }
 
-// Get upload URL (placeholder - integrate with your storage solution)
+// Get upload URL (for direct R2 uploads via API)
 export async function getUploadUrl(fileName: string, _fileType: string) {
   const session = await auth()
   if (!session?.user?.id || !isPayrollOrAdminRole(session.user.role)) {
     return { error: "Unauthorized" }
   }
 
-  // TODO: Integrate with your storage solution (S3, Cloudflare R2, etc.)
-  // For now, return a placeholder
+  // Generate a unique key for the upload
   const uploadId = `upload_${Date.now()}_${Math.random().toString(36).substring(7)}`
 
   return {

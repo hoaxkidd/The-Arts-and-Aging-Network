@@ -5,6 +5,8 @@ import { auth } from "@/auth"
 import { revalidatePath } from "next/cache"
 import type { Prisma } from "@prisma/client"
 import { isPayrollOrAdminRole } from "@/lib/roles"
+import { sendEmailWithRetry } from "@/lib/email/service"
+import { logger } from "@/lib/logger"
 
 // Helper to parse date string in YYYY-MM-DD or DD-MM-YYYY format
 function parseDateString(dateStr: string): Date | null {
@@ -65,7 +67,7 @@ export async function submitMileageEntry(data: {
     revalidatePath('/payroll/mileage')
     return { success: true }
   } catch (e) {
-    console.error('submitMileageEntry error:', e)
+    logger.serverAction('submitMileageEntry error', e)
     return { error: "Failed to submit mileage entry" }
   }
 }
@@ -87,7 +89,7 @@ export async function getMileageEntries(month: number, year: number) {
 
     return { entries }
   } catch (e) {
-    console.error('getMileageEntries error:', e)
+    logger.serverAction('getMileageEntries error', e)
     return { error: "Failed to get mileage entries" }
   }
 }
@@ -106,7 +108,7 @@ export async function getMyMileageEntries() {
 
     return { entries }
   } catch (e) {
-    console.error('getMyMileageEntries error:', e)
+    logger.serverAction('getMyMileageEntries error', e)
     return { error: "Failed to get mileage entries" }
   }
 }
@@ -132,7 +134,7 @@ export async function deleteMileageEntry(entryId: string) {
     revalidatePath('/payroll/mileage')
     return { success: true }
   } catch (e) {
-    console.error('deleteMileageEntry error:', e)
+    logger.serverAction('deleteMileageEntry error', e)
     return { error: "Failed to delete entry" }
   }
 }
@@ -169,7 +171,7 @@ export async function getMileageForAdmin(status?: string) {
 
     return { entries }
   } catch (e) {
-    console.error('getMileageForAdmin error:', e)
+    logger.serverAction('getMileageForAdmin error', e)
     return { error: "Failed to get mileage entries" }
   }
 }
@@ -213,10 +215,28 @@ export async function approveMileageEntry(entryId: string) {
       }
     })
 
+    // Send approval email
+    const staff = await prisma.user.findUnique({
+      where: { id: entry.userId },
+      select: { email: true, name: true, preferredName: true }
+    })
+
+    if (staff?.email) {
+      await sendEmailWithRetry({
+        to: staff.email,
+        templateType: 'EXPENSE_APPROVED',
+        variables: {
+          name: staff.preferredName || staff.name || 'User',
+          expenseAmount: `${entry.kilometers}km`,
+          message: `Your mileage entry has been approved.`
+        }
+      }, { userId: entry.userId })
+    }
+
     revalidatePath('/admin/mileage')
     return { success: true }
   } catch (e) {
-    console.error('approveMileageEntry error:', e)
+    logger.serverAction('approveMileageEntry error', e)
     return { error: "Failed to approve entry" }
   }
 }
@@ -259,10 +279,28 @@ export async function rejectMileageEntry(entryId: string, reason: string) {
       }
     })
 
+    // Send rejection email
+    const staff = await prisma.user.findUnique({
+      where: { id: entry.userId },
+      select: { email: true, name: true, preferredName: true }
+    })
+
+    if (staff?.email) {
+      await sendEmailWithRetry({
+        to: staff.email,
+        templateType: 'EXPENSE_REJECTED',
+        variables: {
+          name: staff.preferredName || staff.name || 'User',
+          expenseAmount: `${entry.kilometers}km`,
+          message: reason
+        }
+      }, { userId: entry.userId })
+    }
+
     revalidatePath('/admin/mileage')
     return { success: true }
   } catch (e) {
-    console.error('rejectMileageEntry error:', e)
+    logger.serverAction('rejectMileageEntry error', e)
     return { error: "Failed to reject entry" }
   }
 }
@@ -298,7 +336,7 @@ export async function getMonthlySummary(month: number, year: number) {
       }
     }
   } catch (e) {
-    console.error('getMonthlySummary error:', e)
+    logger.serverAction('getMonthlySummary error', e)
     return { error: "Failed to get summary" }
   }
 }

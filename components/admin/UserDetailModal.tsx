@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Image from "next/image"
 import { X, Mail, Phone, MapPin, Briefcase, User as UserIcon, Activity, ClipboardList, AlertTriangle, Building2, Users, FileText, Check, Shield } from 'lucide-react'
 import { STYLES } from "@/lib/styles"
 import { cn } from "@/lib/utils"
@@ -120,11 +121,12 @@ export function UserDetailModal({ user, isOpen, onClose }: UserDetailModalProps)
         <div className="px-5 py-4 border-b border-gray-100 flex items-start justify-between bg-gray-50">
           <div className="flex items-center gap-3">
             {user.image ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
+              <Image
                 src={user.image}
                 alt={displayName}
-                className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-sm"
+                width={48}
+                height={48}
+                className="rounded-full object-cover border-2 border-white shadow-sm"
               />
             ) : (
               <div className="w-12 h-12 rounded-full bg-primary-100 flex items-center justify-center text-primary-600 text-xl font-bold border-2 border-white shadow-sm">

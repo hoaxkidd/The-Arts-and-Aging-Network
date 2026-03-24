@@ -5,6 +5,9 @@ import { auth } from "@/auth"
 import { revalidatePath } from "next/cache"
 import { notifyAdminsAboutRSVP, notifyAdminsAboutCheckIn } from "@/lib/notifications"
 import { checkInNotOpenMessage, getCheckInWindowStart } from "@/lib/event-checkin"
+import { sendEmailWithRetry } from "@/lib/email/service"
+import { generateCalendarLinks, formatEventTime } from "@/lib/email/calendar"
+import { logger } from "@/lib/logger"
 
 export async function checkInToEvent(eventId: string) {
   const session = await auth()
@@ -60,7 +63,7 @@ export async function checkInToEvent(eventId: string) {
         eventTitle: event.title
       })
     } catch (notifyError) {
-      console.error('Failed to send check-in notification:', notifyError)
+      logger.email('Failed to send check-in notification', notifyError)
     }
 
     revalidatePath(`/events/${eventId}`)
@@ -114,13 +117,19 @@ export async function rsvpToEvent(eventId: string, status: 'YES' | 'NO' | 'MAYBE
         }
       })
 
-      // Get event title for notification
+      // Get event details for notification and email
       const event = await tx.event.findUnique({
         where: { id: eventId },
-        select: { title: true }
+        include: { location: true }
       })
 
-      return { eventTitle: event?.title }
+      return { 
+        eventTitle: event?.title,
+        eventStartDateTime: event?.startDateTime,
+        eventEndDateTime: event?.endDateTime,
+        eventLocation: event?.location?.name || event?.location?.address,
+        eventLink: event ? `/events/${eventId}` : null
+      }
     })
 
     // Notify admins about the RSVP (outside transaction - non-critical)
@@ -134,8 +143,54 @@ export async function rsvpToEvent(eventId: string, status: 'YES' | 'NO' | 'MAYBE
           rsvpStatus: status
         })
       } catch (notifyError) {
-        console.error('Failed to send RSVP notification:', notifyError)
+        logger.email('Failed to send RSVP notification', notifyError)
       }
+    }
+
+    // Send RSVP confirmation/cancellation email (immediate for RSVP)
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { email: true, name: true, preferredName: true }
+    })
+
+    if (user?.email && result.eventTitle) {
+      const templateType = status === 'YES' ? 'RSVP_CONFIRMATION' : 'RSVP_CANCELLED'
+      const eventDate = result.eventStartDateTime 
+        ? new Date(result.eventStartDateTime).toLocaleDateString('en-US', { 
+            weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
+          })
+        : ''
+      const eventTime = (result.eventStartDateTime && result.eventEndDateTime)
+        ? formatEventTime(new Date(result.eventStartDateTime), new Date(result.eventEndDateTime))
+        : ''
+
+      const emailVariables: Record<string, string> = {
+        name: user.preferredName || user.name || 'User',
+        eventTitle: result.eventTitle,
+        eventDate,
+        eventTime,
+        eventLocation: result.eventLocation || 'TBD',
+        eventLink: result.eventLink || `/events/${eventId}`
+      }
+
+      // Add calendar links for confirmations
+      if (status === 'YES' && result.eventStartDateTime && result.eventEndDateTime) {
+        const calendarLinks = generateCalendarLinks({
+          title: result.eventTitle,
+          startDateTime: new Date(result.eventStartDateTime),
+          endDateTime: new Date(result.eventEndDateTime),
+          location: result.eventLocation,
+          url: `${process.env.NEXTAUTH_URL || ''}${result.eventLink || `/events/${eventId}`}`
+        })
+        emailVariables.calendarLink = calendarLinks.webcal
+        emailVariables.googleCalendarLink = calendarLinks.google
+      }
+
+      await sendEmailWithRetry({
+        to: user.email,
+        templateType,
+        variables: emailVariables
+      }, { userId: session.user.id })
     }
 
     revalidatePath('/events')

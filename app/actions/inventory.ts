@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma"
 import { auth } from "@/auth"
 import { revalidatePath } from "next/cache"
+import { logger } from "@/lib/logger"
 
 // Get inventory items
 export async function getInventoryItems(filters?: {
@@ -44,7 +45,7 @@ export async function getInventoryItems(filters?: {
 
     return { success: true, data: filteredItems }
   } catch (error) {
-    console.error("Failed to fetch inventory:", error)
+    logger.serverAction("Failed to fetch inventory:", error)
     return { error: "Failed to load inventory" }
   }
 }
@@ -130,7 +131,7 @@ export async function createInventoryItem(data: {
 
     return { success: true, data: item }
   } catch (error) {
-    console.error("Failed to create inventory item:", error)
+    logger.serverAction("Failed to create inventory item:", error)
     return { error: "Failed to create item" }
   }
 }
@@ -154,7 +155,7 @@ export async function updateInventoryItem(
     revalidatePath('/admin/inventory')
     return { success: true, data: item }
   } catch (error) {
-    console.error("Failed to update inventory item:", error)
+    logger.serverAction("Failed to update inventory item:", error)
     return { error: "Failed to update item" }
   }
 }
@@ -218,7 +219,7 @@ export async function createInventoryTransaction(data: {
 
     return { success: true, data: transaction }
   } catch (error) {
-    console.error("Failed to create transaction:", error)
+    logger.serverAction("Failed to create transaction:", error)
     return { error: "Failed to create transaction" }
   }
 }
@@ -245,7 +246,7 @@ export async function deactivateInventoryItem(id: string) {
     revalidatePath('/admin/inventory')
     return { success: true }
   } catch (error) {
-    console.error("Failed to deactivate item:", error)
+    logger.serverAction("Failed to deactivate item:", error)
     return { error: "Failed to remove item" }
   }
 }

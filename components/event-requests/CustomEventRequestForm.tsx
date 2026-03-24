@@ -14,6 +14,7 @@ import { createCustomEventRequest } from '@/app/actions/event-requests'
 import { getEventSignupForms } from '@/app/actions/form-templates'
 import { FormTemplateView } from '@/components/forms/FormTemplateView'
 import type { FormTemplateField } from '@/lib/form-template-types'
+import { logger } from '@/lib/logger'
 
 type FormTemplate = {
   id: string
@@ -42,7 +43,7 @@ export function CustomEventRequestForm() {
           setFormTemplates(result.data as FormTemplate[])
         }
       } catch (error) {
-        console.error('Error fetching forms:', error)
+        logger.serverAction('Error fetching forms:', error)
       } finally {
         setIsLoadingForms(false)
       }

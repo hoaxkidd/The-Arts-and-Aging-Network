@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 import { isPayrollOrAdminRole } from '@/lib/roles'
+import { logger } from '@/lib/logger'
 
 export async function GET(req: NextRequest) {
   const session = await auth()
@@ -27,7 +28,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ success: true, data: forms })
   } catch (error) {
-    console.error('Failed to fetch payroll forms:', error)
+    logger.serverAction('Failed to fetch payroll forms:', error)
     return NextResponse.json({ error: 'Failed to fetch forms' }, { status: 500 })
   }
 }
@@ -61,7 +62,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true, data: form })
   } catch (error) {
-    console.error('Failed to create payroll form:', error)
+    logger.serverAction('Failed to create payroll form:', error)
     return NextResponse.json({ error: 'Failed to create form' }, { status: 500 })
   }
 }

@@ -4,6 +4,7 @@ import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
 import type { PrismaClient } from "@prisma/client"
+import { logger } from "@/lib/logger"
 
 // Type-safe prisma client reference
 const db = prisma as PrismaClient & Record<string, unknown>
@@ -28,7 +29,7 @@ async function createNotification(
       }
     })
   } catch (error) {
-    console.error('Error creating notification:', error)
+    logger.serverAction('Error creating notification:', error)
   }
 }
 
@@ -92,7 +93,7 @@ export async function addComment(
 
     return { data: comment }
   } catch (error) {
-    console.error('Error adding comment:', error)
+    logger.serverAction('Error adding comment:', error)
     return { error: 'Failed to add comment' }
   }
 }
@@ -133,7 +134,7 @@ export async function editComment(commentId: string, content: string) {
 
     return { data: updated }
   } catch (error) {
-    console.error('Error editing comment:', error)
+    logger.serverAction('Error editing comment:', error)
     return { error: 'Failed to edit comment' }
   }
 }
@@ -180,7 +181,7 @@ export async function deleteComment(commentId: string) {
 
     return { success: true }
   } catch (error) {
-    console.error('Error deleting comment:', error)
+    logger.serverAction('Error deleting comment:', error)
     return { error: 'Failed to delete comment' }
   }
 }
@@ -216,7 +217,7 @@ export async function getEventComments(eventId: string) {
 
     return { data: comments }
   } catch (error) {
-    console.error('Error getting comments:', error)
+    logger.serverAction('Error getting comments:', error)
     return { error: 'Failed to load comments' }
   }
 }
@@ -355,7 +356,7 @@ export async function toggleReaction(
     revalidate()
     return { data: { action: 'added', type } }
   } catch (error) {
-    console.error('Error toggling reaction:', error)
+    logger.serverAction('Error toggling reaction:', error)
     return { error: 'Failed to update reaction' }
   }
 }
@@ -392,7 +393,7 @@ export async function addEventPhoto(
 
     return { data: photo }
   } catch (error) {
-    console.error('Error adding photo:', error)
+    logger.serverAction('Error adding photo:', error)
     return { error: 'Failed to add photo' }
   }
 }
@@ -433,7 +434,7 @@ export async function deleteEventPhoto(photoId: string) {
 
     return { success: true }
   } catch (error) {
-    console.error('Error deleting photo:', error)
+    logger.serverAction('Error deleting photo:', error)
     return { error: 'Failed to delete photo' }
   }
 }
@@ -455,7 +456,7 @@ export async function getEventPhotos(eventId: string) {
 
     return { data: photos }
   } catch (error) {
-    console.error('Error getting photos:', error)
+    logger.serverAction('Error getting photos:', error)
     return { error: 'Failed to load photos' }
   }
 }
