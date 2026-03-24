@@ -286,9 +286,15 @@ export async function createPlaceholderStaffUser(formData: FormData) {
 
 export async function completeOnboarding() {
   const session = await auth()
-  if (!session?.user?.id) return { error: 'Unauthorized' }
+  console.log('[staff-onboarding] completeOnboarding called, session:', session?.user?.id)
+  
+  if (!session?.user?.id) {
+    console.log('[staff-onboarding] No session, returning error')
+    return { error: 'Unauthorized' }
+  }
 
   try {
+    console.log('[staff-onboarding] Updating user:', session.user.id)
     await prisma.user.update({
       where: { id: session.user.id },
       data: { onboardingCompletedAt: new Date() },
@@ -296,8 +302,10 @@ export async function completeOnboarding() {
     revalidatePath('/staff/onboarding')
     revalidatePath('/staff')
     revalidatePath('/dashboard')
+    console.log('[staff-onboarding] Success!')
     return { success: true }
   } catch (e) {
+    console.error('[staff-onboarding] completeOnboarding error:', e)
     logger.serverAction('completeOnboarding error:', e)
     return { error: 'Failed to save' }
   }
@@ -305,16 +313,24 @@ export async function completeOnboarding() {
 
 export async function skipOnboarding() {
   const session = await auth()
-  if (!session?.user?.id) return { error: 'Unauthorized' }
+  console.log('[staff-onboarding] skipOnboarding called, session:', session?.user?.id)
+  
+  if (!session?.user?.id) {
+    console.log('[staff-onboarding] No session, returning error')
+    return { error: 'Unauthorized' }
+  }
 
   try {
+    console.log('[staff-onboarding] Incrementing skip count for user:', session.user.id)
     await prisma.user.update({
       where: { id: session.user.id },
       data: { onboardingSkipCount: { increment: 1 } },
     })
     revalidatePath('/staff/onboarding')
+    console.log('[staff-onboarding] Success!')
     return { success: true }
   } catch (e) {
+    console.error('[staff-onboarding] skipOnboarding error:', e)
     logger.serverAction('skipOnboarding error:', e)
     return { error: 'Failed to save' }
   }

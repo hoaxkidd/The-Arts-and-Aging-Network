@@ -16,8 +16,19 @@ export default authMiddleware((req: { nextUrl: URL; auth: unknown; headers: Head
     const onboardingPath = getOnboardingPath(userRole ?? '')
     if (pathname !== onboardingPath && !pathname.startsWith('/login') && !pathname.startsWith('/invite')) {
       if (pathname.startsWith('/staff') || pathname.startsWith('/dashboard')) {
+        console.log('[Middleware] Redirecting to onboarding, pathname:', pathname, 'role:', userRole)
         return NextResponse.redirect(new URL(onboardingPath, req.nextUrl))
       }
+    }
+  }
+
+  // Special handling for VOLUNTEER role - after 3 skips, allow access to /staff routes
+  if (isLoggedIn && userRole === 'VOLUNTEER') {
+    const skipCount = authUser?.onboardingSkipCount ?? 0
+    // After 3 skips, allow volunteers to access /staff (except onboarding)
+    if (skipCount >= 3 && pathname.startsWith('/staff') && !pathname.startsWith('/staff/onboarding')) {
+      console.log('[Middleware] Volunteer with 3+ skips, allowing access to:', pathname)
+      // Allow access to /staff routes
     }
   }
 

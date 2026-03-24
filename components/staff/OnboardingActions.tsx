@@ -3,48 +3,44 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { completeOnboarding, skipOnboarding } from '@/app/actions/staff-onboarding'
-import { updateStaffProfile } from '@/app/actions/staff'
 import { STYLES } from '@/lib/styles'
 import { cn } from '@/lib/utils'
 
-export function OnboardingActions({ redirectTo = '/staff' }: { redirectTo?: string }) {
+export function OnboardingActions({ 
+  redirectTo = '/staff',
+  role = 'FACILITATOR'
+}: { 
+  redirectTo?: string
+  role?: string 
+}) {
   const router = useRouter()
   const [isCompleting, setIsCompleting] = useState(false)
   const [isSkipping, setIsSkipping] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  // Determine redirect URL dynamically based on role and approval status
+  const getRedirectUrl = () => {
+    // If already on volunteer portal path, stay there
+    if (redirectTo.includes('/volunteers')) {
+      return redirectTo
+    }
+    // Otherwise use provided redirectTo (should be /staff for staff roles)
+    return redirectTo
+  }
+
   async function handleComplete() {
-    console.log('[OnboardingActions] handleComplete called')
+    console.log('[OnboardingActions] handleComplete called, role:', role)
     setIsCompleting(true)
     setError(null)
     
     try {
-      // Auto-save: Find and submit the profile form
-      const form = document.querySelector('form')
-      if (form) {
-        console.log('[OnboardingActions] Saving profile form...')
-        const formData = new FormData(form)
-        const saveResult = await updateStaffProfile(formData)
-        console.log('[OnboardingActions] Save result:', saveResult)
-        
-        if (saveResult?.error) {
-          alert('Failed to save profile: ' + saveResult.error)
-          setIsCompleting(false)
-          return
-        }
-        console.log('[OnboardingActions] Profile saved successfully')
-      } else {
-        console.log('[OnboardingActions] No form found to save')
-      }
-      
-      // Then complete onboarding
-      console.log('[OnboardingActions] Completing onboarding...')
+      console.log('[OnboardingActions] Calling completeOnboarding...')
       const result = await completeOnboarding()
       console.log('[OnboardingActions] Complete result:', result)
       
       if (result?.success) {
-        console.log('[OnboardingActions] Onboarding completed, redirecting to:', redirectTo)
-        router.push(redirectTo)
+        console.log('[OnboardingActions] Success, redirecting to:', getRedirectUrl())
+        router.push(getRedirectUrl())
         router.refresh()
       } else if (result?.error) {
         console.error('[OnboardingActions] Complete error:', result.error)
@@ -61,18 +57,18 @@ export function OnboardingActions({ redirectTo = '/staff' }: { redirectTo?: stri
   }
 
   async function handleSkip() {
-    console.log('[OnboardingActions] handleSkip called')
+    console.log('[OnboardingActions] handleSkip called, role:', role)
     setIsSkipping(true)
     setError(null)
     
     try {
-      console.log('[OnboardingActions] Skipping onboarding...')
+      console.log('[OnboardingActions] Calling skipOnboarding...')
       const result = await skipOnboarding()
       console.log('[OnboardingActions] Skip result:', result)
       
       if (result?.success) {
-        console.log('[OnboardingActions] Onboarding skipped, redirecting to:', redirectTo)
-        router.push(redirectTo)
+        console.log('[OnboardingActions] Success, redirecting to:', getRedirectUrl())
+        router.push(getRedirectUrl())
         router.refresh()
       } else if (result?.error) {
         console.error('[OnboardingActions] Skip error:', result.error)

@@ -542,7 +542,11 @@ export function InviteForm({ invitation, bgBlobs, onSubmit, existingHomes = [] }
       if (result?.error) {
         setFormError(result.error)
       }
-    } catch (err) {
+    } catch (err: any) {
+      // Ignore Next.js redirects - they're successful, not errors
+      if (err?.digest?.includes('NEXT_REDIRECT')) {
+        return // Redirect is happening, don't show error or stop loading
+      }
       console.error('[InviteForm] Submit error:', err)
       setFormError('An unexpected error occurred. Please try again.')
     } finally {

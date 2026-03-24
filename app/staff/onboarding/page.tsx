@@ -85,7 +85,10 @@ export default async function StaffOnboardingPage(props: { searchParams: Promise
               flat
               showSaveButton={false}
             />
-            <OnboardingActions redirectTo={getRedirectUrl()} />
+            <OnboardingActions 
+              redirectTo={getRedirectUrl()} 
+              role={user.role || 'FACILITATOR'}
+            />
           </div>
         </div>
       </div>
