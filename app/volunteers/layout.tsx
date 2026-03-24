@@ -14,7 +14,7 @@ export default async function VolunteersLayout({
   }
 
   return (
-    <DashboardLayout role="VOLUNTEER">
+    <DashboardLayout role="VOLUNTEER" title="Volunteer Portal">
       {children}
     </DashboardLayout>
   )

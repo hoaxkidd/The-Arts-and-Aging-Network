@@ -20,6 +20,14 @@ export default async function StaffOnboardingPage(props: { searchParams: Promise
   const isVolunteer = user.role === 'VOLUNTEER'
   const isNewVolunteer = params.new === 'true'
   const volunteerStatus = user.volunteerReviewStatus
+  
+  // Determine redirect based on role and approval status
+  const getRedirectUrl = () => {
+    if (isVolunteer && volunteerStatus === 'APPROVED') {
+      return '/volunteers'
+    }
+    return '/staff'
+  }
 
   return (
     <div className="h-full flex flex-col">
@@ -77,7 +85,7 @@ export default async function StaffOnboardingPage(props: { searchParams: Promise
               flat
               showSaveButton={false}
             />
-            <OnboardingActions redirectTo="/staff" />
+            <OnboardingActions redirectTo={getRedirectUrl()} />
           </div>
         </div>
       </div>
