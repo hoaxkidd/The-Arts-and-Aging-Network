@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { CheckCircle, Eye, EyeOff, ChevronRight, ChevronLeft, Phone, User, Building, Briefcase, Users, Mail } from 'lucide-react'
+import { CheckCircle, Eye, EyeOff, ChevronRight, ChevronLeft, Phone, User, Building, Briefcase, Users, Mail, AlertCircle, Loader2 } from 'lucide-react'
 import { STYLES } from '@/lib/styles'
 import { cn } from '@/lib/utils'
 
@@ -13,7 +13,7 @@ interface InviteFormProps {
     userId?: string | null
   }
   bgBlobs: React.ReactNode
-  onSubmit: (formData: FormData) => Promise<void>
+  onSubmit: (formData: FormData) => Promise<{ error?: string } | void>
   existingHomes?: { id: string; name: string }[]
 }
 
@@ -58,6 +58,8 @@ export function InviteForm({ invitation, bgBlobs, onSubmit, existingHomes = [] }
   const [showPassword, setShowPassword] = useState(false)
   const [showEmailChange, setShowEmailChange] = useState(false)
   const [emailChangeRequested, setEmailChangeRequested] = useState(false)
+  const [formError, setFormError] = useState<string | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const [formData, setFormData] = useState({
     name: '',
     password: '',
@@ -529,7 +531,23 @@ export function InviteForm({ invitation, bgBlobs, onSubmit, existingHomes = [] }
       }
     }
     
-    await onSubmit(fd)
+    // Set loading state and clear previous errors
+    setIsSubmitting(true)
+    setFormError(null)
+    
+    try {
+      const result = await onSubmit(fd)
+      
+      // Handle error from server action
+      if (result?.error) {
+        setFormError(result.error)
+      }
+    } catch (err) {
+      console.error('[InviteForm] Submit error:', err)
+      setFormError('An unexpected error occurred. Please try again.')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -572,6 +590,17 @@ export function InviteForm({ invitation, bgBlobs, onSubmit, existingHomes = [] }
           </div>
 
           <form onSubmit={handleSubmit}>
+            {/* Error Display */}
+            {formError && (
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
+                <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-red-700 text-sm font-medium">Error</p>
+                  <p className="text-red-600 text-sm">{formError}</p>
+                </div>
+              </div>
+            )}
+            
             {renderStep()}
             
             <div className="flex gap-3 mt-8">
@@ -587,10 +616,20 @@ export function InviteForm({ invitation, bgBlobs, onSubmit, existingHomes = [] }
               )}
               <button
                 type="submit"
-                className={cn(STYLES.btn, STYLES.btnPrimary, "flex-1 py-3")}
+                disabled={isSubmitting}
+                className={cn(STYLES.btn, STYLES.btnPrimary, "flex-1 py-3", isSubmitting && "opacity-70 cursor-not-allowed")}
               >
-                {step === 4 ? 'Create Account' : 'Next'}
-                {step < 4 && <ChevronRight className="w-4 h-4 ml-1" />}
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    {step === 4 ? 'Creating Account...' : 'Please wait...'}
+                  </>
+                ) : (
+                  <>
+                    {step === 4 ? 'Create Account' : 'Next'}
+                    {step < 4 && <ChevronRight className="w-4 h-4 ml-1" />}
+                  </>
+                )}
               </button>
             </div>
           </form>

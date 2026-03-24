@@ -71,8 +71,13 @@ export default async function InvitePage(props: { params: Promise<{ token: strin
 
   async function handleSubmit(formData: FormData) {
     'use server'
+    console.log('[Invite] handleSubmit called for invitation:', invitation?.token)
+    
     const result = await acceptInvitation(invitation!.token, formData)
+    console.log('[Invite] acceptInvitation result:', result)
+    
     if (result.success) {
+      console.log('[Invite] Success, redirecting to:', result.redirectUrl)
       if (result.pendingEmailChange) {
         redirect('/invite/' + params.token + '?refresh=true')
       } else if (result.redirectUrl) {
@@ -81,6 +86,14 @@ export default async function InvitePage(props: { params: Promise<{ token: strin
         redirect('/login?registered=true')
       }
     }
+    
+    // Return error if server action failed
+    if (result.error) {
+      console.log('[Invite] Error from server action:', result.error)
+      return { error: result.error }
+    }
+    
+    return { error: 'An unexpected error occurred. Please try again.' }
   }
 
   // Fetch existing homes for HOME_ADMIN role
