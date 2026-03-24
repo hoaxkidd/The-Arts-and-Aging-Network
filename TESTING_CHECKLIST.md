@@ -27,7 +27,7 @@
 ### 1.3 Admin creates HOME_ADMIN invitation
 - [ ] Navigate to `/admin/invitations`
 - [ ] Create invitation: email = homeadmin@test.com, role = HOME_ADMIN
-- [ ] **Expected**: Invitation created successfully
+- [ ] **Expected**: Invitation created successfully.
 
 ### 1.4 Admin attempts duplicate invitation (existing user)
 - [ ] Try creating invitation for admin@test.com (existing user)
