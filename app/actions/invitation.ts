@@ -428,9 +428,9 @@ export async function acceptInvitation(token: string, formData: FormData) {
             volunteerReviewStatus,
           },
         })
-        await tx.invitation.update({
+        // Delete the invitation after successful user creation
+        await tx.invitation.delete({
           where: { id: invitation.id },
-          data: { status: userStatus === 'PENDING_APPROVAL' ? 'PENDING_APPROVAL' : 'ACCEPTED' },
         })
       })
       userId = invitationUserId
@@ -447,9 +447,9 @@ export async function acceptInvitation(token: string, formData: FormData) {
           roleData: Object.keys(roleData).length > 0 ? JSON.stringify(roleData) : undefined,
           volunteerReviewStatus,
         })
-        await tx.invitation.update({
+        // Delete the invitation after successful user creation
+        await tx.invitation.delete({
           where: { id: invitation.id },
-          data: { status: userStatus === 'PENDING_APPROVAL' ? 'PENDING_APPROVAL' : 'ACCEPTED' },
         })
         return user
       })
