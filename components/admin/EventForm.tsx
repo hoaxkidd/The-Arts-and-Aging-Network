@@ -84,8 +84,10 @@ export function EventForm({
     }
 
     // Send raw datetime string to backend - no timezone conversion
-    // Backend will handle storage as-is
+    // Add seconds (:00) to make it valid ISO-8601 for Prisma
     // The browser's local time is preserved in the string format
+    formData.set('startDateTime', startRaw + ':00')
+    formData.set('endDateTime', endRaw + ':00')
 
     submittingRef.current = true
     setIsSubmitting(true)
