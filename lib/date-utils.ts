@@ -293,3 +293,29 @@ export function toInputDateTime(date: DateInput): string {
   
   return `${year}-${month}-${day}T${hours}:${minutes}`
 }
+
+/**
+ * Parse datetime-local input string (YYYY-MM-DDTHH:MM) as local time
+ * Unlike new Date() which parses as UTC, this correctly interprets
+ * the datetime in the user's local timezone
+ */
+export function parseLocalDateTime(dateStr: string | null | undefined): Date | null {
+  if (!dateStr) return null
+  
+  const [date, time] = dateStr.split('T')
+  if (!date || !time) return null
+  
+  const [year, month, day] = date.split('-').map(Number)
+  const [hours, minutes] = time.split(':').map(Number)
+  
+  if (isNaN(year) || isNaN(month) || isNaN(day) || isNaN(hours) || isNaN(minutes)) {
+    return null
+  }
+  
+  // Create date in local timezone (month is 0-indexed)
+  const parsed = new Date(year, month - 1, day, hours, minutes)
+  
+  if (isNaN(parsed.getTime())) return null
+  
+  return parsed
+}

@@ -3,10 +3,11 @@
 import { prisma } from "@/lib/prisma"
 import { auth } from "@/auth"
 import { revalidatePath } from "next/cache"
+import { logger } from "@/lib/logger"
 import { z } from "zod"
+import { parseLocalDateTime } from "@/lib/date-utils"
 import { notifyAllStaffAboutEvent, notifyAllStaffAboutEventUpdate, notifyAllStaffAboutEventCancellation, notifyEventSignupsAboutNewEvent, notifyEventSignupsAboutEventUpdate } from "@/lib/notifications"
 import { scheduleEventReminders, cancelEventReminders } from "./email-reminders"
-import { logger } from "@/lib/logger"
 
 const VALID_EVENT_STATUSES = ['DRAFT', 'PUBLISHED', 'CANCELLED', 'COMPLETED'] as const
 
@@ -100,10 +101,11 @@ export async function createEvent(formData: FormData) {
   if (!validated.success) return { error: 'Invalid fields' }
 
   try {
-    const startDateTime = new Date(validated.data.startDateTime)
-    const endDateTime = new Date(validated.data.endDateTime)
+    // Parse datetime as local time (not UTC) to avoid timezone issues
+    const startDateTime = parseLocalDateTime(validated.data.startDateTime)
+    const endDateTime = parseLocalDateTime(validated.data.endDateTime)
 
-    if (Number.isNaN(startDateTime.getTime()) || Number.isNaN(endDateTime.getTime())) {
+    if (!startDateTime || !endDateTime) {
       return { error: 'Invalid start or end date/time' }
     }
 
