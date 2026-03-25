@@ -69,23 +69,12 @@ export function EventForm({
       return
     }
 
-    // Parse datetime-local input (YYYY-MM-DDTHH:MM) as local time and convert to UTC
-    // This ensures the exact time entered by user is preserved
-    function parseLocalToUTC(dateStr: string): Date {
-      const [date, time] = dateStr.split('T')
-      const [year, month, day] = date.split('-').map(Number)
-      const [hours, minutes] = time.split(':').map(Number)
-      // Create as local time, then convert to UTC
-      const localDate = new Date(year, month - 1, day, hours, minutes)
-      // Add timezone offset to convert local to UTC
-      return new Date(localDate.getTime() + localDate.getTimezoneOffset() * 60000)
-    }
-
-    const start = parseLocalToUTC(startRaw)
-    const end = parseLocalToUTC(endRaw)
+    // Validate dates - parse as local time using the browser
+    const start = new Date(startRaw)
+    const end = new Date(endRaw)
 
     if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
-      setTimeError('Please enter valid start and end date/time')
+      setTimeError('Please enter valid start or end date/time')
       return
     }
 
@@ -94,9 +83,9 @@ export function EventForm({
       return
     }
 
-    // Update formData with UTC dates
-    formData.set('startDateTime', start.toISOString())
-    formData.set('endDateTime', end.toISOString())
+    // Send raw datetime string to backend - no timezone conversion
+    // Backend will handle storage as-is
+    // The browser's local time is preserved in the string format
 
     submittingRef.current = true
     setIsSubmitting(true)
