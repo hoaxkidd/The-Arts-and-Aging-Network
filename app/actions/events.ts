@@ -101,23 +101,20 @@ export async function createEvent(formData: FormData) {
   if (!validated.success) return { error: 'Invalid fields' }
 
   try {
-    // Pass datetime strings directly to Prisma - no server-side conversion
-    // The form sends YYYY-MM-DDTHH:MM format which Prisma handles
-    // Any timezone conversion should happen on the frontend only
-    const startDateTime = validated.data.startDateTime
-    const endDateTime = validated.data.endDateTime
+    // Convert datetime string to proper ISO-8601 format for Prisma
+    // Prisma requires full ISO-8601 format: YYYY-MM-DDTHH:MM:SS.sssZ
+    const startDateTime = new Date(validated.data.startDateTime).toISOString()
+    const endDateTime = new Date(validated.data.endDateTime).toISOString()
 
-    if (!startDateTime || !endDateTime) {
+    if (!startDateTime || !endDateTime || startDateTime === 'Invalid Date' || endDateTime === 'Invalid Date') {
       return { error: 'Invalid start or end date/time' }
     }
 
-    // Simple validation - check if string is valid format
-    if (startDateTime.length < 16 || endDateTime.length < 16) {
-      return { error: 'Invalid date/time format' }
-    }
+    // Parse for comparison (use Date objects for validation)
+    const start = new Date(validated.data.startDateTime)
+    const end = new Date(validated.data.endDateTime)
 
-    // Compare as strings for basic validation (format: YYYY-MM-DDTHH:MM)
-    if (endDateTime <= startDateTime) {
+    if (end <= start) {
       return { error: 'End time must be after start time' }
     }
 
