@@ -5,7 +5,7 @@ import { auth } from "@/auth"
 import { revalidatePath } from "next/cache"
 import { logger } from "@/lib/logger"
 import { z } from "zod"
-import { parseLocalDateTime } from "@/lib/date-utils"
+
 import { notifyAllStaffAboutEvent, notifyAllStaffAboutEventUpdate, notifyAllStaffAboutEventCancellation, notifyEventSignupsAboutNewEvent, notifyEventSignupsAboutEventUpdate } from "@/lib/notifications"
 import { scheduleEventReminders, cancelEventReminders } from "./email-reminders"
 
@@ -101,11 +101,12 @@ export async function createEvent(formData: FormData) {
   if (!validated.success) return { error: 'Invalid fields' }
 
   try {
-    // Parse datetime as local time (not UTC) to avoid timezone issues
-    const startDateTime = parseLocalDateTime(validated.data.startDateTime)
-    const endDateTime = parseLocalDateTime(validated.data.endDateTime)
+    // Parse the datetime string - Prisma will handle UTC conversion
+    // The form sends YYYY-MM-DDTHH:MM in user's local time
+    const startDateTime = new Date(validated.data.startDateTime)
+    const endDateTime = new Date(validated.data.endDateTime)
 
-    if (!startDateTime || !endDateTime) {
+    if (isNaN(startDateTime.getTime()) || isNaN(endDateTime.getTime())) {
       return { error: 'Invalid start or end date/time' }
     }
 

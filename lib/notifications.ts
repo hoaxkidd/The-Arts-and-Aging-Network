@@ -124,53 +124,42 @@ export async function notifyAllStaffAboutEvent(event: {
     logger.log(`User ${staff.email}: inApp=${prefs.inApp}, email=${prefs.email}, sms=${prefs.sms}, phone=${staff.phone}`)
   }
 
-  const formattedDate = event.startDateTime.toLocaleDateString(undefined, {
-    weekday: 'short',
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric'
-  })
+  // Use UTC timezone for consistent email display
+  const formattedDate = event.startDateTime.toLocaleDateString('en-US', { timeZone: 'UTC', weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })
+  const formattedTime = event.startDateTime.toLocaleTimeString('en-US', { timeZone: 'UTC', hour: 'numeric', minute: '2-digit' })
+  const eventDateISO = event.startDateTime.toISOString().split('T')[0]
+  const eventTimeISO = event.startDateTime.toISOString().slice(11, 16)
+  const appUrl = process.env.NEXTAUTH_URL || 'https://artsandaging.com'
+  const appUrlDisplay = appUrl.replace(/^https?:\/\//, '')
+  const eventLink = `${appUrl}/events/${event.id}`
 
   const title = 'New Event Available'
   const message = `"${event.title}" has been scheduled for ${formattedDate} at ${event.location.name}. RSVP now!`
-  const link = `/events/${event.id}`
 
   // Batch process notifications based on preferences
   const inAppNotifications = []
-  
   for (const staff of staffMembers) {
     const prefs = parsePreferences(staff.notificationPreferences)
-
     if (prefs.inApp) {
       inAppNotifications.push({
         userId: staff.id,
         type: 'EVENT_CREATED' as NotificationType,
         title,
         message,
-        link,
+        link: eventLink,
         read: false,
-        emailSent: prefs.email, // Tracking flag
       })
     }
   }
 
   if (inAppNotifications.length > 0) {
-    await prisma.notification.createMany({
-      data: inAppNotifications
-    })
+    await prisma.notification.createMany({ data: inAppNotifications })
     logger.log(`Created ${inAppNotifications.length} in-app notifications`)
   }
 
   // Send emails/SMS (non-blocking)
   // We use Promise.allSettled to ensure one failure doesn't stop others
   const notificationPromises = []
-
-  const appUrl = process.env.NEXTAUTH_URL || 'https://artsandaging.com'
-  const eventLink = `${appUrl}/events/${event.id}`
-  const formattedTime = event.startDateTime.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })
-  const eventDateISO = event.startDateTime.toISOString().split('T')[0]
-  const eventTimeISO = event.startDateTime.toTimeString().slice(0, 5)
-  const appUrlDisplay = appUrl.replace(/^https?:\/\//, '')
 
   for (const staff of staffMembers) {
     const prefs = parsePreferences(staff.notificationPreferences)
@@ -227,13 +216,17 @@ export async function notifyAllStaffAboutEventUpdate(event: {
 
   logger.log(`Found ${staffMembers.length} staff to notify about event update`)
 
-  const formattedDate = event.startDateTime.toLocaleDateString(undefined, {
-    weekday: 'short', month: 'short', day: 'numeric', year: 'numeric'
-  })
+  // Use UTC timezone for consistent email display
+  const formattedDate = event.startDateTime.toLocaleDateString('en-US', { timeZone: 'UTC', weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })
+  const formattedTime = event.startDateTime.toLocaleTimeString('en-US', { timeZone: 'UTC', hour: 'numeric', minute: '2-digit' })
+  const eventDateISO = event.startDateTime.toISOString().split('T')[0]
+  const eventTimeISO = event.startDateTime.toISOString().slice(11, 16)
+  const appUrl = process.env.NEXTAUTH_URL || 'https://artsandaging.com'
+  const appUrlDisplay = appUrl.replace(/^https?:\/\//, '')
+  const eventLink = `${appUrl}/events/${event.id}`
   
   const title = 'Event Updated'
   const message = `"${event.title}" on ${formattedDate} - Event details have been updated.`
-  const link = `/events/${event.id}`
 
   // Format changes for email (li already provides bullet, no need for •)
   const changesHtml = event.changes.length > 0 
@@ -249,7 +242,7 @@ export async function notifyAllStaffAboutEventUpdate(event: {
         type: 'EVENT_UPDATED' as NotificationType,
         title,
         message,
-        link,
+        link: eventLink,
         read: false,
       })
     }
@@ -260,13 +253,6 @@ export async function notifyAllStaffAboutEventUpdate(event: {
   }
 
   const notificationPromises = []
-
-  const appUrl = process.env.NEXTAUTH_URL || 'https://artsandaging.com'
-  const eventLink = `${appUrl}/events/${event.id}`
-  const formattedTime = event.startDateTime.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })
-  const eventDateISO = event.startDateTime.toISOString().split('T')[0]
-  const eventTimeISO = event.startDateTime.toTimeString().slice(0, 5)
-  const appUrlDisplay = appUrl.replace(/^https?:\/\//, '')
 
   for (const staff of staffMembers) {
     const prefs = parsePreferences(staff.notificationPreferences)
@@ -337,14 +323,17 @@ export async function notifyEventSignupsAboutNewEvent(event: {
 
   logger.log(`Found ${usersToNotify.length} users to notify about new event`)
 
-  // Build notification content
-  const formattedDate = event.startDateTime.toLocaleDateString(undefined, {
-    weekday: 'short', month: 'short', day: 'numeric', year: 'numeric'
-  })
+  // Use UTC timezone for consistent email display
+  const formattedDate = event.startDateTime.toLocaleDateString('en-US', { timeZone: 'UTC', weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })
+  const formattedTime = event.startDateTime.toLocaleTimeString('en-US', { timeZone: 'UTC', hour: 'numeric', minute: '2-digit' })
+  const eventDateISO = event.startDateTime.toISOString().split('T')[0]
+  const eventTimeISO = event.startDateTime.toISOString().slice(11, 16)
+  const appUrl = process.env.NEXTAUTH_URL || 'https://artsandaging.com'
+  const appUrlDisplay = appUrl.replace(/^https?:\/\//, '')
+  const eventLink = `${appUrl}/volunteers/events/${event.id}`
   
   const title = 'New Event Available'
   const message = `"${event.title}" has been scheduled for ${formattedDate} at ${event.location.name}. RSVP now!`
-  const link = `/events/${event.id}`
 
   // Create in-app notifications
   const notifications = []
@@ -356,7 +345,7 @@ export async function notifyEventSignupsAboutNewEvent(event: {
         type: 'EVENT_CREATED' as NotificationType,
         title,
         message,
-        link,
+        link: eventLink,
         read: false,
       })
     }
@@ -368,12 +357,6 @@ export async function notifyEventSignupsAboutNewEvent(event: {
 
   // Send emails
   const emailPromises = []
-  const appUrl = process.env.NEXTAUTH_URL || 'https://artsandaging.com'
-  const eventLink = `${appUrl}/volunteers/events/${event.id}`
-  const formattedTime = event.startDateTime.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })
-  const eventDateISO = event.startDateTime.toISOString().split('T')[0]
-  const eventTimeISO = event.startDateTime.toTimeString().slice(0, 5)
-  const appUrlDisplay = appUrl.replace(/^https?:\/\//, '')
 
   for (const user of usersToNotify) {
     const prefs = parsePreferences(user.notificationPreferences)
@@ -444,14 +427,17 @@ export async function notifyEventSignupsAboutEventUpdate(event: {
 
   logger.log(`Found ${usersToNotify.length} users to notify about event update`)
 
-  // Build notification content
-  const formattedDate = event.startDateTime.toLocaleDateString(undefined, {
-    weekday: 'short', month: 'short', day: 'numeric', year: 'numeric'
-  })
+  // Use UTC timezone for consistent email display
+  const formattedDate = event.startDateTime.toLocaleDateString('en-US', { timeZone: 'UTC', weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })
+  const formattedTime = event.startDateTime.toLocaleTimeString('en-US', { timeZone: 'UTC', hour: 'numeric', minute: '2-digit' })
+  const eventDateISO = event.startDateTime.toISOString().split('T')[0]
+  const eventTimeISO = event.startDateTime.toISOString().slice(11, 16)
+  const appUrl = process.env.NEXTAUTH_URL || 'https://artsandaging.com'
+  const appUrlDisplay = appUrl.replace(/^https?:\/\//, '')
+  const eventLink = `${appUrl}/volunteers/events/${event.id}`
   
   const title = 'Event Updated'
   const message = `"${event.title}" on ${formattedDate} has been updated.`
-  const link = `/events/${event.id}`
 
   // Format changes for email (li already provides bullet, no need for •)
   const changesHtml = event.changes.length > 0 
@@ -468,7 +454,7 @@ export async function notifyEventSignupsAboutEventUpdate(event: {
         type: 'EVENT_UPDATED' as NotificationType,
         title,
         message,
-        link,
+        link: eventLink,
         read: false,
       })
     }
@@ -480,12 +466,6 @@ export async function notifyEventSignupsAboutEventUpdate(event: {
 
   // Send emails
   const emailPromises = []
-  const appUrl = process.env.NEXTAUTH_URL || 'https://artsandaging.com'
-  const eventLink = `${appUrl}/volunteers/events/${event.id}`
-  const formattedTime = event.startDateTime.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })
-  const eventDateISO = event.startDateTime.toISOString().split('T')[0]
-  const eventTimeISO = event.startDateTime.toTimeString().slice(0, 5)
-  const appUrlDisplay = appUrl.replace(/^https?:\/\//, '')
 
   for (const user of usersToNotify) {
     const prefs = parsePreferences(user.notificationPreferences)
