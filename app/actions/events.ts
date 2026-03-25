@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma"
 import { auth } from "@/auth"
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
-import { notifyAllStaffAboutEvent, notifyAllStaffAboutEventUpdate, notifyAllStaffAboutEventCancellation } from "@/lib/notifications"
+import { notifyAllStaffAboutEvent, notifyAllStaffAboutEventUpdate, notifyAllStaffAboutEventCancellation, notifyEventSignupsAboutNewEvent } from "@/lib/notifications"
 import { scheduleEventReminders, cancelEventReminders } from "./email-reminders"
 import { logger } from "@/lib/logger"
 
@@ -236,6 +236,18 @@ export async function createEvent(formData: FormData) {
         } catch (notifyError) {
             logger.email('Failed to send notifications', notifyError)
             // Don't fail the event creation if notifications fail
+        }
+
+        // Notify volunteers who have signed up for events
+        try {
+            await notifyEventSignupsAboutNewEvent({
+                id: event.id,
+                title: event.title,
+                startDateTime: event.startDateTime,
+                location: event.location
+            })
+        } catch (notifyError) {
+            logger.email('Failed to notify event signups', notifyError)
         }
 
         // Schedule email reminders for the new event

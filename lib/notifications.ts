@@ -189,6 +189,96 @@ export async function notifyAllStaffAboutEvent(event: {
   return { notifiedCount: staffMembers.length }
 }
 
+// Notify volunteers who have signed up for past events about new events
+export async function notifyEventSignupsAboutNewEvent(event: {
+  id: string
+  title: string
+  startDateTime: Date
+  location: { name: string }
+}) {
+  // Get approved volunteers
+  const volunteers = await prisma.user.findMany({
+    where: {
+      role: 'VOLUNTEER',
+      volunteerReviewStatus: 'APPROVED',
+    },
+    select: { id: true, email: true, name: true, phone: true, notificationPreferences: true }
+  })
+
+  // Also get users who have attended any event
+  const attendeeUserIds = await prisma.eventAttendance.findMany({
+    where: { status: 'YES' },
+    select: { userId: true },
+    distinct: ['userId']
+  })
+  
+  const attendeeIds = attendeeUserIds.map(a => a.userId)
+  
+  // Combine: volunteers who are approved OR have attended events
+  const allUserIds = [...new Set([...volunteers.map(u => u.id), ...attendeeIds])]
+  
+  if (allUserIds.length === 0) {
+    logger.log('No event signups to notify')
+    return { notifiedCount: 0 }
+  }
+
+  const usersToNotify = await prisma.user.findMany({
+    where: { id: { in: allUserIds } },
+    select: { id: true, email: true, name: true, notificationPreferences: true }
+  })
+
+  logger.log(`Found ${usersToNotify.length} users to notify about new event`)
+
+  // Build notification content
+  const formattedDate = event.startDateTime.toLocaleDateString(undefined, {
+    weekday: 'short', month: 'short', day: 'numeric', year: 'numeric'
+  })
+  
+  const title = 'New Event Available'
+  const message = `"${event.title}" has been scheduled for ${formattedDate} at ${event.location.name}. RSVP now!`
+  const link = `/events/${event.id}`
+
+  // Create in-app notifications
+  const notifications = []
+  for (const user of usersToNotify) {
+    const prefs = parsePreferences(user.notificationPreferences)
+    if (prefs.inApp) {
+      notifications.push({
+        userId: user.id,
+        type: 'EVENT_CREATED' as NotificationType,
+        title,
+        message,
+        link,
+        read: false,
+      })
+    }
+  }
+
+  if (notifications.length > 0) {
+    await prisma.notification.createMany({ data: notifications })
+  }
+
+  // Send emails
+  const emailPromises = []
+  for (const user of usersToNotify) {
+    const prefs = parsePreferences(user.notificationPreferences)
+    if (prefs.email && user.email) {
+      emailPromises.push(
+        sendEventNotificationEmail({
+          to: user.email,
+          name: user.name || 'Volunteer',
+          subject: title,
+          content: message,
+          link
+        }).catch(e => logger.error(`Failed to email ${user.email}`, e))
+      )
+    }
+  }
+
+  await Promise.allSettled(emailPromises)
+  return { notifiedCount: usersToNotify.length }
+}
+
 // Notify all staff members about an event UPDATE
 export async function notifyAllStaffAboutEventUpdate(event: {
     id: string
