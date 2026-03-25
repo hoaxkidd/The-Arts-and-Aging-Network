@@ -168,6 +168,9 @@ export async function notifyAllStaffAboutEvent(event: {
   const appUrl = process.env.NEXTAUTH_URL || 'https://artsandaging.com'
   const eventLink = `${appUrl}/events/${event.id}`
   const formattedTime = event.startDateTime.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })
+  const eventDateISO = event.startDateTime.toISOString().split('T')[0]
+  const eventTimeISO = event.startDateTime.toTimeString().slice(0, 5)
+  const appUrlDisplay = appUrl.replace(/^https?:\/\//, '')
 
   for (const staff of staffMembers) {
     const prefs = parsePreferences(staff.notificationPreferences)
@@ -181,10 +184,13 @@ export async function notifyAllStaffAboutEvent(event: {
             name: staff.name || 'Staff Member',
             eventTitle: event.title,
             eventDate: formattedDate,
+            eventDateISO: eventDateISO,
             eventTime: formattedTime,
+            eventTimeISO: eventTimeISO,
             eventLocation: event.location.name,
             eventLink: eventLink,
             googleMapsUrl: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.location.name)}`,
+            appUrlDisplay: appUrlDisplay,
           }
         }).catch(e => logger.error(`Failed to email ${staff.email}`, e))
       )
@@ -229,9 +235,9 @@ export async function notifyAllStaffAboutEventUpdate(event: {
   const message = `"${event.title}" on ${formattedDate} - Event details have been updated.`
   const link = `/events/${event.id}`
 
-  // Format changes for email
+  // Format changes for email (li already provides bullet, no need for •)
   const changesHtml = event.changes.length > 0 
-    ? event.changes.map(c => `<li style="margin-bottom: 4px;">• ${c}</li>`).join('')
+    ? event.changes.map(c => `<li style="margin-bottom: 4px;">${c}</li>`).join('')
     : '<li>General update</li>'
 
   const inAppNotifications = []
@@ -258,6 +264,9 @@ export async function notifyAllStaffAboutEventUpdate(event: {
   const appUrl = process.env.NEXTAUTH_URL || 'https://artsandaging.com'
   const eventLink = `${appUrl}/events/${event.id}`
   const formattedTime = event.startDateTime.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })
+  const eventDateISO = event.startDateTime.toISOString().split('T')[0]
+  const eventTimeISO = event.startDateTime.toTimeString().slice(0, 5)
+  const appUrlDisplay = appUrl.replace(/^https?:\/\//, '')
 
   for (const staff of staffMembers) {
     const prefs = parsePreferences(staff.notificationPreferences)
@@ -270,11 +279,14 @@ export async function notifyAllStaffAboutEventUpdate(event: {
             name: staff.name || 'Staff Member',
             eventTitle: event.title,
             eventDate: formattedDate,
+            eventDateISO: eventDateISO,
             eventTime: formattedTime,
+            eventTimeISO: eventTimeISO,
             eventLocation: event.location || '',
             eventLink: eventLink,
             googleMapsUrl: event.location ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.location)}` : '',
             eventChanges: changesHtml,
+            appUrlDisplay: appUrlDisplay,
           }
         }).catch(e => logger.error(`Failed to email ${staff.email}`, e))
       )
@@ -359,6 +371,9 @@ export async function notifyEventSignupsAboutNewEvent(event: {
   const appUrl = process.env.NEXTAUTH_URL || 'https://artsandaging.com'
   const eventLink = `${appUrl}/volunteers/events/${event.id}`
   const formattedTime = event.startDateTime.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })
+  const eventDateISO = event.startDateTime.toISOString().split('T')[0]
+  const eventTimeISO = event.startDateTime.toTimeString().slice(0, 5)
+  const appUrlDisplay = appUrl.replace(/^https?:\/\//, '')
 
   for (const user of usersToNotify) {
     const prefs = parsePreferences(user.notificationPreferences)
@@ -371,10 +386,13 @@ export async function notifyEventSignupsAboutNewEvent(event: {
             name: user.name || 'Volunteer',
             eventTitle: event.title,
             eventDate: formattedDate,
+            eventDateISO: eventDateISO,
             eventTime: formattedTime,
+            eventTimeISO: eventTimeISO,
             eventLocation: event.location.name,
             eventLink: eventLink,
             googleMapsUrl: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.location.name)}`,
+            appUrlDisplay: appUrlDisplay,
           }
         }).catch(e => logger.error(`Failed to email ${user.email}`, e))
       )
@@ -435,9 +453,9 @@ export async function notifyEventSignupsAboutEventUpdate(event: {
   const message = `"${event.title}" on ${formattedDate} has been updated.`
   const link = `/events/${event.id}`
 
-  // Format changes for email
+  // Format changes for email (li already provides bullet, no need for •)
   const changesHtml = event.changes.length > 0 
-    ? event.changes.map(c => `<li style="margin-bottom: 4px;">• ${c}</li>`).join('')
+    ? event.changes.map(c => `<li style="margin-bottom: 4px;">${c}</li>`).join('')
     : '<li>General update</li>'
 
   // Create in-app notifications
@@ -465,6 +483,9 @@ export async function notifyEventSignupsAboutEventUpdate(event: {
   const appUrl = process.env.NEXTAUTH_URL || 'https://artsandaging.com'
   const eventLink = `${appUrl}/volunteers/events/${event.id}`
   const formattedTime = event.startDateTime.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })
+  const eventDateISO = event.startDateTime.toISOString().split('T')[0]
+  const eventTimeISO = event.startDateTime.toTimeString().slice(0, 5)
+  const appUrlDisplay = appUrl.replace(/^https?:\/\//, '')
 
   for (const user of usersToNotify) {
     const prefs = parsePreferences(user.notificationPreferences)
@@ -477,11 +498,14 @@ export async function notifyEventSignupsAboutEventUpdate(event: {
             name: user.name || 'Volunteer',
             eventTitle: event.title,
             eventDate: formattedDate,
+            eventDateISO: eventDateISO,
             eventTime: formattedTime,
+            eventTimeISO: eventTimeISO,
             eventLocation: event.location || '',
             eventLink: eventLink,
             googleMapsUrl: event.location ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.location)}` : '',
             eventChanges: changesHtml,
+            appUrlDisplay: appUrlDisplay,
           }
         }).catch(e => logger.error(`Failed to email ${user.email}`, e))
       )

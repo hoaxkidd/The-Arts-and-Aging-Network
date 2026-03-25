@@ -133,6 +133,7 @@ export async function sendEmail(params: EmailSendParams): Promise<SendEmailResul
   const fullVariables = {
     appUrl: APP_URL,
     supportEmail: SUPPORT_EMAIL,
+    appUrlDisplay: APP_URL.replace(/^https?:\/\//, ''),
     ...variables
   }
 

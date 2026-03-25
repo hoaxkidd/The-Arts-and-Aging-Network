@@ -180,12 +180,18 @@ export async function createEvent(formData: FormData) {
             if (oldEvent.description !== updatedEvent.description) {
                 changes.push(`Description updated`)
             }
-            if (oldEvent.startDateTime?.getTime() !== updatedEvent.startDateTime?.getTime()) {
+            // Round to minute precision to avoid false positives from millisecond differences
+            const oldStartTime = oldEvent.startDateTime ? Math.round(oldEvent.startDateTime.getTime() / 60000) * 60000 : null
+            const newStartTime = updatedEvent.startDateTime ? Math.round(updatedEvent.startDateTime.getTime() / 60000) * 60000 : null
+            if (oldStartTime !== newStartTime) {
                 const oldDate = oldEvent.startDateTime.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })
                 const newDate = updatedEvent.startDateTime.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })
                 changes.push(`Date: ${oldDate} → ${newDate}`)
             }
-            if (oldEvent.endDateTime?.getTime() !== updatedEvent.endDateTime?.getTime()) {
+            // Round end time to minute precision as well
+            const oldEndTime = oldEvent.endDateTime ? Math.round(oldEvent.endDateTime.getTime() / 60000) * 60000 : null
+            const newEndTime = updatedEvent.endDateTime ? Math.round(updatedEvent.endDateTime.getTime() / 60000) * 60000 : null
+            if (oldEndTime !== newEndTime) {
                 changes.push(`End time updated`)
             }
             if (oldEvent.locationId !== updatedEvent.locationId) {
