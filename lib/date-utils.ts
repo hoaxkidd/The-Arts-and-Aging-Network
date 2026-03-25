@@ -296,8 +296,14 @@ export function toInputDateTime(date: DateInput): string {
 
 /**
  * Parse datetime-local input string (YYYY-MM-DDTHH:MM) as local time
- * Unlike new Date() which parses as UTC, this correctly interprets
- * the datetime in the user's local timezone
+ * and convert to UTC for storage in database.
+ * 
+ * The datetime-local input is in user's local time. We need to:
+ * 1. Parse it as local time
+ * 2. Convert to UTC for storage
+ * 
+ * This ensures the stored UTC time represents the same moment
+ * when displayed in any timezone.
  */
 export function parseLocalDateTime(dateStr: string | null | undefined): Date | null {
   if (!dateStr) return null
@@ -313,9 +319,18 @@ export function parseLocalDateTime(dateStr: string | null | undefined): Date | n
   }
   
   // Create date in local timezone (month is 0-indexed)
-  const parsed = new Date(year, month - 1, day, hours, minutes)
+  // This represents the user's local time
+  const localDate = new Date(year, month - 1, day, hours, minutes)
   
-  if (isNaN(parsed.getTime())) return null
+  if (isNaN(localDate.getTime())) return null
   
-  return parsed
+  // Get the timezone offset (difference between local and UTC in minutes)
+  const timezoneOffset = localDate.getTimezoneOffset()
+  
+  // Adjust: subtract offset to convert local time to UTC
+  // For EST (UTC-5), offset is +300 minutes, so we subtract 300
+  // to get the equivalent UTC time
+  const utcDate = new Date(localDate.getTime() - (timezoneOffset * 60000))
+  
+  return utcDate
 }
