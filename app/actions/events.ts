@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma"
 import { auth } from "@/auth"
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
-import { notifyAllStaffAboutEvent, notifyAllStaffAboutEventUpdate, notifyAllStaffAboutEventCancellation, notifyEventSignupsAboutNewEvent } from "@/lib/notifications"
+import { notifyAllStaffAboutEvent, notifyAllStaffAboutEventUpdate, notifyAllStaffAboutEventCancellation, notifyEventSignupsAboutNewEvent, notifyEventSignupsAboutEventUpdate } from "@/lib/notifications"
 import { scheduleEventReminders, cancelEventReminders } from "./email-reminders"
 import { logger } from "@/lib/logger"
 
@@ -182,6 +182,18 @@ export async function createEvent(formData: FormData) {
             })
         } catch (e) {
             logger.email('Failed to send update notification', e)
+        }
+
+        // Notify volunteers about event update
+        try {
+            await notifyEventSignupsAboutEventUpdate({
+                id: updatedEvent.id,
+                title: updatedEvent.title,
+                startDateTime: updatedEvent.startDateTime,
+                changes: 'Event details have been updated.'
+            })
+        } catch (e) {
+            logger.email('Failed to notify volunteers about update', e)
         }
 
         await notifyAdminsAboutNearbyEvents({

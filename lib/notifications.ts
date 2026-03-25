@@ -189,6 +189,67 @@ export async function notifyAllStaffAboutEvent(event: {
   return { notifiedCount: staffMembers.length }
 }
 
+// Notify staff members (ADMIN/PAYROLL) about event updates
+export async function notifyAllStaffAboutEventUpdate(event: {
+  id: string
+  title: string
+  startDateTime: Date
+  changes: string
+}) {
+  const staffMembers = await prisma.user.findMany({
+    where: { role: { in: ['PAYROLL', 'ADMIN'] } },
+    select: { id: true, email: true, name: true, phone: true, notificationPreferences: true }
+  })
+
+  logger.log(`Found ${staffMembers.length} staff to notify about event update`)
+
+  const formattedDate = event.startDateTime.toLocaleDateString(undefined, {
+    weekday: 'short', month: 'short', day: 'numeric', year: 'numeric'
+  })
+  
+  const title = 'Event Updated'
+  const message = `"${event.title}" on ${formattedDate} - ${event.changes}`
+  const link = `/events/${event.id}`
+
+  const inAppNotifications = []
+  for (const staff of staffMembers) {
+    const prefs = parsePreferences(staff.notificationPreferences)
+    if (prefs.inApp) {
+      inAppNotifications.push({
+        userId: staff.id,
+        type: 'EVENT_UPDATED' as NotificationType,
+        title,
+        message,
+        link,
+        read: false,
+      })
+    }
+  }
+
+  if (inAppNotifications.length > 0) {
+    await prisma.notification.createMany({ data: inAppNotifications })
+  }
+
+  const notificationPromises = []
+  for (const staff of staffMembers) {
+    const prefs = parsePreferences(staff.notificationPreferences)
+    if (prefs.email && staff.email) {
+      notificationPromises.push(
+        sendEventNotificationEmail({
+          to: staff.email,
+          name: staff.name || 'Staff Member',
+          subject: title,
+          content: message,
+          link
+        }).catch(e => logger.error(`Failed to email ${staff.email}`, e))
+      )
+    }
+  }
+
+  await Promise.allSettled(notificationPromises)
+  return { notifiedCount: staffMembers.length }
+}
+
 // Notify volunteers who have signed up for past events about new events
 export async function notifyEventSignupsAboutNewEvent(event: {
   id: string
@@ -279,77 +340,94 @@ export async function notifyEventSignupsAboutNewEvent(event: {
   return { notifiedCount: usersToNotify.length }
 }
 
-// Notify all staff members about an event UPDATE
-export async function notifyAllStaffAboutEventUpdate(event: {
-    id: string
-    title: string
-    startDateTime: Date
-    changes: string
-  }) {
-  
+// Notify volunteers about event updates
+export async function notifyEventSignupsAboutEventUpdate(event: {
+  id: string
+  title: string
+  startDateTime: Date
+  changes: string
+}) {
+  // Get approved volunteers
+  const volunteers = await prisma.user.findMany({
+    where: {
+      role: 'VOLUNTEER',
+      volunteerReviewStatus: 'APPROVED',
+    },
+    select: { id: true, email: true, name: true, phone: true, notificationPreferences: true }
+  })
 
-    const staffMembers = await prisma.user.findMany({
-      where: { role: { in: ['PAYROLL', 'ADMIN'] } },
-      select: { id: true, email: true, name: true, phone: true, notificationPreferences: true }
-    })
+  // Also get users who have attended any event
+  const attendeeUserIds = await prisma.eventAttendance.findMany({
+    where: { status: 'YES' },
+    select: { userId: true },
+    distinct: ['userId']
+  })
+  
+  const attendeeIds = attendeeUserIds.map(a => a.userId)
+  
+  // Combine: volunteers who are approved OR have attended events
+  const allUserIds = [...new Set([...volunteers.map(u => u.id), ...attendeeIds])]
+  
+  if (allUserIds.length === 0) {
+    logger.log('No event signups to notify about update')
+    return { notifiedCount: 0 }
+  }
 
-    logger.log(`Found ${staffMembers.length} users to notify`)
+  const usersToNotify = await prisma.user.findMany({
+    where: { id: { in: allUserIds } },
+    select: { id: true, email: true, name: true, notificationPreferences: true }
+  })
+
+  logger.log(`Found ${usersToNotify.length} users to notify about event update`)
+
+  // Build notification content
+  const formattedDate = event.startDateTime.toLocaleDateString(undefined, {
+    weekday: 'short', month: 'short', day: 'numeric', year: 'numeric'
+  })
   
-    const title = 'Event Updated'
-    const message = `Updates for "${event.title}": ${event.changes}`
-    const link = `/events/${event.id}`
-  
-    const inAppNotifications = []
-  
-    for (const staff of staffMembers) {
-      const prefs = parsePreferences(staff.notificationPreferences)
-  
-      if (prefs.inApp) {
-        inAppNotifications.push({
-          userId: staff.id,
-          type: 'EVENT_UPDATED' as NotificationType,
-          title,
-          message,
-          link,
-          read: false,
-        })
-      }
+  const title = 'Event Updated'
+  const message = `"${event.title}" on ${formattedDate} has been updated. ${event.changes}`
+  const link = `/events/${event.id}`
+
+  // Create in-app notifications
+  const notifications = []
+  for (const user of usersToNotify) {
+    const prefs = parsePreferences(user.notificationPreferences)
+    if (prefs.inApp) {
+      notifications.push({
+        userId: user.id,
+        type: 'EVENT_UPDATED' as NotificationType,
+        title,
+        message,
+        link,
+        read: false,
+      })
     }
-  
-    if (inAppNotifications.length > 0) {
-      await prisma.notification.createMany({ data: inAppNotifications })
-      logger.log(`Created ${inAppNotifications.length} in-app notifications`)
+  }
+
+  if (notifications.length > 0) {
+    await prisma.notification.createMany({ data: notifications })
+  }
+
+  // Send emails
+  const emailPromises = []
+  for (const user of usersToNotify) {
+    const prefs = parsePreferences(user.notificationPreferences)
+    if (prefs.email && user.email) {
+      emailPromises.push(
+        sendEventNotificationEmail({
+          to: user.email,
+          name: user.name || 'Volunteer',
+          subject: title,
+          content: message,
+          link
+        }).catch(e => logger.error(`Failed to email ${user.email}`, e))
+      )
     }
+  }
 
-    // Send emails/SMS (non-blocking)
-    const notificationPromises = []
-
-    for (const staff of staffMembers) {
-      const prefs = parsePreferences(staff.notificationPreferences)
-      
-      if (prefs.email && staff.email) {
-        notificationPromises.push(
-            sendEventNotificationEmail({
-            to: staff.email,
-            name: staff.name || 'Staff Member',
-            subject: title,
-            content: message,
-            link
-            }).catch(e => logger.error(`Failed to email ${staff.email}`, e))
-        )
-      }
-
-      if (prefs.sms && staff.phone) {
-        notificationPromises.push(
-            sendSMS({
-            to: staff.phone,
-            message: `${title}: ${message}`
-            }).catch(e => logger.error(`Failed to sms ${staff.phone}`, e))
-        )
-      }
-    }
-
-    await Promise.allSettled(notificationPromises)
+  await Promise.allSettled(emailPromises)
+  return { notifiedCount: usersToNotify.length }
 }
 
 // Notify all staff members about an event CANCELLATION
