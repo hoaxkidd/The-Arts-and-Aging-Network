@@ -84,10 +84,17 @@ export function EventForm({
     }
 
     // Send raw datetime string to backend - no timezone conversion
-    // Add seconds (:00) to make it valid ISO-8601 for Prisma
-    // The browser's local time is preserved in the string format
-    formData.set('startDateTime', startRaw + ':00')
-    formData.set('endDateTime', endRaw + ':00')
+    // Add seconds (:00) to make it valid ISO-8601 for Prisma, but only if not already present
+    function ensureSeconds(dateStr: string): string {
+      const timePart = dateStr.split('T')[1]
+      if (!timePart) return dateStr
+      const parts = timePart.split(':')
+      if (parts.length >= 3) return dateStr  // Already has seconds
+      return dateStr + ':00'
+    }
+
+    formData.set('startDateTime', ensureSeconds(startRaw))
+    formData.set('endDateTime', ensureSeconds(endRaw))
 
     submittingRef.current = true
     setIsSubmitting(true)
