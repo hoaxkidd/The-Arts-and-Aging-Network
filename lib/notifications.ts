@@ -201,7 +201,8 @@ export async function notifyAllStaffAboutEventUpdate(event: {
   id: string
   title: string
   startDateTime: Date
-  changes: string
+  location?: string
+  changes: string[]
 }) {
   const staffMembers = await prisma.user.findMany({
     where: { role: { in: ['PAYROLL', 'ADMIN'] } },
@@ -215,8 +216,13 @@ export async function notifyAllStaffAboutEventUpdate(event: {
   })
   
   const title = 'Event Updated'
-  const message = `"${event.title}" on ${formattedDate} - ${event.changes}`
+  const message = `"${event.title}" on ${formattedDate} - Event details have been updated.`
   const link = `/events/${event.id}`
+
+  // Format changes for email
+  const changesHtml = event.changes.length > 0 
+    ? event.changes.map(c => `<li style="margin-bottom: 4px;">• ${c}</li>`).join('')
+    : '<li>General update</li>'
 
   const inAppNotifications = []
   for (const staff of staffMembers) {
@@ -352,7 +358,8 @@ export async function notifyEventSignupsAboutEventUpdate(event: {
   id: string
   title: string
   startDateTime: Date
-  changes: string
+  location?: string
+  changes: string[]
 }) {
   // Get approved volunteers
   const volunteers = await prisma.user.findMany({
@@ -393,8 +400,13 @@ export async function notifyEventSignupsAboutEventUpdate(event: {
   })
   
   const title = 'Event Updated'
-  const message = `"${event.title}" on ${formattedDate} has been updated. ${event.changes}`
+  const message = `"${event.title}" on ${formattedDate} has been updated.`
   const link = `/events/${event.id}`
+
+  // Format changes for email
+  const changesHtml = event.changes.length > 0 
+    ? event.changes.map(c => `<li style="margin-bottom: 4px;">• ${c}</li>`).join('')
+    : '<li>General update</li>'
 
   // Create in-app notifications
   const notifications = []

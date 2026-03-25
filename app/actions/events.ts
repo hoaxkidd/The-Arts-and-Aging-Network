@@ -141,7 +141,12 @@ export async function createEvent(formData: FormData) {
     }
 
     if (id) {
-        // Update Existing Event
+        // Update Existing Event - fetch original event first for comparison
+        const oldEvent = await prisma.event.findUnique({
+            where: { id },
+            include: { location: true }
+        })
+        
         const updatedEvent = await prisma.event.update({
             where: { id },
             data: {
@@ -161,8 +166,49 @@ export async function createEvent(formData: FormData) {
                 reminderMessage: validated.data.reminderMessage?.trim() || null,
                 homeAdminReminderDays: validated.data.homeAdminReminderDays || null,
                 staffReminderDays: validated.data.staffReminderDays || null,
-            }
+            },
+            include: { location: true }
         })
+        
+        // Generate list of specific field changes
+        const changes: string[] = []
+        
+        if (oldEvent && updatedEvent) {
+            if (oldEvent.title !== updatedEvent.title) {
+                changes.push(`Title: "${oldEvent.title}" → "${updatedEvent.title}"`)
+            }
+            if (oldEvent.description !== updatedEvent.description) {
+                changes.push(`Description updated`)
+            }
+            if (oldEvent.startDateTime?.getTime() !== updatedEvent.startDateTime?.getTime()) {
+                const oldDate = oldEvent.startDateTime.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })
+                const newDate = updatedEvent.startDateTime.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })
+                changes.push(`Date: ${oldDate} → ${newDate}`)
+            }
+            if (oldEvent.endDateTime?.getTime() !== updatedEvent.endDateTime?.getTime()) {
+                changes.push(`End time updated`)
+            }
+            if (oldEvent.locationId !== updatedEvent.locationId) {
+                const oldLoc = oldEvent.location?.name || 'Unknown'
+                const newLoc = updatedEvent.location?.name || 'Unknown'
+                changes.push(`Location: ${oldLoc} → ${newLoc}`)
+            }
+            if (oldEvent.maxAttendees !== updatedEvent.maxAttendees) {
+                changes.push(`Max attendees: ${oldEvent.maxAttendees || 'None'} → ${updatedEvent.maxAttendees || 'None'}`)
+            }
+            if (oldEvent.autoAcceptLimit !== updatedEvent.autoAcceptLimit) {
+                changes.push(`Auto-accept limit: ${oldEvent.autoAcceptLimit || 'None'} → ${updatedEvent.autoAcceptLimit || 'None'}`)
+            }
+            if (oldEvent.organizerName !== updatedEvent.organizerName) {
+                changes.push(`Organizer: ${oldEvent.organizerName || 'None'} → ${updatedEvent.organizerName || 'None'}`)
+            }
+            if (oldEvent.status !== updatedEvent.status) {
+                changes.push(`Status: ${oldEvent.status} → ${updatedEvent.status}`)
+            }
+        }
+        
+        const changesList = changes.length > 0 ? changes : ['General update']
+        console.log('[Event] Changes detected:', changesList)
         
         await prisma.auditLog.create({
             data: {
@@ -178,7 +224,8 @@ export async function createEvent(formData: FormData) {
                 id: updatedEvent.id,
                 title: updatedEvent.title,
                 startDateTime: updatedEvent.startDateTime,
-                changes: 'Details have been modified by an administrator.' // Could be more granular diff logic later
+                location: updatedEvent.location?.name || 'TBD',
+                changes: changesList
             })
         } catch (e) {
             logger.email('Failed to send update notification', e)
@@ -190,7 +237,8 @@ export async function createEvent(formData: FormData) {
                 id: updatedEvent.id,
                 title: updatedEvent.title,
                 startDateTime: updatedEvent.startDateTime,
-                changes: 'Event details have been updated.'
+                location: updatedEvent.location?.name || 'TBD',
+                changes: changesList
             })
         } catch (e) {
             logger.email('Failed to notify volunteers about update', e)
