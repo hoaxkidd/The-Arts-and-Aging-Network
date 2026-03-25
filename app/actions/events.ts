@@ -180,19 +180,26 @@ export async function createEvent(formData: FormData) {
             if (oldEvent.description !== updatedEvent.description) {
                 changes.push(`Description updated`)
             }
-            // Round to minute precision to avoid false positives from millisecond differences
-            const oldStartTime = oldEvent.startDateTime ? Math.round(oldEvent.startDateTime.getTime() / 60000) * 60000 : null
-            const newStartTime = updatedEvent.startDateTime ? Math.round(updatedEvent.startDateTime.getTime() / 60000) * 60000 : null
-            if (oldStartTime !== newStartTime) {
+            // Compare local datetime strings at minute precision to avoid timezone issues
+            const oldStartISO = oldEvent.startDateTime ? new Date(oldEvent.startDateTime).toISOString().slice(0, 16) : null
+            const newStartISO = updatedEvent.startDateTime ? new Date(updatedEvent.startDateTime).toISOString().slice(0, 16) : null
+            if (oldStartISO !== newStartISO) {
                 const oldDate = oldEvent.startDateTime.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })
                 const newDate = updatedEvent.startDateTime.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })
-                changes.push(`Date: ${oldDate} → ${newDate}`)
+                // Only show change if date actually differs in display format
+                if (oldDate !== newDate) {
+                    changes.push(`Date: ${oldDate} → ${newDate}`)
+                }
             }
-            // Round end time to minute precision as well
-            const oldEndTime = oldEvent.endDateTime ? Math.round(oldEvent.endDateTime.getTime() / 60000) * 60000 : null
-            const newEndTime = updatedEvent.endDateTime ? Math.round(updatedEvent.endDateTime.getTime() / 60000) * 60000 : null
-            if (oldEndTime !== newEndTime) {
-                changes.push(`End time updated`)
+            // Compare end time at minute precision
+            const oldEndISO = oldEvent.endDateTime ? new Date(oldEvent.endDateTime).toISOString().slice(0, 16) : null
+            const newEndISO = updatedEvent.endDateTime ? new Date(updatedEvent.endDateTime).toISOString().slice(0, 16) : null
+            if (oldEndISO !== newEndISO) {
+                const oldTime = oldEvent.endDateTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+                const newTime = updatedEvent.endDateTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+                if (oldTime !== newTime) {
+                    changes.push(`End time: ${oldTime} → ${newTime}`)
+                }
             }
             if (oldEvent.locationId !== updatedEvent.locationId) {
                 const oldLoc = oldEvent.location?.name || 'Unknown'
