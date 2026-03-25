@@ -6,6 +6,8 @@ export type EmailTemplateType =
   | 'NEW_MESSAGE'
   | 'EVENT_REMINDER'
   | 'EVENT_REQUEST_APPROVED'
+  | 'EVENT_CREATED'
+  | 'EVENT_UPDATED'
   | 'EXPENSE_APPROVED'
   | 'EXPENSE_REJECTED'
   | 'TIMESHEET_APPROVED'
@@ -73,6 +75,7 @@ export const EMAIL_VARIABLES: Record<string, EmailVariable> = {
   timesheetWeek: { key: '{{timesheetWeek}}', description: 'Timesheet week', example: 'Week of Jan 15, 2024' },
   groupName: { key: '{{groupName}}', description: 'Group name', example: 'Art Volunteers' },
   appUrlDisplay: { key: '{{appUrlDisplay}}', description: 'App URL without protocol', example: 'artsandaging.com' },
+  eventChanges: { key: '{{eventChanges}}', description: 'List of event field changes', example: '<li>Title changed to "New Title"</li>' },
 }
 
 export const EMAIL_TEMPLATE_INFO: Record<EmailTemplateType, { name: string; description: string; category: string }> = {
@@ -83,6 +86,8 @@ export const EMAIL_TEMPLATE_INFO: Record<EmailTemplateType, { name: string; desc
   NEW_MESSAGE: { name: 'New Message', description: 'Notification for new direct messages', category: 'Messaging' },
   EVENT_REMINDER: { name: 'Event Reminder', description: 'Reminder before scheduled events', category: 'Events' },
   EVENT_REQUEST_APPROVED: { name: 'Event Request Approved', description: 'Notification when an event request is approved', category: 'Events' },
+  EVENT_CREATED: { name: 'New Event Created', description: 'Notification when a new event is created', category: 'Events' },
+  EVENT_UPDATED: { name: 'Event Updated', description: 'Notification when an event is updated', category: 'Events' },
   EXPENSE_APPROVED: { name: 'Expense Approved', description: 'Notification when expense is approved', category: 'Finance' },
   EXPENSE_REJECTED: { name: 'Expense Rejected', description: 'Notification when expense is rejected', category: 'Finance' },
   TIMESHEET_APPROVED: { name: 'Timesheet Approved', description: 'Notification when timesheet is approved', category: 'Payroll' },

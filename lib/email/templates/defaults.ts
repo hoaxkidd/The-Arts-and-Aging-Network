@@ -216,6 +216,73 @@ export const DEFAULT_TEMPLATES: DefaultTemplate[] = [
     </div>`,
   },
   {
+    type: 'EVENT_CREATED',
+    name: 'New Event Created',
+    subject: 'New Event: {{eventTitle}}',
+    content: `<div style="font-family: Arial, Helvetica, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9fafb;">
+      <div style="background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%); padding: 30px; text-align: center; border-radius: 12px 12px 0 0;">
+        <h1 style="color: white; margin: 0; font-size: 28px;">📅 New Event Available!</h1>
+        <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0; font-size: 16px;">A new event has been scheduled</p>
+      </div>
+      <div style="background: #ffffff; padding: 35px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 12px 12px;">
+        <p style="margin: 0 0 20px; color: #111827; font-size: 16px;">Hi {{name}},</p>
+        <p style="margin: 0 0 25px; color: #374151; font-size: 16px;">
+          A new event <strong style="color: #4F46E5;">{{eventTitle}}</strong> has been scheduled and is now available for RSVP.
+        </p>
+        <div style="background: #f9fafb; padding: 20px; border-radius: 10px; margin: 0 0 25px; border-left: 4px solid #4F46E5;">
+          <p style="margin: 0 0 12px; color: #111827; font-size: 15px;"><strong>📅 Date:</strong> <time datetime="{{eventDateISO}}">{{eventDate}}</time></p>
+          <p style="margin: 0 0 12px; color: #111827; font-size: 15px;"><strong>🕐 Time:</strong> <time datetime="{{eventTimeISO}}">{{eventTime}}</time></p>
+          <p style="margin: 0; color: #111827; font-size: 15px;"><strong>📍 Location:</strong> <a href="{{googleMapsUrl}}" target="_blank" style="color: #4F46E5; text-decoration: underline;">{{eventLocation}}</a></p>
+        </div>
+        <div style="text-align: center; margin: 0 0 30px;">
+          <a href="{{eventLink}}" style="display: inline-block; background: #4F46E5; color: white; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: 600; font-size: 15px;">
+            RSVP Now
+          </a>
+        </div>
+        {{calendarSection}}
+      </div>
+      <div style="text-align: center; padding: 20px; color: #9ca3af; font-size: 12px;">
+        <p style="margin: 0;"><a href="{{appUrl}}" style="color: #6b7280;">{{appUrlDisplay}}</a> | {{supportEmail}}</p>
+      </div>
+    </div>`,
+  },
+  {
+    type: 'EVENT_UPDATED',
+    name: 'Event Updated',
+    subject: 'Event Updated: {{eventTitle}}',
+    content: `<div style="font-family: Arial, Helvetica, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9fafb;">
+      <div style="background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%); padding: 30px; text-align: center; border-radius: 12px 12px 0 0;">
+        <h1 style="color: white; margin: 0; font-size: 28px;">✏️ Event Updated</h1>
+        <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0; font-size: 16px;">One of your events has been modified</p>
+      </div>
+      <div style="background: #ffffff; padding: 35px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 12px 12px;">
+        <p style="margin: 0 0 20px; color: #111827; font-size: 16px;">Hi {{name}},</p>
+        <p style="margin: 0 0 25px; color: #374151; font-size: 16px;">
+          The event <strong style="color: #4F46E5;">{{eventTitle}}</strong> has been updated.
+        </p>
+        <div style="background: #FEF3C7; padding: 20px; border-radius: 10px; margin: 0 0 25px; border-left: 4px solid #F59E0B;">
+          <p style="margin: 0 0 12px; color: #111827; font-size: 15px;"><strong>Changes made:</strong></p>
+          <ul style="margin: 10px 0 0; color: #374151; font-size: 14px; padding-left: 20px;">
+            {{eventChanges}}
+          </ul>
+        </div>
+        <div style="background: #f9fafb; padding: 20px; border-radius: 10px; margin: 0 0 25px; border-left: 4px solid #4F46E5;">
+          <p style="margin: 0 0 12px; color: #111827; font-size: 15px;"><strong>📅 Date:</strong> <time datetime="{{eventDateISO}}">{{eventDate}}</time></p>
+          <p style="margin: 0 0 12px; color: #111827; font-size: 15px;"><strong>🕐 Time:</strong> <time datetime="{{eventTimeISO}}">{{eventTime}}</time></p>
+          <p style="margin: 0; color: #111827; font-size: 15px;"><strong>📍 Location:</strong> <a href="{{googleMapsUrl}}" target="_blank" style="color: #4F46E5; text-decoration: underline;">{{eventLocation}}</a></p>
+        </div>
+        <div style="text-align: center; margin: 0 0 30px;">
+          <a href="{{eventLink}}" style="display: inline-block; background: #4F46E5; color: white; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: 600; font-size: 15px;">
+            View Event Details
+          </a>
+        </div>
+      </div>
+      <div style="text-align: center; padding: 20px; color: #9ca3af; font-size: 12px;">
+        <p style="margin: 0;"><a href="{{appUrl}}" style="color: #6b7280;">{{appUrlDisplay}}</a> | {{supportEmail}}</p>
+      </div>
+    </div>`,
+  },
+  {
     type: 'EXPENSE_APPROVED',
     name: 'Expense Approved',
     subject: 'Your expense has been approved!',

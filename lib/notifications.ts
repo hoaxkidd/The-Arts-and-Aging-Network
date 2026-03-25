@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
 import { logger } from "@/lib/logger"
-import { sendEmailWithCustomContent } from "@/lib/email/service"
+import { sendEmail, sendEmailWithCustomContent } from "@/lib/email/service"
 
 type NotificationType =
   | 'EVENT_CREATED'
@@ -165,17 +165,27 @@ export async function notifyAllStaffAboutEvent(event: {
   // We use Promise.allSettled to ensure one failure doesn't stop others
   const notificationPromises = []
 
+  const appUrl = process.env.NEXTAUTH_URL || 'https://artsandaging.com'
+  const eventLink = `${appUrl}/events/${event.id}`
+  const formattedTime = event.startDateTime.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })
+
   for (const staff of staffMembers) {
     const prefs = parsePreferences(staff.notificationPreferences)
     
     if (prefs.email && staff.email) {
       notificationPromises.push(
-        sendEventNotificationEmail({
+        sendEmail({
           to: staff.email,
-          name: staff.name || 'Staff Member',
-          subject: title,
-          content: message,
-          link
+          templateType: 'EVENT_CREATED',
+          variables: {
+            name: staff.name || 'Staff Member',
+            eventTitle: event.title,
+            eventDate: formattedDate,
+            eventTime: formattedTime,
+            eventLocation: event.location.name,
+            eventLink: eventLink,
+            googleMapsUrl: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.location.name)}`,
+          }
         }).catch(e => logger.error(`Failed to email ${staff.email}`, e))
       )
     }
@@ -244,16 +254,28 @@ export async function notifyAllStaffAboutEventUpdate(event: {
   }
 
   const notificationPromises = []
+
+  const appUrl = process.env.NEXTAUTH_URL || 'https://artsandaging.com'
+  const eventLink = `${appUrl}/events/${event.id}`
+  const formattedTime = event.startDateTime.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })
+
   for (const staff of staffMembers) {
     const prefs = parsePreferences(staff.notificationPreferences)
     if (prefs.email && staff.email) {
       notificationPromises.push(
-        sendEventNotificationEmail({
+        sendEmail({
           to: staff.email,
-          name: staff.name || 'Staff Member',
-          subject: title,
-          content: message,
-          link
+          templateType: 'EVENT_UPDATED',
+          variables: {
+            name: staff.name || 'Staff Member',
+            eventTitle: event.title,
+            eventDate: formattedDate,
+            eventTime: formattedTime,
+            eventLocation: event.location || '',
+            eventLink: eventLink,
+            googleMapsUrl: event.location ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.location)}` : '',
+            eventChanges: changesHtml,
+          }
         }).catch(e => logger.error(`Failed to email ${staff.email}`, e))
       )
     }
@@ -334,16 +356,26 @@ export async function notifyEventSignupsAboutNewEvent(event: {
 
   // Send emails
   const emailPromises = []
+  const appUrl = process.env.NEXTAUTH_URL || 'https://artsandaging.com'
+  const eventLink = `${appUrl}/volunteers/events/${event.id}`
+  const formattedTime = event.startDateTime.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })
+
   for (const user of usersToNotify) {
     const prefs = parsePreferences(user.notificationPreferences)
     if (prefs.email && user.email) {
       emailPromises.push(
-        sendEventNotificationEmail({
+        sendEmail({
           to: user.email,
-          name: user.name || 'Volunteer',
-          subject: title,
-          content: message,
-          link
+          templateType: 'EVENT_CREATED',
+          variables: {
+            name: user.name || 'Volunteer',
+            eventTitle: event.title,
+            eventDate: formattedDate,
+            eventTime: formattedTime,
+            eventLocation: event.location.name,
+            eventLink: eventLink,
+            googleMapsUrl: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.location.name)}`,
+          }
         }).catch(e => logger.error(`Failed to email ${user.email}`, e))
       )
     }
@@ -430,16 +462,27 @@ export async function notifyEventSignupsAboutEventUpdate(event: {
 
   // Send emails
   const emailPromises = []
+  const appUrl = process.env.NEXTAUTH_URL || 'https://artsandaging.com'
+  const eventLink = `${appUrl}/volunteers/events/${event.id}`
+  const formattedTime = event.startDateTime.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })
+
   for (const user of usersToNotify) {
     const prefs = parsePreferences(user.notificationPreferences)
     if (prefs.email && user.email) {
       emailPromises.push(
-        sendEventNotificationEmail({
+        sendEmail({
           to: user.email,
-          name: user.name || 'Volunteer',
-          subject: title,
-          content: message,
-          link
+          templateType: 'EVENT_UPDATED',
+          variables: {
+            name: user.name || 'Volunteer',
+            eventTitle: event.title,
+            eventDate: formattedDate,
+            eventTime: formattedTime,
+            eventLocation: event.location || '',
+            eventLink: eventLink,
+            googleMapsUrl: event.location ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.location)}` : '',
+            eventChanges: changesHtml,
+          }
         }).catch(e => logger.error(`Failed to email ${user.email}`, e))
       )
     }
