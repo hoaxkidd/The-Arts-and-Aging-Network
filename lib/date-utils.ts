@@ -297,16 +297,26 @@ export function toInputDateTime(date: DateInput): string {
 /**
  * Parse datetime-local input string (YYYY-MM-DDTHH:MM) as local time
  * 
- * JavaScript's new Date(string) already parses YYYY-MM-DDTHH:MM as local time,
- * not UTC. This is the correct behavior for datetime-local input.
- * 
- * Prisma will handle the conversion to UTC when storing in the database.
+ * Uses explicit date components to ensure local time is used.
+ * The Date constructor with individual arguments (year, month, day, hours, minutes)
+ * ALWAYS uses local time, regardless of string format.
  */
 export function parseLocalDateTime(dateStr: string | null | undefined): Date | null {
   if (!dateStr) return null
   
-  // new Date() parses YYYY-MM-DDTHH:MM as local time (not UTC)
-  const date = new Date(dateStr)
+  const [date, time] = dateStr.split('T')
+  if (!date || !time) return null
   
-  return isNaN(date.getTime()) ? null : date
+  const [year, month, day] = date.split('-').map(Number)
+  const [hours, minutes] = time.split(':').map(Number)
+  
+  if (isNaN(year) || isNaN(month) || isNaN(day) || isNaN(hours) || isNaN(minutes)) {
+    return null
+  }
+  
+  // Create date using local time components (month is 0-indexed)
+  // This ALWAYS uses local time, regardless of string format
+  const dateObj = new Date(year, month - 1, day, hours, minutes)
+  
+  return isNaN(dateObj.getTime()) ? null : dateObj
 }
