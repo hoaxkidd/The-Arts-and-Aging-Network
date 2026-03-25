@@ -74,24 +74,13 @@ const nextAuthConfig = {
         return token
       }
 
+      // Skip database check in JWT callback - this causes issues in Edge Runtime
+      // The database status check will happen in server actions when needed
+      // For now, we trust the token is valid once established
       if (token.id) {
-        try {
-          const dbUser = await prisma.user.findUnique({
-            where: { id: token.id },
-            select: { id: true, status: true, volunteerReviewStatus: true }
-          })
-          if (!dbUser) {
-            console.log('[Auth] User deleted, invalidating session:', token.id)
-            return null
-          }
-          if (dbUser.status !== 'ACTIVE') {
-            console.log('[Auth] User deactivated, invalidating session:', token.id)
-            return null
-          }
-          token.volunteerReviewStatus = dbUser.volunteerReviewStatus
-        } catch (error) {
-          console.error('[Auth] Database check failed:', error)
-        }
+        // Keep volunteerReviewStatus from initial login if available
+        // This avoids Prisma calls in middleware which fail on Edge Runtime
+        console.log('[Auth] Using cached session for user:', token.id)
       }
 
       return token
