@@ -296,41 +296,17 @@ export function toInputDateTime(date: DateInput): string {
 
 /**
  * Parse datetime-local input string (YYYY-MM-DDTHH:MM) as local time
- * and convert to UTC for storage in database.
  * 
- * The datetime-local input is in user's local time. We need to:
- * 1. Parse it as local time
- * 2. Convert to UTC for storage
+ * JavaScript's new Date(string) already parses YYYY-MM-DDTHH:MM as local time,
+ * not UTC. This is the correct behavior for datetime-local input.
  * 
- * This ensures the stored UTC time represents the same moment
- * when displayed in any timezone.
+ * Prisma will handle the conversion to UTC when storing in the database.
  */
 export function parseLocalDateTime(dateStr: string | null | undefined): Date | null {
   if (!dateStr) return null
   
-  const [date, time] = dateStr.split('T')
-  if (!date || !time) return null
+  // new Date() parses YYYY-MM-DDTHH:MM as local time (not UTC)
+  const date = new Date(dateStr)
   
-  const [year, month, day] = date.split('-').map(Number)
-  const [hours, minutes] = time.split(':').map(Number)
-  
-  if (isNaN(year) || isNaN(month) || isNaN(day) || isNaN(hours) || isNaN(minutes)) {
-    return null
-  }
-  
-  // Create date in local timezone (month is 0-indexed)
-  // This represents the user's local time
-  const localDate = new Date(year, month - 1, day, hours, minutes)
-  
-  if (isNaN(localDate.getTime())) return null
-  
-  // Get the timezone offset (difference between local and UTC in minutes)
-  const timezoneOffset = localDate.getTimezoneOffset()
-  
-  // Adjust: subtract offset to convert local time to UTC
-  // For EST (UTC-5), offset is +300 minutes, so we subtract 300
-  // to get the equivalent UTC time
-  const utcDate = new Date(localDate.getTime() - (timezoneOffset * 60000))
-  
-  return utcDate
+  return isNaN(date.getTime()) ? null : date
 }
