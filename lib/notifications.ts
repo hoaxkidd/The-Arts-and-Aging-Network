@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
 import { logger } from "@/lib/logger"
+import { sendEmailWithCustomContent } from "@/lib/email/service"
 
 type NotificationType =
   | 'EVENT_CREATED'
@@ -115,7 +116,13 @@ export async function notifyAllStaffAboutEvent(event: {
     select: { id: true, email: true, name: true, phone: true, notificationPreferences: true }
   })
 
-  logger.log(`Found ${staffMembers.length} users to notify`)
+  logger.log(`Found ${staffMembers.length} users to notify about new event`)
+  
+  // Debug: Log each user's notification preferences
+  for (const staff of staffMembers) {
+    const prefs = parsePreferences(staff.notificationPreferences)
+    logger.log(`User ${staff.email}: inApp=${prefs.inApp}, email=${prefs.email}, sms=${prefs.sms}, phone=${staff.phone}`)
+  }
 
   const formattedDate = event.startDateTime.toLocaleDateString(undefined, {
     weekday: 'short',
@@ -511,7 +518,7 @@ Message: ${params.message}
     return true
 }
 
-// Email sending function (placeholder - implement with actual email service)
+// Email sending function - uses Mailchimp via email service
 async function sendEventNotificationEmail(params: {
   to: string
   name: string
@@ -527,23 +534,42 @@ async function sendEventNotificationEmail(params: {
   const subject = params.subject || `New Event: ${params.eventTitle}`
   const content = params.content || `A new event has been scheduled: ${params.eventTitle}`
   const link = params.link || params.eventLink || ''
+  const appUrl = process.env.NEXTAUTH_URL || 'https://the-arts-and-aging-network.vercel.app'
 
-  logger.log(`
-📧 EMAIL NOTIFICATION
-To: ${params.to}
-Subject: ${subject}
+  logger.log(`📧 Attempting to send email to: ${params.to}`)
 
-Hi ${params.name},
+  // Create HTML content
+  const htmlContent = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <h2 style="color: #333;">${subject}</h2>
+      <p>Hi ${params.name},</p>
+      <p style="color: #555;">${content}</p>
+      ${link ? `<p><a href="${appUrl}${link}" style="color: #0066cc;">Click here to view details</a></p>` : ''}
+      <hr style="border: 1px solid #eee; margin: 20px 0;">
+      <p style="color: #999; font-size: 12px;">
+        This is an automated notification from The Arts and Aging Network.
+      </p>
+    </div>
+  `
 
-${content}
-
-${link ? `View details: ${process.env.NEXTAUTH_URL}${link}` : ''}
-
-Best regards,
-The Events Team
-  `)
-
-  return true
+  try {
+    const result = await sendEmailWithCustomContent(
+      params.to,
+      subject,
+      htmlContent
+    )
+    
+    if (result.success) {
+      logger.log(`✅ Email sent successfully to ${params.to}, messageId: ${result.messageId}`)
+      return { success: true, messageId: result.messageId }
+    } else {
+      logger.error(`❌ Failed to send email to ${params.to}: ${result.error}`)
+      return { success: false, error: result.error }
+    }
+  } catch (error) {
+    logger.error(`❌ Exception sending email to ${params.to}:`, error)
+    return { success: false, error: String(error) }
+  }
 }
 
 // Get unread notification count for a user
