@@ -14,7 +14,6 @@ import {
   Edit2,
   Trash2,
   ExternalLink,
-  Lock,
   Star,
   CalendarPlus,
   CheckCircle,
@@ -92,6 +91,11 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
 
   const now = new Date()
   const isPast = event.endDateTime < now
+  const lifecycleStatus = now >= event.endDateTime
+    ? { label: 'Finished', className: 'bg-gray-100 text-gray-700 border-gray-200' }
+    : now >= event.startDateTime
+      ? { label: 'Ongoing', className: 'bg-emerald-100 text-emerald-700 border-emerald-200' }
+      : { label: 'Started', className: 'bg-blue-100 text-blue-700 border-blue-200' }
   const isEventDay = now.toDateString() === event.startDateTime.toDateString()
   const isCheckedIn = !!userAttendance?.checkInTime
   const isConfirmed = userAttendance?.status === 'YES'
@@ -103,11 +107,27 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
   const showFullContent = canManage || isCheckedIn || homeIsParticipating
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full min-h-0 flex flex-col">
       {/* Content */}
-      <div className="flex-1 min-h-0 overflow-auto space-y-3">
+      <div className="flex-1 min-h-0 overflow-hidden space-y-3 flex flex-col">
+        {/* Event Header */}
+        <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm flex-shrink-0">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-[11px] uppercase tracking-wide text-gray-500 font-semibold">Event details</p>
+              <h2 className="text-lg sm:text-xl font-bold text-gray-900 truncate">{event.title}</h2>
+            </div>
+            <span className={cn(
+              "inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border whitespace-nowrap",
+              lifecycleStatus.className
+            )}>
+              {lifecycleStatus.label}
+            </span>
+          </div>
+        </div>
+
         {/* Event Info - Always Visible */}
-        <div className="bg-white rounded-lg border border-gray-200 p-3">
+        <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm flex-shrink-0">
           <div className="flex flex-wrap gap-4 text-sm">
             <div className="flex items-center gap-2">
               <Calendar className="w-4 h-4 text-primary-500" />
@@ -135,13 +155,13 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
 
           {/* Description if exists */}
           {event.description && (
-            <p className="mt-3 pt-3 border-t border-gray-100 text-sm text-gray-600">{event.description}</p>
+            <p className="mt-3 pt-3 border-t border-gray-100 text-sm text-gray-600 leading-relaxed">{event.description}</p>
           )}
         </div>
 
         {/* RSVP Section - Only for upcoming, non-checked-in users */}
         {!isPast && !showFullContent && (
-          <div className="bg-white rounded-lg border border-gray-200 p-4">
+          <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm flex-shrink-0">
             {canCheckIn ? (
               // Check-in Available
               <div className="text-center space-y-3">
@@ -230,34 +250,27 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
           </div>
         )}
 
-        {/* Past Event Notice */}
-        {isPast && !isCheckedIn && !canManage && (
-          <div className="bg-gray-50 rounded-lg border border-gray-200 p-6 text-center">
-            <Lock className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-            <h3 className="font-semibold text-gray-700">Event Has Ended</h3>
-            <p className="text-sm text-gray-500">This event has already taken place.</p>
-          </div>
-        )}
-
         {/* Full Content - Only after check-in */}
         {showFullContent && (
-          <EventCommunityTabs
-            eventId={event.id}
-            description={event.description || ""}
-            photos={event.photos}
-            comments={event.comments}
-            currentUserId={session?.user?.id || ""}
-            canManage={canManage}
-            userAttendance={{
-              status: userAttendance?.status || 'MAYBE',
-              feedbackRating: userAttendance?.feedbackRating || null
-            }}
-          />
+          <div className="min-h-0 flex-1">
+            <EventCommunityTabs
+              eventId={event.id}
+              description={event.description || ""}
+              photos={event.photos}
+              comments={event.comments}
+              currentUserId={session?.user?.id || ""}
+              canManage={canManage}
+              userAttendance={{
+                status: userAttendance?.status || 'MAYBE',
+                feedbackRating: userAttendance?.feedbackRating || null
+              }}
+            />
+          </div>
         )}
 
         {/* Admin Attendance Table */}
         {canManage && (
-          <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm flex-shrink-0">
             <div className="px-4 py-2 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
               <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
                 <Users className="w-4 h-4 text-gray-400" /> Attendance

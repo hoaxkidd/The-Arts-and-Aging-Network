@@ -3,6 +3,11 @@
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
+import EmojiPicker from 'emoji-picker-react'
+import { useEditor, EditorContent } from '@tiptap/react'
+import StarterKit from '@tiptap/starter-kit'
+import Placeholder from '@tiptap/extension-placeholder'
+import Underline from '@tiptap/extension-underline'
 import {
   MessageSquare,
   Image as ImageIcon,
@@ -18,16 +23,25 @@ import {
   Edit2,
   MoreVertical,
   X,
-  Loader2
+  Loader2,
+  Bold,
+  Italic,
+  Underline as UnderlineIcon,
+  List,
+  ListOrdered,
+  Smile
 } from 'lucide-react'
 import { STYLES } from '@/lib/styles'
 import { cn } from '@/lib/utils'
-import { postComment, submitFeedback, uploadPhoto, deleteComment, deletePhoto } from '@/app/actions/engagement'
+import { sanitizeHtml } from '@/lib/dompurify'
+import { submitFeedback } from '@/app/actions/engagement'
 import {
   addComment,
   editComment,
   deleteComment as deleteCommentNew,
-  toggleReaction
+  deleteEventPhoto,
+  toggleReaction,
+  uploadEventPhoto,
 } from '@/app/actions/event-engagement'
 
 type Reaction = {
@@ -70,6 +84,15 @@ interface Props {
     status: string
     feedbackRating: number | null
   }
+}
+
+function stripHtmlTags(content: string): string {
+  return content.replace(/<[^>]*>/g, '').trim()
+}
+
+function toSafeCommentHtml(content: string): string {
+  const normalized = /<[^>]+>/.test(content) ? content : content.replace(/\n/g, '<br />')
+  return sanitizeHtml(normalized)
 }
 
 // Reaction Buttons Component
@@ -153,7 +176,7 @@ function CommentItem({
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [isEditing, setIsEditing] = useState(false)
-  const [editedContent, setEditedContent] = useState(comment.content)
+  const [editedContent, setEditedContent] = useState(stripHtmlTags(comment.content))
   const [showMenu, setShowMenu] = useState(false)
 
   const isOwner = comment.userId === currentUserId
@@ -230,7 +253,7 @@ function CommentItem({
                 <button
                   onClick={() => {
                     setIsEditing(false)
-                    setEditedContent(comment.content)
+                    setEditedContent(stripHtmlTags(comment.content))
                   }}
                   className="px-3 py-1 text-sm text-gray-600 hover:bg-gray-100 rounded-lg"
                 >
@@ -239,7 +262,10 @@ function CommentItem({
               </div>
             </div>
           ) : (
-            <p className="text-sm text-gray-700 whitespace-pre-wrap mt-1">{comment.content}</p>
+            <div
+              className="mt-1 text-sm text-gray-700 prose prose-sm max-w-none prose-p:my-1 prose-ul:my-1 prose-ol:my-1 prose-li:my-0.5"
+              dangerouslySetInnerHTML={{ __html: toSafeCommentHtml(comment.content) }}
+            />
           )}
 
           {!isEditing && (
@@ -338,16 +364,43 @@ function DiscussionTab({
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [replyingTo, setReplyingTo] = useState<string | null>(null)
-  const [newComment, setNewComment] = useState('')
   const [replyContent, setReplyContent] = useState('')
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false)
+  const [composerText, setComposerText] = useState('')
+
+  const editor = useEditor({
+    extensions: [
+      StarterKit.configure({
+        bulletList: { keepMarks: true },
+        orderedList: { keepMarks: true },
+      }),
+      Underline,
+      Placeholder.configure({
+        placeholder: 'Write a comment for the event community...',
+      }),
+    ],
+    content: '',
+    editorProps: {
+      attributes: {
+        class: 'prose prose-sm max-w-none focus:outline-none min-h-[56px] text-gray-800',
+      },
+    },
+    onUpdate: ({ editor: nextEditor }) => {
+      setComposerText(nextEditor.getText())
+    },
+  })
 
   const handleSubmitComment = (e: React.FormEvent) => {
     e.preventDefault()
-    if (!newComment.trim()) return
+    if (!editor) return
+    const text = editor.getText().trim()
+    if (!text) return
+    const html = editor.getHTML()
 
     startTransition(async () => {
-      await addComment(eventId, newComment)
-      setNewComment('')
+      await addComment(eventId, html)
+      editor.commands.clearContent()
+      setShowEmojiPicker(false)
       router.refresh()
     })
   }
@@ -365,32 +418,14 @@ function DiscussionTab({
 
   // Filter to only show top-level comments (no parentId)
   const topLevelComments = comments.filter(c => !c.parentId)
+  const canSubmit = !!composerText.trim()
 
   return (
-    <div className="flex flex-col h-full animate-in fade-in duration-300">
-      {/* Comment Form */}
-      <form onSubmit={handleSubmitComment} className="flex gap-2 mb-6">
-        <input
-          type="text"
-          value={newComment}
-          onChange={(e) => setNewComment(e.target.value)}
-          placeholder="Write a comment..."
-          className={cn(STYLES.input, "flex-1")}
-          disabled={isPending}
-        />
-        <button
-          type="submit"
-          disabled={isPending || !newComment.trim()}
-          className={cn(STYLES.btn, STYLES.btnPrimary, "px-3")}
-        >
-          {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-        </button>
-      </form>
-
+    <div className="flex flex-col h-full min-h-0 animate-in fade-in duration-300 rounded-xl border border-gray-200 bg-white">
       {/* Comments List */}
-      <div className="flex-1 space-y-4 overflow-y-auto max-h-[500px] pr-2">
+      <div className="flex-1 min-h-0 space-y-4 overflow-y-auto p-4 sm:p-5">
         {topLevelComments.length === 0 ? (
-          <div className="text-center py-10 text-gray-500 italic">
+          <div className="text-center py-10 text-gray-500 italic border border-dashed border-gray-200 rounded-xl bg-gray-50/60">
             No comments yet. Start the conversation!
           </div>
         ) : (
@@ -435,6 +470,105 @@ function DiscussionTab({
           ))
         )}
       </div>
+
+      {/* Composer */}
+      <div className="border-t border-gray-200 bg-gradient-to-r from-gray-50 to-white p-2.5 sm:p-3 flex-shrink-0">
+        <form onSubmit={handleSubmitComment} className="space-y-2.5">
+          <div className="flex items-center gap-1 rounded-lg border border-gray-200 bg-white p-1">
+              <button
+                type="button"
+                onClick={() => editor?.chain().focus().toggleBold().run()}
+                className={cn(
+                  "p-1.5 rounded transition-colors",
+                  editor?.isActive('bold') ? "bg-gray-200 text-primary-700" : "text-gray-600 hover:bg-gray-100"
+                )}
+                title="Bold"
+              >
+                <Bold className="w-4 h-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => editor?.chain().focus().toggleItalic().run()}
+                className={cn(
+                  "p-1.5 rounded transition-colors",
+                  editor?.isActive('italic') ? "bg-gray-200 text-primary-700" : "text-gray-600 hover:bg-gray-100"
+                )}
+                title="Italic"
+              >
+                <Italic className="w-4 h-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => editor?.chain().focus().toggleUnderline().run()}
+                className={cn(
+                  "p-1.5 rounded transition-colors",
+                  editor?.isActive('underline') ? "bg-gray-200 text-primary-700" : "text-gray-600 hover:bg-gray-100"
+                )}
+                title="Underline"
+              >
+                <UnderlineIcon className="w-4 h-4" />
+              </button>
+              <div className="w-px h-5 bg-gray-200 mx-1" />
+              <button
+                type="button"
+                onClick={() => editor?.chain().focus().toggleBulletList().run()}
+                className={cn(
+                  "p-1.5 rounded transition-colors",
+                  editor?.isActive('bulletList') ? "bg-gray-200 text-primary-700" : "text-gray-600 hover:bg-gray-100"
+                )}
+                title="Bullet list"
+              >
+                <List className="w-4 h-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => editor?.chain().focus().toggleOrderedList().run()}
+                className={cn(
+                  "p-1.5 rounded transition-colors",
+                  editor?.isActive('orderedList') ? "bg-gray-200 text-primary-700" : "text-gray-600 hover:bg-gray-100"
+                )}
+                title="Numbered list"
+              >
+                <ListOrdered className="w-4 h-4" />
+              </button>
+          </div>
+
+          <div className="flex items-end gap-2">
+            <div className="relative flex-1 rounded-xl border border-gray-200 bg-white px-3 py-2 focus-within:ring-2 focus-within:ring-primary-100 focus-within:border-primary-400">
+              <EditorContent editor={editor} />
+              <button
+                type="button"
+                onClick={() => setShowEmojiPicker((prev) => !prev)}
+                className="absolute right-2 bottom-2 inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-gray-700 bg-gray-50 border border-gray-200 rounded-md hover:bg-gray-100"
+                title="Add emoji"
+              >
+                <Smile className="w-3.5 h-3.5" /> Emoji
+              </button>
+              {showEmojiPicker && (
+                <div className="absolute right-2 bottom-11 z-30 shadow-xl border border-gray-200 rounded-xl overflow-hidden bg-white">
+                  <EmojiPicker
+                    onEmojiClick={(emojiData) => {
+                      editor?.chain().focus().insertContent(emojiData.emoji).run()
+                      setShowEmojiPicker(false)
+                    }}
+                    lazyLoadEmojis
+                    width={280}
+                    height={320}
+                  />
+                </div>
+              )}
+            </div>
+            <button
+              type="submit"
+              disabled={isPending || !canSubmit}
+              className={cn(STYLES.btn, STYLES.btnPrimary, "px-4 py-2 text-sm whitespace-nowrap")}
+            >
+              {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+              Post
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   )
 }
@@ -448,20 +582,60 @@ export default function EventCommunityTabs({
   canManage,
   userAttendance 
 }: Props) {
+  const router = useRouter()
   const [activeTab, setActiveTab] = useState<'details' | 'discussion' | 'photos' | 'feedback'>('details')
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isPhotoPending, startPhotoTransition] = useTransition()
+  const [selectedPhotoFile, setSelectedPhotoFile] = useState<File | null>(null)
+  const [photoCaption, setPhotoCaption] = useState('')
+  const [photoError, setPhotoError] = useState<string | null>(null)
+  const [fileInputKey, setFileInputKey] = useState(0)
+  const [detailsExpanded, setDetailsExpanded] = useState(false)
+  const detailsText = description?.trim() || "No description provided for this event."
+  const detailsPreviewLimit = 360
+  const shouldTruncateDetails = detailsText.length > detailsPreviewLimit
+  const visibleDetailsText = shouldTruncateDetails && !detailsExpanded
+    ? `${detailsText.slice(0, detailsPreviewLimit).trimEnd()}...`
+    : detailsText
+
+  const handlePhotoUpload = (e: React.FormEvent) => {
+    e.preventDefault()
+    setPhotoError(null)
+
+    if (!selectedPhotoFile) {
+      setPhotoError('Please select a photo to upload.')
+      return
+    }
+
+    startPhotoTransition(async () => {
+      const formData = new FormData()
+      formData.set('eventId', eventId)
+      formData.set('photo', selectedPhotoFile)
+      formData.set('caption', photoCaption.trim())
+
+      const result = await uploadEventPhoto(formData)
+      if (result?.error) {
+        setPhotoError(result.error)
+        return
+      }
+
+      setSelectedPhotoFile(null)
+      setPhotoCaption('')
+      setFileInputKey((prev) => prev + 1)
+      router.refresh()
+    })
+  }
 
   // Optimistic UI could be added here, but for now we rely on Server Actions + revalidatePath
   
   return (
-    <div className="bg-white rounded-lg border border-gray-200 overflow-hidden flex flex-col h-full">
+    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden flex flex-col h-full shadow-sm">
       {/* Tabs Header */}
-      <div className="flex border-b border-gray-100 overflow-x-auto bg-gray-50/50">
+      <div className="flex border-b border-gray-100 overflow-x-auto bg-gradient-to-r from-gray-50 to-white flex-shrink-0">
         <button
           onClick={() => setActiveTab('details')}
           className={cn(
             "flex-1 px-4 py-3 text-sm font-semibold flex items-center justify-center gap-2 border-b-2 transition-all whitespace-nowrap outline-none focus:bg-gray-50",
-            activeTab === 'details' ? "border-primary-600 text-primary-700 bg-white" : "border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+            activeTab === 'details' ? "border-primary-600 text-primary-700 bg-white" : "border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-100/70"
           )}
         >
           <User className="w-4 h-4" /> Details
@@ -470,7 +644,7 @@ export default function EventCommunityTabs({
           onClick={() => setActiveTab('discussion')}
           className={cn(
             "flex-1 px-4 py-3 text-sm font-semibold flex items-center justify-center gap-2 border-b-2 transition-all whitespace-nowrap outline-none focus:bg-gray-50",
-            activeTab === 'discussion' ? "border-primary-600 text-primary-700 bg-white" : "border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+            activeTab === 'discussion' ? "border-primary-600 text-primary-700 bg-white" : "border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-100/70"
           )}
         >
           <MessageSquare className="w-4 h-4" /> Discussion
@@ -480,7 +654,7 @@ export default function EventCommunityTabs({
           onClick={() => setActiveTab('photos')}
           className={cn(
             "flex-1 px-4 py-3 text-sm font-semibold flex items-center justify-center gap-2 border-b-2 transition-all whitespace-nowrap outline-none focus:bg-gray-50",
-            activeTab === 'photos' ? "border-primary-600 text-primary-700 bg-white" : "border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+            activeTab === 'photos' ? "border-primary-600 text-primary-700 bg-white" : "border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-100/70"
           )}
         >
           <ImageIcon className="w-4 h-4" /> Photos
@@ -491,7 +665,7 @@ export default function EventCommunityTabs({
             onClick={() => setActiveTab('feedback')}
             className={cn(
               "flex-1 px-4 py-3 text-sm font-semibold flex items-center justify-center gap-2 border-b-2 transition-all whitespace-nowrap outline-none focus:bg-gray-50",
-              activeTab === 'feedback' ? "border-primary-600 text-primary-700 bg-white" : "border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+              activeTab === 'feedback' ? "border-primary-600 text-primary-700 bg-white" : "border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-100/70"
             )}
           >
             <Star className="w-4 h-4" /> Feedback
@@ -500,14 +674,26 @@ export default function EventCommunityTabs({
       </div>
 
       {/* Tab Content */}
-      <div className="p-6 min-h-[400px]">
+      <div className="p-5 sm:p-6 flex-1 min-h-0 overflow-hidden bg-white">
         
         {/* DETAILS TAB */}
         {activeTab === 'details' && (
-            <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
-                <div className="prose prose-sm max-w-none text-gray-600 leading-relaxed whitespace-pre-wrap">
-                    {description || "No description provided for this event."}
-                </div>
+            <div className="animate-in fade-in slide-in-from-bottom-2 duration-300 h-full">
+              <div className="rounded-xl border border-gray-200 bg-gradient-to-br from-white to-gray-50 p-5">
+                <p className="text-[11px] tracking-wide uppercase font-semibold text-gray-500 mb-2">Event details</p>
+                <p className="text-sm sm:text-[15px] text-gray-700 leading-relaxed whitespace-pre-wrap">
+                  {visibleDetailsText}
+                </p>
+                {shouldTruncateDetails && (
+                  <button
+                    type="button"
+                    onClick={() => setDetailsExpanded((prev) => !prev)}
+                    className="mt-3 text-sm font-semibold text-primary-700 hover:text-primary-800"
+                  >
+                    {detailsExpanded ? 'Read less' : 'Read more'}
+                  </button>
+                )}
+              </div>
             </div>
         )}
 
@@ -523,27 +709,62 @@ export default function EventCommunityTabs({
 
         {/* PHOTOS TAB */}
         {activeTab === 'photos' && (
-          <div className="space-y-6 animate-in fade-in duration-300">
-            <div className="flex justify-between items-center">
+          <div className="h-full min-h-0 flex flex-col gap-4 animate-in fade-in duration-300">
+            <div className="flex-shrink-0 rounded-xl border border-gray-200 bg-gray-50/70 p-3">
+              <div className="flex items-center justify-between mb-2">
                 <h3 className="font-bold text-gray-900">Shared Photos</h3>
-                <form action={async (formData) => {
-                    await uploadPhoto(formData)
-                }}>
-                    <input type="hidden" name="eventId" value={eventId} />
-                    <label className="cursor-pointer bg-primary-50 text-primary-700 hover:bg-primary-100 px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-2 transition-colors">
-                        <Upload className="w-4 h-4" /> Upload
-                        <input type="file" name="photo" accept="image/*" className="hidden" onChange={(e) => e.target.form?.requestSubmit()} />
-                    </label>
-                </form>
+                <span className="text-xs text-gray-500">Single photo upload</span>
+              </div>
+
+              <form onSubmit={handlePhotoUpload} className="space-y-2">
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <input
+                    key={fileInputKey}
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0] || null
+                      setSelectedPhotoFile(file)
+                      setPhotoError(null)
+                    }}
+                    className="block w-full text-sm text-gray-700 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:bg-primary-100 file:text-primary-700 hover:file:bg-primary-200"
+                  />
+                  <button
+                    type="submit"
+                    disabled={isPhotoPending || !selectedPhotoFile}
+                    className={cn(STYLES.btn, STYLES.btnPrimary, "px-4 py-2 text-sm whitespace-nowrap")}
+                  >
+                    {isPhotoPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                    Upload
+                  </button>
+                </div>
+
+                <input
+                  type="text"
+                  value={photoCaption}
+                  onChange={(e) => setPhotoCaption(e.target.value)}
+                  placeholder="Add an optional caption"
+                  className={cn(STYLES.input, "w-full text-sm")}
+                  maxLength={180}
+                />
+
+                {selectedPhotoFile && (
+                  <p className="text-xs text-gray-500">
+                    Ready: <span className="font-medium text-gray-700">{selectedPhotoFile.name}</span>
+                  </p>
+                )}
+                {photoError && <p className="text-xs text-red-600">{photoError}</p>}
+              </form>
             </div>
 
             {photos.length === 0 ? (
-                <div className="text-center py-10 bg-gray-50 rounded-lg border border-dashed border-gray-200">
+                <div className="text-center py-10 bg-gray-50 rounded-xl border border-dashed border-gray-200 flex-1 min-h-0 flex items-center justify-center flex-col">
                     <ImageIcon className="w-10 h-10 text-gray-300 mx-auto mb-2" />
                     <p className="text-gray-500">No photos yet. Be the first to share!</p>
                 </div>
             ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                <div className="flex-1 min-h-0 overflow-y-auto pr-1">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                     {photos.map(photo => (
                         <div key={photo.id} className="aspect-square bg-gray-100 rounded-lg overflow-hidden relative group">
                             <Image src={photo.url} alt={photo.caption || "Event photo"} width={400} height={400} className="w-full h-full object-cover" unoptimized />
@@ -555,7 +776,8 @@ export default function EventCommunityTabs({
                                 <button 
                                     onClick={async () => {
                                         if(!confirm('Delete this photo?')) return;
-                                        await deletePhoto(photo.id, eventId)
+                                        await deleteEventPhoto(photo.id)
+                                        router.refresh()
                                     }}
                                     className="absolute top-2 right-2 p-1.5 bg-black/50 text-white rounded-full hover:bg-red-600 transition-colors opacity-0 group-hover:opacity-100"
                                 >
@@ -564,6 +786,7 @@ export default function EventCommunityTabs({
                             )}
                         </div>
                     ))}
+                  </div>
                 </div>
             )}
           </div>

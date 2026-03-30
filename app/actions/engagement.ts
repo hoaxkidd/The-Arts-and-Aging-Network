@@ -4,7 +4,7 @@ import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
-import { logger } from "@/lib/logger"
+import { uploadEventPhoto, deleteEventPhoto as deleteEventPhotoAction } from "@/app/actions/event-engagement"
 
 const CommentSchema = z.object({
   eventId: z.string(),
@@ -75,42 +75,7 @@ export async function submitFeedback(formData: FormData) {
 }
 
 export async function uploadPhoto(formData: FormData) {
-  const session = await auth()
-  if (!session?.user?.id) return { error: 'Unauthorized' }
-
-  const eventId = formData.get('eventId') as string
-  const file = formData.get('photo') as File
-  const caption = formData.get('caption') as string
-
-  if (!file || file.size === 0) return { error: 'No file uploaded' }
-  if (file.size > 5 * 1024 * 1024) return { error: 'File too large (max 5MB)' }
-  if (!file.type.startsWith('image/')) return { error: 'Invalid file type' }
-
-  try {
-    const bytes = await file.arrayBuffer()
-    const buffer = Buffer.from(bytes)
-    
-    const { uploadToR2, getFileExtension } = await import('@/lib/r2')
-    const extension = getFileExtension(file.name)
-    const uniqueName = `${eventId}/${Date.now()}.${extension}`
-    
-    const uploaded = await uploadToR2(buffer, uniqueName, file.type, 'event-photos')
-    
-    await prisma.eventPhoto.create({
-      data: {
-        eventId,
-        uploaderId: session.user.id,
-        url: uploaded.url,
-        caption
-      }
-    })
-    
-    revalidatePath(`/events/${eventId}`)
-    return { success: true, url: uploaded.url }
-  } catch (e) {
-    logger.upload('Photo upload error', e)
-    return { error: 'Failed to upload photo' }
-  }
+  return uploadEventPhoto(formData)
 }
 
 export async function deleteComment(commentId: string, eventId: string) {
@@ -135,22 +100,8 @@ export async function deleteComment(commentId: string, eventId: string) {
 }
 
 export async function deletePhoto(photoId: string, eventId: string) {
-    const session = await auth()
-    if (!session?.user?.id) return { error: 'Unauthorized' }
-    
-    const photo = await prisma.eventPhoto.findUnique({
-        where: { id: photoId }
-    })
-
-    if (!photo) return { error: 'Photo not found' }
-
-    // Allow deletion if user is owner OR admin/payroll
-    const isOwner = photo.uploaderId === session.user.id
-    const isAdmin = session.user.role === 'ADMIN' || session.user.role === 'PAYROLL'
-
-    if (!isOwner && !isAdmin) return { error: 'Unauthorized' }
-
-    await prisma.eventPhoto.delete({ where: { id: photoId } })
+    const result = await deleteEventPhotoAction(photoId)
+    if (result?.error) return result
     revalidatePath(`/events/${eventId}`)
     return { success: true }
 }

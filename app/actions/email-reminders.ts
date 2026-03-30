@@ -2,7 +2,7 @@
 
 import { prisma } from "@/lib/prisma"
 import { auth } from "@/auth"
-import { formatEventTime, formatEventDateRange, generateCalendarLinks } from "@/lib/email/calendar"
+import { formatEventTime, formatEventDateRange, generateCalendarLinks, getCalendarSectionHtml } from "@/lib/email/calendar"
 import { logger } from "@/lib/logger"
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://artsandaging.com'
@@ -306,6 +306,7 @@ function generateReminderEmail(data: ReminderData) {
     location: event.location?.address,
     url: `${APP_URL}/events/${event.id}`
   })
+  const calendarSection = getCalendarSectionHtml(calendarLinks)
 
   const googleMapsUrl = event.location?.address 
     ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.location.address)}`
@@ -366,21 +367,7 @@ function generateReminderEmail(data: ReminderData) {
       </a>
     </div>
     
-    <div style="margin: 25px 0; padding: 20px; background: #f9fafb; border-radius: 12px;">
-      <h3 style="color: #111827; margin: 0 0 15px; text-align: center; font-size: 18px; font-family: Arial, sans-serif;">Add to Your Calendar</h3>
-      
-      <div style="text-align: center; margin: 0 0 15px;">
-        <a href="${calendarLinks.google}" target="_blank" rel="noopener" style="display: inline-block; background: #4285f4; color: white; text-decoration: none; padding: 12px 20px; border-radius: 6px; font-weight: 500; margin: 5px; font-size: 14px; font-family: Arial, sans-serif;">Google Calendar</a>
-        <a href="${calendarLinks.outlook}" target="_blank" rel="noopener" style="display: inline-block; background: #0078d4; color: white; text-decoration: none; padding: 12px 20px; border-radius: 6px; font-weight: 500; margin: 5px; font-size: 14px; font-family: Arial, sans-serif;">Outlook</a>
-        <a href="${calendarLinks.office365}" target="_blank" rel="noopener" style="display: inline-block; background: #0078d4; color: white; text-decoration: none; padding: 12px 20px; border-radius: 6px; font-weight: 500; margin: 5px; font-size: 14px; font-family: Arial, sans-serif;">Office 365</a>
-        <a href="${calendarLinks.yahoo}" target="_blank" rel="noopener" style="display: inline-block; background: #6001d2; color: white; text-decoration: none; padding: 12px 20px; border-radius: 6px; font-weight: 500; margin: 5px; font-size: 14px; font-family: Arial, sans-serif;">Yahoo</a>
-        <a href="${calendarLinks.webcal}" download="event.ics" style="display: inline-block; background: #6b7280; color: white; text-decoration: none; padding: 12px 20px; border-radius: 6px; font-weight: 500; margin: 5px; font-size: 14px; font-family: Arial, sans-serif;">Apple Calendar</a>
-      </div>
-      
-      <p style="margin: 0; color: #6b7280; font-size: 12px; text-align: center; font-family: Arial, sans-serif;">
-        Click a button above to add this event to your calendar
-      </p>
-    </div>
+    ${calendarSection}
     
     <p style="margin: 20px 0 0; color: #9ca3af; font-size: 13px; text-align: center; font-family: Arial, sans-serif;">
       If you have any questions or need to make changes, please contact us as soon as possible.

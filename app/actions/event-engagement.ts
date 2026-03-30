@@ -5,9 +5,64 @@ import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
 import type { PrismaClient } from "@prisma/client"
 import { logger } from "@/lib/logger"
+import {
+  deleteFromR2,
+  extractR2KeyFromUrl,
+  getFileExtension,
+  getR2Diagnostics,
+  R2ConfigurationError,
+  uploadToR2,
+} from "@/lib/r2"
 
 // Type-safe prisma client reference
 const db = prisma as PrismaClient & Record<string, unknown>
+
+function revalidateEventPaths(eventId: string) {
+  revalidatePath(`/events/${eventId}`)
+  revalidatePath(`/dashboard/my-events/${eventId}`)
+  revalidatePath(`/staff/events/${eventId}`)
+}
+
+async function canAccessEventCommunity(eventId: string, userId: string, role?: string | null): Promise<boolean> {
+  if (role === 'ADMIN' || role === 'PAYROLL') return true
+
+  const checkedInAttendance = await db.eventAttendance.findUnique({
+    where: {
+      eventId_userId: {
+        eventId,
+        userId,
+      },
+    },
+    select: { checkInTime: true },
+  })
+
+  if (checkedInAttendance?.checkInTime) return true
+
+  if (role === 'HOME_ADMIN') {
+    const home = await db.geriatricHome.findUnique({
+      where: { userId },
+      select: { id: true },
+    })
+
+    if (!home) return false
+
+    const approvedRequest = await db.eventRequest.findFirst({
+      where: {
+        geriatricHomeId: home.id,
+        status: 'APPROVED',
+        OR: [
+          { existingEventId: eventId },
+          { approvedEventId: eventId },
+        ],
+      },
+      select: { id: true },
+    })
+
+    return !!approvedRequest
+  }
+
+  return false
+}
 
 // Helper to create notification
 async function createNotification(
@@ -46,6 +101,11 @@ export async function addComment(
   }
 
   try {
+    const canAccess = await canAccessEventCommunity(eventId, session.user.id, session.user.role)
+    if (!canAccess) {
+      return { error: 'Not authorized to participate in event discussion' }
+    }
+
     const comment = await db.eventComment.create({
       data: {
         eventId,
@@ -87,9 +147,7 @@ export async function addComment(
       }
     }
 
-    revalidatePath(`/events/${eventId}`)
-    revalidatePath(`/dashboard/my-events/${eventId}`)
-    revalidatePath(`/staff/events/${eventId}`)
+    revalidateEventPaths(eventId)
 
     return { data: comment }
   } catch (error) {
@@ -114,6 +172,11 @@ export async function editComment(commentId: string, content: string) {
       return { error: 'Comment not found' }
     }
 
+    const canAccess = await canAccessEventCommunity(comment.eventId, session.user.id, session.user.role)
+    if (!canAccess) {
+      return { error: 'Not authorized to edit this comment' }
+    }
+
     // Only owner can edit their comment
     if (comment.userId !== session.user.id) {
       return { error: 'Not authorized to edit this comment' }
@@ -128,9 +191,7 @@ export async function editComment(commentId: string, content: string) {
       }
     })
 
-    revalidatePath(`/events/${comment.eventId}`)
-    revalidatePath(`/dashboard/my-events/${comment.eventId}`)
-    revalidatePath(`/staff/events/${comment.eventId}`)
+    revalidateEventPaths(comment.eventId)
 
     return { data: updated }
   } catch (error) {
@@ -155,6 +216,11 @@ export async function deleteComment(commentId: string) {
       return { error: 'Comment not found' }
     }
 
+    const canAccess = await canAccessEventCommunity(comment.eventId, session.user.id, session.user.role)
+    if (!canAccess) {
+      return { error: 'Not authorized to delete this comment' }
+    }
+
     const user = await db.user.findUnique({
       where: { id: session.user.id },
       select: { role: true }
@@ -175,9 +241,7 @@ export async function deleteComment(commentId: string) {
       where: { id: commentId }
     })
 
-    revalidatePath(`/events/${comment.eventId}`)
-    revalidatePath(`/dashboard/my-events/${comment.eventId}`)
-    revalidatePath(`/staff/events/${comment.eventId}`)
+    revalidateEventPaths(comment.eventId)
 
     return { success: true }
   } catch (error) {
@@ -265,10 +329,17 @@ export async function toggleReaction(
 
     const revalidate = () => {
       if (eventId) {
-        revalidatePath(`/events/${eventId}`)
-        revalidatePath(`/dashboard/my-events/${eventId}`)
-        revalidatePath(`/staff/events/${eventId}`)
+        revalidateEventPaths(eventId)
       }
+    }
+
+    if (!eventId) {
+      return { error: 'Unable to locate event for reaction' }
+    }
+
+    const canAccess = await canAccessEventCommunity(eventId, session.user.id, session.user.role)
+    if (!canAccess) {
+      return { error: 'Not authorized to react in this event' }
     }
 
     if (existingReaction) {
@@ -374,6 +445,11 @@ export async function addEventPhoto(
   }
 
   try {
+    const canAccess = await canAccessEventCommunity(eventId, session.user.id, session.user.role)
+    if (!canAccess) {
+      return { error: 'Not authorized to upload photos for this event' }
+    }
+
     const photo = await db.eventPhoto.create({
       data: {
         eventId,
@@ -387,9 +463,7 @@ export async function addEventPhoto(
       }
     })
 
-    revalidatePath(`/events/${eventId}`)
-    revalidatePath(`/dashboard/my-events/${eventId}`)
-    revalidatePath(`/staff/events/${eventId}`)
+    revalidateEventPaths(eventId)
 
     return { data: photo }
   } catch (error) {
@@ -407,20 +481,22 @@ export async function deleteEventPhoto(photoId: string) {
   try {
     const photo = await db.eventPhoto.findUnique({
       where: { id: photoId },
-      select: { uploaderId: true, eventId: true }
+      select: { uploaderId: true, eventId: true, url: true }
     })
 
     if (!photo) {
       return { error: 'Photo not found' }
     }
 
-    const user = await db.user.findUnique({
-      where: { id: session.user.id },
-      select: { role: true }
-    })
+    const userRole = session.user.role
+
+    const canAccess = await canAccessEventCommunity(photo.eventId, session.user.id, userRole)
+    if (!canAccess) {
+      return { error: 'Not authorized to delete this photo' }
+    }
 
     // Only uploader or admin can delete
-    if (photo.uploaderId !== session.user.id && user?.role !== 'ADMIN') {
+    if (photo.uploaderId !== session.user.id && userRole !== 'ADMIN' && userRole !== 'PAYROLL') {
       return { error: 'Not authorized to delete this photo' }
     }
 
@@ -428,14 +504,94 @@ export async function deleteEventPhoto(photoId: string) {
       where: { id: photoId }
     })
 
-    revalidatePath(`/events/${photo.eventId}`)
-    revalidatePath(`/dashboard/my-events/${photo.eventId}`)
-    revalidatePath(`/staff/events/${photo.eventId}`)
+    const key = extractR2KeyFromUrl(photo.url)
+    if (key) {
+      try {
+        await deleteFromR2(key)
+      } catch (error) {
+        logger.upload('Failed to delete event photo from R2', { photoId, key, error })
+      }
+    }
+
+    revalidateEventPaths(photo.eventId)
 
     return { success: true }
   } catch (error) {
     logger.serverAction('Error deleting photo:', error)
     return { error: 'Failed to delete photo' }
+  }
+}
+
+export async function uploadEventPhoto(formData: FormData) {
+  const session = await auth()
+  if (!session?.user?.id) {
+    return { error: 'Not authenticated' }
+  }
+
+  const eventId = String(formData.get('eventId') || '')
+  const file = formData.get('photo') as File | null
+  const captionInput = String(formData.get('caption') || '').trim()
+
+  if (!eventId) {
+    return { error: 'Missing event ID' }
+  }
+
+  if (!file || file.size === 0) {
+    return { error: 'No file selected' }
+  }
+
+  if (!file.type.startsWith('image/')) {
+    return { error: 'Only image files are allowed' }
+  }
+
+  const maxBytes = 5 * 1024 * 1024
+  if (file.size > maxBytes) {
+    return { error: 'File too large (max 5MB)' }
+  }
+
+  const canAccess = await canAccessEventCommunity(eventId, session.user.id, session.user.role)
+  if (!canAccess) {
+    return { error: 'Not authorized to upload photos for this event' }
+  }
+
+  try {
+    const bytes = await file.arrayBuffer()
+    const buffer = Buffer.from(bytes)
+    const extension = getFileExtension(file.name) || 'jpg'
+    const uniqueName = `${eventId}/${Date.now()}.${extension}`
+    const uploaded = await uploadToR2(buffer, uniqueName, file.type, 'event-photos')
+
+    const photo = await db.eventPhoto.create({
+      data: {
+        eventId,
+        uploaderId: session.user.id,
+        url: uploaded.url,
+        caption: captionInput || null,
+      },
+      include: {
+        uploader: { select: { id: true, name: true, image: true } },
+        reactions: true,
+      },
+    })
+
+    revalidateEventPaths(eventId)
+    return { success: true, data: photo }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    logger.upload('Event photo upload failed', {
+      error: message,
+      diagnostics: getR2Diagnostics(),
+    })
+
+    if (error instanceof R2ConfigurationError) {
+      return { error: 'Photo storage is not configured correctly. Please contact an administrator.' }
+    }
+
+    if (message.includes('EPROTO') || message.toLowerCase().includes('handshake')) {
+      return { error: 'Photo storage connection failed. Please try again in a moment.' }
+    }
+
+    return { error: 'Failed to upload photo' }
   }
 }
 

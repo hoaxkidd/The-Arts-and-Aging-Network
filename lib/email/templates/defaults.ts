@@ -260,11 +260,11 @@ export const DEFAULT_TEMPLATES: DefaultTemplate[] = [
         <p style="margin: 0 0 25px; color: #374151; font-size: 16px;">
           The event <strong style="color: #4F46E5;">{{eventTitle}}</strong> has been updated.
         </p>
-        <div style="background: #FEF3C7; padding: 20px; border-radius: 10px; margin: 0 0 25px; border-left: 4px solid #F59E0B;">
-          <p style="margin: 0 0 12px; color: #111827; font-size: 15px;"><strong>Changes made:</strong></p>
-          <ul style="margin: 10px 0 0; color: #374151; font-size: 14px; padding-left: 20px;">
+        <div style="margin: 0 0 22px; padding: 0;">
+          <p style="margin: 0 0 10px; color: #111827; font-size: 16px; font-weight: 600;">Updates:</p>
+          <div style="margin: 0; color: #111827; font-size: 15px; line-height: 1.55;">
             {{eventChanges}}
-          </ul>
+          </div>
         </div>
         <div style="background: #f9fafb; padding: 20px; border-radius: 10px; margin: 0 0 25px; border-left: 4px solid #4F46E5;">
           <p style="margin: 0 0 12px; color: #111827; font-size: 15px;"><strong>📅 Date:</strong> <time datetime="{{eventDateISO}}">{{eventDate}}</time></p>
@@ -276,6 +276,7 @@ export const DEFAULT_TEMPLATES: DefaultTemplate[] = [
             View Event Details
           </a>
         </div>
+        {{calendarSection}}
       </div>
       <div style="text-align: center; padding: 20px; color: #9ca3af; font-size: 12px;">
         <p style="margin: 0;"><a href="{{appUrl}}" style="color: #6b7280;">{{appUrlDisplay}}</a> | {{supportEmail}}</p>

@@ -2,6 +2,9 @@ import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
 import { logger } from "@/lib/logger"
 import { sendEmail, sendEmailWithCustomContent } from "@/lib/email/service"
+import { generateCalendarLinks, getCalendarSectionHtml } from "@/lib/email/calendar"
+
+const EVENT_EMAIL_TIMEZONE = 'America/St_Johns'
 
 type NotificationType =
   | 'EVENT_CREATED'
@@ -106,6 +109,7 @@ export async function notifyAllStaffAboutEvent(event: {
   id: string
   title: string
   startDateTime: Date
+  endDateTime: Date
   location: { name: string }
 }) {
   // Get all PAYROLL and ADMIN users (relaxed status check)
@@ -124,14 +128,29 @@ export async function notifyAllStaffAboutEvent(event: {
     logger.log(`User ${staff.email}: inApp=${prefs.inApp}, email=${prefs.email}, sms=${prefs.sms}, phone=${staff.phone}`)
   }
 
-  // Use UTC timezone for consistent email display
-  const formattedDate = event.startDateTime.toLocaleDateString('en-US', { timeZone: 'UTC', weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })
-  const formattedTime = event.startDateTime.toLocaleTimeString('en-US', { timeZone: 'UTC', hour: 'numeric', minute: '2-digit' })
-  const eventDateISO = event.startDateTime.toISOString().split('T')[0]
-  const eventTimeISO = event.startDateTime.toISOString().slice(11, 16)
+  // Use Newfoundland timezone for consistent event display
+  const startDate = new Date(event.startDateTime)
+  const endDate = new Date(event.endDateTime)
+  const startDateLabel = startDate.toLocaleDateString('en-US', { timeZone: EVENT_EMAIL_TIMEZONE, weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })
+  const endDateLabel = endDate.toLocaleDateString('en-US', { timeZone: EVENT_EMAIL_TIMEZONE, weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })
+  const startTimeLabel = startDate.toLocaleTimeString('en-US', { timeZone: EVENT_EMAIL_TIMEZONE, hour: 'numeric', minute: '2-digit', timeZoneName: 'short' })
+  const endTimeLabel = endDate.toLocaleTimeString('en-US', { timeZone: EVENT_EMAIL_TIMEZONE, hour: 'numeric', minute: '2-digit', timeZoneName: 'short' })
+  const isMultiDay = startDate.toLocaleDateString('en-US', { timeZone: EVENT_EMAIL_TIMEZONE }) !== endDate.toLocaleDateString('en-US', { timeZone: EVENT_EMAIL_TIMEZONE })
+  const formattedDate = isMultiDay ? `${startDateLabel} - ${endDateLabel} (Multi-day event)` : startDateLabel
+  const formattedTime = `Start: ${startTimeLabel} | End: ${endTimeLabel}`
+  const eventDateISO = startDate.toISOString().split('T')[0]
+  const eventTimeISO = startDate.toISOString()
   const appUrl = process.env.NEXTAUTH_URL || 'https://artsandaging.com'
   const appUrlDisplay = appUrl.replace(/^https?:\/\//, '')
   const eventLink = `${appUrl}/events/${event.id}`
+  const calendarLinks = generateCalendarLinks({
+    title: event.title,
+    startDateTime: startDate,
+    endDateTime: endDate,
+    location: event.location.name,
+    url: eventLink,
+  })
+  const calendarSection = getCalendarSectionHtml(calendarLinks)
 
   const title = 'New Event Available'
   const message = `"${event.title}" has been scheduled for ${formattedDate} at ${event.location.name}. RSVP now!`
@@ -178,7 +197,8 @@ export async function notifyAllStaffAboutEvent(event: {
             eventTimeISO: eventTimeISO,
             eventLocation: event.location.name,
             eventLink: eventLink,
-            googleMapsUrl: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.location.name)}`,
+            googleMapsUrl: calendarLinks.googleMaps,
+            calendarSection,
             appUrlDisplay: appUrlDisplay,
           }
         }).catch(e => logger.error(`Failed to email ${staff.email}`, e))
@@ -206,6 +226,7 @@ export async function notifyAllStaffAboutEventUpdate(event: {
   id: string
   title: string
   startDateTime: Date
+  endDateTime: Date
   location?: string
   changes: string[]
 }) {
@@ -216,22 +237,37 @@ export async function notifyAllStaffAboutEventUpdate(event: {
 
   logger.log(`Found ${staffMembers.length} staff to notify about event update`)
 
-  // Use UTC timezone for consistent email display
-  const formattedDate = event.startDateTime.toLocaleDateString('en-US', { timeZone: 'UTC', weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })
-  const formattedTime = event.startDateTime.toLocaleTimeString('en-US', { timeZone: 'UTC', hour: 'numeric', minute: '2-digit' })
-  const eventDateISO = event.startDateTime.toISOString().split('T')[0]
-  const eventTimeISO = event.startDateTime.toISOString().slice(11, 16)
+  // Use Newfoundland timezone for consistent event display
+  const startDate = new Date(event.startDateTime)
+  const endDate = new Date(event.endDateTime)
+  const startDateLabel = startDate.toLocaleDateString('en-US', { timeZone: EVENT_EMAIL_TIMEZONE, weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })
+  const endDateLabel = endDate.toLocaleDateString('en-US', { timeZone: EVENT_EMAIL_TIMEZONE, weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })
+  const startTimeLabel = startDate.toLocaleTimeString('en-US', { timeZone: EVENT_EMAIL_TIMEZONE, hour: 'numeric', minute: '2-digit', timeZoneName: 'short' })
+  const endTimeLabel = endDate.toLocaleTimeString('en-US', { timeZone: EVENT_EMAIL_TIMEZONE, hour: 'numeric', minute: '2-digit', timeZoneName: 'short' })
+  const isMultiDay = startDate.toLocaleDateString('en-US', { timeZone: EVENT_EMAIL_TIMEZONE }) !== endDate.toLocaleDateString('en-US', { timeZone: EVENT_EMAIL_TIMEZONE })
+  const formattedDate = isMultiDay ? `${startDateLabel} - ${endDateLabel} (Multi-day event)` : startDateLabel
+  const formattedTime = `Start: ${startTimeLabel} | End: ${endTimeLabel}`
+  const eventDateISO = startDate.toISOString().split('T')[0]
+  const eventTimeISO = startDate.toISOString()
   const appUrl = process.env.NEXTAUTH_URL || 'https://artsandaging.com'
   const appUrlDisplay = appUrl.replace(/^https?:\/\//, '')
   const eventLink = `${appUrl}/events/${event.id}`
+  const calendarLinks = generateCalendarLinks({
+    title: event.title,
+    startDateTime: startDate,
+    endDateTime: endDate,
+    location: event.location,
+    url: eventLink,
+  })
+  const calendarSection = getCalendarSectionHtml(calendarLinks)
   
   const title = 'Event Updated'
   const message = `"${event.title}" on ${formattedDate} - Event details have been updated.`
 
-  // Format changes for email (li already provides bullet, no need for •)
+  // Format changes as plain text lines
   const changesHtml = event.changes.length > 0 
-    ? event.changes.map(c => `<li style="margin-bottom: 4px;">${c}</li>`).join('')
-    : '<li>General update</li>'
+    ? event.changes.map(c => `<p style="margin: 0 0 8px; color: #111827; font-size: 15px; line-height: 1.5;">${c}</p>`).join('')
+    : '<p style="margin: 0; color: #111827; font-size: 15px; line-height: 1.5;">Event details were updated.</p>'
 
   const inAppNotifications = []
   for (const staff of staffMembers) {
@@ -268,10 +304,11 @@ export async function notifyAllStaffAboutEventUpdate(event: {
             eventDateISO: eventDateISO,
             eventTime: formattedTime,
             eventTimeISO: eventTimeISO,
-            eventLocation: event.location || '',
+            eventLocation: event.location || 'TBD',
             eventLink: eventLink,
-            googleMapsUrl: event.location ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.location)}` : '',
+            googleMapsUrl: event.location ? calendarLinks.googleMaps : '',
             eventChanges: changesHtml,
+            calendarSection,
             appUrlDisplay: appUrlDisplay,
           }
         }).catch(e => logger.error(`Failed to email ${staff.email}`, e))
@@ -288,6 +325,7 @@ export async function notifyEventSignupsAboutNewEvent(event: {
   id: string
   title: string
   startDateTime: Date
+  endDateTime: Date
   location: { name: string }
 }) {
   // Get approved volunteers
@@ -323,14 +361,29 @@ export async function notifyEventSignupsAboutNewEvent(event: {
 
   logger.log(`Found ${usersToNotify.length} users to notify about new event`)
 
-  // Use UTC timezone for consistent email display
-  const formattedDate = event.startDateTime.toLocaleDateString('en-US', { timeZone: 'UTC', weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })
-  const formattedTime = event.startDateTime.toLocaleTimeString('en-US', { timeZone: 'UTC', hour: 'numeric', minute: '2-digit' })
-  const eventDateISO = event.startDateTime.toISOString().split('T')[0]
-  const eventTimeISO = event.startDateTime.toISOString().slice(11, 16)
+  // Use Newfoundland timezone for consistent event display
+  const startDate = new Date(event.startDateTime)
+  const endDate = new Date(event.endDateTime)
+  const startDateLabel = startDate.toLocaleDateString('en-US', { timeZone: EVENT_EMAIL_TIMEZONE, weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })
+  const endDateLabel = endDate.toLocaleDateString('en-US', { timeZone: EVENT_EMAIL_TIMEZONE, weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })
+  const startTimeLabel = startDate.toLocaleTimeString('en-US', { timeZone: EVENT_EMAIL_TIMEZONE, hour: 'numeric', minute: '2-digit', timeZoneName: 'short' })
+  const endTimeLabel = endDate.toLocaleTimeString('en-US', { timeZone: EVENT_EMAIL_TIMEZONE, hour: 'numeric', minute: '2-digit', timeZoneName: 'short' })
+  const isMultiDay = startDate.toLocaleDateString('en-US', { timeZone: EVENT_EMAIL_TIMEZONE }) !== endDate.toLocaleDateString('en-US', { timeZone: EVENT_EMAIL_TIMEZONE })
+  const formattedDate = isMultiDay ? `${startDateLabel} - ${endDateLabel} (Multi-day event)` : startDateLabel
+  const formattedTime = `Start: ${startTimeLabel} | End: ${endTimeLabel}`
+  const eventDateISO = startDate.toISOString().split('T')[0]
+  const eventTimeISO = startDate.toISOString()
   const appUrl = process.env.NEXTAUTH_URL || 'https://artsandaging.com'
   const appUrlDisplay = appUrl.replace(/^https?:\/\//, '')
   const eventLink = `${appUrl}/volunteers/events/${event.id}`
+  const calendarLinks = generateCalendarLinks({
+    title: event.title,
+    startDateTime: startDate,
+    endDateTime: endDate,
+    location: event.location.name,
+    url: eventLink,
+  })
+  const calendarSection = getCalendarSectionHtml(calendarLinks)
   
   const title = 'New Event Available'
   const message = `"${event.title}" has been scheduled for ${formattedDate} at ${event.location.name}. RSVP now!`
@@ -374,7 +427,8 @@ export async function notifyEventSignupsAboutNewEvent(event: {
             eventTimeISO: eventTimeISO,
             eventLocation: event.location.name,
             eventLink: eventLink,
-            googleMapsUrl: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.location.name)}`,
+            googleMapsUrl: calendarLinks.googleMaps,
+            calendarSection,
             appUrlDisplay: appUrlDisplay,
           }
         }).catch(e => logger.error(`Failed to email ${user.email}`, e))
@@ -391,6 +445,7 @@ export async function notifyEventSignupsAboutEventUpdate(event: {
   id: string
   title: string
   startDateTime: Date
+  endDateTime: Date
   location?: string
   changes: string[]
 }) {
@@ -427,22 +482,37 @@ export async function notifyEventSignupsAboutEventUpdate(event: {
 
   logger.log(`Found ${usersToNotify.length} users to notify about event update`)
 
-  // Use UTC timezone for consistent email display
-  const formattedDate = event.startDateTime.toLocaleDateString('en-US', { timeZone: 'UTC', weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })
-  const formattedTime = event.startDateTime.toLocaleTimeString('en-US', { timeZone: 'UTC', hour: 'numeric', minute: '2-digit' })
-  const eventDateISO = event.startDateTime.toISOString().split('T')[0]
-  const eventTimeISO = event.startDateTime.toISOString().slice(11, 16)
+  // Use Newfoundland timezone for consistent event display
+  const startDate = new Date(event.startDateTime)
+  const endDate = new Date(event.endDateTime)
+  const startDateLabel = startDate.toLocaleDateString('en-US', { timeZone: EVENT_EMAIL_TIMEZONE, weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })
+  const endDateLabel = endDate.toLocaleDateString('en-US', { timeZone: EVENT_EMAIL_TIMEZONE, weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })
+  const startTimeLabel = startDate.toLocaleTimeString('en-US', { timeZone: EVENT_EMAIL_TIMEZONE, hour: 'numeric', minute: '2-digit', timeZoneName: 'short' })
+  const endTimeLabel = endDate.toLocaleTimeString('en-US', { timeZone: EVENT_EMAIL_TIMEZONE, hour: 'numeric', minute: '2-digit', timeZoneName: 'short' })
+  const isMultiDay = startDate.toLocaleDateString('en-US', { timeZone: EVENT_EMAIL_TIMEZONE }) !== endDate.toLocaleDateString('en-US', { timeZone: EVENT_EMAIL_TIMEZONE })
+  const formattedDate = isMultiDay ? `${startDateLabel} - ${endDateLabel} (Multi-day event)` : startDateLabel
+  const formattedTime = `Start: ${startTimeLabel} | End: ${endTimeLabel}`
+  const eventDateISO = startDate.toISOString().split('T')[0]
+  const eventTimeISO = startDate.toISOString()
   const appUrl = process.env.NEXTAUTH_URL || 'https://artsandaging.com'
   const appUrlDisplay = appUrl.replace(/^https?:\/\//, '')
   const eventLink = `${appUrl}/volunteers/events/${event.id}`
+  const calendarLinks = generateCalendarLinks({
+    title: event.title,
+    startDateTime: startDate,
+    endDateTime: endDate,
+    location: event.location,
+    url: eventLink,
+  })
+  const calendarSection = getCalendarSectionHtml(calendarLinks)
   
   const title = 'Event Updated'
   const message = `"${event.title}" on ${formattedDate} has been updated.`
 
-  // Format changes for email (li already provides bullet, no need for •)
+  // Format changes as plain text lines
   const changesHtml = event.changes.length > 0 
-    ? event.changes.map(c => `<li style="margin-bottom: 4px;">${c}</li>`).join('')
-    : '<li>General update</li>'
+    ? event.changes.map(c => `<p style="margin: 0 0 8px; color: #111827; font-size: 15px; line-height: 1.5;">${c}</p>`).join('')
+    : '<p style="margin: 0; color: #111827; font-size: 15px; line-height: 1.5;">Event details were updated.</p>'
 
   // Create in-app notifications
   const notifications = []
@@ -481,10 +551,11 @@ export async function notifyEventSignupsAboutEventUpdate(event: {
             eventDateISO: eventDateISO,
             eventTime: formattedTime,
             eventTimeISO: eventTimeISO,
-            eventLocation: event.location || '',
+            eventLocation: event.location || 'TBD',
             eventLink: eventLink,
-            googleMapsUrl: event.location ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.location)}` : '',
+            googleMapsUrl: event.location ? calendarLinks.googleMaps : '',
             eventChanges: changesHtml,
+            calendarSection,
             appUrlDisplay: appUrlDisplay,
           }
         }).catch(e => logger.error(`Failed to email ${user.email}`, e))

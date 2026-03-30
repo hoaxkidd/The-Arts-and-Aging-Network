@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma"
 import { auth } from "@/auth"
 import { revalidatePath } from "next/cache"
 import { logger } from "@/lib/logger"
+import { deleteFromR2, extractR2KeyFromUrl } from "@/lib/r2"
 import { z } from "zod"
 
 import { notifyAllStaffAboutEvent, notifyAllStaffAboutEventUpdate, notifyAllStaffAboutEventCancellation, notifyEventSignupsAboutNewEvent, notifyEventSignupsAboutEventUpdate } from "@/lib/notifications"
@@ -179,55 +180,73 @@ export async function createEvent(formData: FormData) {
         
         // Generate list of specific field changes
         const changes: string[] = []
+        const changeTimezone = 'America/St_Johns'
+
+        const formatChangeDate = (date: Date) => date.toLocaleDateString('en-US', {
+            timeZone: changeTimezone,
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+        })
+
+        const formatChangeTime = (date: Date) => date.toLocaleTimeString('en-US', {
+            timeZone: changeTimezone,
+            hour: 'numeric',
+            minute: '2-digit',
+        })
         
         if (oldEvent && updatedEvent) {
             if (oldEvent.title !== updatedEvent.title) {
-                changes.push(`Title: "${oldEvent.title}" → "${updatedEvent.title}"`)
+                changes.push(`Title updated from "${oldEvent.title}" to "${updatedEvent.title}"`)
             }
             if (oldEvent.description !== updatedEvent.description) {
                 changes.push(`Description updated`)
             }
-            // Compare local datetime strings at minute precision to avoid timezone issues
-            const oldStartISO = oldEvent.startDateTime ? new Date(oldEvent.startDateTime).toISOString().slice(0, 16) : null
-            const newStartISO = updatedEvent.startDateTime ? new Date(updatedEvent.startDateTime).toISOString().slice(0, 16) : null
-            if (oldStartISO !== newStartISO) {
-                const oldDate = oldEvent.startDateTime.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })
-                const newDate = updatedEvent.startDateTime.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })
-                // Only show change if date actually differs in display format
-                if (oldDate !== newDate) {
-                    changes.push(`Date: ${oldDate} → ${newDate}`)
-                }
+
+            const oldStartDate = formatChangeDate(oldEvent.startDateTime)
+            const newStartDate = formatChangeDate(updatedEvent.startDateTime)
+            if (oldStartDate !== newStartDate) {
+                changes.push(`Date updated from ${oldStartDate} to ${newStartDate}`)
             }
-            // Compare end time at minute precision
-            const oldEndISO = oldEvent.endDateTime ? new Date(oldEvent.endDateTime).toISOString().slice(0, 16) : null
-            const newEndISO = updatedEvent.endDateTime ? new Date(updatedEvent.endDateTime).toISOString().slice(0, 16) : null
-            if (oldEndISO !== newEndISO) {
-                const oldTime = oldEvent.endDateTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
-                const newTime = updatedEvent.endDateTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
-                if (oldTime !== newTime) {
-                    changes.push(`End time: ${oldTime} → ${newTime}`)
-                }
+
+            const oldStartTime = formatChangeTime(oldEvent.startDateTime)
+            const newStartTime = formatChangeTime(updatedEvent.startDateTime)
+            if (oldStartTime !== newStartTime) {
+                changes.push(`Start time updated from ${oldStartTime} to ${newStartTime}`)
             }
+
+            const oldEndDate = formatChangeDate(oldEvent.endDateTime)
+            const newEndDate = formatChangeDate(updatedEvent.endDateTime)
+            if (oldEndDate !== newEndDate) {
+                changes.push(`End date updated from ${oldEndDate} to ${newEndDate}`)
+            }
+
+            const oldEndTime = formatChangeTime(oldEvent.endDateTime)
+            const newEndTime = formatChangeTime(updatedEvent.endDateTime)
+            if (oldEndTime !== newEndTime) {
+                changes.push(`End time updated from ${oldEndTime} to ${newEndTime}`)
+            }
+
             if (oldEvent.locationId !== updatedEvent.locationId) {
                 const oldLoc = oldEvent.location?.name || 'Unknown'
                 const newLoc = updatedEvent.location?.name || 'Unknown'
-                changes.push(`Location: ${oldLoc} → ${newLoc}`)
+                changes.push(`Location updated from ${oldLoc} to ${newLoc}`)
             }
             if (oldEvent.maxAttendees !== updatedEvent.maxAttendees) {
-                changes.push(`Max attendees: ${oldEvent.maxAttendees || 'None'} → ${updatedEvent.maxAttendees || 'None'}`)
+                changes.push(`Max attendees updated from ${oldEvent.maxAttendees || 'None'} to ${updatedEvent.maxAttendees || 'None'}`)
             }
             if (oldEvent.autoAcceptLimit !== updatedEvent.autoAcceptLimit) {
-                changes.push(`Auto-accept limit: ${oldEvent.autoAcceptLimit || 'None'} → ${updatedEvent.autoAcceptLimit || 'None'}`)
+                changes.push(`Auto-accept limit updated from ${oldEvent.autoAcceptLimit || 'None'} to ${updatedEvent.autoAcceptLimit || 'None'}`)
             }
             if (oldEvent.organizerName !== updatedEvent.organizerName) {
-                changes.push(`Organizer: ${oldEvent.organizerName || 'None'} → ${updatedEvent.organizerName || 'None'}`)
+                changes.push(`Organizer updated from ${oldEvent.organizerName || 'None'} to ${updatedEvent.organizerName || 'None'}`)
             }
             if (oldEvent.status !== updatedEvent.status) {
-                changes.push(`Status: ${oldEvent.status} → ${updatedEvent.status}`)
+                changes.push(`Status updated from ${oldEvent.status} to ${updatedEvent.status}`)
             }
         }
         
-        const changesList = changes.length > 0 ? changes : ['General update']
+        const changesList = changes
         console.log('[Event] Changes detected:', changesList)
         
         await prisma.auditLog.create({
@@ -244,6 +263,7 @@ export async function createEvent(formData: FormData) {
                 id: updatedEvent.id,
                 title: updatedEvent.title,
                 startDateTime: updatedEvent.startDateTime,
+                endDateTime: updatedEvent.endDateTime,
                 location: updatedEvent.location?.name || 'TBD',
                 changes: changesList
             })
@@ -257,6 +277,7 @@ export async function createEvent(formData: FormData) {
                 id: updatedEvent.id,
                 title: updatedEvent.title,
                 startDateTime: updatedEvent.startDateTime,
+                endDateTime: updatedEvent.endDateTime,
                 location: updatedEvent.location?.name || 'TBD',
                 changes: changesList
             })
@@ -310,6 +331,7 @@ export async function createEvent(formData: FormData) {
                 id: event.id,
                 title: event.title,
                 startDateTime: event.startDateTime,
+                endDateTime: event.endDateTime,
                 location: event.location
             })
             logger.log('✅ Notification result:', result)
@@ -324,6 +346,7 @@ export async function createEvent(formData: FormData) {
                 id: event.id,
                 title: event.title,
                 startDateTime: event.startDateTime,
+                endDateTime: event.endDateTime,
                 location: event.location
             })
         } catch (notifyError) {
@@ -382,6 +405,10 @@ export async function deleteEvent(eventId: string) {
     // Store event details for notification before deletion
     const eventTitle = event.title
     const eventDate = event.startDateTime
+    const eventPhotos = await prisma.eventPhoto.findMany({
+      where: { eventId },
+      select: { id: true, url: true },
+    })
 
     // Cancel any pending email reminders
     try {
@@ -433,6 +460,24 @@ export async function deleteEvent(eventId: string) {
               userId: session.user.id
           }
       })
+    })
+
+    // Best-effort cleanup for photo objects in R2
+    const photoCleanupResults = await Promise.allSettled(
+      eventPhotos.map(async (photo) => {
+        const key = extractR2KeyFromUrl(photo.url)
+        if (!key) return
+        await deleteFromR2(key)
+      })
+    )
+
+    photoCleanupResults.forEach((result, index) => {
+      if (result.status === 'rejected') {
+        logger.upload('Failed to delete event photo from R2 during event deletion', {
+          photoId: eventPhotos[index]?.id,
+          error: result.reason,
+        })
+      }
     })
 
     // Notify staff about cancellation
