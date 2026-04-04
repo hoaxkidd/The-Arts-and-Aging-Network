@@ -15,6 +15,7 @@
     "db:push": "node scripts/with-env.js .env.local -- npx prisma db push",
     "db:seed": "npx prisma db seed",
     "qa:role-matrix": "node scripts/qa-role-matrix.mjs",
+    "qa:seed-role-matrix": "npx tsx scripts/qa-seed-role-matrix.ts",
     "import-staff": "npx tsx scripts/import-staff-profiles.ts"
   },
   "prisma": {
