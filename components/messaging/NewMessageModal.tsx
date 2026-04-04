@@ -7,6 +7,7 @@ import { requestConversation, canMessageUser } from '@/app/actions/conversation-
 import { sendMessage } from '@/app/actions/conversations'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { getInboxBasePathForRole } from '@/lib/role-routes'
 
 type User = {
   id: string
@@ -35,6 +36,7 @@ export function NewMessageModal({ isOpen, onClose, currentUserRole }: Props) {
   const [error, setError] = useState<string | null>(null)
   const [facilitatorsFromEvents, setFacilitatorsFromEvents] = useState<User[]>([])
   const router = useRouter()
+  const inboxBasePath = getInboxBasePathForRole(currentUserRole)
 
   const isAdmin = currentUserRole === 'ADMIN'
   const isHomeAdmin = currentUserRole === 'HOME_ADMIN'
@@ -102,7 +104,7 @@ export function NewMessageModal({ isOpen, onClose, currentUserRole }: Props) {
         setError(result.error || null)
       } else {
         onClose()
-        router.push(`/staff/inbox/${selectedUser.userCode || selectedUser.id}`)
+        router.push(`${inboxBasePath}/inbox/${selectedUser.userCode || selectedUser.id}`)
         router.refresh()
       }
     } else {
@@ -115,7 +117,7 @@ export function NewMessageModal({ isOpen, onClose, currentUserRole }: Props) {
           setError(result.error || null)
         } else {
           onClose()
-          router.push(`/staff/inbox/${selectedUser.userCode || selectedUser.id}`)
+          router.push(`${inboxBasePath}/inbox/${selectedUser.userCode || selectedUser.id}`)
           router.refresh()
         }
       } else {

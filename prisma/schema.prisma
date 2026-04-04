@@ -271,6 +271,10 @@ model EventRequest {
   reviewedBy          String?
   reviewedAt         DateTime?
   rejectionReason     String?
+  editAccessGranted   Boolean                @default(false)
+  editAccessGrantedBy String?
+  editAccessGrantedAt DateTime?
+  editAccessNote      String?
   selectedDateIndex   Int?
   approvedEventId     String?                @unique
   notes               String?
@@ -439,6 +443,8 @@ model GeriatricHome {
   contactEmail       String
   contactPhone       String
   contactPosition    String?
+  useCustomNotificationEmail Boolean @default(false)
+  notificationEmail  String?
   additionalContacts String?
   type               String?
   region             String?
@@ -981,6 +987,8 @@ model User {
   inventoryTransactions   InventoryTransaction[]
   invitationsCreated      Invitation[]           @relation("InvitationsCreated")
   invitationsAsUser       Invitation[]           @relation("InvitedUser")
+  roleAssignments         UserRoleAssignment[]   @relation("UserRoleAssignments")
+  assignedRolesCreated    UserRoleAssignment[]   @relation("RoleAssignmentCreator")
   passwordResetTokens     PasswordResetToken[]
   meetingRequestsReceived MeetingRequest[]       @relation("MeetingRequest_requested")
   meetingRequestsSent     MeetingRequest[]       @relation("MeetingRequest_requester")
@@ -995,6 +1003,25 @@ model User {
   timesheets              Timesheet[]
   timesheetEntries        TimesheetEntry[]
   workLogs                WorkLog[]
+}
+
+model UserRoleAssignment {
+  id           String   @id @default(cuid())
+  userId       String
+  role         String
+  isPrimary    Boolean  @default(false)
+  isActive     Boolean  @default(true)
+  assignedAt   DateTime @default(now())
+  assignedById String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user       User  @relation("UserRoleAssignments", fields: [userId], references: [id], onDelete: Cascade)
+  assignedBy User? @relation("RoleAssignmentCreator", fields: [assignedById], references: [id], onDelete: SetNull)
+
+  @@unique([userId, role])
+  @@index([userId, isPrimary, isActive])
+  @@index([role, isActive])
 }
 
 model EmailChangeRequest {

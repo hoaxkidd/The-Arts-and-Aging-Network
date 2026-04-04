@@ -381,7 +381,7 @@ export function AdminFormSubmissionsList({
                   </td>
                   <td className={STYLES.tableCell}>
                     {new Date(submission.createdAt).toLocaleDateString('en-US', {
-                      month: 'short',
+                      month: 'long',
                       day: 'numeric',
                       year: 'numeric'
                     })}

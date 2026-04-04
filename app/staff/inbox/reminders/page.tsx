@@ -1,10 +1,12 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Bell, MessageSquare, Users, Loader2, X, Check } from 'lucide-react'
 import { getMessageReminders, completeReminder, deleteReminder } from '@/app/actions/message-reminders'
 import { cn } from '@/lib/utils'
+import { getStaffBasePathFromPathname } from '@/lib/role-routes'
 
 type Reminder = {
   id: string
@@ -19,6 +21,8 @@ type Reminder = {
 }
 
 export default function MessageRemindersPage() {
+  const pathname = usePathname()
+  const basePath = getStaffBasePathFromPathname(pathname)
   const [reminders, setReminders] = useState<Reminder[]>([])
   const [loading, setLoading] = useState(true)
   const [actionId, setActionId] = useState<string | null>(null)
@@ -70,7 +74,7 @@ export default function MessageRemindersPage() {
     if (diffDays < 7) return `in ${diffDays} days`
 
     return d.toLocaleDateString('en-US', {
-      month: 'short',
+      month: 'long',
       day: 'numeric',
       hour: 'numeric',
       minute: '2-digit'
@@ -84,6 +88,9 @@ export default function MessageRemindersPage() {
   return (
     <div className="h-full flex flex-col">
       <div className="flex-1 min-h-0 overflow-auto">
+        <Link href={`${basePath}/inbox`} className="inline-flex items-center gap-1 text-sm text-gray-600 hover:text-gray-900 mb-3">
+          <ArrowLeft className="w-4 h-4" /> Back to Inbox
+        </Link>
         {loading ? (
           <div className="flex items-center justify-center py-12">
             <Loader2 className="w-6 h-6 animate-spin text-gray-400" />

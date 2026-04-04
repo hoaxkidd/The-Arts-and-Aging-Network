@@ -41,7 +41,7 @@ export default async function HistoryPage() {
                   {/* Date Badge */}
                   <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-gray-100 flex flex-col items-center justify-center text-gray-600">
                     <span className="text-[10px] font-medium uppercase">
-                      {eventDate.toLocaleDateString('en-US', { month: 'short' })}
+                      {eventDate.toLocaleDateString('en-US', { month: 'long' })}
                     </span>
                     <span className="text-lg font-bold leading-none">
                       {eventDate.getDate()}

@@ -3,6 +3,8 @@
 import { useState } from 'react'
 import { ChevronLeft, ChevronRight, Plus, Send, Loader2, Trash2 } from 'lucide-react'
 import { saveTimesheetEntry, deleteTimesheetEntry, submitTimesheet } from '@/app/actions/timesheet'
+import { STYLES } from '@/lib/styles'
+import { TimeInput } from '@/components/ui/TimeInput'
 
 type TimesheetEntry = {
   id: string
@@ -32,8 +34,8 @@ const FUNDING_CLASSES = ['GRANT_A', 'GRANT_B', 'OPERATIONAL', 'VOLUNTEER', 'OTHE
 
 function formatDate(date: Date | string): string {
   return new Date(date).toLocaleDateString('en-US', {
-    weekday: 'short',
-    month: 'short',
+    weekday: 'long',
+    month: 'long',
     day: 'numeric'
   })
 }
@@ -295,20 +297,18 @@ function EntryForm({
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <div>
           <label className="block text-xs text-gray-500 mb-1">Check In</label>
-          <input
-            type="time"
+          <TimeInput
             name="checkInTime"
-            defaultValue={entry ? getTimeValue(entry.checkInTime) : ''}
-            className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded"
+            value={entry ? getTimeValue(entry.checkInTime) : ''}
+            className="text-sm"
           />
         </div>
         <div>
           <label className="block text-xs text-gray-500 mb-1">Check Out</label>
-          <input
-            type="time"
+          <TimeInput
             name="checkOutTime"
-            defaultValue={entry ? getTimeValue(entry.checkOutTime) : ''}
-            className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded"
+            value={entry ? getTimeValue(entry.checkOutTime) : ''}
+            className="text-sm"
           />
         </div>
         <div>

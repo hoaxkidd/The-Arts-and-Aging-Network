@@ -153,7 +153,7 @@ export function StaffEventList({ events }: { events: Event[] }) {
                       isConfirmed ? "bg-green-100 text-green-700" : "bg-primary-100 text-primary-700"
                     )}>
                       <span className="text-[10px] font-medium uppercase">
-                        {eventDate.toLocaleDateString('en-US', { month: 'short' })}
+                        {eventDate.toLocaleDateString('en-US', { month: 'long' })}
                       </span>
                       <span className="text-lg font-bold leading-none">
                         {eventDate.getDate()}

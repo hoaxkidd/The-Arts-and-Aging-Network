@@ -22,9 +22,10 @@ export default async function VolunteerFormTemplateDetailPage({
     where: { id: session.user.id },
     select: { role: true, volunteerReviewStatus: true }
   })
+  const roles = Array.isArray(session.user.roles) ? session.user.roles : [session.user.role]
   
-  if (user?.role === 'VOLUNTEER' && user.volunteerReviewStatus !== 'APPROVED') {
-    redirect('/staff/onboarding')
+  if (roles.includes('VOLUNTEER') && user?.volunteerReviewStatus !== 'APPROVED') {
+    redirect('/volunteers/onboarding')
   }
 
   const { id } = await params
@@ -176,7 +177,7 @@ export default async function VolunteerFormTemplateDetailPage({
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-xs text-gray-500">
                       {submission.createdAt.toLocaleDateString('en-US', {
-                        month: 'short',
+                        month: 'long',
                         day: 'numeric',
                         year: 'numeric',
                         hour: 'numeric',
@@ -216,7 +217,7 @@ export default async function VolunteerFormTemplateDetailPage({
               <span className="text-gray-500">Last Updated:</span>
               <span className="text-gray-900 font-medium">
                 {template.updatedAt.toLocaleDateString('en-US', {
-                  month: 'short',
+                  month: 'long',
                   day: 'numeric',
                   year: 'numeric'
                 })}

@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { z } from 'zod'
+import { canMergeRoles } from './roles'
 
 // Mock the invitation validation schema
 const inviteSchema = z.object({
@@ -154,10 +155,12 @@ describe('Role-Based Redirect Logic', () => {
   const getRedirectUrl = (role: string): string | null => {
     switch (role) {
       case 'VOLUNTEER':
-        return '/staff/onboarding?new=true'
+        return '/volunteers/onboarding?new=true'
       case 'FACILITATOR':
-      case 'PARTNER':
+        return '/facilitator'
       case 'BOARD':
+        return '/board'
+      case 'PARTNER':
         return '/staff'
       case 'ADMIN':
         return '/admin'
@@ -170,21 +173,21 @@ describe('Role-Based Redirect Logic', () => {
     }
   }
 
-  it('should return onboarding URL for VOLUNTEER role', () => {
-    expect(getRedirectUrl('VOLUNTEER')).toBe('/staff/onboarding?new=true')
-  })
+    it('should return onboarding URL for VOLUNTEER role', () => {
+      expect(getRedirectUrl('VOLUNTEER')).toBe('/volunteers/onboarding?new=true')
+    })
 
-  it('should return /staff URL for FACILITATOR role', () => {
-    expect(getRedirectUrl('FACILITATOR')).toBe('/staff')
-  })
+    it('should return /facilitator URL for FACILITATOR role', () => {
+      expect(getRedirectUrl('FACILITATOR')).toBe('/facilitator')
+    })
 
   it('should return /staff URL for PARTNER role', () => {
     expect(getRedirectUrl('PARTNER')).toBe('/staff')
   })
 
-  it('should return /staff URL for BOARD role', () => {
-    expect(getRedirectUrl('BOARD')).toBe('/staff')
-  })
+    it('should return /board URL for BOARD role', () => {
+      expect(getRedirectUrl('BOARD')).toBe('/board')
+    })
 
   it('should return /admin URL for ADMIN role', () => {
     expect(getRedirectUrl('ADMIN')).toBe('/admin')
@@ -254,5 +257,27 @@ describe('Invitation Expiry Validation', () => {
     const now = new Date()
     
     expect(futureDate > now).toBe(true)
+  })
+})
+
+describe('Existing User Role Merge Policy (Invitation)', () => {
+  it('allows inviting existing FACILITATOR user into VOLUNTEER role', () => {
+    const result = canMergeRoles(['FACILITATOR'], 'VOLUNTEER')
+    expect(result.ok).toBe(true)
+  })
+
+  it('allows inviting existing PAYROLL user into VOLUNTEER role', () => {
+    const result = canMergeRoles(['PAYROLL'], 'VOLUNTEER')
+    expect(result.ok).toBe(true)
+  })
+
+  it('rejects adding BOARD to existing multi-role user', () => {
+    const result = canMergeRoles(['FACILITATOR', 'VOLUNTEER'], 'BOARD')
+    expect(result.ok).toBe(false)
+  })
+
+  it('rejects adding VOLUNTEER to existing BOARD user', () => {
+    const result = canMergeRoles(['BOARD'], 'VOLUNTEER')
+    expect(result.ok).toBe(false)
   })
 })

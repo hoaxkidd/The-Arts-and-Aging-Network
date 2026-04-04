@@ -9,13 +9,92 @@ import { sendEmailWithRetry } from "@/lib/email/service"
 import { generateCalendarLinks, formatEventTime } from "@/lib/email/calendar"
 import { logger } from "@/lib/logger"
 
+function getWeekStart(date: Date): Date {
+  const d = new Date(date)
+  const day = d.getDay()
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1)
+  d.setDate(diff)
+  d.setHours(0, 0, 0, 0)
+  return d
+}
+
+async function autoCreateTimesheetEntryFromCheckIn(userId: string, role: string | null | undefined, event: {
+  id: string
+  title: string
+  startDateTime: Date
+}) {
+  // Current timesheet workflows are scoped to payroll/admin roles.
+  if (role !== 'PAYROLL' && role !== 'ADMIN') return
+
+  const marker = `[AUTO_EVENT:${event.id}]`
+  const checkInAt = new Date()
+  const entryDate = new Date(checkInAt)
+  entryDate.setHours(0, 0, 0, 0)
+  const weekStart = getWeekStart(checkInAt)
+
+  try {
+    const timesheet = await prisma.timesheet.upsert({
+      where: {
+        userId_weekStart: {
+          userId,
+          weekStart,
+        },
+      },
+      update: {},
+      create: {
+        userId,
+        weekStart,
+        status: 'DRAFT',
+      },
+      select: { id: true, status: true },
+    })
+
+    if (timesheet.status !== 'DRAFT') return
+
+    const existing = await prisma.timesheetEntry.findFirst({
+      where: {
+        timesheetId: timesheet.id,
+        notes: { contains: marker },
+      },
+      select: { id: true },
+    })
+    if (existing) return
+
+    await prisma.timesheetEntry.create({
+      data: {
+        timesheetId: timesheet.id,
+        userId,
+        date: entryDate,
+        checkInTime: checkInAt,
+        checkOutTime: null,
+        hoursWorked: 0,
+        programName: event.title,
+        notes: `${marker} Auto-created from event check-in`,
+      },
+    })
+  } catch (error) {
+    logger.serverAction('Failed to auto-create timesheet entry from check-in', {
+      userId,
+      eventId: event.id,
+      error,
+    })
+  }
+}
+
 export async function checkInToEvent(eventId: string) {
   const session = await auth()
   if (!session?.user?.id) return { error: 'Unauthorized' }
 
   try {
     const event = await prisma.event.findUnique({
-        where: { id: eventId }
+        where: { id: eventId },
+        select: {
+          id: true,
+          title: true,
+          startDateTime: true,
+          endDateTime: true,
+          checkInWindowMinutes: true,
+        },
     })
     
     if (!event) return { error: 'Event not found' }
@@ -52,6 +131,12 @@ export async function checkInToEvent(eventId: string) {
             details: JSON.stringify({ eventId, title: event.title }),
             userId: session.user.id
         }
+    })
+
+    await autoCreateTimesheetEntryFromCheckIn(session.user.id, session.user.role, {
+      id: event.id,
+      title: event.title,
+      startDateTime: event.startDateTime,
     })
 
     // Notify admins about the check-in

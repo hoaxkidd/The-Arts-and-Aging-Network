@@ -82,6 +82,9 @@ export default async function HomeEventDetailPage({
     <div className="h-full flex flex-col">
       {/* Content */}
       <div className="flex-1 min-h-0 overflow-auto space-y-4">
+        <Link href="/dashboard/my-events" className="inline-flex items-center gap-1 text-sm text-gray-600 hover:text-gray-900">
+          <ArrowLeft className="w-4 h-4" /> Back to My Events
+        </Link>
         {/* Event Info Card */}
         <div className="bg-white rounded-lg border border-gray-200 p-4">
           <div className="grid sm:grid-cols-2 gap-4">
@@ -95,8 +98,8 @@ export default async function HomeEventDetailPage({
                   <p className="text-[10px] text-gray-500 uppercase">Date</p>
                   <p className="text-sm font-medium text-gray-900">
                     {eventDate.toLocaleDateString('en-US', {
-                      weekday: 'short',
-                      month: 'short',
+                      weekday: 'long',
+                      month: 'long',
                       day: 'numeric'
                     })}
                   </p>

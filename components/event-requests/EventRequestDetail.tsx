@@ -14,7 +14,7 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { STYLES } from '@/lib/styles'
-import { approveEventRequest, rejectEventRequest } from '@/app/actions/event-requests'
+import { approveEventRequest, grantEventRequestEditAccess, rejectEventRequest } from '@/app/actions/event-requests'
 import { triggerNotificationRefresh } from '@/lib/notification-refresh'
 import { FormTemplateView } from '@/components/forms/FormTemplateView'
 import type { FormTemplateField } from '@/lib/form-template-types'
@@ -35,6 +35,44 @@ type Request = {
   approvedEvent: { id: string; title: string } | null
   geriatricHome: { id: string; name: string }
   formSubmission?: { id: string; formData: string; template: { title: string; formFields: string | null } } | null
+  editAccessGranted?: boolean
+  preferredDates?: string | null
+}
+
+function parsePreferredDates(preferredDates?: string | null): Array<{ startDateTime: Date; endDateTime: Date }> {
+  if (!preferredDates) return []
+  try {
+    const parsed = JSON.parse(preferredDates) as Array<{ startDateTime?: string; endDateTime?: string }>
+    return parsed
+      .map((slot) => ({
+        startDateTime: slot.startDateTime ? new Date(slot.startDateTime) : null,
+        endDateTime: slot.endDateTime ? new Date(slot.endDateTime) : null,
+      }))
+      .filter((slot): slot is { startDateTime: Date; endDateTime: Date } => Boolean(slot.startDateTime && slot.endDateTime && slot.endDateTime > slot.startDateTime))
+  } catch {
+    return []
+  }
+}
+
+function isDefaultWeeklyPattern(slots: Array<{ startDateTime: Date; endDateTime: Date }>): boolean {
+  if (slots.length <= 1) return true
+  const first = slots[0]
+  const firstStartMinutes = first.startDateTime.getHours() * 60 + first.startDateTime.getMinutes()
+  const firstDuration = first.endDateTime.getTime() - first.startDateTime.getTime()
+
+  for (let i = 1; i < slots.length; i++) {
+    const prev = slots[i - 1]
+    const current = slots[i]
+    const daysBetween = Math.round((current.startDateTime.getTime() - prev.startDateTime.getTime()) / (24 * 60 * 60 * 1000))
+    const currentStartMinutes = current.startDateTime.getHours() * 60 + current.startDateTime.getMinutes()
+    const currentDuration = current.endDateTime.getTime() - current.startDateTime.getTime()
+
+    if (daysBetween !== 7 || currentStartMinutes !== firstStartMinutes || currentDuration !== firstDuration) {
+      return false
+    }
+  }
+
+  return true
 }
 
 function RejectModal({
@@ -87,6 +125,7 @@ export function EventRequestDetail({ request }: { request: Request }) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [rejectOpen, setRejectOpen] = useState(false)
+  const [grantingEdit, setGrantingEdit] = useState(false)
 
   const isCustom = request.type === 'CREATE_CUSTOM'
   const title = isCustom ? request.customTitle : request.existingEvent?.title
@@ -117,6 +156,22 @@ export function EventRequestDetail({ request }: { request: Request }) {
     })
   }
 
+  const handleGrantEditAccess = () => {
+    if (grantingEdit) return
+    setGrantingEdit(true)
+    startTransition(async () => {
+      const res = await grantEventRequestEditAccess(request.id)
+      if (res.error) {
+        alert(res.error)
+        setGrantingEdit(false)
+        return
+      }
+      triggerNotificationRefresh()
+      router.refresh()
+      setGrantingEdit(false)
+    })
+  }
+
   const formFields = request.formSubmission?.template?.formFields
     ? (() => {
         try {
@@ -137,6 +192,10 @@ export function EventRequestDetail({ request }: { request: Request }) {
       })()
     : {}
 
+  const preferredDates = parsePreferredDates(request.preferredDates)
+  const hasWeeklySchedule = isCustom && preferredDates.length > 1
+  const isDefaultPattern = isDefaultWeeklyPattern(preferredDates)
+
   return (
     <div className="space-y-4">
       {/* Summary bar — status, date, facility, type */}
@@ -151,7 +210,7 @@ export function EventRequestDetail({ request }: { request: Request }) {
             {request.status}
           </span>
           <span className="text-gray-500">
-            Requested {requestedAt ? new Date(requestedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}
+            Requested {requestedAt ? new Date(requestedAt).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' }) : '—'}
           </span>
           <span className="flex items-center gap-1.5 text-gray-700">
             <Building2 className="w-4 h-4 text-gray-400" />
@@ -172,7 +231,7 @@ export function EventRequestDetail({ request }: { request: Request }) {
             {date && (
               <span className="flex items-center gap-1.5">
                 <Calendar className="w-3.5 h-3.5 text-gray-400" />
-                {new Date(date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                {new Date(date).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
               </span>
             )}
             {location && <span>{location}</span>}
@@ -180,6 +239,34 @@ export function EventRequestDetail({ request }: { request: Request }) {
           </div>
         </div>
       </div>
+
+      {hasWeeklySchedule && (
+        <div className={cn(STYLES.card)}>
+          <h2 className="text-base font-semibold text-gray-900 border-b border-gray-100 pb-2 mb-3">Weekly Event Dates</h2>
+          <div className="space-y-2">
+            <div className="flex flex-wrap items-center gap-2 text-sm text-gray-700">
+              <span>{preferredDates.length} weekly events</span>
+              <span className={cn(
+                "px-2 py-0.5 rounded-full text-xs font-medium",
+                isDefaultPattern ? "bg-gray-100 text-gray-700" : "bg-amber-100 text-amber-800"
+              )}>
+                {isDefaultPattern ? 'Default weekly pattern' : 'Customized weekly pattern'}
+              </span>
+            </div>
+            <div className="space-y-1 text-sm text-gray-600">
+              {preferredDates.map((slot, index) => (
+                <p key={index}>
+                  {slot.startDateTime.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
+                  {' '}•{' '}
+                  {slot.startDateTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+                  {' - '}
+                  {slot.endDateTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+                </p>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Notes */}
       <div className={cn(STYLES.card)}>
@@ -236,6 +323,19 @@ export function EventRequestDetail({ request }: { request: Request }) {
           <Link href={`/events/${request.approvedEvent.id}`} className={cn(STYLES.btn, STYLES.btnPrimary, "inline-flex items-center gap-2")}>
             <Eye className="w-4 h-4" /> View Event
           </Link>
+        )}
+        {request.status === 'REJECTED' && !request.editAccessGranted && (
+          <button
+            onClick={handleGrantEditAccess}
+            disabled={isPending || grantingEdit}
+            className={cn(STYLES.btn, STYLES.btnSecondary, "inline-flex items-center gap-2")}
+          >
+            {grantingEdit ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
+            Grant Edit Access
+          </button>
+        )}
+        {request.status === 'REJECTED' && request.editAccessGranted && (
+          <span className="text-sm text-green-700 font-medium">Edit access granted</span>
         )}
       </div>
 

@@ -23,9 +23,10 @@ export default async function VolunteerFormsPage({
     where: { id: session.user.id },
     select: { role: true, volunteerReviewStatus: true }
   })
+  const roles = Array.isArray(session.user.roles) ? session.user.roles : [session.user.role]
   
-  if (user?.role === 'VOLUNTEER' && user.volunteerReviewStatus !== 'APPROVED') {
-    redirect('/staff/onboarding')
+  if (roles.includes('VOLUNTEER') && user?.volunteerReviewStatus !== 'APPROVED') {
+    redirect('/volunteers/onboarding')
   }
 
   const userRole = session.user.role || ''
@@ -39,7 +40,7 @@ export default async function VolunteerFormsPage({
   const statusFilter = params.status || 'active'
 
   const isAdmin = session.user.role === 'ADMIN'
-  const isVolunteer = session.user.role === 'VOLUNTEER'
+  const isVolunteer = roles.includes('VOLUNTEER')
 
   let templates
   const categoryFilterObj = categoryFilter !== 'ALL' ? { category: categoryFilter } : {}
@@ -73,7 +74,7 @@ export default async function VolunteerFormsPage({
         ...where,
         OR: [
           { isPublic: true },
-          { allowedRoles: { contains: userRole } }
+           { allowedRoles: { contains: 'VOLUNTEER' } }
         ]
       },
       include: {
@@ -342,7 +343,7 @@ export default async function VolunteerFormsPage({
                         </h3>
                         <p className="text-xs text-gray-500">
                           Submitted {submission.createdAt.toLocaleDateString('en-US', {
-                            month: 'short',
+                            month: 'long',
                             day: 'numeric',
                             year: 'numeric'
                           })}

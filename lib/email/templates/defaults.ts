@@ -216,6 +216,39 @@ export const DEFAULT_TEMPLATES: DefaultTemplate[] = [
     </div>`,
   },
   {
+    type: 'EVENT_REQUEST_REJECTED',
+    name: 'Event Request Rejected',
+    subject: 'Update on your event request: {{eventTitle}}',
+    content: `<div style="font-family: Arial, Helvetica, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9fafb;">
+      <div style="background: linear-gradient(135deg, #EF4444 0%, #B91C1C 100%); padding: 30px; text-align: center; border-radius: 12px 12px 0 0;">
+        <h1 style="color: white; margin: 0; font-size: 28px;">Request Declined</h1>
+        <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0; font-size: 16px;">Please review and resubmit</p>
+      </div>
+      <div style="background: #ffffff; padding: 35px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 12px 12px;">
+        <p style="margin: 0 0 20px; color: #111827; font-size: 16px;">Hi {{name}},</p>
+        <p style="margin: 0 0 25px; color: #374151; font-size: 16px;">
+          Your request for <strong style="color: #B91C1C;">{{eventTitle}}</strong> was declined.
+        </p>
+        <div style="background: #FEF2F2; padding: 18px; border-radius: 10px; margin: 0 0 20px; border-left: 4px solid #EF4444;">
+          <p style="margin: 0; color: #7F1D1D; font-size: 15px;"><strong>Reason:</strong> {{message}}</p>
+        </div>
+        <div style="background: #f9fafb; padding: 20px; border-radius: 10px; margin: 0 0 25px; border-left: 4px solid #6B7280;">
+          <p style="margin: 0 0 12px; color: #111827; font-size: 15px;"><strong>📅 Date:</strong> <time datetime="{{eventDateISO}}">{{eventDate}}</time></p>
+          <p style="margin: 0 0 12px; color: #111827; font-size: 15px;"><strong>🕐 Time:</strong> <time datetime="{{eventTimeISO}}">{{eventTime}}</time></p>
+          <p style="margin: 0; color: #111827; font-size: 15px;"><strong>📍 Location:</strong> <a href="{{googleMapsUrl}}" target="_blank" style="color: #4F46E5; text-decoration: underline;">{{eventLocation}}</a></p>
+        </div>
+        <div style="text-align: center; margin: 0 0 30px;">
+          <a href="{{eventLink}}" style="display: inline-block; background: #4F46E5; color: white; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: 600; font-size: 15px;">
+            View & Update Request
+          </a>
+        </div>
+      </div>
+      <div style="text-align: center; padding: 20px; color: #9ca3af; font-size: 12px;">
+        <p style="margin: 0;"><a href="{{appUrl}}" style="color: #6b7280;">{{appUrlDisplay}}</a> | {{supportEmail}}</p>
+      </div>
+    </div>`,
+  },
+  {
     type: 'EVENT_CREATED',
     name: 'New Event Created',
     subject: 'New Event: {{eventTitle}}',

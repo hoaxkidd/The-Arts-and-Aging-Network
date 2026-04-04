@@ -185,7 +185,7 @@ export default async function EmailRemindersPage({
                     )}
                     <p className="text-xs text-gray-400">
                       {reminder.event.startDateTime.toLocaleDateString('en-US', {
-                        month: 'short',
+                        month: 'long',
                         day: 'numeric',
                         year: 'numeric'
                       })}
@@ -221,7 +221,7 @@ export default async function EmailRemindersPage({
                   <td className={STYLES.tableCell}>
                     <span className="text-sm text-gray-900">
                       {reminder.scheduledFor.toLocaleDateString('en-US', {
-                        month: 'short',
+                        month: 'long',
                         day: 'numeric'
                       })}
                     </span>
@@ -257,7 +257,7 @@ export default async function EmailRemindersPage({
                       <>
                         <span className="text-sm text-gray-900">
                           {reminder.sentAt.toLocaleDateString('en-US', {
-                            month: 'short',
+                            month: 'long',
                             day: 'numeric'
                           })}
                         </span>

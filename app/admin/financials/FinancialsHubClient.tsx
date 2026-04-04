@@ -1,11 +1,12 @@
 'use client'
 
 import { useState } from 'react'
-import { DollarSign, Clock, MapPin, FileText } from "lucide-react"
+import { DollarSign, Clock, MapPin } from "lucide-react"
 import { TabNavigation } from "@/components/admin/shared/TabNavigation"
 import { TimesheetList } from "@/components/admin/financials/TimesheetList"
 import { MileageList } from "@/components/admin/financials/MileageList"
 import { ExpenseRequestList } from "@/components/admin/financials/ExpenseRequestList"
+import { FinancialReportsPanel } from "./FinancialReportsPanel"
 
 type FinancialsHubClientProps = {
     timesheets: Record<string, unknown>[]
@@ -39,6 +40,7 @@ export function FinancialsHubClient({ timesheets, mileageEntries, expenseRequest
 
     return (
         <div className="h-full flex flex-col">
+            <FinancialReportsPanel />
             <TabNavigation 
                 tabs={tabs}
                 activeTab={activeTab}

@@ -4,10 +4,9 @@ import { prisma } from "@/lib/prisma"
 import { auth } from "@/auth"
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
-import { join } from "path"
-import { writeFile, mkdir, unlink } from "fs/promises"
 import { isPayrollOrAdminRole } from "@/lib/roles"
 import { logger } from "@/lib/logger"
+import { uploadToR2, deleteFromR2, extractR2KeyFromUrl, isValidFileSize, getR2Diagnostics, R2ConfigurationError } from "@/lib/r2"
 
 const PayrollFormSchema = z.object({
   title: z.string().min(1, "Title is required"),
@@ -158,28 +157,41 @@ export async function createPayrollForm(formData: FormData) {
 
     const expiresAtDate = parseDateString(validated.data.expiresAt)
     
-    // Handle file upload to local storage
+    // Handle file upload to R2
     const file = formData.get("file") as File
     if (!file || file.size === 0) {
       return { error: "File is required" }
     }
 
-    // Sanitize filename and create unique name
-    const sanitizedName = file.name.replace(/[^a-zA-Z0-9.]/g, '_')
-    const fileName = `${Date.now()}-${sanitizedName}`
-    const uploadDir = join(process.cwd(), 'public', 'uploads', 'payroll-forms')
-    const uploadPath = join(uploadDir, fileName)
+    if (!isValidFileSize(file.size, 15)) {
+      return { error: "File too large. Maximum size is 15MB" }
+    }
 
-    // Ensure upload directory exists
-    await mkdir(uploadDir, { recursive: true })
-
-    // Write file to disk
     const arrayBuffer = await file.arrayBuffer()
     const buffer = Buffer.from(arrayBuffer)
-    await writeFile(uploadPath, buffer)
+    const sanitizedName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_')
 
-    // Store relative URL for database
-    const fileUrl = `/uploads/payroll-forms/${fileName}`
+    let fileUrl = ''
+    try {
+      const uploaded = await uploadToR2(
+        buffer,
+        sanitizedName,
+        file.type || 'application/octet-stream',
+        'payroll-forms'
+      )
+      fileUrl = uploaded.url
+    } catch (uploadError) {
+      logger.upload('Failed to upload payroll form', {
+        error: uploadError,
+        diagnostics: getR2Diagnostics(),
+      })
+
+      if (uploadError instanceof R2ConfigurationError) {
+        return { error: 'Document storage is not configured correctly. Please contact an administrator.' }
+      }
+
+      return { error: 'Failed to upload form document' }
+    }
 
     const form = await prisma.payrollForm.create({
       data: {
@@ -226,12 +238,13 @@ export async function deletePayrollForm(id: string) {
       return { error: "Form not found" }
     }
 
-    // Delete file from local storage
-    try {
-      const filePath = join(process.cwd(), 'public', form.fileUrl)
-      await unlink(filePath)
-    } catch (fileError) {
-      console.warn("Failed to delete file:", fileError)
+    const fileKey = extractR2KeyFromUrl(form.fileUrl)
+    if (fileKey) {
+      try {
+        await deleteFromR2(fileKey)
+      } catch (fileError) {
+        logger.upload('Failed to delete payroll form file from R2', { formId: id, fileKey, error: fileError })
+      }
     }
 
     await prisma.payrollForm.delete({ where: { id } })

@@ -26,9 +26,10 @@ export default async function VolunteersDashboard() {
     where: { id: userId },
     select: { role: true, volunteerReviewStatus: true }
   })
+  const roles = Array.isArray(session.user.roles) ? session.user.roles : [session.user.role]
   
-  if (user?.role === 'VOLUNTEER' && user.volunteerReviewStatus !== 'APPROVED') {
-    redirect("/staff/onboarding")
+  if (roles.includes('VOLUNTEER') && user?.volunteerReviewStatus !== 'APPROVED') {
+    redirect("/volunteers/onboarding")
   }
 
   let upcomingEvents: { id: string; title: string; startDateTime: Date }[] = []
@@ -110,7 +111,7 @@ export default async function VolunteersDashboard() {
                 >
                   <div className="w-10 h-10 rounded-lg bg-primary-50 text-primary-600 flex flex-col items-center justify-center flex-shrink-0">
                     <span className="text-[10px] font-medium text-primary-600">
-                      {event.startDateTime.toLocaleDateString('en-US', { month: 'short' })}
+                      {event.startDateTime.toLocaleDateString('en-US', { month: 'long' })}
                     </span>
                     <span className="text-sm font-bold text-primary-700">
                       {event.startDateTime.getDate()}

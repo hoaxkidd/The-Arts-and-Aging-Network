@@ -55,23 +55,32 @@ export const staffMenu = [
   { label: "Settings", href: "/staff/settings", icon: Settings },
 ]
 
+function withBasePath(menu: MenuItem[], fromBase: string, toBase: string): MenuItem[] {
+  return menu.map((item) => ({
+    ...item,
+    href: item.href.startsWith(fromBase) ? item.href.replace(fromBase, toBase) : item.href,
+  }))
+}
+
+export const facilitatorMenu = withBasePath(staffMenu, '/staff', '/facilitator')
+
 export const volunteerMenu = [
   { label: "Dashboard", href: "/volunteers", icon: LayoutDashboard },
   { label: "Browse Events", href: "/events", icon: Calendar },
   { label: "My Schedule", href: "/volunteers/my-events", icon: CalendarCheck },
-  { label: "Inbox", href: "/staff/inbox", icon: Inbox },
+  { label: "Inbox", href: "/volunteers/inbox", icon: Inbox },
   { label: "Forms", href: "/volunteers/forms", icon: FileText },
   { label: "My Profile", href: "/volunteers/profile", icon: UserCircle },
   { label: "Settings", href: "/volunteers/settings", icon: Settings },
 ]
 
 export const boardMenu = [
-  { label: "Dashboard", href: "/staff", icon: LayoutDashboard },
-  { label: "Events Calendar", href: "/events", icon: CalendarCheck },
-  { label: "Team Directory", href: "/staff/directory", icon: Users },
-  { label: "Inbox", href: "/staff/inbox", icon: Inbox },
-  { label: "My Profile", href: "/staff/profile", icon: UserCircle },
-  { label: "Settings", href: "/staff/settings", icon: Settings },
+  { label: "Dashboard", href: "/board", icon: LayoutDashboard },
+  { label: "Events Calendar", href: "/board/events", icon: CalendarCheck },
+  { label: "Team Directory", href: "/board/directory", icon: Users },
+  { label: "Inbox", href: "/board/inbox", icon: Inbox },
+  { label: "My Profile", href: "/board/profile", icon: UserCircle },
+  { label: "Settings", href: "/board/settings", icon: Settings },
 ]
 
 export const homeAdminMenu = [
@@ -104,8 +113,8 @@ export const MENU_ITEMS: Record<string, MenuItem[]> = {
     { label: "Settings", href: "/payroll/settings", icon: Settings },
   ],
   HOME_ADMIN: homeAdminMenu,
-  FACILITATOR: staffMenu,
+  FACILITATOR: facilitatorMenu,
   VOLUNTEER: volunteerMenu,
   BOARD: boardMenu,
-  PARTNER: boardMenu,
+  PARTNER: staffMenu,
 }

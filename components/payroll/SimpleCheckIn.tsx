@@ -84,7 +84,7 @@ export function SimpleCheckIn({ history }: { history: CheckInHistory[] }) {
                                 <p className="font-medium text-gray-900">
                                     {new Date(entry.timestamp).toLocaleDateString(undefined, { 
                                         weekday: 'long', 
-                                        month: 'short', 
+                                        month: 'long', 
                                         day: 'numeric' 
                                     })}
                                 </p>

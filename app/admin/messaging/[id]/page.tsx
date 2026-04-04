@@ -67,6 +67,11 @@ export default async function ManageGroupPage({
 
   return (
     <div className="h-full flex flex-col">
+      <div className="flex-shrink-0 mb-4">
+        <Link href="/admin/messaging" className="inline-flex items-center gap-1 text-sm text-gray-600 hover:text-gray-900">
+          <ArrowLeft className="w-4 h-4" /> Back to Messaging
+        </Link>
+      </div>
       {/* Stats */}
       <div className="grid grid-cols-2 gap-4 mb-6">
         <div className="bg-white rounded-lg border border-gray-200 p-4">

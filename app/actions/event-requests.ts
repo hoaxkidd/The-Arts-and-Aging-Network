@@ -7,10 +7,100 @@ import type { Prisma, PrismaClient } from "@prisma/client"
 import { scheduleEventReminders } from "./email-reminders"
 import { logger } from "@/lib/logger"
 import { sendEmailWithRetry } from "@/lib/email/service"
-import { generateCalendarLinks, formatEventTime } from "@/lib/email/calendar"
+import { generateCalendarLinks, formatEventDate, formatEventTime, getCalendarSectionHtml } from "@/lib/email/calendar"
+import { resolveHomeNotificationRecipient } from "@/lib/home-notification-recipient"
+import { parseDMYDate } from "@/lib/date-utils"
 
 // Type-safe prisma client reference
 const db = prisma as PrismaClient & Record<string, unknown>
+
+function parseEventDateTime(value: unknown): Date | null {
+  if (!value) return null
+  if (value instanceof Date) return isNaN(value.getTime()) ? null : value
+  if (typeof value !== 'string') return null
+
+  const trimmed = value.trim()
+  if (!trimmed) return null
+
+  const parsed = new Date(trimmed)
+  if (!isNaN(parsed.getTime())) return parsed
+
+  const dmy = parseDMYDate(trimmed)
+  return dmy && !isNaN(dmy.getTime()) ? dmy : null
+}
+
+function getStringByKeyCandidates(obj: Record<string, unknown> | undefined, candidates: string[]): string | null {
+  if (!obj) return null
+  for (const key of candidates) {
+    const value = obj[key]
+    if (typeof value === 'string' && value.trim()) return value.trim()
+  }
+  return null
+}
+
+function extractDateFromTemplate(formFieldsJson: string | null, formData: Record<string, unknown>, mode: 'start' | 'end'): string | null {
+  if (!formFieldsJson?.trim()) return null
+
+  try {
+    const fields = JSON.parse(formFieldsJson) as Array<{ id?: string; type?: string; label?: string }>
+    const dateFields = fields.filter((f) => f?.type === 'date' && typeof f.id === 'string')
+    if (dateFields.length === 0) return null
+
+    const match = dateFields.find((field) => {
+      const label = (field.label || '').toLowerCase()
+      if (!label) return false
+      if (label.includes('birth') || label.includes('dob')) return false
+      if (mode === 'start') {
+        return label.includes('event') || label.includes('start') || label === 'date'
+      }
+      return label.includes('end')
+    })
+
+    if (!match?.id) return null
+    const value = formData[match.id]
+    return typeof value === 'string' && value.trim() ? value.trim() : null
+  } catch {
+    return null
+  }
+}
+
+function buildEventEmailVariables(params: {
+  name: string
+  eventTitle: string
+  startDateTime: Date
+  endDateTime: Date
+  eventLocation: string
+  eventLink: string
+}) {
+  const { name, eventTitle, startDateTime, endDateTime, eventLocation, eventLink } = params
+
+  const eventDate = formatEventDate(startDateTime)
+  const eventTime = formatEventTime(startDateTime, endDateTime)
+  const eventDateISO = startDateTime.toISOString().slice(0, 10)
+  const eventTimeISO = `${String(startDateTime.getHours()).padStart(2, '0')}:${String(startDateTime.getMinutes()).padStart(2, '0')}`
+  const calendarLinks = generateCalendarLinks({
+    title: eventTitle,
+    startDateTime,
+    endDateTime,
+    location: eventLocation,
+    url: eventLink,
+  })
+
+  return {
+    name,
+    eventTitle,
+    eventDate,
+    eventTime,
+    eventDateISO,
+    eventTimeISO,
+    eventLocation,
+    googleMapsUrl: calendarLinks.googleMaps || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(eventLocation)}`,
+    eventLink,
+    calendarLink: calendarLinks.webcal,
+    googleCalendarLink: calendarLinks.google,
+    calendarSection: getCalendarSectionHtml(calendarLinks),
+  }
+}
 
 // ============================================
 // HOME_ADMIN ACTIONS
@@ -243,10 +333,47 @@ export async function createCustomEventRequest(data: {
       if (!formTemplate) return { error: "Form template not found" }
 
       // Extract event details from form data if available
-      const eventTitle = data.formData.title as string || data.formData.EventTitle as string || formTemplate.title
-      const eventDescription = data.formData.description as string || data.formData.Description as string || null
-      const eventStartDateTime = data.formData.startDateTime as string || data.formData.StartDateTime as string || data.formData.date as string
-      const eventEndDateTime = data.formData.endDateTime as string || data.formData.EndDateTime as string
+      const formData = data.formData as Record<string, unknown>
+      const eventTitle = getStringByKeyCandidates(formData, ['title', 'Title', 'eventTitle', 'EventTitle']) || formTemplate.title
+      const eventDescription = getStringByKeyCandidates(formData, ['description', 'Description']) || data.description || null
+
+      const startCandidate =
+        data.startDateTime ||
+        getStringByKeyCandidates(formData, ['startDateTime', 'StartDateTime', 'date', 'Date']) ||
+        extractDateFromTemplate(formTemplate.formFields, formData, 'start') ||
+        null
+
+      const endCandidate =
+        data.endDateTime ||
+        getStringByKeyCandidates(formData, ['endDateTime', 'EndDateTime']) ||
+        extractDateFromTemplate(formTemplate.formFields, formData, 'end') ||
+        null
+
+      const eventStartDateTime = parseEventDateTime(startCandidate)
+      let eventEndDateTime = parseEventDateTime(endCandidate)
+
+      if (eventStartDateTime && !eventEndDateTime) {
+        eventEndDateTime = new Date(eventStartDateTime.getTime() + 60 * 60 * 1000)
+      }
+
+      if (!eventTitle || !eventStartDateTime || !eventEndDateTime) {
+        return { error: "Missing event title or schedule. Please include an event date/time before submitting." }
+      }
+
+      const preferredDates = (data.preferredDates || [])
+        .map((slot) => ({
+          startDateTime: parseEventDateTime(slot.startDateTime),
+          endDateTime: parseEventDateTime(slot.endDateTime),
+        }))
+        .filter((slot) => slot.startDateTime && slot.endDateTime && slot.endDateTime > slot.startDateTime)
+        .map((slot) => ({
+          startDateTime: slot.startDateTime!.toISOString(),
+          endDateTime: slot.endDateTime!.toISOString(),
+        }))
+
+      const firstOccurrence = preferredDates.length > 0
+        ? preferredDates[0]
+        : { startDateTime: eventStartDateTime.toISOString(), endDateTime: eventEndDateTime.toISOString() }
 
       // Create the event request
       const request = await db.eventRequest.create({
@@ -256,8 +383,9 @@ export async function createCustomEventRequest(data: {
           requestedBy: session.user.id,
           customTitle: eventTitle,
           customDescription: eventDescription,
-          customStartDateTime: eventStartDateTime ? new Date(eventStartDateTime) : null,
-          customEndDateTime: eventEndDateTime ? new Date(eventEndDateTime) : null,
+          customStartDateTime: new Date(firstOccurrence.startDateTime),
+          customEndDateTime: new Date(firstOccurrence.endDateTime),
+          preferredDates: preferredDates.length > 0 ? JSON.stringify(preferredDates) : null,
           notes: (data.formData.notes as string) || (data.formData.Notes as string) || null,
           expectedAttendees: (data.formData.expectedAttendees as number) || (data.formData.ExpectedAttendees as number) || null,
           status: 'PENDING',
@@ -462,6 +590,195 @@ export async function cancelEventRequest(requestId: string) {
   }
 }
 
+export async function updateHomeEventRequest(
+  requestId: string,
+  updates: {
+    title?: string
+    description?: string
+    startDateTime?: string
+    endDateTime?: string
+    locationName?: string
+    locationAddress?: string
+    notes?: string
+    expectedAttendees?: number
+    formData?: Record<string, unknown>
+    preferredDates?: Array<{ startDateTime: string; endDateTime: string }>
+  }
+) {
+  const session = await auth()
+  if (!session?.user?.id) return { error: "Unauthorized" }
+
+  try {
+    const home = await db.geriatricHome.findUnique({ where: { userId: session.user.id } })
+    if (!home) return { error: "No home found" }
+
+    const request = await db.eventRequest.findUnique({
+      where: { id: requestId },
+      include: { formSubmission: true }
+    })
+
+    if (!request) return { error: "Request not found" }
+    if (request.geriatricHomeId !== home.id) return { error: "Unauthorized" }
+    if (request.type !== 'CREATE_CUSTOM') return { error: "Only custom requests can be edited" }
+
+    const canEditPending = request.status === 'PENDING'
+    const canEditRejected = request.status === 'REJECTED' && request.editAccessGranted
+    if (!canEditPending && !canEditRejected) {
+      return { error: "This request cannot be edited" }
+    }
+
+    const nextTitle = updates.title?.trim() || request.customTitle
+
+    const nextPreferredDates = (updates.preferredDates || [])
+      .map((slot) => ({
+        startDateTime: parseEventDateTime(slot.startDateTime),
+        endDateTime: parseEventDateTime(slot.endDateTime),
+      }))
+      .filter((slot) => slot.startDateTime && slot.endDateTime && slot.endDateTime > slot.startDateTime)
+      .map((slot) => ({
+        startDateTime: slot.startDateTime!.toISOString(),
+        endDateTime: slot.endDateTime!.toISOString(),
+      }))
+
+    const startDate = nextPreferredDates.length > 0
+      ? new Date(nextPreferredDates[0].startDateTime)
+      : (parseEventDateTime(updates.startDateTime) || request.customStartDateTime)
+
+    let endDate = nextPreferredDates.length > 0
+      ? new Date(nextPreferredDates[0].endDateTime)
+      : (parseEventDateTime(updates.endDateTime) || request.customEndDateTime)
+
+    if (startDate && !endDate) endDate = new Date(startDate.getTime() + 60 * 60 * 1000)
+
+    if (!nextTitle || !startDate || !endDate) {
+      return { error: "Title, start date/time, and end date/time are required" }
+    }
+
+    await db.$transaction(async (tx) => {
+      await tx.eventRequest.update({
+        where: { id: requestId },
+        data: {
+          customTitle: nextTitle,
+          customDescription: updates.description ?? request.customDescription,
+          customStartDateTime: startDate,
+          customEndDateTime: endDate,
+          preferredDates: nextPreferredDates.length > 0
+            ? JSON.stringify(nextPreferredDates)
+            : request.preferredDates,
+          customLocationName: updates.locationName ?? request.customLocationName,
+          customLocationAddress: updates.locationAddress ?? request.customLocationAddress,
+          notes: updates.notes ?? request.notes,
+          expectedAttendees: updates.expectedAttendees ?? request.expectedAttendees,
+          status: canEditRejected ? 'PENDING' : request.status,
+          reviewedBy: canEditRejected ? null : request.reviewedBy,
+          reviewedAt: canEditRejected ? null : request.reviewedAt,
+          rejectionReason: canEditRejected ? null : request.rejectionReason,
+          editAccessGranted: canEditRejected ? false : request.editAccessGranted,
+          editAccessGrantedBy: canEditRejected ? null : request.editAccessGrantedBy,
+          editAccessGrantedAt: canEditRejected ? null : request.editAccessGrantedAt,
+          editAccessNote: canEditRejected ? null : request.editAccessNote,
+          updatedAt: new Date()
+        }
+      })
+
+      if (request.formSubmission?.id && updates.formData) {
+        await tx.formSubmission.update({
+          where: { id: request.formSubmission.id },
+          data: {
+            formData: JSON.stringify(updates.formData)
+          }
+        })
+      }
+    })
+
+    if (canEditRejected) {
+      const admins = await db.user.findMany({ where: { role: 'ADMIN', status: 'ACTIVE' }, select: { id: true } })
+      if (admins.length > 0) {
+        await db.notification.createMany({
+          data: admins.map((admin) => ({
+            userId: admin.id,
+            type: 'EVENT_REQUEST_SUBMITTED',
+            title: 'Event Request Resubmitted',
+            message: `${home.name} updated and resubmitted "${nextTitle}" for review`,
+            link: `/admin/event-requests/${requestId}`
+          }))
+        })
+      }
+    }
+
+    await prisma.auditLog.create({
+      data: {
+        action: canEditRejected ? 'EVENT_REQUEST_RESUBMITTED' : 'EVENT_REQUEST_UPDATED_BY_HOME',
+        details: JSON.stringify({ requestId, statusAfter: canEditRejected ? 'PENDING' : request.status }),
+        userId: session.user.id
+      }
+    })
+
+    revalidatePath('/dashboard/requests')
+    revalidatePath(`/dashboard/requests/${requestId}/edit`)
+    revalidatePath('/admin/event-requests')
+    revalidatePath(`/admin/event-requests/${requestId}`)
+
+    return { success: true }
+  } catch (error) {
+    logger.serverAction("Failed to update event request", error)
+    return { error: "Failed to update request" }
+  }
+}
+
+export async function grantEventRequestEditAccess(requestId: string, note?: string) {
+  const session = await auth()
+  if (session?.user?.role !== 'ADMIN') return { error: "Unauthorized" }
+
+  try {
+    const request = await db.eventRequest.findUnique({
+      where: { id: requestId },
+      include: { geriatricHome: true }
+    })
+
+    if (!request) return { error: "Request not found" }
+    if (request.status !== 'REJECTED') return { error: "Edit access can only be granted for rejected requests" }
+
+    await db.eventRequest.update({
+      where: { id: requestId },
+      data: {
+        editAccessGranted: true,
+        editAccessGrantedBy: session.user.id,
+        editAccessGrantedAt: new Date(),
+        editAccessNote: note?.trim() || null,
+        updatedAt: new Date()
+      }
+    })
+
+    await db.notification.create({
+      data: {
+        userId: request.geriatricHome.userId,
+        type: 'EVENT_REQUEST_EDIT_GRANTED',
+        title: 'Edit Access Granted',
+        message: `You can now edit and resubmit your request "${request.customTitle || 'Event'}".`,
+        link: `/dashboard/requests/${requestId}/edit`
+      }
+    })
+
+    await prisma.auditLog.create({
+      data: {
+        action: 'EVENT_REQUEST_EDIT_ACCESS_GRANTED',
+        details: JSON.stringify({ requestId, note: note || null }),
+        userId: session.user.id
+      }
+    })
+
+    revalidatePath('/admin/event-requests')
+    revalidatePath(`/admin/event-requests/${requestId}`)
+    revalidatePath('/dashboard/requests')
+
+    return { success: true }
+  } catch (error) {
+    logger.serverAction("Failed to grant event request edit access", error)
+    return { error: "Failed to grant edit access" }
+  }
+}
+
 // Get all requests for a home
 export async function getHomeEventRequests(homeId?: string) {
   const session = await auth()
@@ -657,6 +974,7 @@ export async function approveEventRequest(
     if (request.status !== 'PENDING') return { error: "Request is not pending" }
 
     let approvedEventId = request.existingEventId
+    let approvedEventIds: string[] = request.existingEventId ? [request.existingEventId] : []
 
     // For custom events, create the actual event
     if (request.type === 'CREATE_CUSTOM') {
@@ -698,28 +1016,52 @@ export async function approveEventRequest(
         : request.customEndDateTime
 
       if (!eventTitle || !eventStartDateTime || !eventEndDateTime) {
-        throw new Error('Missing required event fields')
+        return { error: "Request is missing title or schedule. Ask the home admin to update and resubmit." }
       }
 
-      // Create the event
-      const event = await db.event.create({
-        data: {
-          title: eventTitle,
-          description: modifications?.description || request.customDescription || undefined,
-          startDateTime: eventStartDateTime,
-          endDateTime: eventEndDateTime,
-          locationId,
-          geriatricHomeId: request.geriatricHomeId,
-          status: 'PUBLISHED',
-          origin: 'HOME_REQUESTED',
-          homeAdminReminderDays: modifications?.homeAdminReminderDays || request.homeAdminReminderDays || 5,
-          staffReminderDays: modifications?.staffReminderDays || request.staffReminderDays || 3,
-          reminderMessage: modifications?.reminderMessage || request.reminderMessage || null,
-          updatedAt: new Date()
+      const parsedPreferredDates = (() => {
+        if (!request.preferredDates) return [] as Array<{ startDateTime: Date; endDateTime: Date }>
+        try {
+          const slots = JSON.parse(request.preferredDates) as Array<{ startDateTime?: string; endDateTime?: string }>
+          return slots
+            .map((slot) => ({
+              startDateTime: parseEventDateTime(slot.startDateTime),
+              endDateTime: parseEventDateTime(slot.endDateTime),
+            }))
+            .filter((slot) => slot.startDateTime && slot.endDateTime && slot.endDateTime > slot.startDateTime)
+            .map((slot) => ({ startDateTime: slot.startDateTime!, endDateTime: slot.endDateTime! }))
+        } catch {
+          return []
         }
-      })
+      })()
 
-      approvedEventId = event.id
+      const eventSlots = (modifications?.startDateTime || modifications?.endDateTime || parsedPreferredDates.length === 0)
+        ? [{ startDateTime: eventStartDateTime, endDateTime: eventEndDateTime }]
+        : parsedPreferredDates
+
+      const createdEvents = [] as Array<{ id: string }>
+      for (const slot of eventSlots) {
+        const event = await db.event.create({
+          data: {
+            title: eventTitle,
+            description: modifications?.description || request.customDescription || undefined,
+            startDateTime: slot.startDateTime,
+            endDateTime: slot.endDateTime,
+            locationId,
+            geriatricHomeId: request.geriatricHomeId,
+            status: 'PUBLISHED',
+            origin: 'HOME_REQUESTED',
+            homeAdminReminderDays: modifications?.homeAdminReminderDays || request.homeAdminReminderDays || 5,
+            staffReminderDays: modifications?.staffReminderDays || request.staffReminderDays || 3,
+            reminderMessage: modifications?.reminderMessage || request.reminderMessage || null,
+            updatedAt: new Date()
+          }
+        })
+        createdEvents.push(event)
+      }
+
+      approvedEventId = createdEvents[0]?.id || null
+      approvedEventIds = createdEvents.map((event) => event.id)
     } else {
       // For existing event requests, link the home to the event
       if (!request.existingEventId) {
@@ -729,6 +1071,7 @@ export async function approveEventRequest(
         where: { id: request.existingEventId },
         data: { geriatricHomeId: request.geriatricHomeId }
       })
+      approvedEventIds = [request.existingEventId]
     }
 
     // Update request status
@@ -759,9 +1102,16 @@ export async function approveEventRequest(
       select: { email: true, name: true, preferredName: true }
     })
 
-    if (homeUser?.email) {
+    const resolvedApprovalRecipient = resolveHomeNotificationRecipient({
+      contactEmail: request.geriatricHome.contactEmail,
+      useCustomNotificationEmail: (request.geriatricHome as any).useCustomNotificationEmail,
+      notificationEmail: (request.geriatricHome as any).notificationEmail,
+      user: { email: homeUser?.email || null },
+    })
+
+    if (resolvedApprovalRecipient.email) {
       let event: { startDateTime: Date; endDateTime: Date; location: { name: string | null; address: string | null } | null } | null = null
-      
+
       if (request.type === 'CREATE_CUSTOM' && approvedEventId) {
         event = await db.event.findUnique({ where: { id: approvedEventId }, include: { location: true } })
       } else if (request.existingEventId) {
@@ -769,41 +1119,46 @@ export async function approveEventRequest(
       }
 
       const eventTitle = (request.type === 'CREATE_CUSTOM' ? request.customTitle : request.existingEvent?.title) || 'Event'
-      const eventDate = event?.startDateTime
-        ? new Date(event.startDateTime).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
-        : ''
-      const eventTime = (event?.startDateTime && event?.endDateTime)
-        ? formatEventTime(new Date(event.startDateTime), new Date(event.endDateTime))
-        : ''
-      const eventLocation = event?.location?.name || event?.location?.address || 'TBD'
+      const startDateTime = event?.startDateTime || request.customStartDateTime
+      const endDateTime = event?.endDateTime || request.customEndDateTime
+      const eventLocation = event?.location?.name || event?.location?.address || request.customLocationName || request.customLocationAddress || request.geriatricHome.name || 'TBD'
       const eventLink = `${process.env.NEXTAUTH_URL || ''}/dashboard/my-events`
 
-      const emailVariables: Record<string, string> = {
-        name: homeUser.preferredName || homeUser.name || 'User',
-        eventTitle: eventTitle,
-        eventDate,
-        eventTime,
-        eventLocation,
-        eventLink
-      }
-
-      if (event?.startDateTime && event?.endDateTime) {
-        const calendarLinks = generateCalendarLinks({
-          title: eventTitle,
-          startDateTime: new Date(event.startDateTime),
-          endDateTime: new Date(event.endDateTime),
-          location: eventLocation,
-          url: eventLink
+      if (startDateTime && endDateTime) {
+        const emailVariables = buildEventEmailVariables({
+          name: homeUser?.preferredName || homeUser?.name || 'User',
+          eventTitle,
+          startDateTime: new Date(startDateTime),
+          endDateTime: new Date(endDateTime),
+          eventLocation,
+          eventLink,
         })
-        emailVariables.calendarLink = calendarLinks.webcal
-        emailVariables.googleCalendarLink = calendarLinks.google
-      }
 
-      await sendEmailWithRetry({
-        to: homeUser.email,
-        templateType: 'EVENT_REQUEST_APPROVED',
-        variables: emailVariables
-      }, { userId: request.geriatricHome.userId })
+        await sendEmailWithRetry({
+          to: resolvedApprovalRecipient.email,
+          templateType: 'EVENT_REQUEST_APPROVED',
+          variables: emailVariables
+        }, { userId: request.geriatricHome.userId })
+      } else {
+        await sendEmailWithRetry({
+          to: resolvedApprovalRecipient.email,
+          templateType: 'EVENT_REQUEST_APPROVED',
+          variables: {
+            name: homeUser?.preferredName || homeUser?.name || 'User',
+            eventTitle,
+            eventDate: 'To be confirmed',
+            eventTime: 'To be confirmed',
+            eventDateISO: '',
+            eventTimeISO: '',
+            eventLocation,
+            googleMapsUrl: '',
+            eventLink,
+            calendarLink: '',
+            googleCalendarLink: '',
+            calendarSection: '',
+          }
+        }, { userId: request.geriatricHome.userId })
+      }
     }
 
     // Notify staff about new approved event
@@ -838,10 +1193,12 @@ export async function approveEventRequest(
     })
 
     // Schedule email reminders for the new event
-    if (approvedEventId) {
+    if (approvedEventIds.length > 0) {
       try {
-        await scheduleEventReminders(approvedEventId)
-        logger.log('Email reminders scheduled for approved event', { eventId: approvedEventId }, 'server-action')
+        for (const eventId of approvedEventIds) {
+          await scheduleEventReminders(eventId)
+        }
+        logger.log('Email reminders scheduled for approved event(s)', { eventIds: approvedEventIds }, 'server-action')
       } catch (reminderError) {
         logger.error('Failed to schedule reminders', reminderError)
       }
@@ -906,16 +1263,58 @@ export async function rejectEventRequest(requestId: string, reason: string) {
       select: { email: true, name: true, preferredName: true }
     })
 
-    if (homeUser?.email) {
-      await sendEmailWithRetry({
-        to: homeUser.email,
-        templateType: 'EXPENSE_REJECTED',
-        variables: {
-          name: homeUser.preferredName || homeUser.name || 'User',
-          eventTitle: eventTitle || 'Event',
-          message: reason
+    const resolvedRejectionRecipient = resolveHomeNotificationRecipient({
+      contactEmail: request.geriatricHome.contactEmail,
+      useCustomNotificationEmail: (request.geriatricHome as any).useCustomNotificationEmail,
+      notificationEmail: (request.geriatricHome as any).notificationEmail,
+      user: { email: homeUser?.email || null },
+    })
+
+    if (resolvedRejectionRecipient.email) {
+      const startDateTime = request.customStartDateTime
+      const endDateTime = request.customEndDateTime
+      const eventLocation = request.customLocationName || request.customLocationAddress || request.geriatricHome.name || 'TBD'
+      const eventLink = `${process.env.NEXTAUTH_URL || ''}/dashboard/requests`
+
+      if (startDateTime && endDateTime) {
+        const emailVariables = {
+          ...buildEventEmailVariables({
+            name: homeUser?.preferredName || homeUser?.name || 'User',
+            eventTitle: eventTitle || 'Event',
+            startDateTime: new Date(startDateTime),
+            endDateTime: new Date(endDateTime),
+            eventLocation,
+            eventLink,
+          }),
+          message: reason,
         }
-      }, { userId: request.geriatricHome.userId })
+
+        await sendEmailWithRetry({
+          to: resolvedRejectionRecipient.email,
+          templateType: 'EVENT_REQUEST_REJECTED',
+          variables: emailVariables
+        }, { userId: request.geriatricHome.userId })
+      } else {
+        await sendEmailWithRetry({
+          to: resolvedRejectionRecipient.email,
+          templateType: 'EVENT_REQUEST_REJECTED',
+          variables: {
+            name: homeUser?.preferredName || homeUser?.name || 'User',
+            eventTitle: eventTitle || 'Event',
+            eventDate: 'To be confirmed',
+            eventTime: 'To be confirmed',
+            eventDateISO: '',
+            eventTimeISO: '',
+            eventLocation,
+            googleMapsUrl: '',
+            eventLink,
+            calendarLink: '',
+            googleCalendarLink: '',
+            calendarSection: '',
+            message: reason,
+          }
+        }, { userId: request.geriatricHome.userId })
+      }
     }
 
     // Create audit log

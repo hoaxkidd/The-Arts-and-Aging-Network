@@ -3,11 +3,13 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { MapPin, Briefcase, Mail, Calendar, Pencil } from 'lucide-react'
+import { usePathname } from 'next/navigation'
+import { ArrowLeft, MapPin, Briefcase, Mail, Calendar, Pencil } from 'lucide-react'
 import { UpcomingBookingsTable } from './UpcomingBookingsTable'
 import { DirectMessageModal } from '@/components/communication/DirectMessageModal'
 import { MeetingRequestModal } from '@/components/communication/MeetingRequestModal'
 import { PhoneRequestButton } from '@/components/communication/PhoneRequestButton'
+import { getStaffBasePathFromPathname } from '@/lib/role-routes'
 
 type StaffMember = {
   id: string
@@ -51,6 +53,8 @@ const roleLabels: Record<string, string> = {
 export function StaffPublicProfile({ staff, upcomingEvents, phoneRequestStatus, currentUserId }: Props) {
   const [showMessageModal, setShowMessageModal] = useState(false)
   const [showMeetingModal, setShowMeetingModal] = useState(false)
+  const pathname = usePathname()
+  const basePath = getStaffBasePathFromPathname(pathname)
 
   const displayName = staff.preferredName || staff.name || 'Unknown'
   const initials = displayName.charAt(0).toUpperCase()
@@ -58,6 +62,9 @@ export function StaffPublicProfile({ staff, upcomingEvents, phoneRequestStatus, 
 
   return (
     <div className="space-y-4">
+      <Link href={`${basePath}/directory`} className="inline-flex items-center gap-1 text-sm text-gray-600 hover:text-gray-900">
+        <ArrowLeft className="w-4 h-4" /> Back to Directory
+      </Link>
       {/* Profile Header */}
       <div className="bg-white rounded-lg border border-gray-200 p-4">
         <div className="flex flex-col md:flex-row md:items-start gap-4">
@@ -112,7 +119,7 @@ export function StaffPublicProfile({ staff, upcomingEvents, phoneRequestStatus, 
           {/* Action Buttons */}
           {isOwnProfile ? (
             <Link
-              href="/staff/profile"
+              href={`${basePath}/profile`}
               className="flex items-center justify-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
             >
               <Pencil className="w-4 h-4" />

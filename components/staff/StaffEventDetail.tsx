@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { useRouter } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
   ArrowLeft,
@@ -26,6 +26,7 @@ import { cn, safeJsonParse } from '@/lib/utils'
 import { STYLES } from '@/lib/styles'
 import { confirmStaffAttendance, withdrawStaffAttendance, staffCheckIn } from '@/app/actions/staff-attendance'
 import { checkInNotOpenMessage, getCheckInWindowStart } from '@/lib/event-checkin'
+import { getStaffBasePathFromPathname } from '@/lib/role-routes'
 
 type EventDetail = {
   id: string
@@ -73,8 +74,10 @@ type EventDetail = {
 
 export function StaffEventDetail({ event }: { event: EventDetail }) {
   const router = useRouter()
+  const pathname = usePathname()
   const [isPending, startTransition] = useTransition()
   const [action, setAction] = useState<'confirm' | 'withdraw' | 'checkin' | null>(null)
+  const basePath = getStaffBasePathFromPathname(pathname)
 
   const eventDate = new Date(event.startDateTime)
   const endDate = new Date(event.endDateTime)
@@ -123,7 +126,7 @@ export function StaffEventDetail({ event }: { event: EventDetail }) {
     <div className="h-full flex flex-col">
       <div className="flex-shrink-0 pb-3">
         <Link
-          href="/staff/events"
+          href={`${basePath}/events`}
           className="inline-flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-700 mb-2"
         >
           <ArrowLeft className="w-3 h-3" />
@@ -272,8 +275,8 @@ export function StaffEventDetail({ event }: { event: EventDetail }) {
                   <p className="text-[10px] text-gray-500 uppercase">Date</p>
                   <p className="text-sm font-medium text-gray-900">
                     {eventDate.toLocaleDateString('en-US', {
-                      weekday: 'short',
-                      month: 'short',
+                      weekday: 'long',
+                      month: 'long',
                       day: 'numeric'
                     })}
                   </p>

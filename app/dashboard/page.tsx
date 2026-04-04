@@ -149,7 +149,7 @@ export default async function HomeAdminDashboard() {
                         index === 0 ? "bg-primary-500 text-white" : "bg-primary-50 text-primary-700"
                       )}>
                         <span className="text-[9px] font-semibold uppercase">
-                          {new Date(event.startDateTime).toLocaleDateString('en-US', { month: 'short' })}
+                          {new Date(event.startDateTime).toLocaleDateString('en-US', { month: 'long' })}
                         </span>
                         <span className="text-lg font-bold leading-none">
                           {new Date(event.startDateTime).getDate()}

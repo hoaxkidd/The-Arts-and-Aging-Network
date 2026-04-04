@@ -5,6 +5,7 @@ import { Mail, MessageSquare, Bell, Save, CheckCircle2, AlertCircle, Settings, S
 import { updateNotificationPreferences, updateEmailDigestTime, sendTestEmail } from '@/app/actions/user'
 import { cn } from '@/lib/utils'
 import { STYLES } from '@/lib/styles'
+import { TimeInput } from '@/components/ui/TimeInput'
 
 type Preferences = {
   email: boolean
@@ -165,12 +166,13 @@ export function NotificationPreferences({ initialPreferences }: { initialPrefere
                 <div className="flex items-center gap-3 mt-3">
                   <Clock className="w-4 h-4 text-gray-400" />
                   <label className="text-sm text-gray-600">Digest time:</label>
-                  <input
-                    type="time"
-                    value={prefs.emailDigestTime || '08:00'}
-                    onChange={(e) => handleDigestTimeChange(e.target.value)}
-                    className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                  />
+                  <div className="min-w-[150px]">
+                    <TimeInput
+                      name="emailDigestTime"
+                      value={prefs.emailDigestTime || '08:00'}
+                      onChange={handleDigestTimeChange}
+                    />
+                  </div>
                 </div>
               )}
 

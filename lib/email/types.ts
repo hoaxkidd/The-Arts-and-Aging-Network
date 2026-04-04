@@ -6,6 +6,7 @@ export type EmailTemplateType =
   | 'NEW_MESSAGE'
   | 'EVENT_REMINDER'
   | 'EVENT_REQUEST_APPROVED'
+  | 'EVENT_REQUEST_REJECTED'
   | 'EVENT_CREATED'
   | 'EVENT_UPDATED'
   | 'EXPENSE_APPROVED'
@@ -86,6 +87,7 @@ export const EMAIL_TEMPLATE_INFO: Record<EmailTemplateType, { name: string; desc
   NEW_MESSAGE: { name: 'New Message', description: 'Notification for new direct messages', category: 'Messaging' },
   EVENT_REMINDER: { name: 'Event Reminder', description: 'Reminder before scheduled events', category: 'Events' },
   EVENT_REQUEST_APPROVED: { name: 'Event Request Approved', description: 'Notification when an event request is approved', category: 'Events' },
+  EVENT_REQUEST_REJECTED: { name: 'Event Request Rejected', description: 'Notification when an event request is rejected', category: 'Events' },
   EVENT_CREATED: { name: 'New Event Created', description: 'Notification when a new event is created', category: 'Events' },
   EVENT_UPDATED: { name: 'Event Updated', description: 'Notification when an event is updated', category: 'Events' },
   EXPENSE_APPROVED: { name: 'Expense Approved', description: 'Notification when expense is approved', category: 'Finance' },

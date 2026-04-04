@@ -10,6 +10,7 @@ import { createUserWithGeneratedCode } from '@/lib/user-code'
 import { generateNextInviteCode } from '@/lib/invite-code'
 import { sendEmail, sendEmailWithRetry, sendEmailWithCustomContent } from '@/lib/email/service'
 import { logger } from '@/lib/logger'
+import { canMergeRoles, normalizeRoleList } from '@/lib/roles'
 
 const APP_URL = process.env.NEXTAUTH_URL || 'https://artsandaging.com'
 
@@ -88,10 +89,60 @@ export async function createInvitation(formData: FormData) {
   // Check if user already exists
   const existingUser = await prisma.user.findUnique({ where: { email } })
 
-  // If there's an ACTIVE user (or any user with a password set), do not allow a new invitation.
-  // This prevents accidentally overwriting real accounts.
+  // Existing active account: treat invitation as role assignment request.
   if (existingUser && (existingUser.password || existingUser.status === 'ACTIVE')) {
-    return { error: 'User already exists' }
+    const assignments = await prisma.userRoleAssignment.findMany({
+      where: { userId: existingUser.id, isActive: true },
+      orderBy: [{ isPrimary: 'desc' }, { assignedAt: 'asc' }],
+    })
+    const currentRoles = assignments.length > 0
+      ? normalizeRoleList(assignments.map((assignment) => assignment.role))
+      : [existingUser.role]
+
+    if (currentRoles.includes(role)) {
+      return { error: 'User already has this role' }
+    }
+
+    const mergeCheck = canMergeRoles(currentRoles, role)
+    if (!mergeCheck.ok) {
+      return { error: mergeCheck.error }
+    }
+
+    await prisma.$transaction(async (tx) => {
+      if (assignments.length === 0) {
+        await tx.userRoleAssignment.create({
+          data: {
+            userId: existingUser.id,
+            role: existingUser.role,
+            isPrimary: true,
+            isActive: true,
+            assignedById: session.user.id,
+          },
+        })
+      }
+
+      await tx.userRoleAssignment.create({
+        data: {
+          userId: existingUser.id,
+          role,
+          isPrimary: false,
+          isActive: true,
+          assignedById: session.user.id,
+        },
+      })
+
+      await tx.auditLog.create({
+        data: {
+          action: 'USER_ROLE_ADDED_BY_INVITATION',
+          details: JSON.stringify({ email, role, userId: existingUser.id }),
+          userId: session.user.id,
+        },
+      })
+    })
+
+    revalidatePath('/admin/invitations')
+    revalidatePath('/admin/users')
+    return { success: true, roleAssigned: true }
   }
 
   // Check if pending invitation exists
@@ -239,6 +290,7 @@ export async function sendHomeInvitation(homeId: string) {
     })
 
     revalidatePath('/admin/homes')
+    revalidatePath('/admin/users')
     revalidatePath('/admin/invitations')
 
     return { success: true }
@@ -428,6 +480,31 @@ export async function acceptInvitation(token: string, formData: FormData) {
             volunteerReviewStatus,
           },
         })
+
+        await tx.userRoleAssignment.updateMany({
+          where: { userId: invitationUserId },
+          data: { isPrimary: false },
+        })
+
+        await tx.userRoleAssignment.upsert({
+          where: {
+            userId_role: {
+              userId: invitationUserId,
+              role: invitation.role,
+            },
+          },
+          create: {
+            userId: invitationUserId,
+            role: invitation.role,
+            isPrimary: true,
+            isActive: true,
+          },
+          update: {
+            isPrimary: true,
+            isActive: true,
+          },
+        })
+
         // Delete the invitation after successful user creation
         await tx.invitation.delete({
           where: { id: invitation.id },
@@ -447,6 +524,16 @@ export async function acceptInvitation(token: string, formData: FormData) {
           roleData: Object.keys(roleData).length > 0 ? JSON.stringify(roleData) : undefined,
           volunteerReviewStatus,
         })
+
+        await tx.userRoleAssignment.create({
+          data: {
+            userId: user.id,
+            role: invitation.role,
+            isPrimary: true,
+            isActive: true,
+          },
+        })
+
         // Delete the invitation after successful user creation
         await tx.invitation.delete({
           where: { id: invitation.id },
@@ -473,7 +560,7 @@ export async function acceptInvitation(token: string, formData: FormData) {
     }
 
     // For volunteers, redirect to onboarding
-    const redirectUrl = invitation.role === 'VOLUNTEER' ? '/staff/onboarding?new=true' : null
+    const redirectUrl = invitation.role === 'VOLUNTEER' ? '/volunteers/onboarding?new=true' : null
     
     return { success: true, redirectUrl }
   } catch (error) {

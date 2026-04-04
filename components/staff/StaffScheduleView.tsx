@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react'
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import {
   Calendar,
   Clock,
@@ -12,6 +13,7 @@ import {
   Building2
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { getStaffBasePathFromPathname } from '@/lib/role-routes'
 
 type Event = {
   id: string
@@ -28,6 +30,8 @@ type Event = {
 
 export function StaffScheduleView({ events }: { events: Event[] }) {
   const [filter, setFilter] = useState<'ALL' | 'UPCOMING' | 'TODAY' | 'PAST'>('UPCOMING')
+  const pathname = usePathname()
+  const basePath = getStaffBasePathFromPathname(pathname)
 
   const filteredEvents = useMemo(() => {
     if (filter === 'ALL') return events
@@ -115,7 +119,7 @@ export function StaffScheduleView({ events }: { events: Event[] }) {
                     isToday ? "bg-yellow-100 text-yellow-700" : "bg-gray-100 text-gray-600"
                   )}>
                     <span className="text-xs font-medium uppercase">
-                      {date.toLocaleDateString('en-US', { month: 'short' })}
+                      {date.toLocaleDateString('en-US', { month: 'long' })}
                     </span>
                     <span className="text-lg font-bold">{date.getDate()}</span>
                   </div>
@@ -139,7 +143,7 @@ export function StaffScheduleView({ events }: { events: Event[] }) {
                     return (
                       <Link
                         key={event.id}
-                        href={`/staff/events/${event.id}`}
+                        href={`${basePath}/events/${event.id}`}
                         className={cn(
                           "block bg-white rounded-lg border p-4 transition-colors",
                           isPast ? "border-gray-200 opacity-75" : "border-gray-200 hover:border-primary-200"
@@ -215,7 +219,7 @@ export function StaffScheduleView({ events }: { events: Event[] }) {
               : `No ${filter.toLowerCase()} events in your schedule.`}
           </p>
           <Link
-            href="/staff/events"
+            href={`${basePath}/events`}
             className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700"
           >
             Browse Available Events

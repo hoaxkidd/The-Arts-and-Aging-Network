@@ -191,7 +191,7 @@ export default async function HomeAdminFormDetailPage({
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-xs text-gray-500">
                       {new Date(submission.createdAt).toLocaleDateString('en-US', {
-                        month: 'short',
+                        month: 'long',
                         day: 'numeric',
                         year: 'numeric',
                         hour: 'numeric',
@@ -232,7 +232,7 @@ export default async function HomeAdminFormDetailPage({
               <span className="text-gray-500">Last Updated:</span>
               <span className="text-gray-900 font-medium">
                 {new Date(template.updatedAt).toLocaleDateString('en-US', {
-                  month: 'short',
+                  month: 'long',
                   day: 'numeric',
                   year: 'numeric'
                 })}

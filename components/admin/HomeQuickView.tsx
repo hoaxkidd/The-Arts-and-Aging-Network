@@ -28,6 +28,8 @@ type HomeDetails = {
   contactEmail: string
   contactPhone: string
   contactPosition: string | null
+  useCustomNotificationEmail?: boolean
+  notificationEmail?: string | null
   secondaryContact?: string | null
   additionalContacts?: string | null
   flags?: string | null
@@ -188,6 +190,7 @@ export function HomeQuickView({ homeId, isOpen, onClose }: HomeQuickViewProps) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<QuickViewTab>('facility')
+  const [isNotificationPending, startNotificationTransition] = useTransition()
 
   const parsedFlags: HomeFlags = (() => {
     if (!home?.flags) return {}
@@ -235,6 +238,14 @@ export function HomeQuickView({ homeId, isOpen, onClose }: HomeQuickViewProps) {
     router.refresh() // Refresh server components (list) to reflect changes
   }
 
+  const handleToggleNotificationOverride = (checked: boolean) => {
+    if (!home) return
+    startNotificationTransition(async () => {
+      await updateHomeField(home.id, 'useCustomNotificationEmail', checked ? 'true' : 'false')
+      handleUpdate()
+    })
+  }
+
   if (!isOpen) return null
 
   return (
@@ -261,7 +272,7 @@ export function HomeQuickView({ homeId, isOpen, onClose }: HomeQuickViewProps) {
                 {home && (
                   <p className="text-xs text-gray-400 mt-2 flex items-center gap-1">
                     <Clock className="w-3.5 h-3.5" />
-                    Updated {new Date(home.updatedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                    Updated {new Date(home.updatedAt).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}
                   </p>
                 )}
               </div>
@@ -385,6 +396,22 @@ export function HomeQuickView({ homeId, isOpen, onClose }: HomeQuickViewProps) {
                         <tr className="hover:bg-gray-50/50 transition-colors"><td className="py-3 px-4 text-sm font-medium text-gray-600">Position</td><td className="py-3 px-4"><EditableField label="" value={home.contactPosition} field="contactPosition" homeId={home.id} onUpdate={handleUpdate} hideLabel /></td></tr>
                         <tr className="hover:bg-gray-50/50 transition-colors"><td className="py-3 px-4 text-sm font-medium text-gray-600">Email</td><td className="py-3 px-4"><EditableField label="" value={home.contactEmail} field="contactEmail" homeId={home.id} type="email" onUpdate={handleUpdate} hideLabel /></td></tr>
                         <tr className="hover:bg-gray-50/50 transition-colors"><td className="py-3 px-4 text-sm font-medium text-gray-600">Phone</td><td className="py-3 px-4"><EditableField label="" value={home.contactPhone} field="contactPhone" homeId={home.id} onUpdate={handleUpdate} hideLabel /></td></tr>
+                        <tr className="hover:bg-gray-50/50 transition-colors">
+                          <td className="py-3 px-4 text-sm font-medium text-gray-600">Custom notification email</td>
+                          <td className="py-3 px-4">
+                            <label className="inline-flex items-center gap-2 text-sm text-gray-700">
+                              <input
+                                type="checkbox"
+                                checked={Boolean(home.useCustomNotificationEmail)}
+                                onChange={(e) => handleToggleNotificationOverride(e.target.checked)}
+                                disabled={isNotificationPending}
+                                className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                              />
+                              {isNotificationPending ? 'Updating...' : 'Use custom email for notifications'}
+                            </label>
+                          </td>
+                        </tr>
+                        <tr className="hover:bg-gray-50/50 transition-colors"><td className="py-3 px-4 text-sm font-medium text-gray-600">Notification email</td><td className="py-3 px-4"><EditableField label="" value={home.notificationEmail ?? null} field="notificationEmail" homeId={home.id} type="email" onUpdate={handleUpdate} hideLabel /></td></tr>
                         <tr className="hover:bg-gray-50/50 transition-colors"><td className="py-3 px-4 text-sm font-medium text-gray-600">2nd Contact</td><td className="py-3 px-4 text-sm text-gray-900">{secondaryContact || '—'}</td></tr>
                         <tr className="hover:bg-gray-50/50 transition-colors"><td className="py-3 px-4 text-sm font-medium text-gray-600">2nd Email/Phone</td><td className="py-3 px-4 text-sm text-gray-900">{secondEmailPhone || '—'}</td></tr>
                       </tbody>
@@ -406,7 +433,7 @@ export function HomeQuickView({ homeId, isOpen, onClose }: HomeQuickViewProps) {
                         <tr className="hover:bg-gray-50/50 transition-colors"><td className="py-3 px-4 text-sm font-medium text-gray-600">Phone</td><td className="py-3 px-4"><EditableField label="" value={home.user.phone} field="userPhone" homeId={home.id} onUpdate={handleUpdate} hideLabel /></td></tr>
                         <tr className="hover:bg-gray-50/50 transition-colors"><td className="py-3 px-4 text-sm font-medium text-gray-600">Address</td><td className="py-3 px-4"><EditableField label="" value={home.user.address} field="userAddress" homeId={home.id} onUpdate={handleUpdate} hideLabel /></td></tr>
                         <tr className="hover:bg-gray-50/50 transition-colors"><td className="py-3 px-4 text-sm font-medium text-gray-600">Status</td><td className="py-3 px-4"><span className={cn("text-xs font-medium", home.user.status === 'ACTIVE' ? "text-emerald-700" : "text-red-700")}>{home.user.status}</span></td></tr>
-                        <tr className="hover:bg-gray-50/50 transition-colors"><td className="py-3 px-4 text-sm font-medium text-gray-600">Joined</td><td className="py-3 px-4"><span className="flex items-center gap-1.5 text-sm text-gray-700"><Clock className="w-3.5 h-3.5 text-gray-400" />{new Date(home.user.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</span></td></tr>
+                        <tr className="hover:bg-gray-50/50 transition-colors"><td className="py-3 px-4 text-sm font-medium text-gray-600">Joined</td><td className="py-3 px-4"><span className="flex items-center gap-1.5 text-sm text-gray-700"><Clock className="w-3.5 h-3.5 text-gray-400" />{new Date(home.user.createdAt).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}</span></td></tr>
                         {home.user.emergencyContact && (() => {
                           try {
                             const ec = JSON.parse(home.user.emergencyContact)
@@ -468,7 +495,7 @@ export function HomeQuickView({ homeId, isOpen, onClose }: HomeQuickViewProps) {
                               .map((event) => (
                                 <tr key={event.id} className="hover:bg-gray-50/50 transition-colors">
                                   <td className="py-3 px-4 text-sm font-medium text-gray-900">{event.title}</td>
-                                  <td className="py-3 px-4 text-sm text-gray-600">{new Date(event.startDateTime).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}</td>
+                                  <td className="py-3 px-4 text-sm text-gray-600">{new Date(event.startDateTime).toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}</td>
                                   <td className="py-3 px-4"><span className={cn("text-xs font-medium", event.status === 'PUBLISHED' ? "text-emerald-700" : event.status === 'COMPLETED' ? "text-sky-700" : "text-gray-600")}>{event.status}</span></td>
                                   <td className="py-3 px-4 text-right"><a href={`/admin/events/${event.id}/edit`} className="text-primary-600 hover:text-primary-700 hover:underline text-sm font-medium inline-flex items-center gap-1"><ExternalLink className="w-3.5 h-3.5" /> Edit</a></td>
                                 </tr>

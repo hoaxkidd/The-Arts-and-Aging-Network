@@ -3,6 +3,7 @@ import Credentials from "next-auth/providers/credentials"
 import { z } from "zod"
 import { prisma } from "@/lib/prisma"
 import bcrypt from "bcryptjs"
+import { canMergeRoles, normalizeRoleList } from "@/lib/roles"
 
 if (!process.env.AUTH_SECRET) {
   throw new Error('AUTH_SECRET environment variable is required')
@@ -24,7 +25,18 @@ const nextAuthConfig = {
             return null
           }
           const { email, password } = parsedCredentials.data
-          const user = await prisma.user.findUnique({ where: { email } })
+          const user = await prisma.user.findUnique({
+            where: { email },
+            include: {
+              roleAssignments: {
+                where: { isActive: true },
+                orderBy: [
+                  { isPrimary: 'desc' },
+                  { assignedAt: 'asc' },
+                ],
+              },
+            },
+          })
           if (!user) {
             console.error('[Auth] User not found')
             return null
@@ -46,7 +58,31 @@ const nextAuthConfig = {
             where: { id: user.id },
             data: { lastLoginAt: new Date() }
           })
-          return user
+          const assignedRoles = user.roleAssignments.map((assignment) => assignment.role)
+          const normalizedAssignedRoles = normalizeRoleList(assignedRoles)
+
+          // Repair guard: board cannot coexist with any other role.
+          if (normalizedAssignedRoles.includes('BOARD')) {
+            for (const role of normalizedAssignedRoles) {
+              const check = canMergeRoles(['BOARD'], role)
+              if (!check.ok && role !== 'BOARD') {
+                console.error('[Auth] Invalid role assignment state for user:', user.id)
+                return null
+              }
+            }
+          }
+
+          const primaryAssignment = user.roleAssignments.find((assignment) => assignment.isPrimary)
+          const primaryRole = primaryAssignment?.role || user.role
+          const roles = normalizedAssignedRoles.length > 0 ? normalizedAssignedRoles : [user.role]
+
+          return {
+            ...user,
+            role: primaryRole,
+            primaryRole,
+            activeRole: primaryRole,
+            roles,
+          }
         } catch (error) {
           console.error('[Auth] Error:', error)
           return null
@@ -67,7 +103,10 @@ const nextAuthConfig = {
       if (user) {
         token.id = user.id
         token.name = user.name
-        token.role = user.role
+        token.roles = Array.isArray(user.roles) ? user.roles : [user.role]
+        token.primaryRole = user.primaryRole || user.role
+        token.activeRole = user.activeRole || token.primaryRole
+        token.role = token.activeRole
         token.onboardingCompletedAt = user.onboardingCompletedAt?.toISOString() ?? undefined
         token.onboardingSkipCount = user.onboardingSkipCount ?? 0
         token.volunteerReviewStatus = user.volunteerReviewStatus ?? null
@@ -83,11 +122,28 @@ const nextAuthConfig = {
         console.log('[Auth] Using cached session for user:', token.id)
       }
 
+      if (!token.primaryRole && token.role) {
+        token.primaryRole = token.role
+      }
+      if (!token.activeRole && token.role) {
+        token.activeRole = token.role
+      }
+      if (!Array.isArray(token.roles) || token.roles.length === 0) {
+        token.roles = token.role ? [token.role] : []
+      }
+
+      if (token.activeRole) {
+        token.role = token.activeRole
+      }
+
       return token
     },
     async session({ session, token }: { session: any; token: any }) {
       if (token && session.user) {
         session.user.role = token.role
+        session.user.roles = token.roles || [token.role]
+        session.user.primaryRole = token.primaryRole || token.role
+        session.user.activeRole = token.activeRole || token.role
         session.user.id = token.id
         session.user.name = token.name
         session.user.onboardingCompletedAt = token.onboardingCompletedAt

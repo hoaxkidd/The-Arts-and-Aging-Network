@@ -4,10 +4,9 @@ import { prisma } from "@/lib/prisma"
 import { auth } from "@/auth"
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
-import { join } from "path"
-import { mkdir, writeFile } from "fs/promises"
 import { notifyAdminsAboutExpense } from "@/lib/notifications"
 import { logger } from "@/lib/logger"
+import { uploadToR2, isValidFileSize, getR2Diagnostics, R2ConfigurationError } from "@/lib/r2"
 
 const requestSchema = z.object({
   category: z.enum(['SICK_DAY', 'OFF_DAY', 'EXPENSE']),
@@ -52,8 +51,7 @@ export async function submitRequest(formData: FormData) {
 
   // Handle File Upload
   if (file && file.size > 0) {
-    // Validate file size (5MB)
-    if (file.size > 5 * 1024 * 1024) {
+    if (!isValidFileSize(file.size, 5)) {
       return { error: 'File size exceeds 5MB limit' }
     }
 
@@ -63,28 +61,29 @@ export async function submitRequest(formData: FormData) {
       return { error: 'Invalid file type. Only PDF, JPG, and PNG are allowed.' }
     }
 
-    // Save file locally
-    // Note: In production, use S3/Cloudflare R2/Vercel Blob storage
     try {
       const bytes = await file.arrayBuffer()
       const buffer = Buffer.from(bytes)
 
-      // Sanitize filename and create unique name
-      const sanitizedName = file.name.replace(/[^a-zA-Z0-9.]/g, '_')
-      const fileName = `${Date.now()}-${sanitizedName}`
-      const uploadDir = join(process.cwd(), 'public', 'uploads')
-      const uploadPath = join(uploadDir, fileName)
+      const safeFileName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_')
+      const uploaded = await uploadToR2(
+        buffer,
+        safeFileName,
+        file.type,
+        `expense-receipts/${session.user.id}`
+      )
 
-      // Ensure upload directory exists
-      await mkdir(uploadDir, { recursive: true })
-
-      // Write file to disk
-      await writeFile(uploadPath, buffer)
-
-      // Store relative URL for database
-      receiptUrl = `/uploads/${fileName}`
+      receiptUrl = uploaded.url
     } catch (e) {
-      logger.serverAction('File upload error:', e)
+      logger.upload('Expense receipt upload error', {
+        error: e,
+        diagnostics: getR2Diagnostics(),
+      })
+
+      if (e instanceof R2ConfigurationError) {
+        return { error: 'Receipt storage is not configured correctly. Please contact an administrator.' }
+      }
+
       return { error: 'Failed to upload file' }
     }
   }

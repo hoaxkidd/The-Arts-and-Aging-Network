@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma"
 import { auth } from "@/auth"
 import { formatEventTime, formatEventDateRange, generateCalendarLinks, getCalendarSectionHtml } from "@/lib/email/calendar"
 import { logger } from "@/lib/logger"
+import { resolveHomeNotificationRecipient } from "@/lib/home-notification-recipient"
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://artsandaging.com'
 const FROM_EMAIL = process.env.MAILCHIMP_FROM_EMAIL || 'noreply@artsandaging.com'
@@ -171,7 +172,15 @@ export async function processPendingReminders(options?: { trustedCron?: boolean 
         event: {
           include: {
             location: true,
-            geriatricHome: true
+            geriatricHome: {
+              include: {
+                user: {
+                  select: {
+                    email: true,
+                  },
+                },
+              },
+            },
           }
         }
       },
@@ -195,13 +204,35 @@ export async function processPendingReminders(options?: { trustedCron?: boolean 
             })
           : null
 
-        if (!recipient || !recipient.email) {
+        let recipientEmail = recipient?.email || ''
+        let recipientName = recipient?.name || null
+        const recipientPreferredName = recipient?.preferredName || null
+
+        if (reminder.recipientType === 'HOME_ADMIN' && reminder.event.geriatricHome) {
+          const home = reminder.event.geriatricHome as any
+          const resolved = resolveHomeNotificationRecipient({
+            contactEmail: home.contactEmail,
+            useCustomNotificationEmail: home.useCustomNotificationEmail,
+            notificationEmail: home.notificationEmail,
+            user: { email: home.user?.email || recipient?.email },
+          })
+
+          if (resolved.email) {
+            recipientEmail = resolved.email
+          }
+
+          if (!recipientName) {
+            recipientName = home.contactName || home.name || 'there'
+          }
+        }
+
+        if (!recipientEmail) {
           await prisma.emailReminder.update({
             where: { id: reminder.id },
             data: {
               status: 'FAILED',
-              error: 'Recipient not found or no email'
-            }
+              error: 'No valid recipient email resolved',
+            },
           })
           results.failed++
           continue
@@ -209,12 +240,16 @@ export async function processPendingReminders(options?: { trustedCron?: boolean 
 
         const emailContent = generateReminderEmail({
           reminder,
-          recipient,
+          recipient: {
+            email: recipientEmail,
+            name: recipientName,
+            preferredName: recipientPreferredName,
+          },
           event: reminder.event
         })
 
         const sendResult = await sendEmail(
-          recipient.email,
+          recipientEmail,
           emailContent.subject,
           emailContent.html
         )
@@ -272,7 +307,7 @@ interface ReminderData {
     startDateTime: Date; 
     endDateTime: Date; 
     location: { name: string; address: string } | null; 
-    geriatricHome: { name: string } | null 
+    geriatricHome: any | null
   }
 }
 

@@ -210,3 +210,78 @@ export async function getDonorDetails(id: string) {
     return { error: "Failed to load donor" }
   }
 }
+
+export async function updateDonor(id: string, data: {
+  name?: string
+  email?: string
+  phone?: string
+  address?: string
+  type?: string
+  tier?: string
+  status?: string
+  isRecurring?: boolean
+  notes?: string
+}) {
+  const session = await auth()
+  if (session?.user?.role !== 'ADMIN') {
+    return { error: 'Unauthorized' }
+  }
+
+  try {
+    const donor = await prisma.donor.update({
+      where: { id },
+      data: {
+        ...(data.name !== undefined ? { name: data.name } : {}),
+        ...(data.email !== undefined ? { email: data.email || null } : {}),
+        ...(data.phone !== undefined ? { phone: data.phone || null } : {}),
+        ...(data.address !== undefined ? { address: data.address || null } : {}),
+        ...(data.type !== undefined ? { type: data.type } : {}),
+        ...(data.tier !== undefined ? { tier: data.tier } : {}),
+        ...(data.status !== undefined ? { status: data.status } : {}),
+        ...(data.isRecurring !== undefined ? { isRecurring: data.isRecurring } : {}),
+        ...(data.notes !== undefined ? { notes: data.notes || null } : {}),
+      },
+    })
+
+    await prisma.auditLog.create({
+      data: {
+        action: 'DONOR_UPDATED',
+        details: JSON.stringify({ donorId: id }),
+        userId: session.user.id,
+      },
+    })
+
+    revalidatePath('/admin/donors')
+    return { success: true, data: donor }
+  } catch (error) {
+    logger.serverAction('Failed to update donor:', error)
+    return { error: 'Failed to update donor' }
+  }
+}
+
+export async function deleteDonor(id: string) {
+  const session = await auth()
+  if (session?.user?.role !== 'ADMIN') {
+    return { error: 'Unauthorized' }
+  }
+
+  try {
+    await prisma.$transaction(async (tx) => {
+      await tx.donation.deleteMany({ where: { donorId: id } })
+      await tx.donor.delete({ where: { id } })
+      await tx.auditLog.create({
+        data: {
+          action: 'DONOR_DELETED',
+          details: JSON.stringify({ donorId: id }),
+          userId: session.user.id,
+        },
+      })
+    })
+
+    revalidatePath('/admin/donors')
+    return { success: true }
+  } catch (error) {
+    logger.serverAction('Failed to delete donor:', error)
+    return { error: 'Failed to delete donor' }
+  }
+}

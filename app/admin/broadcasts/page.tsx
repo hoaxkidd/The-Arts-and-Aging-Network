@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Plus, Send, Trash2, Loader2, X, Megaphone } from 'lucide-react'
-import { createBroadcast, getBroadcasts, sendBroadcast, deleteBroadcast } from '@/app/actions/broadcast-messages'
+import { Plus, Send, Trash2, Loader2, X, Megaphone, ShieldCheck } from 'lucide-react'
+import { createBroadcast, getBroadcasts, sendBroadcast, deleteBroadcast, approveBoardVisibilityForBroadcast } from '@/app/actions/broadcast-messages'
 import { cn } from '@/lib/utils'
 
 type Broadcast = {
@@ -26,7 +26,8 @@ export default function BroadcastMessagesPage() {
   
   const [formData, setFormData] = useState({
     title: '',
-    content: ''
+    content: '',
+    targetRoles: ['PAYROLL', 'HOME_ADMIN', 'FACILITATOR', 'VOLUNTEER', 'PARTNER'] as string[]
   })
 
   useEffect(() => {
@@ -48,7 +49,8 @@ export default function BroadcastMessagesPage() {
     setSaving(true)
     const result = await createBroadcast({
       title: formData.title,
-      content: formData.content
+      content: formData.content,
+      targetRoles: formData.targetRoles
     })
     
     if (!result.error) {
@@ -87,14 +89,37 @@ export default function BroadcastMessagesPage() {
     setActionId(null)
   }
 
+  async function handleApproveBoard(id: string) {
+    if (!confirm('Approve this broadcast for board visibility?')) return
+
+    setActionId(id)
+    const result = await approveBoardVisibilityForBroadcast(id)
+    if (!result.error) {
+      loadBroadcasts()
+    } else {
+      alert(result.error)
+    }
+    setActionId(null)
+  }
+
   function closeForm() {
     setShowForm(false)
-    setFormData({ title: '', content: '' })
+    setFormData({ title: '', content: '', targetRoles: ['PAYROLL', 'HOME_ADMIN', 'FACILITATOR', 'VOLUNTEER', 'PARTNER'] })
+  }
+
+  function toggleRole(role: string) {
+    setFormData((prev) => {
+      const hasRole = prev.targetRoles.includes(role)
+      const targetRoles = hasRole
+        ? prev.targetRoles.filter((r) => r !== role)
+        : [...prev.targetRoles, role]
+      return { ...prev, targetRoles }
+    })
   }
 
   function formatDate(date: Date): string {
     return new Date(date).toLocaleDateString('en-US', {
-      month: 'short',
+      month: 'long',
       day: 'numeric',
       year: 'numeric',
       hour: 'numeric',
@@ -138,13 +163,14 @@ export default function BroadcastMessagesPage() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
                       <h3 className="text-sm font-medium text-gray-900">{broadcast.title}</h3>
-                      <span className={cn(
-                        "px-2 py-0.5 text-xs rounded-full",
-                        broadcast.status === 'PENDING' && "bg-yellow-100 text-yellow-700",
-                        broadcast.status === 'SENT' && "bg-green-100 text-green-700"
-                      )}>
-                        {broadcast.status}
-                      </span>
+                        <span className={cn(
+                          "px-2 py-0.5 text-xs rounded-full",
+                          broadcast.status === 'PENDING' && "bg-yellow-100 text-yellow-700",
+                          broadcast.status === 'SENT' && "bg-green-100 text-green-700",
+                          broadcast.status === 'PENDING_BOARD_APPROVAL' && "bg-amber-100 text-amber-800"
+                        )}>
+                          {broadcast.status}
+                        </span>
                     </div>
                     <p className="text-sm text-gray-600 line-clamp-2">{broadcast.content}</p>
                     <p className="text-xs text-gray-400 mt-2">
@@ -152,10 +178,24 @@ export default function BroadcastMessagesPage() {
                     </p>
                   </div>
 
-                  <div className="flex items-center gap-1">
-                    {broadcast.status === 'PENDING' && (
-                      <button
-                        onClick={() => handleSend(broadcast.id)}
+                    <div className="flex items-center gap-1">
+                      {broadcast.status === 'PENDING_BOARD_APPROVAL' && (
+                        <button
+                          onClick={() => handleApproveBoard(broadcast.id)}
+                          disabled={actionId === broadcast.id}
+                          className="min-w-[44px] min-h-[44px] flex items-center justify-center text-amber-700 hover:bg-amber-50 rounded-lg disabled:opacity-50"
+                          title="Approve board visibility"
+                        >
+                          {actionId === broadcast.id ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <ShieldCheck className="w-4 h-4" />
+                          )}
+                        </button>
+                      )}
+                      {broadcast.status === 'PENDING' && (
+                        <button
+                          onClick={() => handleSend(broadcast.id)}
                         disabled={actionId === broadcast.id}
                         className="min-w-[44px] min-h-[44px] flex items-center justify-center text-green-600 hover:bg-green-50 rounded-lg disabled:opacity-50"
                         title="Send now"
@@ -218,6 +258,28 @@ export default function BroadcastMessagesPage() {
                   rows={6}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 resize-none"
                 />
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-gray-700 mb-2 block">Audience</label>
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  {['PAYROLL', 'HOME_ADMIN', 'FACILITATOR', 'VOLUNTEER', 'PARTNER', 'BOARD'].map((role) => (
+                    <label key={role} className="inline-flex items-center gap-2 rounded border border-gray-200 px-2 py-1.5">
+                      <input
+                        type="checkbox"
+                        checked={formData.targetRoles.includes(role)}
+                        onChange={() => toggleRole(role)}
+                        className="rounded border-gray-300"
+                      />
+                      <span>{role.replace('_', ' ')}</span>
+                    </label>
+                  ))}
+                </div>
+                {formData.targetRoles.includes('BOARD') && (
+                  <p className="mt-2 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1.5">
+                    Board recipients require ED/Chair approval before this broadcast can be sent.
+                  </p>
+                )}
               </div>
             </div>
 

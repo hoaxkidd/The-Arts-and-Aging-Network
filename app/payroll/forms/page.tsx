@@ -332,7 +332,7 @@ export default async function PayrollFormsPage({
                         </h3>
                         <p className="text-xs text-gray-500">
                           Submitted {submission.createdAt.toLocaleDateString('en-US', {
-                            month: 'short',
+                            month: 'long',
                             day: 'numeric',
                             year: 'numeric'
                           })}

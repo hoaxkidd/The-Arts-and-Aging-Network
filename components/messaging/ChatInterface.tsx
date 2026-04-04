@@ -1,17 +1,18 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { Send, ArrowLeft, Loader2, MoreVertical, Edit2, Trash2, X, Check, Paperclip, File, Image, Reply, Star, Bell, Smile } from 'lucide-react'
+import { Send, ArrowLeft, Loader2, MoreVertical, Edit2, Trash2, X, Check, Paperclip, File, ImageIcon, Reply, Star, Bell, Smile } from 'lucide-react'
 import { sendMessage } from '@/app/actions/conversations'
 import { triggerNotificationRefresh } from '@/lib/notification-refresh'
 import { editDirectMessage, deleteDirectMessage } from '@/app/actions/message-features'
 import { starMessage, unstarMessage, isMessageStarred } from '@/app/actions/starred-messages'
 import { createMessageReminder } from '@/app/actions/message-reminders'
-import { useRouter } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import EmojiPicker from 'emoji-picker-react'
 import { logger } from '@/lib/logger'
+import { getStaffBasePathFromPathname } from '@/lib/role-routes'
 
 type Attachment = {
   name: string
@@ -86,6 +87,8 @@ export function ChatInterface({ partner, messages, currentUserId, onBack }: Prop
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const router = useRouter()
+  const pathname = usePathname()
+  const basePath = getStaffBasePathFromPathname(pathname)
 
   // Scroll to bottom on mount and when messages change
   useEffect(() => {
@@ -306,7 +309,7 @@ export function ChatInterface({ partner, messages, currentUserId, onBack }: Prop
           </button>
         ) : (
           <Link
-            href="/staff/inbox"
+            href={`${basePath}/inbox`}
             className="min-w-[44px] min-h-[44px] flex items-center justify-center -ml-2 text-gray-600 hover:bg-gray-100 active:bg-gray-200 rounded-lg lg:hidden touch-manipulation"
             aria-label="Back to inbox"
           >
@@ -315,7 +318,7 @@ export function ChatInterface({ partner, messages, currentUserId, onBack }: Prop
         )}
 
         <Link
-          href={`/staff/directory/${partner.userCode || partner.id}`}
+          href={`${basePath}/directory/${partner.userCode || partner.id}`}
           className="flex items-center gap-3 flex-1 min-h-[44px] hover:bg-gray-50 active:bg-gray-100 -mx-2 px-2 py-2 rounded-lg transition-colors touch-manipulation"
         >
           <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 text-white flex items-center justify-center font-semibold text-lg flex-shrink-0">
@@ -434,7 +437,7 @@ export function ChatInterface({ partner, messages, currentUserId, onBack }: Prop
                                       )}
                                     >
                                       {att.isImage ? (
-                                        <Image className="w-4 h-4" aria-hidden="true" />
+                                        <ImageIcon className="w-4 h-4" aria-hidden="true" />
                                       ) : (
                                         <File className="w-4 h-4" aria-hidden="true" />
                                       )}
@@ -556,7 +559,7 @@ export function ChatInterface({ partner, messages, currentUserId, onBack }: Prop
             {attachments.map((att, idx) => (
               <div key={idx} className="flex items-center gap-1 px-2 py-1 bg-gray-100 rounded text-sm">
                 <span className="sr-only">{att.isImage ? 'Image' : 'File'}</span>
-                {att.isImage ? <Image className="w-4 h-4" aria-hidden="true" /> : <File className="w-4 h-4" aria-hidden="true" />}
+                {att.isImage ? <ImageIcon className="w-4 h-4" aria-hidden="true" /> : <File className="w-4 h-4" aria-hidden="true" />}
                 <span className="max-w-[100px] truncate">{att.name}</span>
                 <button
                   type="button"
@@ -725,8 +728,8 @@ function formatDate(date: Date): string {
   if (isSameDay(messageDate, yesterday)) return 'Yesterday'
 
   return messageDate.toLocaleDateString('en-US', {
-    weekday: 'short',
-    month: 'short',
+    weekday: 'long',
+    month: 'long',
     day: 'numeric'
   })
 }

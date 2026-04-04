@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Clock } from 'lucide-react'
 import { formatTime, parseHMTime, toInputTime } from '@/lib/date-utils'
 
@@ -28,16 +28,22 @@ export function TimeInput({
   const [inputValue, setInputValue] = useState('')
   const [error, setError] = useState('')
 
-  // Initialize from value
-  const initValue = () => {
-    if (value) {
-      const date = new Date(value)
-      if (!isNaN(date.getTime())) {
-        return toInputTime(date)
-      }
+  useEffect(() => {
+    if (!value) {
+      setInputValue('')
+      return
     }
-    return ''
-  }
+
+    if (typeof value === 'string' && /^\d{2}:\d{2}$/.test(value)) {
+      setInputValue(value)
+      return
+    }
+
+    const date = new Date(value)
+    if (!isNaN(date.getTime())) {
+      setInputValue(toInputTime(date))
+    }
+  }, [value])
 
   // Handle manual input
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -83,7 +89,7 @@ export function TimeInput({
   }
 
   // Get preview
-  const previewTime = value ? new Date(value) : null
+  const previewTime = /^\d{2}:\d{2}$/.test(inputValue) ? parseHMTime(inputValue) : null
 
   return (
     <div>
@@ -104,13 +110,13 @@ export function TimeInput({
           placeholder={placeholder}
           disabled={disabled}
           required={required}
-          className={`
-            w-full px-3 py-2 pl-10 border rounded-lg text-gray-900 placeholder-gray-400
-            focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500
-            disabled:bg-gray-100 disabled:cursor-not-allowed
-            ${error ? 'border-red-500' : 'border-gray-300'}
-            ${className}
-          `}
+            className={`
+              w-full px-3 py-2 pl-10 border rounded-lg text-gray-900 placeholder-gray-400
+              focus:outline-none focus:ring-2 focus:ring-gray-200 focus:border-gray-400
+              disabled:bg-gray-100 disabled:cursor-not-allowed
+              ${error ? 'border-red-500' : 'border-gray-300'}
+              ${className}
+            `}
         />
         <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
       </div>

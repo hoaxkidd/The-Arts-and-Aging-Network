@@ -3,6 +3,7 @@ import { revalidatePath } from "next/cache"
 import { logger } from "@/lib/logger"
 import { sendEmail, sendEmailWithCustomContent } from "@/lib/email/service"
 import { generateCalendarLinks, getCalendarSectionHtml } from "@/lib/email/calendar"
+import { sendSMS } from "@/lib/sms/service"
 
 const EVENT_EMAIL_TIMEZONE = 'America/St_Johns'
 
@@ -47,6 +48,94 @@ interface UserPreferences {
   email: boolean
   sms: boolean
   inApp: boolean
+}
+
+type NotificationRecipient = {
+  id: string
+  email: string | null
+  name: string | null
+  phone: string | null
+  notificationPreferences: string | null
+}
+
+async function getTargetedEventRecipients(event: { programId?: string | null; geriatricHomeId?: string | null }): Promise<NotificationRecipient[]> {
+  const recipients = new Map<string, NotificationRecipient>()
+
+  const admins = await prisma.user.findMany({
+    where: { role: 'ADMIN', status: 'ACTIVE' },
+    select: { id: true, email: true, name: true, phone: true, notificationPreferences: true },
+  })
+  admins.forEach((user) => recipients.set(user.id, user))
+
+  let homeRegion: string | null = null
+  if (event.geriatricHomeId) {
+    const home = await prisma.geriatricHome.findUnique({
+      where: { id: event.geriatricHomeId },
+      select: { region: true, userId: true },
+    })
+    homeRegion = home?.region || null
+
+    if (home?.userId) {
+      const homeAdmin = await prisma.user.findUnique({
+        where: { id: home.userId },
+        select: { id: true, email: true, name: true, phone: true, notificationPreferences: true, status: true },
+      })
+      if (homeAdmin?.status === 'ACTIVE') {
+        recipients.set(homeAdmin.id, {
+          id: homeAdmin.id,
+          email: homeAdmin.email,
+          name: homeAdmin.name,
+          phone: homeAdmin.phone,
+          notificationPreferences: homeAdmin.notificationPreferences,
+        })
+      }
+    }
+  }
+
+  if (homeRegion) {
+    const regionalStaff = await prisma.user.findMany({
+      where: {
+        status: 'ACTIVE',
+        role: { in: ['FACILITATOR', 'PAYROLL', 'VOLUNTEER', 'BOARD', 'PARTNER'] },
+        region: homeRegion,
+      },
+      select: { id: true, email: true, name: true, phone: true, notificationPreferences: true },
+    })
+    regionalStaff.forEach((user) => recipients.set(user.id, user))
+  }
+
+  if (event.programId) {
+    const pastProgramParticipants = await prisma.eventAttendance.findMany({
+      where: {
+        status: 'YES',
+        event: { programId: event.programId },
+      },
+      select: { userId: true },
+      distinct: ['userId'],
+      take: 500,
+    })
+
+    if (pastProgramParticipants.length > 0) {
+      const users = await prisma.user.findMany({
+        where: {
+          id: { in: pastProgramParticipants.map((entry) => entry.userId) },
+          status: 'ACTIVE',
+        },
+        select: { id: true, email: true, name: true, phone: true, notificationPreferences: true },
+      })
+      users.forEach((user) => recipients.set(user.id, user))
+    }
+  }
+
+  if (recipients.size === admins.length) {
+    const payrollUsers = await prisma.user.findMany({
+      where: { role: 'PAYROLL', status: 'ACTIVE' },
+      select: { id: true, email: true, name: true, phone: true, notificationPreferences: true },
+    })
+    payrollUsers.forEach((user) => recipients.set(user.id, user))
+  }
+
+  return Array.from(recipients.values())
 }
 
 // Helper to parse preferences
@@ -111,13 +200,12 @@ export async function notifyAllStaffAboutEvent(event: {
   startDateTime: Date
   endDateTime: Date
   location: { name: string }
+  programId?: string | null
+  geriatricHomeId?: string | null
 }) {
-  // Get all PAYROLL and ADMIN users (relaxed status check)
-  const staffMembers = await prisma.user.findMany({
-    where: {
-      role: { in: ['PAYROLL', 'ADMIN'] }
-    },
-    select: { id: true, email: true, name: true, phone: true, notificationPreferences: true }
+  const staffMembers = await getTargetedEventRecipients({
+    programId: event.programId,
+    geriatricHomeId: event.geriatricHomeId,
   })
 
   logger.log(`Found ${staffMembers.length} users to notify about new event`)
@@ -131,8 +219,8 @@ export async function notifyAllStaffAboutEvent(event: {
   // Use Newfoundland timezone for consistent event display
   const startDate = new Date(event.startDateTime)
   const endDate = new Date(event.endDateTime)
-  const startDateLabel = startDate.toLocaleDateString('en-US', { timeZone: EVENT_EMAIL_TIMEZONE, weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })
-  const endDateLabel = endDate.toLocaleDateString('en-US', { timeZone: EVENT_EMAIL_TIMEZONE, weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })
+  const startDateLabel = startDate.toLocaleDateString('en-US', { timeZone: EVENT_EMAIL_TIMEZONE, weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
+  const endDateLabel = endDate.toLocaleDateString('en-US', { timeZone: EVENT_EMAIL_TIMEZONE, weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
   const startTimeLabel = startDate.toLocaleTimeString('en-US', { timeZone: EVENT_EMAIL_TIMEZONE, hour: 'numeric', minute: '2-digit', timeZoneName: 'short' })
   const endTimeLabel = endDate.toLocaleTimeString('en-US', { timeZone: EVENT_EMAIL_TIMEZONE, hour: 'numeric', minute: '2-digit', timeZoneName: 'short' })
   const isMultiDay = startDate.toLocaleDateString('en-US', { timeZone: EVENT_EMAIL_TIMEZONE }) !== endDate.toLocaleDateString('en-US', { timeZone: EVENT_EMAIL_TIMEZONE })
@@ -229,10 +317,12 @@ export async function notifyAllStaffAboutEventUpdate(event: {
   endDateTime: Date
   location?: string
   changes: string[]
+  programId?: string | null
+  geriatricHomeId?: string | null
 }) {
-  const staffMembers = await prisma.user.findMany({
-    where: { role: { in: ['PAYROLL', 'ADMIN'] } },
-    select: { id: true, email: true, name: true, phone: true, notificationPreferences: true }
+  const staffMembers = await getTargetedEventRecipients({
+    programId: event.programId,
+    geriatricHomeId: event.geriatricHomeId,
   })
 
   logger.log(`Found ${staffMembers.length} staff to notify about event update`)
@@ -240,8 +330,8 @@ export async function notifyAllStaffAboutEventUpdate(event: {
   // Use Newfoundland timezone for consistent event display
   const startDate = new Date(event.startDateTime)
   const endDate = new Date(event.endDateTime)
-  const startDateLabel = startDate.toLocaleDateString('en-US', { timeZone: EVENT_EMAIL_TIMEZONE, weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })
-  const endDateLabel = endDate.toLocaleDateString('en-US', { timeZone: EVENT_EMAIL_TIMEZONE, weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })
+  const startDateLabel = startDate.toLocaleDateString('en-US', { timeZone: EVENT_EMAIL_TIMEZONE, weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
+  const endDateLabel = endDate.toLocaleDateString('en-US', { timeZone: EVENT_EMAIL_TIMEZONE, weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
   const startTimeLabel = startDate.toLocaleTimeString('en-US', { timeZone: EVENT_EMAIL_TIMEZONE, hour: 'numeric', minute: '2-digit', timeZoneName: 'short' })
   const endTimeLabel = endDate.toLocaleTimeString('en-US', { timeZone: EVENT_EMAIL_TIMEZONE, hour: 'numeric', minute: '2-digit', timeZoneName: 'short' })
   const isMultiDay = startDate.toLocaleDateString('en-US', { timeZone: EVENT_EMAIL_TIMEZONE }) !== endDate.toLocaleDateString('en-US', { timeZone: EVENT_EMAIL_TIMEZONE })
@@ -364,8 +454,8 @@ export async function notifyEventSignupsAboutNewEvent(event: {
   // Use Newfoundland timezone for consistent event display
   const startDate = new Date(event.startDateTime)
   const endDate = new Date(event.endDateTime)
-  const startDateLabel = startDate.toLocaleDateString('en-US', { timeZone: EVENT_EMAIL_TIMEZONE, weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })
-  const endDateLabel = endDate.toLocaleDateString('en-US', { timeZone: EVENT_EMAIL_TIMEZONE, weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })
+  const startDateLabel = startDate.toLocaleDateString('en-US', { timeZone: EVENT_EMAIL_TIMEZONE, weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
+  const endDateLabel = endDate.toLocaleDateString('en-US', { timeZone: EVENT_EMAIL_TIMEZONE, weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
   const startTimeLabel = startDate.toLocaleTimeString('en-US', { timeZone: EVENT_EMAIL_TIMEZONE, hour: 'numeric', minute: '2-digit', timeZoneName: 'short' })
   const endTimeLabel = endDate.toLocaleTimeString('en-US', { timeZone: EVENT_EMAIL_TIMEZONE, hour: 'numeric', minute: '2-digit', timeZoneName: 'short' })
   const isMultiDay = startDate.toLocaleDateString('en-US', { timeZone: EVENT_EMAIL_TIMEZONE }) !== endDate.toLocaleDateString('en-US', { timeZone: EVENT_EMAIL_TIMEZONE })
@@ -485,8 +575,8 @@ export async function notifyEventSignupsAboutEventUpdate(event: {
   // Use Newfoundland timezone for consistent event display
   const startDate = new Date(event.startDateTime)
   const endDate = new Date(event.endDateTime)
-  const startDateLabel = startDate.toLocaleDateString('en-US', { timeZone: EVENT_EMAIL_TIMEZONE, weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })
-  const endDateLabel = endDate.toLocaleDateString('en-US', { timeZone: EVENT_EMAIL_TIMEZONE, weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })
+  const startDateLabel = startDate.toLocaleDateString('en-US', { timeZone: EVENT_EMAIL_TIMEZONE, weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
+  const endDateLabel = endDate.toLocaleDateString('en-US', { timeZone: EVENT_EMAIL_TIMEZONE, weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
   const startTimeLabel = startDate.toLocaleTimeString('en-US', { timeZone: EVENT_EMAIL_TIMEZONE, hour: 'numeric', minute: '2-digit', timeZoneName: 'short' })
   const endTimeLabel = endDate.toLocaleTimeString('en-US', { timeZone: EVENT_EMAIL_TIMEZONE, hour: 'numeric', minute: '2-digit', timeZoneName: 'short' })
   const isMultiDay = startDate.toLocaleDateString('en-US', { timeZone: EVENT_EMAIL_TIMEZONE }) !== endDate.toLocaleDateString('en-US', { timeZone: EVENT_EMAIL_TIMEZONE })
@@ -571,12 +661,14 @@ export async function notifyEventSignupsAboutEventUpdate(event: {
 export async function notifyAllStaffAboutEventCancellation(event: {
     title: string
     date: Date
+    programId?: string | null
+    geriatricHomeId?: string | null
 }) {
   
 
-    const staffMembers = await prisma.user.findMany({
-      where: { role: { in: ['PAYROLL', 'ADMIN'] } },
-      select: { id: true, email: true, name: true, phone: true, notificationPreferences: true }
+    const staffMembers = await getTargetedEventRecipients({
+      programId: event.programId,
+      geriatricHomeId: event.geriatricHomeId,
     })
   
     logger.log(`Found ${staffMembers.length} users to notify`)
@@ -636,16 +728,6 @@ export async function notifyAllStaffAboutEventCancellation(event: {
     }
 
     await Promise.allSettled(notificationPromises)
-}
-
-// SMS sending function (placeholder)
-async function sendSMS(params: { to: string, message: string }) {
-    logger.log(`
-📱 SMS NOTIFICATION
-To: ${params.to}
-Message: ${params.message}
-    `)
-    return true
 }
 
 // Email sending function - uses Mailchimp via email service

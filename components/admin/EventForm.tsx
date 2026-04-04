@@ -4,7 +4,7 @@ import { useRef, useState } from 'react'
 import Link from 'next/link'
 import { createEvent } from "@/app/actions/events"
 import { getFormTemplates } from "@/app/actions/form-templates"
-import { CheckCircle, AlertTriangle, Plus, Search, Calendar, Clock, FileText, ExternalLink, Pencil } from "lucide-react"
+import { CheckCircle, AlertTriangle, Plus, Search, Calendar, Clock, FileText, ExternalLink, Pencil, ArrowLeft } from "lucide-react"
 import { STYLES } from "@/lib/styles"
 import { cn } from "@/lib/utils"
 import { AddressAutocomplete } from "@/components/ui/AddressAutocomplete"
@@ -28,11 +28,13 @@ export function EventForm({
   initialData,
   currentUser,
   formTemplates = [],
+  backHref = '/admin/events',
 }: {
   locations: any[]
   initialData?: any
   currentUser?: CurrentUser | null
   formTemplates?: FormTemplateOption[]
+  backHref?: string
 }) {
   const [isNewLocation, setIsNewLocation] = useState(false)
   const [address, setAddress] = useState(initialData?.newLocationAddress ?? '')
@@ -135,6 +137,9 @@ export function EventForm({
 
   return (
     <div className={STYLES.card}>
+      <Link href={backHref} className="inline-flex items-center gap-1 text-sm text-gray-600 hover:text-gray-900 mb-3">
+        <ArrowLeft className="w-4 h-4" /> Back to Events
+      </Link>
       <div className="flex items-center gap-2 mb-6 text-primary-700">
         <Plus className="w-5 h-5" />
         <h2 className="text-lg font-semibold">{initialData ? 'Edit Event' : 'Create New Event'}</h2>

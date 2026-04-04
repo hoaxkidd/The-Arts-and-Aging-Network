@@ -14,6 +14,7 @@ import { logger } from '@/lib/logger'
 
 type UserData = {
   id: string
+  role?: string | null
   name: string | null
   email: string | null
   alternateEmail?: string | null
@@ -78,9 +79,10 @@ type ProfileFormProps = {
   embedded?: boolean
   flat?: boolean
   showSaveButton?: boolean
+  identityOnly?: boolean
 }
 
-export function ProfileForm({ user, documents, isAdmin = false, visibleTabs, embedded = false, flat = false, showSaveButton = true }: ProfileFormProps) {
+export function ProfileForm({ user, documents, isAdmin = false, visibleTabs, embedded = false, flat = false, showSaveButton = true, identityOnly = false }: ProfileFormProps) {
   const [activeTab, setActiveTab] = useState('personal')
   const [isPending, setIsPending] = useState(false)
   const [statusMessage, setStatusMessage] = useState<string | null>(null)
@@ -502,14 +504,18 @@ export function ProfileForm({ user, documents, isAdmin = false, visibleTabs, emb
                     <label className="block text-sm font-medium text-gray-700 mb-1">Date of Birth</label>
                     <DateInput name="birthDate" value={user.birthDate ? toInputDate(user.birthDate) : ''} />
                 </div>
-                <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Full Address</label>
-                    <AddressAutocomplete name="address" value={address} onChange={setAddress} placeholder="Full address" countries={['ca']} className="w-full rounded-lg border-gray-300" />
-                </div>
-                <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Short Bio</label>
-                    <textarea name="bio" rows={3} defaultValue={user.bio || ''} className="w-full rounded-lg border-gray-300" />
-                </div>
+                {!identityOnly && (
+                  <>
+                    <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Full Address</label>
+                        <AddressAutocomplete name="address" value={address} onChange={setAddress} placeholder="Full address" countries={['ca']} className="w-full rounded-lg border-gray-300" />
+                    </div>
+                    <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Short Bio</label>
+                        <textarea name="bio" rows={3} defaultValue={user.bio || ''} className="w-full rounded-lg border-gray-300" />
+                    </div>
+                  </>
+                )}
             </div>
         </div>
 

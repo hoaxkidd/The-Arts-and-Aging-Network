@@ -5,10 +5,12 @@ import { usePathname } from 'next/navigation'
 import Link from "next/link"
 import Image from "next/image"
 import { LogOut, Menu, ChevronRight, X, Calendar, Users, Home, DollarSign, FileText, Settings, MessageSquare, Mail, Clock, Car, Quote, Upload, UserCircle, CheckCircle, LayoutDashboard, ClipboardList, Package, Heart, Bell, Plus, Building2, FileSearch, Inbox, Edit } from "lucide-react"
-import { MENU_ITEMS, adminMenu, homeAdminMenu, staffMenu } from "@/lib/menu"
+import { MENU_ITEMS, adminMenu, homeAdminMenu } from "@/lib/menu"
 import { NotificationBell } from "@/components/notifications/NotificationBell"
 import { cn } from "@/lib/utils"
 import { logout } from "@/app/actions/auth"
+import { getRoleHomePath, normalizeStaffNamespace } from "@/lib/role-routes"
+import { ROLE_LABELS } from '@/lib/roles'
 
 // Define title map
 const PAGE_TITLES: Record<string, string> = {
@@ -75,6 +77,7 @@ const PAGE_TITLES: Record<string, string> = {
   '/staff/settings': 'Settings',
   '/staff/onboarding': 'Complete Profile',
   '/volunteers': 'Volunteer Dashboard',
+  '/volunteers/inbox': 'Inbox',
   '/volunteers/forms': 'Forms',
   '/volunteers/profile': 'My Profile',
   '/volunteers/settings': 'Settings',
@@ -147,6 +150,7 @@ const PAGE_ICONS: Record<string, typeof Calendar> = {
   '/staff/settings': Settings,
   '/staff/onboarding': UserCircle,
   '/volunteers': LayoutDashboard,
+  '/volunteers/inbox': Inbox,
   '/volunteers/forms': FileText,
   '/volunteers/profile': UserCircle,
   '/volunteers/settings': Settings,
@@ -219,6 +223,7 @@ const PAGE_SUBTITLES: Record<string, string> = {
   '/staff/settings': 'Update your settings',
   '/staff/onboarding': 'Finish setting up your profile',
   '/volunteers': 'Volunteer portal',
+  '/volunteers/inbox': 'View your messages',
   '/volunteers/forms': 'Access forms',
   '/volunteers/profile': 'Update your profile',
   '/volunteers/settings': 'Update your settings',
@@ -297,6 +302,7 @@ function getPageTitle(pathname: string, homeName?: string) {
   if (pathname.startsWith('/staff/inbox/') && pathname.split('/').length > 3) return 'Conversation'
   if (pathname.startsWith('/payroll/forms/')) return 'Form Template'
   if (pathname.startsWith('/volunteers/forms/')) return 'Form Template'
+  if (pathname.startsWith('/volunteers/inbox/') && pathname.split('/').length > 3) return 'Conversation'
   if (pathname.startsWith('/dashboard/forms/')) return 'Form Template'
   if (pathname.startsWith('/dashboard/my-events/')) return 'Event Details'
   if (pathname.startsWith('/dashboard/requests/')) return 'Event Request'
@@ -323,6 +329,7 @@ function getPageIcon(pathname: string) {
   if (pathname.startsWith('/staff/inbox/')) return Inbox
   if (pathname.startsWith('/payroll/forms/')) return FileText
   if (pathname.startsWith('/volunteers/forms/')) return FileText
+  if (pathname.startsWith('/volunteers/inbox/')) return Inbox
   if (pathname.startsWith('/dashboard/forms/')) return FileText
   if (pathname.startsWith('/dashboard/my-events/')) return Calendar
   if (pathname.startsWith('/dashboard/requests/')) return ClipboardList
@@ -349,6 +356,7 @@ function getPageSubtitle(pathname: string) {
   if (pathname.startsWith('/staff/inbox/')) return 'View conversation'
   if (pathname.startsWith('/payroll/forms/')) return 'View form template'
   if (pathname.startsWith('/volunteers/forms/')) return 'View form template'
+  if (pathname.startsWith('/volunteers/inbox/')) return 'View conversation'
   if (pathname.startsWith('/dashboard/forms/')) return 'View form template'
   if (pathname.startsWith('/dashboard/my-events/')) return 'View event details'
   if (pathname.startsWith('/dashboard/requests/')) return 'View request details'
@@ -370,19 +378,29 @@ type DashboardLayoutProps = {
 
 export function DashboardLayoutClient({ children, role, title = "Arts & Aging", notifications, unreadCount, userSession, homeName }: DashboardLayoutProps) {
   const pathname = usePathname()
-  const currentTitle = getPageTitle(pathname, homeName)
+  const normalizedPathname = normalizeStaffNamespace(pathname)
+  const currentTitle = getPageTitle(normalizedPathname, homeName)
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   const menuItems = role === 'ADMIN' ? adminMenu
     : role === 'HOME_ADMIN' ? homeAdminMenu
-    : role === 'FACILITATOR' ? staffMenu
     : MENU_ITEMS[role] || []
+
+  const assignedRoles = Array.isArray(userSession?.roles) ? userSession.roles : (userSession?.role ? [userSession.role] : [])
+  const rolePortalLinks: Array<{ role: string; href: string; label: string }> = assignedRoles
+    .filter((assignedRole: string) => assignedRole !== 'BOARD')
+    .map((assignedRole: string) => ({
+      role: assignedRole,
+      href: getRoleHomePath(assignedRole),
+      label: ROLE_LABELS[assignedRole as keyof typeof ROLE_LABELS] || assignedRole,
+    }))
+  const showRoleSwitcher = rolePortalLinks.length > 1
 
   const portalConfig = {
     ADMIN: { label: 'Admin Portal', bg: 'bg-secondary-400', text: 'text-primary-900' },
     HOME_ADMIN: { label: 'Home Portal', bg: 'bg-accent-400', text: 'text-primary-900' },
-    FACILITATOR: { label: 'Staff Portal', bg: 'bg-accent-300', text: 'text-primary-900' },
-    VOLUNTEER: { label: 'Staff Portal', bg: 'bg-accent-300', text: 'text-primary-900' },
+    FACILITATOR: { label: 'Facilitator Portal', bg: 'bg-accent-300', text: 'text-primary-900' },
+    VOLUNTEER: { label: 'Volunteer Portal', bg: 'bg-accent-300', text: 'text-primary-900' },
     BOARD: { label: 'Board Portal', bg: 'bg-purple-400', text: 'text-purple-900' },
     PARTNER: { label: 'Partner Portal', bg: 'bg-blue-400', text: 'text-blue-900' },
     PAYROLL: { label: 'Payroll Portal', bg: 'bg-green-400', text: 'text-green-900' }
@@ -434,6 +452,25 @@ export function DashboardLayoutClient({ children, role, title = "Arts & Aging", 
         </div>
 
         <nav className="flex-1 px-3 py-6 space-y-1 overflow-y-auto">
+          {showRoleSwitcher && (
+            <div className="mb-3 px-2">
+              <p className="text-[10px] uppercase tracking-wide text-primary-300 mb-2">Role Portals</p>
+              <div className="flex flex-wrap gap-1">
+                {rolePortalLinks.map((portalLink) => (
+                  <Link
+                    key={portalLink.role}
+                    href={portalLink.href}
+                    className={cn(
+                      'text-[11px] px-2 py-1 rounded border border-white/20 text-primary-100 hover:bg-white/10',
+                      role === portalLink.role && 'bg-white/15 text-white'
+                    )}
+                  >
+                    {portalLink.label}
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
           {menuItems.map((item) => {
             const Icon = item.icon
             const isActive = pathname === item.href
@@ -510,6 +547,26 @@ export function DashboardLayoutClient({ children, role, title = "Arts & Aging", 
               </button>
             </div>
             <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
+              {showRoleSwitcher && (
+                <div className="mb-3 px-2">
+                  <p className="text-[10px] uppercase tracking-wide text-primary-300 mb-2">Role Portals</p>
+                  <div className="flex flex-wrap gap-1">
+                    {rolePortalLinks.map((portalLink) => (
+                      <Link
+                        key={portalLink.role}
+                        href={portalLink.href}
+                        onClick={() => setSidebarOpen(false)}
+                        className={cn(
+                          'text-[11px] px-2 py-1 rounded border border-white/20 text-primary-100 hover:bg-white/10',
+                          role === portalLink.role && 'bg-white/15 text-white'
+                        )}
+                      >
+                        {portalLink.label}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
               {menuItems.map((item) => {
                 const Icon = item.icon
                 const isActive = pathname === item.href
@@ -570,14 +627,14 @@ export function DashboardLayoutClient({ children, role, title = "Arts & Aging", 
           <div className="flex items-center gap-4 ml-2 flex-1 min-w-0">
             <div className="w-12 h-12 rounded-xl bg-white text-primary-600 flex items-center justify-center shadow-sm">
               {(() => {
-                const Icon = getPageIcon(pathname)
+                const Icon = getPageIcon(normalizedPathname)
                 return <Icon className="w-6 h-6" />
               })()}
             </div>
             <div className="min-w-0">
               <h1 className="text-xl font-bold text-gray-900 truncate">{currentTitle}</h1>
               <p className="text-base text-gray-800 hidden sm:block truncate font-medium">
-                {getPageSubtitle(pathname)}
+                {getPageSubtitle(normalizedPathname)}
               </p>
             </div>
           </div>
@@ -593,7 +650,7 @@ export function DashboardLayoutClient({ children, role, title = "Arts & Aging", 
 
         <main className="flex-1 flex flex-col min-h-0 bg-gray-50/50 overflow-y-auto p-4 md:p-6">
           {(() => {
-            const layoutType = getPageLayoutType(pathname)
+            const layoutType = getPageLayoutType(normalizedPathname)
             const maxWidthClass = layoutType === 'form' ? 'max-w-5xl' : 
                                  layoutType === 'table' ? 'max-w-full' : 
                                  'max-w-7xl'

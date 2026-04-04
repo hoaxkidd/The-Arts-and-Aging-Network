@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
 import { canMessageUser } from './conversation-requests'
 import { logger } from '@/lib/logger'
+import { getInboxBasePathForRole } from '@/lib/role-routes'
 
 // Get all conversations for current user
 export async function getConversations() {
@@ -199,23 +200,28 @@ export async function sendMessage(
     // Notify recipient
     const senderName = message.sender.preferredName || message.sender.name || 'Someone'
     const preview = content.length > 50 ? content.slice(0, 50) + '...' : content
+    const recipient = await prisma.user.findUnique({
+      where: { id: recipientId },
+      select: { id: true, userCode: true, role: true },
+    })
+    const recipientInboxBase = getInboxBasePathForRole(recipient?.role)
     await prisma.notification.create({
       data: {
         userId: recipientId,
         type: 'DIRECT_MESSAGE',
         title: `Message from ${senderName}`,
         message: preview,
-        link: `/staff/inbox/${message.sender.userCode || message.sender.id}`
+        link: `${recipientInboxBase}/inbox/${message.sender.userCode || message.sender.id}`
       }
     })
-
-    const recipient = await prisma.user.findUnique({
-      where: { id: recipientId },
-      select: { id: true, userCode: true },
-    })
-
     revalidatePath('/staff/inbox')
+    revalidatePath('/facilitator/inbox')
+    revalidatePath('/board/inbox')
+    revalidatePath('/volunteers/inbox')
     revalidatePath(`/staff/inbox/${recipient?.userCode || recipientId}`)
+    revalidatePath(`/facilitator/inbox/${recipient?.userCode || recipientId}`)
+    revalidatePath(`/board/inbox/${recipient?.userCode || recipientId}`)
+    revalidatePath(`/volunteers/inbox/${recipient?.userCode || recipientId}`)
 
     return { success: true, message }
   } catch (error) {

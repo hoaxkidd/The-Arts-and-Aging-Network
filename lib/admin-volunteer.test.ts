@@ -186,7 +186,7 @@ describe('app/admin/volunteers/page.tsx - Email Content Logic', () => {
         <li>Add emergency contact information</li>
         <li>Verify your availability and skills</li>
       </ul>
-      <p>Update your profile: <a href="/staff/onboarding">Onboarding Page</a></p>
+      <p>Update your profile: <a href="/volunteers/onboarding">Onboarding Page</a></p>
       <p>If you have any questions, please contact us.</p>
     `
   }
@@ -221,7 +221,7 @@ describe('app/admin/volunteers/page.tsx - Email Content Logic', () => {
 
     it('should include onboarding link', () => {
       const email = generateCorrectionsEmail('Test')
-      expect(email).toContain('/staff/onboarding')
+      expect(email).toContain('/volunteers/onboarding')
     })
   })
 })

@@ -132,7 +132,7 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
             <div className="flex items-center gap-2">
               <Calendar className="w-4 h-4 text-primary-500" />
               <span className="font-medium">
-                {event.startDateTime.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                {event.startDateTime.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
               </span>
             </div>
             <div className="flex items-center gap-2">

@@ -9,6 +9,7 @@ import { randomBytes } from 'crypto'
 import { hash } from 'bcryptjs'
 import { sendEmailWithRetry } from '@/lib/email/service'
 import { logger } from '@/lib/logger'
+import { getRoleHomePath } from '@/lib/role-routes'
 
 export type AuthState = { error?: string; redirect?: string } | undefined
 
@@ -24,22 +25,24 @@ function getBaseUrl(headersList: Headers): string {
 }
 
 function getRoleDestination(role: string | null | undefined): string {
-  switch (role) {
-    case 'ADMIN':
-      return '/admin'
-    case 'PAYROLL':
-      return '/payroll'
-    case 'HOME_ADMIN':
-      return '/dashboard'
-    case 'VOLUNTEER':
-      return '/volunteers'
-    case 'FACILITATOR':
-    case 'BOARD':
-    case 'PARTNER':
-      return '/staff'
-    default:
-      return '/'
-  }
+  return getRoleHomePath(role)
+}
+
+async function getPrimaryRoleByEmail(email: string): Promise<string | null> {
+  const user = await prisma.user.findUnique({
+    where: { email },
+    include: {
+      roleAssignments: {
+        where: { isActive: true },
+        orderBy: [
+          { isPrimary: 'desc' },
+          { assignedAt: 'asc' },
+        ],
+      },
+    },
+  })
+  if (!user) return null
+  return user.roleAssignments.find((assignment) => assignment.isPrimary)?.role || user.role
 }
 
 function sanitizeCallbackUrl(callbackUrl: string, baseUrl: string): string | null {
@@ -100,11 +103,7 @@ export async function authenticate(
       let destination = safeCallback || '/'
 
       if (!safeCallback && email) {
-        const user = await prisma.user.findUnique({
-          where: { email },
-          select: { role: true }
-        })
-        destination = getRoleDestination(user?.role)
+        destination = getRoleDestination(await getPrimaryRoleByEmail(email))
       }
       
       const redirectUrl = isAuthCallback 
@@ -119,12 +118,7 @@ export async function authenticate(
       let destination = safeCallback || '/'
 
       if (!safeCallback && email) {
-        const user = await prisma.user.findUnique({ 
-          where: { email }, 
-          select: { role: true } 
-        })
-
-        destination = getRoleDestination(user?.role)
+        destination = getRoleDestination(await getPrimaryRoleByEmail(email))
       }
        
       const redirectUrl = `${baseUrl}${destination.startsWith('/') ? '' : '/'}${destination}`

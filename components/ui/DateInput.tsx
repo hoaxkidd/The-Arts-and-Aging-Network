@@ -294,13 +294,13 @@ export function DateInput({
           placeholder={displayPlaceholder}
           disabled={disabled}
           required={required}
-          className={`
-            w-full px-3 py-2 pr-10 border rounded-lg text-gray-900 placeholder-gray-400
-            focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500
-            disabled:bg-gray-100 disabled:cursor-not-allowed
-            ${error ? 'border-red-500' : 'border-gray-300'}
-            ${className}
-          `}
+            className={`
+              w-full px-3 py-2 pr-10 border rounded-lg text-gray-900 placeholder-gray-400
+              focus:outline-none focus:ring-2 focus:ring-gray-200 focus:border-gray-400
+              disabled:bg-gray-100 disabled:cursor-not-allowed
+              ${error ? 'border-red-500' : 'border-gray-300'}
+              ${className}
+            `}
         />
         
         {/* Calendar icon button */}
@@ -395,8 +395,8 @@ export function DateInput({
                   disabled={isFutureDate}
                   className={`
                     h-8 w-8 flex items-center justify-center rounded-full text-sm
-                    ${isSelected ? 'bg-primary-500 text-white' : ''}
-                    ${!isSelected && isToday && !isFutureDate ? 'bg-primary-100 text-primary-700 font-medium' : ''}
+                    ${isSelected ? 'bg-gray-900 text-white' : ''}
+                    ${!isSelected && isToday && !isFutureDate ? 'bg-gray-200 text-gray-900 font-medium' : ''}
                     ${!isSelected && !isToday && !isFutureDate ? 'hover:bg-gray-100 text-gray-700' : ''}
                     ${isFutureDate ? 'opacity-30 cursor-not-allowed text-gray-400' : ''}
                   `}
@@ -423,7 +423,7 @@ export function DateInput({
               <button
                 type="button"
                 onClick={handleToday}
-                className="px-3 py-1 text-sm bg-primary-500 text-white rounded hover:bg-primary-600"
+                className="px-3 py-1 text-sm border border-gray-300 text-gray-700 rounded hover:bg-gray-100"
               >
                 Today
               </button>

@@ -14,8 +14,8 @@ type Props = {
 
 function formatDate(date: Date | string): string {
   return new Date(date).toLocaleDateString('en-US', {
-    weekday: 'short',
-    month: 'short',
+    weekday: 'long',
+    month: 'long',
     day: 'numeric'
   })
 }
@@ -80,6 +80,9 @@ export default async function TimesheetReviewPage({ params }: Props) {
 
   return (
     <div className="space-y-6">
+      <Link href="/admin/financials" className="inline-flex items-center gap-1 text-sm text-gray-600 hover:text-gray-900">
+        <ArrowLeft className="w-4 h-4" /> Back to Financials
+      </Link>
       {/* Summary Cards */}
       <div className="grid grid-cols-3 gap-4">
         <div className={cn(STYLES.card, "p-4")}>
@@ -209,7 +212,7 @@ export default async function TimesheetReviewPage({ params }: Props) {
             <p className="font-medium text-green-800">Approved</p>
             <p className="text-sm text-green-600">
               {new Date(timesheet.approvedAt).toLocaleDateString('en-US', {
-                month: 'short',
+                month: 'long',
                 day: 'numeric',
                 year: 'numeric',
                 hour: 'numeric',

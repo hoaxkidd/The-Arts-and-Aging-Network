@@ -1,6 +1,6 @@
 import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
-import { Building2, User } from "lucide-react"
+import { Building2, CheckCircle2, Circle, User } from "lucide-react"
 import { HomeProfileForm } from "@/components/dashboard/HomeProfileForm"
 import { ProfileForm } from "@/components/staff/ProfileForm"
 import { cn } from "@/lib/utils"
@@ -27,6 +27,40 @@ export default async function HomeProfilePage({
   ])
 
   if (!user) return <div>User not found</div>
+
+  const isHomeAdmin = user.role === 'HOME_ADMIN'
+
+  let requiredForms: Array<{ id: string; title: string; category: string }> = []
+  let submittedTemplateIds = new Set<string>()
+
+  if (isHomeAdmin) {
+    requiredForms = await prisma.formTemplate.findMany({
+      where: {
+        isActive: true,
+        isPublic: false,
+        allowedRoles: { contains: 'HOME_ADMIN' },
+      },
+      select: {
+        id: true,
+        title: true,
+        category: true,
+      },
+      orderBy: { title: 'asc' },
+    })
+
+    if (requiredForms.length > 0) {
+      const submissions = await prisma.formSubmission.findMany({
+        where: {
+          submittedBy: session.user.id,
+          templateId: { in: requiredForms.map((template) => template.id) },
+        },
+        select: {
+          templateId: true,
+        },
+      })
+      submittedTemplateIds = new Set(submissions.map((submission) => submission.templateId))
+    }
+  }
 
   const params = await searchParams
   const activeTab = params.tab === 'account' ? 'account' : 'facility'
@@ -72,11 +106,59 @@ export default async function HomeProfilePage({
             </div>
           )
         ) : (
-          <ProfileForm
-            user={user}
-            documents={user?.documents || []}
-            embedded
-          />
+          <div className="space-y-4">
+            {isHomeAdmin && (
+              <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
+                <div className="flex items-center justify-between gap-3 mb-3">
+                  <div>
+                    <p className="text-sm font-semibold text-blue-900">Required Forms (Informational)</p>
+                    <p className="text-xs text-blue-700">Complete assigned forms from your forms dashboard.</p>
+                  </div>
+                  <Link
+                    href="/dashboard/forms"
+                    className="text-sm font-medium text-blue-700 hover:text-blue-900 hover:underline"
+                  >
+                    Open Forms
+                  </Link>
+                </div>
+
+                {requiredForms.length === 0 ? (
+                  <p className="text-sm text-blue-700">No role-assigned forms at the moment.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {requiredForms.map((form) => {
+                      const submitted = submittedTemplateIds.has(form.id)
+                      return (
+                        <div key={form.id} className="flex items-center justify-between bg-white rounded-md border border-blue-100 px-3 py-2">
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-gray-900 truncate">{form.title}</p>
+                            <p className="text-xs text-gray-500">{form.category}</p>
+                          </div>
+                          <span className={cn(
+                            "inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded border",
+                            submitted
+                              ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                              : "bg-amber-50 text-amber-700 border-amber-200"
+                          )}>
+                            {submitted ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Circle className="w-3.5 h-3.5" />}
+                            {submitted ? 'Submitted' : 'Pending'}
+                          </span>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+
+            <ProfileForm
+              user={user}
+              documents={user?.documents || []}
+              visibleTabs={isHomeAdmin ? ['personal'] : undefined}
+              identityOnly={isHomeAdmin}
+              embedded
+            />
+          </div>
         )}
       </div>
     </div>

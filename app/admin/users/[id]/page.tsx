@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma"
-import { cancelPendingEmailChange, updateUser } from "@/app/actions/user"
+import { addSecondaryRole, cancelPendingEmailChange, removeSecondaryRole, setPrimaryRole, updateUser, updateUserEmployment, updateVolunteerReviewStatus } from "@/app/actions/user"
 import { createFacilityProfile } from "@/app/actions/home-management"
 import { redirect } from "next/navigation"
 import Link from "next/link"
@@ -19,7 +19,7 @@ export default async function EditUserPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>
-  searchParams: Promise<{ accountError?: string; accountMessage?: string }>
+  searchParams: Promise<{ accountError?: string; accountMessage?: string; employmentError?: string; employmentMessage?: string; roleError?: string; roleMessage?: string }>
 }) {
   const { id } = await params
   const query = await searchParams
@@ -30,6 +30,10 @@ export default async function EditUserPage({
     include: {
       documents: true,
       geriatricHome: true,
+      roleAssignments: {
+        where: { isActive: true },
+        orderBy: [{ isPrimary: 'desc' }, { assignedAt: 'asc' }],
+      },
     }
   })
 
@@ -71,6 +75,9 @@ export default async function EditUserPage({
 
   return (
     <div className="space-y-4">
+      <Link href="/admin/users" className="inline-flex items-center gap-1 text-sm text-gray-600 hover:text-gray-900">
+        <ArrowLeft className="w-4 h-4" /> Back to Users
+      </Link>
       {/* PENDING placeholder banner */}
       {user.status === 'PENDING' && (
         <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 flex items-start gap-3">
@@ -94,6 +101,30 @@ export default async function EditUserPage({
       {query.accountMessage && (
         <div className="bg-emerald-50 border border-emerald-200 rounded-lg px-4 py-3 text-sm text-emerald-800">
           {query.accountMessage}
+        </div>
+      )}
+
+      {query.employmentError && (
+        <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3 text-sm text-red-800">
+          {query.employmentError}
+        </div>
+      )}
+
+      {query.employmentMessage && (
+        <div className="bg-emerald-50 border border-emerald-200 rounded-lg px-4 py-3 text-sm text-emerald-800">
+          {query.employmentMessage}
+        </div>
+      )}
+
+      {query.roleError && (
+        <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3 text-sm text-red-800">
+          {query.roleError}
+        </div>
+      )}
+
+      {query.roleMessage && (
+        <div className="bg-emerald-50 border border-emerald-200 rounded-lg px-4 py-3 text-sm text-emerald-800">
+          {query.roleMessage}
         </div>
       )}
 
@@ -169,6 +200,199 @@ export default async function EditUserPage({
         </form>
       </div>
 
+      <div className="bg-white rounded-lg border border-gray-200 px-4 py-4 space-y-3">
+        <div className="flex items-center justify-between gap-2">
+          <div>
+            <h3 className="text-sm font-semibold text-gray-900">Role Assignments</h3>
+            <p className="text-xs text-gray-500">Primary role controls login landing page. BOARD is exclusive and cannot be merged with other roles.</p>
+          </div>
+          <form action={async (formData) => {
+            'use server'
+            const nextRole = (formData.get('secondaryRole') as string | null) || ''
+            const result = await addSecondaryRole(user.id, nextRole)
+            if (result?.error) {
+              redirect(`/admin/users/${canonicalIdentifier}?roleError=${encodeURIComponent(result.error)}`)
+            }
+            redirect(`/admin/users/${canonicalIdentifier}?roleMessage=${encodeURIComponent('Role added')}`)
+          }} className="flex items-center gap-2">
+            <select name="secondaryRole" className="text-sm rounded-md border-gray-300 py-1.5 pr-8 pl-2">
+              {ROLE_ORDER.map((role) => (
+                <option key={role} value={role}>{ROLE_LABELS[role]}</option>
+              ))}
+            </select>
+            <button type="submit" className={cn(STYLES.btn, STYLES.btnSecondary)}>
+              <Plus className="w-4 h-4" /> Add role
+            </button>
+          </form>
+        </div>
+
+        <div className="space-y-2">
+          {user.roleAssignments.map((assignment) => (
+            <div key={assignment.id} className="flex items-center justify-between gap-2 rounded border border-gray-200 px-3 py-2">
+              <div className="text-sm text-gray-700 flex items-center gap-2">
+                <span className="font-medium">{ROLE_LABELS[assignment.role as keyof typeof ROLE_LABELS] || assignment.role}</span>
+                {assignment.isPrimary && <span className="text-[11px] px-1.5 py-0.5 rounded bg-primary-100 text-primary-700">Primary</span>}
+              </div>
+              <div className="flex items-center gap-2">
+                {!assignment.isPrimary && (
+                  <form action={async () => {
+                    'use server'
+                    const result = await setPrimaryRole(user.id, assignment.role)
+                    if (result?.error) {
+                      redirect(`/admin/users/${canonicalIdentifier}?roleError=${encodeURIComponent(result.error)}`)
+                    }
+                    redirect(`/admin/users/${canonicalIdentifier}?roleMessage=${encodeURIComponent('Primary role updated')}`)
+                  }}>
+                    <button type="submit" className="text-xs px-2.5 py-1.5 rounded border border-gray-300 text-gray-700 hover:bg-gray-50">
+                      Set primary
+                    </button>
+                  </form>
+                )}
+                {!assignment.isPrimary && (
+                  <form action={async () => {
+                    'use server'
+                    const result = await removeSecondaryRole(user.id, assignment.role)
+                    if (result?.error) {
+                      redirect(`/admin/users/${canonicalIdentifier}?roleError=${encodeURIComponent(result.error)}`)
+                    }
+                    redirect(`/admin/users/${canonicalIdentifier}?roleMessage=${encodeURIComponent('Role removed')}`)
+                  }}>
+                    <button type="submit" className="text-xs px-2.5 py-1.5 rounded border border-red-200 text-red-700 hover:bg-red-50">
+                      Remove
+                    </button>
+                  </form>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {user.roleAssignments.some((assignment) => assignment.role === 'VOLUNTEER') && (
+          <div className="pt-2 border-t border-gray-100">
+            <p className="text-xs font-semibold text-gray-700 mb-2">Volunteer Review Status</p>
+            <div className="flex flex-wrap items-center gap-2">
+              {(['PENDING_REVIEW', 'APPROVED', 'REQUEST_CORRECTIONS'] as const).map((status) => (
+                <form
+                  key={status}
+                  action={async () => {
+                    'use server'
+                    const result = await updateVolunteerReviewStatus(user.id, status)
+                    if (result?.error) {
+                      redirect(`/admin/users/${canonicalIdentifier}?roleError=${encodeURIComponent(result.error)}`)
+                    }
+                    redirect(`/admin/users/${canonicalIdentifier}?roleMessage=${encodeURIComponent(`Volunteer review status set to ${status}`)}`)
+                  }}
+                >
+                  <button
+                    type="submit"
+                    className={cn(
+                      'text-xs px-2.5 py-1.5 rounded border',
+                      user.volunteerReviewStatus === status
+                        ? 'bg-primary-50 border-primary-300 text-primary-700'
+                        : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                    )}
+                  >
+                    {status}
+                  </button>
+                </form>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="pt-2 border-t border-gray-100">
+          <p className="text-xs font-semibold text-gray-700 mb-2">Role Feature Quick Links</p>
+          <div className="flex flex-wrap gap-2">
+            {user.roleAssignments.map((assignment) => {
+              const href = assignment.role === 'ADMIN'
+                ? '/admin'
+                : assignment.role === 'PAYROLL'
+                  ? '/payroll'
+                  : assignment.role === 'HOME_ADMIN'
+                    ? '/dashboard'
+                    : assignment.role === 'VOLUNTEER'
+                      ? '/volunteers'
+                      : assignment.role === 'FACILITATOR'
+                        ? '/facilitator'
+                        : assignment.role === 'BOARD'
+                          ? '/board'
+                          : '/staff'
+
+              return (
+                <Link
+                  key={`${assignment.id}-quick-link`}
+                  href={href}
+                  className="text-xs px-2.5 py-1.5 rounded border border-gray-300 text-gray-700 hover:bg-gray-50"
+                >
+                  Open {ROLE_LABELS[assignment.role as keyof typeof ROLE_LABELS] || assignment.role}
+                </Link>
+              )
+            })}
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-lg border border-gray-200 px-4 py-4">
+        <form action={async (formData) => {
+          'use server'
+          const result = await updateUserEmployment(user.id, formData)
+          if (result?.error) {
+            redirect(`/admin/users/${canonicalIdentifier}?employmentError=${encodeURIComponent(result.error)}`)
+          }
+          redirect(`/admin/users/${canonicalIdentifier}?employmentMessage=${encodeURIComponent('Employment details saved')}`)
+        }} className="space-y-3">
+          <div className="flex items-center gap-2 text-sm text-gray-700 font-medium">
+            Employment Details
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
+            <div>
+              <label className="text-xs text-gray-500">Position</label>
+              <input name="position" defaultValue={user.position || ''} className="mt-1 w-full text-sm rounded-md border-gray-300 py-1.5 px-2" placeholder="e.g. Facilitator" />
+            </div>
+            <div>
+              <label className="text-xs text-gray-500">Employment Type</label>
+              <select name="employmentType" defaultValue={user.employmentType || ''} className="mt-1 w-full text-sm rounded-md border-gray-300 py-1.5 px-2">
+                <option value="">Unspecified</option>
+                <option value="FULL_TIME">Full time</option>
+                <option value="PART_TIME">Part time</option>
+                <option value="CASUAL">Casual</option>
+                <option value="VOLUNTEER">Volunteer</option>
+                <option value="CONTRACTOR">Contractor</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-xs text-gray-500">Employment Status</label>
+              <select name="employmentStatus" defaultValue={user.employmentStatus || ''} className="mt-1 w-full text-sm rounded-md border-gray-300 py-1.5 px-2">
+                <option value="">Unspecified</option>
+                <option value="ACTIVE">Active</option>
+                <option value="ON_LEAVE">On leave</option>
+                <option value="CONTRACT">Contract</option>
+                <option value="SEASONAL">Seasonal</option>
+                <option value="TERMINATED">Terminated</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-xs text-gray-500">Region</label>
+              <input name="region" defaultValue={user.region || ''} className="mt-1 w-full text-sm rounded-md border-gray-300 py-1.5 px-2" placeholder="e.g. Eastern" />
+            </div>
+            <div>
+              <label className="text-xs text-gray-500">Start Date</label>
+              <input
+                type="date"
+                name="startDate"
+                defaultValue={user.startDate ? new Date(user.startDate).toISOString().split('T')[0] : ''}
+                className="mt-1 w-full text-sm rounded-md border-gray-300 py-1.5 px-2"
+              />
+            </div>
+          </div>
+          <div className="flex justify-end">
+            <button type="submit" className={cn(STYLES.btn, STYLES.btnSecondary)}>
+              <Save className="w-4 h-4" /> Save employment
+            </button>
+          </div>
+        </form>
+      </div>
+
       {pendingEmailChange && (
         <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 flex items-start justify-between gap-4">
           <div>
@@ -211,6 +435,8 @@ export default async function EditUserPage({
                       contactPosition: user.geriatricHome.contactPosition,
                       contactEmail: user.geriatricHome.contactEmail,
                       contactPhone: user.geriatricHome.contactPhone,
+                      useCustomNotificationEmail: (user.geriatricHome as any).useCustomNotificationEmail,
+                      notificationEmail: (user.geriatricHome as any).notificationEmail,
                       additionalContacts
                     }}
                   />

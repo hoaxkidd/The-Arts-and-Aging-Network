@@ -18,6 +18,35 @@ const prisma = new PrismaClient(
 
 const TEST_PASSWORD = 'TestPass123!' // Same for all test accounts
 
+async function assignRoles(
+  prismaClient: PrismaClient,
+  userId: string,
+  primaryRole: string,
+  secondaryRoles: string[] = []
+) {
+  await prismaClient.userRoleAssignment.deleteMany({ where: { userId } })
+
+  await prismaClient.userRoleAssignment.create({
+    data: {
+      userId,
+      role: primaryRole,
+      isPrimary: true,
+      isActive: true,
+    },
+  })
+
+  for (const role of secondaryRoles) {
+    await prismaClient.userRoleAssignment.create({
+      data: {
+        userId,
+        role,
+        isPrimary: false,
+        isActive: true,
+      },
+    })
+  }
+}
+
 async function main() {
   console.log('Resetting users and creating fresh test profiles...\n')
 
@@ -77,6 +106,7 @@ async function main() {
     bio: 'System Administrator',
     roleData: '{}',
   })
+  await assignRoles(prisma, admin.id, 'ADMIN')
   console.log('Created:', admin.email, '(ADMIN)')
 
   // 2. Home Admin
@@ -89,6 +119,7 @@ async function main() {
     phone: '555-0100',
     roleData: '{}',
   })
+  await assignRoles(prisma, homeAdminUser.id, 'HOME_ADMIN')
 
   await prisma.geriatricHome.create({
     data: {
@@ -114,6 +145,7 @@ async function main() {
     status: 'ACTIVE',
     roleData: '{}',
   })
+  await assignRoles(prisma, facilitator.id, 'FACILITATOR')
   console.log('Created:', facilitator.email, '(FACILITATOR)')
 
   // 4. Payroll
@@ -125,6 +157,7 @@ async function main() {
     status: 'ACTIVE',
     roleData: '{}',
   })
+  await assignRoles(prisma, payroll.id, 'PAYROLL')
   console.log('Created:', payroll.email, '(PAYROLL)')
 
   // 5. Volunteer
@@ -136,6 +169,7 @@ async function main() {
     status: 'ACTIVE',
     roleData: '{}',
   })
+  await assignRoles(prisma, volunteer.id, 'VOLUNTEER')
   console.log('Created:', volunteer.email, '(VOLUNTEER)')
 
   // 6. Board Member
@@ -147,6 +181,7 @@ async function main() {
     status: 'ACTIVE',
     roleData: '{}',
   })
+  await assignRoles(prisma, board.id, 'BOARD')
   console.log('Created:', board.email, '(BOARD)')
 
   // 7. Community Partner
@@ -158,7 +193,46 @@ async function main() {
     status: 'ACTIVE',
     roleData: '{}',
   })
+  await assignRoles(prisma, partner.id, 'PARTNER')
   console.log('Created:', partner.email, '(PARTNER)')
+
+  // 8. Facilitator + Volunteer (primary facilitator)
+  const facilitatorVolunteer = await createUserWithGeneratedCode(prisma, {
+    email: 'facvol@artsandaging.com',
+    name: 'Test Fac Volunteer',
+    password,
+    role: 'FACILITATOR',
+    status: 'ACTIVE',
+    volunteerReviewStatus: 'APPROVED',
+    roleData: '{}',
+  })
+  await assignRoles(prisma, facilitatorVolunteer.id, 'FACILITATOR', ['VOLUNTEER'])
+  console.log('Created:', facilitatorVolunteer.email, '(FACILITATOR primary + VOLUNTEER secondary)')
+
+  // 9. Payroll + Volunteer (primary payroll)
+  const payrollVolunteer = await createUserWithGeneratedCode(prisma, {
+    email: 'payvol@artsandaging.com',
+    name: 'Test Payroll Volunteer',
+    password,
+    role: 'PAYROLL',
+    status: 'ACTIVE',
+    volunteerReviewStatus: 'APPROVED',
+    roleData: '{}',
+  })
+  await assignRoles(prisma, payrollVolunteer.id, 'PAYROLL', ['VOLUNTEER'])
+  console.log('Created:', payrollVolunteer.email, '(PAYROLL primary + VOLUNTEER secondary)')
+
+  // 10. Board-only dedicated QA account
+  const boardOnly = await createUserWithGeneratedCode(prisma, {
+    email: 'boardonly@artsandaging.com',
+    name: 'Test Board Only',
+    password,
+    role: 'BOARD',
+    status: 'ACTIVE',
+    roleData: '{}',
+  })
+  await assignRoles(prisma, boardOnly.id, 'BOARD')
+  console.log('Created:', boardOnly.email, '(BOARD only)')
 
   console.log('\n--- Test logins (password for all: ' + TEST_PASSWORD + ') ---')
   console.log('  Admin:       admin@artsandaging.com')
@@ -168,6 +242,9 @@ async function main() {
   console.log('  Volunteer:   volunteer@artsandaging.com')
   console.log('  Board:       board@artsandaging.com')
   console.log('  Partner:     partner@artsandaging.com')
+  console.log('  Fac+Vol:     facvol@artsandaging.com (primary FACILITATOR)')
+  console.log('  Pay+Vol:     payvol@artsandaging.com (primary PAYROLL)')
+  console.log('  Board Only:  boardonly@artsandaging.com')
   console.log('\nTo use on Vercel: ensure DATABASE_URL (and DATABASE_URL_UNPOOLED) are set, then run: npm run db:seed')
 }
 

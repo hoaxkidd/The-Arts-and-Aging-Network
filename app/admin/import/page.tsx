@@ -399,7 +399,7 @@ export default function ImportStaffPage() {
           )}
 
           <button
-            onClick={() => router.push(importType === 'staff' ? '/admin/users' : '/admin/homes')}
+            onClick={() => router.push(importType === 'staff' ? '/admin/users?tab=team' : '/admin/users?tab=homes')}
             className="mt-4 px-6 py-2.5 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700"
           >
             {importType === 'staff' ? 'View All Users' : 'View All Homes'}

@@ -43,9 +43,10 @@ type Item = {
 
 type Props = {
   items: Item[]
+  userRole: string
 }
 
-export function InventoryHubClient({ items: initialItems }: Props) {
+export function InventoryHubClient({ items: initialItems, userRole }: Props) {
   const router = useRouter()
   const [search, setSearch] = useState('')
   const [categoryFilter, setCategoryFilter] = useState<string>('ALL')
@@ -54,6 +55,8 @@ export function InventoryHubClient({ items: initialItems }: Props) {
   const [distributorItem, setDistributorItem] = useState<Item | null>(null)
   const [adjustingId, setAdjustingId] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
+  const canManage = userRole === 'ADMIN'
+  const canAdjustQuantity = userRole === 'ADMIN' || userRole === 'PAYROLL'
 
   const categories = ['ALL', ...Array.from(new Set(initialItems.map((i) => i.category)))]
 
@@ -138,6 +141,16 @@ export function InventoryHubClient({ items: initialItems }: Props) {
             </option>
           ))}
         </select>
+        {canManage && (
+          <button
+            type="button"
+            onClick={() => setShowAddModal(true)}
+            className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700"
+          >
+            <Plus className="w-4 h-4" />
+            Add item
+          </button>
+        )}
       </div>
 
       {/* Table */}
@@ -195,7 +208,7 @@ export function InventoryHubClient({ items: initialItems }: Props) {
                       </span>
                       {adjustingId === item.id && isPending ? (
                         <Loader2 className="w-4 h-4 animate-spin text-primary-500" />
-                      ) : (
+                      ) : canAdjustQuantity ? (
                         <span className="flex items-center gap-0.5">
                           <button
                             type="button"
@@ -214,7 +227,7 @@ export function InventoryHubClient({ items: initialItems }: Props) {
                             −
                           </button>
                         </span>
-                      )}
+                      ) : null}
                     </div>
                   </td>
                   <td className={STYLES.tableCell}>{item.unit}</td>
@@ -271,24 +284,28 @@ export function InventoryHubClient({ items: initialItems }: Props) {
                   </td>
                   <td className={`${STYLES.tableCell} text-right`}>
                     <div className="flex items-center justify-end gap-1">
-                      <button
-                        type="button"
-                        onClick={() => setEditingItem(item)}
-                        disabled={isPending}
-                        className="p-2 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded-lg disabled:opacity-50"
-                        title="Edit item"
-                      >
-                        <Pencil className="w-4 h-4" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleDeactivate(item.id)}
-                        disabled={isPending}
-                        className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg disabled:opacity-50"
-                        title="Remove from inventory"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      {canManage && (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => setEditingItem(item)}
+                            disabled={isPending}
+                            className="p-2 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded-lg disabled:opacity-50"
+                            title="Edit item"
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeactivate(item.id)}
+                            disabled={isPending}
+                            className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg disabled:opacity-50"
+                            title="Remove from inventory"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </>
+                      )}
                     </div>
                   </td>
                 </tr>

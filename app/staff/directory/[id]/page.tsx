@@ -2,8 +2,6 @@ import { getStaffPublicProfile } from '@/app/actions/directory'
 import { StaffPublicProfile } from '@/components/staff/StaffPublicProfile'
 import { auth } from '@/auth'
 import { notFound, redirect } from 'next/navigation'
-import { ArrowLeft, User } from 'lucide-react'
-import Link from 'next/link'
 
 export default async function StaffProfilePage({
   params

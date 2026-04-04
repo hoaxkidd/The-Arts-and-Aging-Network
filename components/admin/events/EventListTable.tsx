@@ -137,7 +137,7 @@ export function EventListTable({ events }: { events: Event[] }) {
               <div className="space-y-2 text-sm text-gray-600">
                 <div className="flex items-center gap-2">
                   <Calendar className="w-4 h-4 text-gray-400 shrink-0" />
-                  <span>{start.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                  <span>{start.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Users className="w-4 h-4 text-gray-400 shrink-0" />
@@ -202,7 +202,7 @@ export function EventListTable({ events }: { events: Event[] }) {
                     <td className="px-4 py-3 text-sm text-gray-600">
                       <div className="flex items-center gap-1.5">
                         <Calendar className="w-3.5 h-3.5 text-gray-400" />
-                        {start.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                        {start.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
                       </div>
                       <div className="flex items-center gap-1.5 text-xs text-gray-500 mt-0.5">
                         <Users className="w-3 h-3" />

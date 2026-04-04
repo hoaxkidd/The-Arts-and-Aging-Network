@@ -34,6 +34,42 @@ type Request = {
   approvedEvent: { id: string; title: string } | null
   geriatricHome: { id: string; name: string }
   formSubmission?: { id: string; formData: string; template: { title: string } } | null
+  preferredDates?: string | null
+}
+
+function parsePreferredDates(preferredDates?: string | null): Array<{ startDateTime: Date; endDateTime: Date }> {
+  if (!preferredDates) return []
+  try {
+    const parsed = JSON.parse(preferredDates) as Array<{ startDateTime?: string; endDateTime?: string }>
+    return parsed
+      .map((slot) => ({
+        startDateTime: slot.startDateTime ? new Date(slot.startDateTime) : null,
+        endDateTime: slot.endDateTime ? new Date(slot.endDateTime) : null,
+      }))
+      .filter((slot): slot is { startDateTime: Date; endDateTime: Date } => Boolean(slot.startDateTime && slot.endDateTime && slot.endDateTime > slot.startDateTime))
+  } catch {
+    return []
+  }
+}
+
+function isDefaultWeeklyPattern(slots: Array<{ startDateTime: Date; endDateTime: Date }>): boolean {
+  if (slots.length <= 1) return true
+  const first = slots[0]
+  const firstStartMinutes = first.startDateTime.getHours() * 60 + first.startDateTime.getMinutes()
+  const firstDuration = first.endDateTime.getTime() - first.startDateTime.getTime()
+
+  for (let i = 1; i < slots.length; i++) {
+    const prev = slots[i - 1]
+    const current = slots[i]
+    const daysBetween = Math.round((current.startDateTime.getTime() - prev.startDateTime.getTime()) / (24 * 60 * 60 * 1000))
+    const currentStartMinutes = current.startDateTime.getHours() * 60 + current.startDateTime.getMinutes()
+    const currentDuration = current.endDateTime.getTime() - current.startDateTime.getTime()
+    if (daysBetween !== 7 || currentStartMinutes !== firstStartMinutes || currentDuration !== firstDuration) {
+      return false
+    }
+  }
+
+  return true
 }
 
 function RejectModal({
@@ -197,6 +233,12 @@ export function AdminRequestList({ requests }: { requests: Request[] }) {
                 const title = isCustom ? req.customTitle : req.existingEvent?.title
                 const date = isCustom ? req.customStartDateTime : req.existingEvent?.startDateTime
                 const loading = isPending && actionId === req.id
+                const weeklySlots = parsePreferredDates(req.preferredDates)
+                const hasWeeklySchedule = isCustom && weeklySlots.length > 1
+                const weeklyPreview = hasWeeklySchedule
+                  ? weeklySlots.slice(0, 2).map((slot) => slot.startDateTime.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })).join(', ')
+                  : null
+                const isDefaultPattern = hasWeeklySchedule ? isDefaultWeeklyPattern(weeklySlots) : true
                 return (
                   <tr key={req.id} className={STYLES.tableRow}>
                     <td className={STYLES.tableCell}>
@@ -217,11 +259,23 @@ export function AdminRequestList({ requests }: { requests: Request[] }) {
                           <FileText className="w-3 h-3" /> {req.formSubmission.template.title}
                         </div>
                       )}
+                      {hasWeeklySchedule && (
+                        <div className="mt-1 text-xs text-gray-600">
+                          <span className="font-medium">Weekly x{weeklySlots.length}</span>
+                          {weeklyPreview ? ` • ${weeklyPreview}${weeklySlots.length > 2 ? ` (+${weeklySlots.length - 2} more)` : ''}` : ''}
+                          <span className={cn(
+                            "ml-2 px-1.5 py-0.5 rounded-full",
+                            isDefaultPattern ? "bg-gray-100 text-gray-700" : "bg-amber-100 text-amber-800"
+                          )}>
+                            {isDefaultPattern ? 'Default' : 'Customized'}
+                          </span>
+                        </div>
+                      )}
                       {req.notes && <p className="text-xs text-gray-500 mt-0.5 truncate max-w-xs" title={req.notes}>{req.notes}</p>}
                     </td>
                     <td className={STYLES.tableCell}>{isCustom ? 'Custom' : 'Existing'}</td>
                     <td className={STYLES.tableCell}>
-                      {date ? new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—'}
+                      {date ? new Date(date).toLocaleDateString('en-US', { month: 'long', day: 'numeric' }) : '—'}
                     </td>
                     <td className={STYLES.tableCell}>
                       <span className={cn(

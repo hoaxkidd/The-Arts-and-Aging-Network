@@ -30,10 +30,13 @@ type HomeData = {
   contactPhone?: string
   contactEmail?: string
   contactPosition?: string | null
+  useCustomNotificationEmail?: boolean
+  notificationEmail?: string | null
 }
 
 export function HomeProfileForm({ home }: { home: HomeData }) {
   const [address, setAddress] = useState(home.address || '')
+  const [useCustomNotificationEmail, setUseCustomNotificationEmail] = useState(Boolean(home.useCustomNotificationEmail))
   const [isPending, startTransition] = useTransition()
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -199,6 +202,32 @@ export function HomeProfileForm({ home }: { home: HomeData }) {
                         className={STYLES.input}
                         placeholder="Email address"
                     />
+                </div>
+                <div className="md:col-span-2 rounded-lg border border-gray-200 bg-gray-50/70 p-3">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                            type="checkbox"
+                            name="useCustomNotificationEmail"
+                            checked={useCustomNotificationEmail}
+                            onChange={(e) => setUseCustomNotificationEmail(e.target.checked)}
+                            className="rounded text-primary-600"
+                        />
+                        <span className="text-sm font-medium text-gray-700">Send operational notifications to a different email</span>
+                    </label>
+                    <p className="text-xs text-gray-500 mt-1">Event and request notifications default to the primary contact email unless overridden here.</p>
+                    {useCustomNotificationEmail && (
+                        <div className="mt-3">
+                            <label className="block text-xs font-medium text-gray-600 mb-1">Notification Email</label>
+                            <input
+                                name="notificationEmail"
+                                type="email"
+                                required={useCustomNotificationEmail}
+                                defaultValue={home.notificationEmail || ''}
+                                className={STYLES.input}
+                                placeholder="notifications@organization.com"
+                            />
+                        </div>
+                    )}
                 </div>
             </div>
         </div>

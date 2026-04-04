@@ -38,6 +38,11 @@ export default async function MessagingRequestsPage() {
 
   return (
     <div className="h-full flex flex-col">
+      <div className="flex-shrink-0 mb-4">
+        <Link href="/admin/messaging" className="inline-flex items-center gap-1 text-sm text-gray-600 hover:text-gray-900">
+          <ArrowLeft className="w-4 h-4" /> Back to Messaging
+        </Link>
+      </div>
       <div className="flex-1 min-h-0 overflow-auto">
         {pendingRequests.length === 0 ? (
           <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
@@ -70,7 +75,7 @@ export default async function MessagingRequestsPage() {
                       </p>
                       <p className="text-xs text-gray-500">
                         Requested {request.joinedAt.toLocaleDateString('en-US', {
-                          month: 'short',
+                          month: 'long',
                           day: 'numeric',
                           year: 'numeric',
                           hour: 'numeric',

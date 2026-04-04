@@ -106,6 +106,7 @@ export async function deleteUser(userId: string) {
           ]
         }
       }),
+      prisma.userRoleAssignment.deleteMany({ where: { userId } }),
       // Finally delete the user
       prisma.user.delete({ where: { id: userId } })
     ])

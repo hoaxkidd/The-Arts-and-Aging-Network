@@ -17,6 +17,8 @@ type Personnel = {
   phone: string
   position: string
   isPrimary?: boolean
+  useCustomNotificationEmail?: boolean
+  notificationEmail?: string | null
 }
 
 type HomeData = {
@@ -26,6 +28,8 @@ type HomeData = {
   contactEmail: string
   contactPhone: string
   contactPosition: string | null
+  useCustomNotificationEmail?: boolean
+  notificationEmail?: string | null
   additionalContacts: Personnel[]
 }
 
@@ -37,7 +41,8 @@ function PersonnelModal({
   personnel,
   isPending,
   title,
-  subtitle
+  subtitle,
+  showNotificationSettings = false
 }: {
   isOpen: boolean
   onClose: () => void
@@ -46,12 +51,15 @@ function PersonnelModal({
   isPending: boolean
   title?: string
   subtitle?: string
+  showNotificationSettings?: boolean
 }) {
   const [formData, setFormData] = useState({
     name: personnel?.name || '',
     email: personnel?.email || '',
     phone: personnel?.phone || '',
-    position: personnel?.position || ''
+    position: personnel?.position || '',
+    useCustomNotificationEmail: false,
+    notificationEmail: ''
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
 
@@ -61,10 +69,12 @@ function PersonnelModal({
       name: personnel?.name || '',
       email: personnel?.email || '',
       phone: personnel?.phone || '',
-      position: personnel?.position || ''
+      position: personnel?.position || '',
+      useCustomNotificationEmail: (personnel as any)?.useCustomNotificationEmail || false,
+      notificationEmail: (personnel as any)?.notificationEmail || ''
     })
     setErrors({})
-  }, [personnel?.id, personnel?.name, personnel?.email, personnel?.phone, personnel?.position])
+  }, [personnel])
 
   const validate = () => {
     const newErrors: Record<string, string> = {}
@@ -72,6 +82,13 @@ function PersonnelModal({
     if (!formData.email.trim()) newErrors.email = 'Email is required'
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) newErrors.email = 'Invalid email format'
     if (!formData.phone.trim()) newErrors.phone = 'Phone is required'
+    if (showNotificationSettings && formData.useCustomNotificationEmail) {
+      if (!formData.notificationEmail.trim()) {
+        newErrors.notificationEmail = 'Notification email is required'
+      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.notificationEmail)) {
+        newErrors.notificationEmail = 'Invalid email format'
+      }
+    }
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
@@ -190,6 +207,38 @@ function PersonnelModal({
               </p>
             )}
           </div>
+
+          {showNotificationSettings && (
+            <div className="rounded-lg border border-gray-200 bg-gray-50 p-3 space-y-3">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={formData.useCustomNotificationEmail}
+                  onChange={(e) => setFormData({ ...formData, useCustomNotificationEmail: e.target.checked })}
+                  className="rounded text-primary-600"
+                />
+                <span className="text-sm font-medium text-gray-700">Use a different notification email</span>
+              </label>
+
+              {formData.useCustomNotificationEmail && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Notification Email <span className="text-red-500">*</span></label>
+                  <input
+                    type="email"
+                    value={formData.notificationEmail}
+                    onChange={(e) => setFormData({ ...formData, notificationEmail: e.target.value })}
+                    className={cn(STYLES.input, errors.notificationEmail && "border-red-300 focus:ring-red-500")}
+                    placeholder="notifications@organization.com"
+                  />
+                  {errors.notificationEmail && (
+                    <p className="mt-1 text-xs text-red-500 flex items-center gap-1">
+                      <AlertCircle className="w-3 h-3" /> {errors.notificationEmail}
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Actions */}
           <div className="flex items-center gap-3 pt-4 border-t border-gray-100">
@@ -425,7 +474,10 @@ export function PersonnelManager({ home }: { home: HomeData }) {
 
   const handleUpdatePrimary = (data: Omit<Personnel, 'id'>) => {
     startTransition(async () => {
-      const result = await updatePrimaryContact(home.id, data)
+      const result = await updatePrimaryContact(home.id, {
+        ...data,
+        notificationEmail: data.notificationEmail ?? undefined,
+      })
       if (result.success) {
         setEditingPrimary(false)
         router.refresh()
@@ -537,11 +589,14 @@ export function PersonnelManager({ home }: { home: HomeData }) {
           name: home.contactName,
           email: home.contactEmail,
           phone: home.contactPhone,
-          position: home.contactPosition || ''
+          position: home.contactPosition || '',
+          useCustomNotificationEmail: home.useCustomNotificationEmail,
+          notificationEmail: home.notificationEmail,
         }}
         isPending={isPending}
         title="Edit Primary Contact"
         subtitle="Update the main contact for this facility"
+        showNotificationSettings
       />
 
       <DeleteConfirmModal

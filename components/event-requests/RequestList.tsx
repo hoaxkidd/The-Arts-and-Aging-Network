@@ -13,7 +13,8 @@ import {
   XCircle,
   Loader2,
   AlertCircle,
-  ExternalLink
+  ExternalLink,
+  Pencil
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { STYLES } from '@/lib/styles'
@@ -46,6 +47,7 @@ type Request = {
     startDateTime: string
     location: { name: string } | null
   } | null
+  editAccessGranted?: boolean
 }
 
 const statusStyles = {
@@ -151,6 +153,14 @@ export function RequestList({
                 </div>
               )}
               <div className="flex items-center gap-2 mt-2">
+                {(request.type === 'CREATE_CUSTOM' && (request.status === 'PENDING' || (request.status === 'REJECTED' && request.editAccessGranted)) && userRole === 'HOME_ADMIN') && (
+                  <Link
+                    href={`/dashboard/requests/${request.id}/edit`}
+                    className="px-2 py-1 text-xs text-primary-600 hover:bg-primary-50 rounded flex items-center gap-1"
+                  >
+                    <Pencil className="w-2.5 h-2.5" /> Edit
+                  </Link>
+                )}
                 {request.status === 'PENDING' && userRole === 'HOME_ADMIN' && (
                   <button
                     onClick={() => handleCancel(request.id)}
@@ -246,6 +256,15 @@ export function RequestList({
                     </td>
                     <td className={cn(STYLES.tableCell, "text-right")}>
                       <div className="flex items-center justify-end gap-1">
+                        {(request.type === 'CREATE_CUSTOM' && (request.status === 'PENDING' || (request.status === 'REJECTED' && request.editAccessGranted)) && userRole === 'HOME_ADMIN') && (
+                          <Link
+                            href={`/dashboard/requests/${request.id}/edit`}
+                            className="p-1.5 text-primary-600 hover:bg-primary-50 rounded transition-colors"
+                            title="Edit request"
+                          >
+                            <Pencil className="w-3.5 h-3.5" />
+                          </Link>
+                        )}
                         {request.status === 'PENDING' && userRole === 'HOME_ADMIN' && (
                           <button
                             onClick={() => handleCancel(request.id)}

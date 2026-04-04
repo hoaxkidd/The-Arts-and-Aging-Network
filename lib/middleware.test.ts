@@ -82,8 +82,8 @@ describe('middleware.ts - Role-Based Redirect Logic', () => {
       case 'PAYROLL': return '/payroll'
       case 'HOME_ADMIN': return '/dashboard'
       case 'VOLUNTEER': return '/volunteers'
-      case 'FACILITATOR':
-      case 'BOARD':
+      case 'FACILITATOR': return '/facilitator'
+      case 'BOARD': return '/board'
       case 'PARTNER': return '/staff'
       default: return '/'
     }
@@ -106,12 +106,12 @@ describe('middleware.ts - Role-Based Redirect Logic', () => {
       expect(getRoleRedirect('VOLUNTEER')).toBe('/volunteers')
     })
 
-    it('should redirect FACILITATOR to /staff', () => {
-      expect(getRoleRedirect('FACILITATOR')).toBe('/staff')
+    it('should redirect FACILITATOR to /facilitator', () => {
+      expect(getRoleRedirect('FACILITATOR')).toBe('/facilitator')
     })
 
-    it('should redirect BOARD to /staff', () => {
-      expect(getRoleRedirect('BOARD')).toBe('/staff')
+    it('should redirect BOARD to /board', () => {
+      expect(getRoleRedirect('BOARD')).toBe('/board')
     })
 
     it('should redirect PARTNER to /staff', () => {
@@ -192,5 +192,26 @@ describe('middleware.ts - Volunteer Route Protection', () => {
     it('should return false for undefined', () => {
       expect(isVolunteerRole(undefined)).toBe(false)
     })
+  })
+})
+
+describe('middleware.ts - Multi-role Access Scenarios', () => {
+  const canAccessPayroll = (roles: string[]): boolean => roles.includes('PAYROLL')
+  const canAccessVolunteers = (roles: string[]): boolean => roles.includes('VOLUNTEER')
+  const canAccessBoard = (roles: string[]): boolean => roles.includes('BOARD')
+
+  it('allows FACILITATOR + VOLUNTEER to access volunteer portal', () => {
+    expect(canAccessVolunteers(['FACILITATOR', 'VOLUNTEER'])).toBe(true)
+  })
+
+  it('allows PAYROLL + VOLUNTEER to access payroll and volunteer portals', () => {
+    expect(canAccessPayroll(['PAYROLL', 'VOLUNTEER'])).toBe(true)
+    expect(canAccessVolunteers(['PAYROLL', 'VOLUNTEER'])).toBe(true)
+  })
+
+  it('keeps BOARD as a standalone access identity', () => {
+    expect(canAccessBoard(['BOARD'])).toBe(true)
+    expect(canAccessVolunteers(['BOARD'])).toBe(false)
+    expect(canAccessPayroll(['BOARD'])).toBe(false)
   })
 })

@@ -184,7 +184,7 @@ export async function createEvent(formData: FormData) {
 
         const formatChangeDate = (date: Date) => date.toLocaleDateString('en-US', {
             timeZone: changeTimezone,
-            month: 'short',
+            month: 'long',
             day: 'numeric',
             year: 'numeric',
         })
@@ -265,7 +265,9 @@ export async function createEvent(formData: FormData) {
                 startDateTime: updatedEvent.startDateTime,
                 endDateTime: updatedEvent.endDateTime,
                 location: updatedEvent.location?.name || 'TBD',
-                changes: changesList
+                changes: changesList,
+                programId: updatedEvent.programId,
+                geriatricHomeId: updatedEvent.geriatricHomeId,
             })
         } catch (e) {
             logger.email('Failed to send update notification', e)
@@ -332,7 +334,9 @@ export async function createEvent(formData: FormData) {
                 title: event.title,
                 startDateTime: event.startDateTime,
                 endDateTime: event.endDateTime,
-                location: event.location
+                location: event.location,
+                programId: event.programId,
+                geriatricHomeId: event.geriatricHomeId,
             })
             logger.log('✅ Notification result:', result)
         } catch (notifyError) {
@@ -484,7 +488,9 @@ export async function deleteEvent(eventId: string) {
     try {
         await notifyAllStaffAboutEventCancellation({
             title: eventTitle,
-            date: eventDate
+            date: eventDate,
+            programId: event.programId,
+            geriatricHomeId: event.geriatricHomeId,
         })
     } catch (e) {
         logger.email('Failed to send cancellation notification', e)

@@ -214,6 +214,7 @@ async function importHomesRowsInternal(rows: HomesImportRow[], userId: string): 
   })
 
   revalidatePath('/admin/homes')
+  revalidatePath('/admin/users')
   revalidatePath('/admin/import')
 
   return {

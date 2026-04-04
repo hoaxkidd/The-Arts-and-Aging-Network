@@ -24,6 +24,9 @@ export default async function AdminEventRequestDetailPage({
 
   return (
     <div className="space-y-4">
+      <Link href="/admin/event-requests" className="inline-flex items-center gap-1 text-sm text-gray-600 hover:text-gray-900">
+        <ArrowLeft className="w-4 h-4" /> Back to Event Requests
+      </Link>
       <EventRequestDetail request={request} />
     </div>
   )

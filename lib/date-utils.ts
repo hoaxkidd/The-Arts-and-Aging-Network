@@ -42,7 +42,7 @@ export function formatDateShort(date: DateInput): string {
   const d = new Date(date)
   if (isNaN(d.getTime())) return ''
   return d.toLocaleDateString('en-US', {
-    month: 'short',
+    month: 'long',
     day: 'numeric',
     year: 'numeric'
   })
@@ -56,7 +56,7 @@ export function formatDateCompact(date: DateInput): string {
   const d = new Date(date)
   if (isNaN(d.getTime())) return ''
   return d.toLocaleDateString('en-US', {
-    month: 'short',
+    month: 'long',
     day: 'numeric'
   })
 }

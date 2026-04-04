@@ -5,6 +5,24 @@
 1. Start the development server: `npm run dev`
 2. Open browser to: `http://localhost:3000`
 3. Follow each test scenario below
+4. For multi-role validation, use `docs/ROLE_MATRIX_QA.md`
+
+---
+
+## Multi-Role QA Quick Start
+
+- [ ] Run seed data: `npm run db:seed`
+- [ ] Use seeded password for all accounts: `TestPass123!`
+- [ ] Multi-role accounts:
+  - [ ] `facvol@artsandaging.com` (primary FACILITATOR, secondary VOLUNTEER)
+  - [ ] `payvol@artsandaging.com` (primary PAYROLL, secondary VOLUNTEER)
+  - [ ] `boardonly@artsandaging.com` (BOARD only, merge attempts must fail)
+- [ ] In admin user detail (`/admin/users/[id]`) verify QA controls:
+  - [ ] Role Assignments panel
+  - [ ] Set Primary role
+  - [ ] Add/Remove secondary role
+  - [ ] Volunteer Review Status quick actions
+  - [ ] Role Feature Quick Links
 
 ---
 
@@ -56,13 +74,13 @@
 - [ ] **Step 4 - Review**:
   - [ ] Review all information
   - [ ] Click "Complete Registration"
-  - [ ] **Expected**: Account created, redirected to `/staff/onboarding?new=true`
+- [ ] **Expected**: Account created, redirected to `/volunteers/onboarding?new=true`
 - [ ] **Check**: User should have `volunteerReviewStatus = PENDING_REVIEW` in database
 
 ### 2.2 FACILITATOR - Sign up flow
 - [ ] Open invitation from test 1.2
 - [ ] Complete registration (steps 1-4)
-- [ ] **Expected**: Redirects to `/staff` (not onboarding)
+- [ ] **Expected**: Redirects to `/facilitator` (not onboarding)
 
 ### 2.3 HOME_ADMIN - Sign up flow with facility request
 - [ ] Open invitation from test 1.3
@@ -82,28 +100,28 @@
 
 ### 3.1 New volunteer sees PENDING_REVIEW banner
 - [ ] Login as volunteer (from test 2.1)
-- [ ] Navigate to `/staff/onboarding`
+- [ ] Navigate to `/volunteers/onboarding`
 - [ ] **Expected**: Yellow "Your application is pending review" banner shown
 
 ### 3.2 Profile form shows emergency contact fields
-- [ ] On `/staff/onboarding` page
+- [ ] On `/volunteers/onboarding` page
 - [ ] Look for Emergency Contact section
 - [ ] **Expected**: Contact Name, Relationship, Phone fields visible
 
 ### 3.3 Skills from signup pre-filled
-- [ ] On `/staff/onboarding` page
+- [ ] On `/volunteers/onboarding` page
 - [ ] Look for Skills section
 - [ ] **Expected**: Skills "Art", "Music" from signup are pre-filled
 
 ### 3.4 Save profile and complete onboarding
 - [ ] Fill in emergency contact fields
 - [ ] Click "Save & Continue"
-- [ ] **Expected**: Profile saved, redirected to `/staff`
+- [ ] **Expected**: Profile saved, redirected to `/volunteers`
 
 ### 3.5 Skip onboarding
-- [ ] Navigate to `/staff/onboarding`
+- [ ] Navigate to `/volunteers/onboarding`
 - [ ] Click "Remind me later"
-- [ ] **Expected**: Redirected to `/staff`
+- [ ] **Expected**: Redirected to `/volunteers`
 
 ---
 
@@ -148,15 +166,15 @@
 ### 5.2 Unapproved volunteer redirected (PENDING_REVIEW)
 - [ ] Login as volunteer from test 4.3 (status = REQUEST_CORRECTIONS)
 - [ ] Try to navigate to `/volunteers`
-- [ ] **Expected**: Redirected to `/staff/onboarding`
+- [ ] **Expected**: Redirected to `/volunteers/onboarding`
 
 ### 5.3 Middleware blocks unapproved access
 - [ ] Directly navigate to `/volunteers/forms` as unapproved volunteer
-- [ ] **Expected**: Redirected to `/staff/onboarding`
+- [ ] **Expected**: Redirected to `/volunteers/onboarding`
 
 ### 5.4 Middleware blocks direct form fill
 - [ ] Directly navigate to `/volunteers/forms/[id]/fill` as unapproved volunteer
-- [ ] **Expected**: Redirected to `/staff/onboarding`
+- [ ] **Expected**: Redirected to `/volunteers/onboarding`
 
 ---
 
@@ -187,15 +205,15 @@
 - [ ] Login as HOME_ADMIN
 - [ ] **Expected**: Redirects to `/dashboard`
 - [ ] Login as FACILITATOR
-- [ ] **Expected**: Redirects to `/staff`
+- [ ] **Expected**: Redirects to `/facilitator`
 - [ ] Login as APPROVED VOLUNTEER
 - [ ] **Expected**: Redirects to `/volunteers`
 
 ### 7.2 Unauthorized route access blocked
-- [ ] As ADMIN, try to access `/staff`
+- [ ] As ADMIN, try to access `/facilitator`
 - [ ] **Expected**: Redirected to `/admin`
 - [ ] As FACILITATOR, try to access `/admin`
-- [ ] **Expected**: Redirected to `/staff`
+- [ ] **Expected**: Redirected to `/facilitator`
 
 ---
 
@@ -263,4 +281,4 @@ npm run test:run   # Run tests in CLI
 npm run test:coverage  # Run with coverage report
 ```
 
-**Current Test Results**: ✅ 148 tests passing
+**Current Test Results**: ✅ 154 tests passing

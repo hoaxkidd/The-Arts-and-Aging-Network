@@ -126,19 +126,19 @@ describe('lib/onboarding.ts', () => {
   })
 
   describe('getOnboardingPath', () => {
-    it('should return /staff/onboarding for VOLUNTEER', () => {
-      expect(getOnboardingPath('VOLUNTEER')).toBe('/staff/onboarding')
+    it('should return /volunteers/onboarding for VOLUNTEER', () => {
+      expect(getOnboardingPath('VOLUNTEER')).toBe('/volunteers/onboarding')
     })
 
-    it('should return /staff/onboarding for FACILITATOR', () => {
-      expect(getOnboardingPath('FACILITATOR')).toBe('/staff/onboarding')
+    it('should return /facilitator/onboarding for FACILITATOR', () => {
+      expect(getOnboardingPath('FACILITATOR')).toBe('/facilitator/onboarding')
     })
 
     it('should return /staff/onboarding for PARTNER', () => {
       expect(getOnboardingPath('PARTNER')).toBe('/staff/onboarding')
     })
 
-    it('should return /staff/onboarding for any role', () => {
+    it('should return /staff/onboarding for exempt/other roles', () => {
       expect(getOnboardingPath('ADMIN')).toBe('/staff/onboarding')
       expect(getOnboardingPath('HOME_ADMIN')).toBe('/staff/onboarding')
       expect(getOnboardingPath('BOARD')).toBe('/staff/onboarding')

@@ -18,9 +18,10 @@ export default async function VolunteerFormFillPage({
     where: { id: session.user.id },
     select: { role: true, volunteerReviewStatus: true }
   })
+  const roles = Array.isArray(session.user.roles) ? session.user.roles : [session.user.role]
   
-  if (user?.role === 'VOLUNTEER' && user.volunteerReviewStatus !== 'APPROVED') {
-    redirect('/staff/onboarding')
+  if (roles.includes('VOLUNTEER') && user?.volunteerReviewStatus !== 'APPROVED') {
+    redirect('/volunteers/onboarding')
   }
 
   const { id } = await params
@@ -32,11 +33,9 @@ export default async function VolunteerFormFillPage({
   if (!template) notFound()
 
   // Check access - Volunteers can access public forms OR forms with VOLUNTEER role
-  const userRole = session.user.role || ''
-
   // Check if user has access
   const hasAccess = template.isPublic || 
-    (template.allowedRoles && template.allowedRoles.includes(userRole))
+    (template.allowedRoles && roles.some((role: string) => template.allowedRoles.includes(role)))
   
   if (!hasAccess) {
     return (

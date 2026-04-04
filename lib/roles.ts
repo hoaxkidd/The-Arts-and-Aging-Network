@@ -60,3 +60,30 @@ export function getRoleLabel(role: string, short = false): string {
 export function isPayrollOrAdminRole(role: string | null | undefined): boolean {
   return role === 'PAYROLL' || role === 'ADMIN'
 }
+
+export function normalizeRoleList(roles: unknown): UserRole[] {
+  if (!Array.isArray(roles)) return []
+  const filtered = roles.filter((role): role is UserRole => typeof role === 'string' && isValidRole(role))
+  return Array.from(new Set(filtered))
+}
+
+export function isBoardExclusiveViolation(existingRoles: string[], incomingRole: string): boolean {
+  const hasBoard = existingRoles.includes('BOARD')
+  if (incomingRole === 'BOARD') {
+    return existingRoles.some((role) => role !== 'BOARD')
+  }
+  if (hasBoard && incomingRole !== 'BOARD') {
+    return true
+  }
+  return false
+}
+
+export function canMergeRoles(existingRoles: string[], incomingRole: string): { ok: boolean; error?: string } {
+  if (!isValidRole(incomingRole)) {
+    return { ok: false, error: 'Invalid role' }
+  }
+  if (isBoardExclusiveViolation(existingRoles, incomingRole)) {
+    return { ok: false, error: 'BOARD is an exclusive role and cannot be merged with other roles' }
+  }
+  return { ok: true }
+}

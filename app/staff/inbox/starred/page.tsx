@@ -1,10 +1,12 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Star, MessageSquare, Users, Loader2 } from 'lucide-react'
 import { getStarredMessages, unstarMessage } from '@/app/actions/starred-messages'
 import { cn } from '@/lib/utils'
+import { getStaffBasePathFromPathname } from '@/lib/role-routes'
 
 type StarredMessage = {
   id: string
@@ -18,6 +20,8 @@ type StarredMessage = {
 }
 
 export default function StarredMessagesPage() {
+  const pathname = usePathname()
+  const basePath = getStaffBasePathFromPathname(pathname)
   const [messages, setMessages] = useState<StarredMessage[]>([])
   const [loading, setLoading] = useState(true)
   const [removing, setRemoving] = useState<string | null>(null)
@@ -55,7 +59,7 @@ export default function StarredMessagesPage() {
     if (diffDays < 7) return `${diffDays} days ago`
 
     return d.toLocaleDateString('en-US', {
-      month: 'short',
+      month: 'long',
       day: 'numeric',
       year: d.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
     })
@@ -64,6 +68,9 @@ export default function StarredMessagesPage() {
   return (
     <div className="h-full flex flex-col">
       <div className="flex-1 min-h-0 overflow-auto">
+        <Link href={`${basePath}/inbox`} className="inline-flex items-center gap-1 text-sm text-gray-600 hover:text-gray-900 mb-3">
+          <ArrowLeft className="w-4 h-4" /> Back to Inbox
+        </Link>
         {loading ? (
           <div className="flex items-center justify-center py-12">
             <Loader2 className="w-6 h-6 animate-spin text-gray-400" />

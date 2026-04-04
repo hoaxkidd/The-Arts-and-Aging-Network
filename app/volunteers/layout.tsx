@@ -8,9 +8,11 @@ export default async function VolunteersLayout({
   children: React.ReactNode
 }) {
   const session = await auth()
+  const roles = Array.isArray(session?.user?.roles) ? session.user.roles : (session?.user?.role ? [session.user.role] : [])
+  const hasVolunteerRole = roles.includes('VOLUNTEER')
   
-  if (session?.user?.role === 'VOLUNTEER' && session.user.volunteerReviewStatus !== 'APPROVED') {
-    redirect("/staff/onboarding")
+  if (hasVolunteerRole && session?.user?.volunteerReviewStatus !== 'APPROVED') {
+    redirect("/volunteers/onboarding")
   }
 
   return (

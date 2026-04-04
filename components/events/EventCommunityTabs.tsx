@@ -228,7 +228,7 @@ function CommentItem({
               </span>
             )}
             <span className="text-xs text-gray-400">
-              {createdAt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} at{' '}
+              {createdAt.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })} at{' '}
               {createdAt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
             </span>
             {wasEdited && <span className="text-xs text-gray-400">(edited)</span>}

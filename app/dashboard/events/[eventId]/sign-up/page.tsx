@@ -2,7 +2,8 @@ import { auth } from '@/auth'
 import { redirect, notFound } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
 import { EventSignUpFormClient } from './EventSignUpFormClient'
-import { Calendar } from 'lucide-react'
+import { ArrowLeft, Calendar } from 'lucide-react'
+import Link from 'next/link'
 
 export default async function EventSignUpPage({
   params,
@@ -53,6 +54,9 @@ export default async function EventSignUpPage({
   return (
     <div className="h-full flex flex-col max-w-3xl mx-auto">
       <div className="flex-1 min-h-0 overflow-auto pt-6">
+        <Link href="/dashboard/events" className="inline-flex items-center gap-1 text-sm text-gray-600 hover:text-gray-900 mb-3">
+          <ArrowLeft className="w-4 h-4" /> Back to Events
+        </Link>
         <div className="flex items-center gap-2 text-sm text-gray-600 mb-4">
           <Calendar className="w-4 h-4" />
           <span className="font-medium text-gray-900">{event.title}</span>

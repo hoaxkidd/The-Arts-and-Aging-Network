@@ -37,7 +37,7 @@ export default async function AdminInventoryPage() {
   return (
     <div className="h-full flex flex-col">
       <div className="flex-1 min-h-0 overflow-auto pt-4">
-        <InventoryHubClient items={items} />
+        <InventoryHubClient items={items} userRole={session.user.role || 'ADMIN'} />
       </div>
     </div>
   )

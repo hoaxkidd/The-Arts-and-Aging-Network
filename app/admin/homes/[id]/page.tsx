@@ -36,6 +36,8 @@ export default async function HomeDetailPage({ params }: { params: Promise<{ id:
       contactEmail: true,
       contactPhone: true,
       contactPosition: true,
+      useCustomNotificationEmail: true,
+      notificationEmail: true,
       additionalContacts: true,
       createdAt: true,
       updatedAt: true,

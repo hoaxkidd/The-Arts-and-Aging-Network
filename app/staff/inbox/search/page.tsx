@@ -1,10 +1,12 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Search, Filter, MessageSquare, Users, Paperclip, Loader2, X } from 'lucide-react'
 import { searchMessages, SearchFilters } from '@/app/actions/message-search'
 import { cn } from '@/lib/utils'
+import { getStaffBasePathFromPathname } from '@/lib/role-routes'
 
 type SearchResult = {
   id: string
@@ -21,6 +23,8 @@ type SearchResult = {
 }
 
 export default function MessageSearchPage() {
+  const pathname = usePathname()
+  const basePath = getStaffBasePathFromPathname(pathname)
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<SearchResult[]>([])
   const [loading, setLoading] = useState(false)
@@ -55,7 +59,7 @@ export default function MessageSearchPage() {
   function formatDate(date: Date): string {
     const d = new Date(date)
     return d.toLocaleDateString('en-US', {
-      month: 'short',
+      month: 'long',
       day: 'numeric',
       hour: 'numeric',
       minute: '2-digit'
@@ -71,6 +75,9 @@ export default function MessageSearchPage() {
   return (
     <div className="h-full flex flex-col">
       <div className="flex-1 min-h-0 overflow-auto">
+        <Link href={`${basePath}/inbox`} className="inline-flex items-center gap-1 text-sm text-gray-600 hover:text-gray-900 mb-3">
+          <ArrowLeft className="w-4 h-4" /> Back to Inbox
+        </Link>
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
           <input

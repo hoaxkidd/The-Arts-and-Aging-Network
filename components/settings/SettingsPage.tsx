@@ -182,6 +182,7 @@ export function SettingsPage({
                   className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                 />
               </div>
+
               {profileState?.success && (
                 <p className="text-sm text-green-600 flex items-center gap-2" role="status">
                   <CheckCircle2 className="w-4 h-4" /> Saved.

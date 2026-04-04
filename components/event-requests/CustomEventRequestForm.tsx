@@ -4,6 +4,7 @@ import { useState, useTransition, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import {
+  ArrowLeft,
   Loader2,
   CheckCircle,
   AlertCircle
@@ -13,6 +14,7 @@ import { STYLES } from '@/lib/styles'
 import { createCustomEventRequest } from '@/app/actions/event-requests'
 import { getEventSignupForms } from '@/app/actions/form-templates'
 import { FormTemplateView } from '@/components/forms/FormTemplateView'
+import { DateTimeInput } from '@/components/ui/DateTimeInput'
 import type { FormTemplateField } from '@/lib/form-template-types'
 import { logger } from '@/lib/logger'
 
@@ -34,6 +36,80 @@ export function CustomEventRequestForm() {
   const [selectedFormId, setSelectedFormId] = useState('')
   const [formValues, setFormValues] = useState<Record<string, unknown>>({})
   const [isLoadingForms, setIsLoadingForms] = useState(true)
+
+  const selectedDate = searchParams.get('date')
+  const hasCalendarDate = !!selectedDate && /^\d{4}-\d{2}-\d{2}$/.test(selectedDate)
+  const defaultStart = hasCalendarDate ? `${selectedDate}T09:00` : ''
+  const defaultEnd = hasCalendarDate ? `${selectedDate}T10:00` : ''
+  const [startDateTime, setStartDateTime] = useState(defaultStart)
+  const [endDateTime, setEndDateTime] = useState(defaultEnd)
+  const [occurrences, setOccurrences] = useState<Array<{ startDateTime: string; endDateTime: string }>>([])
+  const [showOccurrenceEditor, setShowOccurrenceEditor] = useState(false)
+
+  const generateWeeklyOccurrences = (startInput: string, endInput: string) => {
+    const start = new Date(startInput)
+    const end = new Date(endInput)
+    if (isNaN(start.getTime()) || isNaN(end.getTime()) || end <= start) return []
+
+    const dayStart = new Date(start)
+    dayStart.setHours(0, 0, 0, 0)
+    const dayEnd = new Date(end)
+    dayEnd.setHours(0, 0, 0, 0)
+
+    const startMinutes = start.getHours() * 60 + start.getMinutes()
+    const endMinutes = end.getHours() * 60 + end.getMinutes()
+    const durationMinutes = endMinutes > startMinutes ? (endMinutes - startMinutes) : 60
+
+    const series: Array<{ startDateTime: string; endDateTime: string }> = []
+    const currentDate = new Date(dayStart)
+
+    while (currentDate <= dayEnd) {
+      const currentStart = new Date(currentDate)
+      currentStart.setHours(start.getHours(), start.getMinutes(), 0, 0)
+
+      const currentEnd = new Date(currentStart)
+      currentEnd.setMinutes(currentEnd.getMinutes() + durationMinutes)
+
+      if (currentEnd > currentStart) {
+        series.push({
+          startDateTime: currentStart.toISOString(),
+          endDateTime: currentEnd.toISOString(),
+        })
+      }
+
+      currentDate.setDate(currentDate.getDate() + 7)
+    }
+
+    return series
+  }
+
+  useEffect(() => {
+    setOccurrences(generateWeeklyOccurrences(startDateTime, endDateTime))
+  }, [startDateTime, endDateTime])
+
+  const occurrenceSummary = (() => {
+    if (occurrences.length === 0) return 'No weekly events generated yet'
+    const first = new Date(occurrences[0].startDateTime)
+    const weekday = isNaN(first.getTime())
+      ? 'the selected weekday'
+      : first.toLocaleDateString('en-US', { weekday: 'long' })
+    return `Creates ${occurrences.length} weekly event${occurrences.length === 1 ? '' : 's'} on ${weekday}`
+  })()
+
+  const occurrenceDatesSummary = (() => {
+    if (occurrences.length === 0) return ''
+    const preview = occurrences
+      .slice(0, 3)
+      .map((occ) => {
+        const d = new Date(occ.startDateTime)
+        return isNaN(d.getTime()) ? null : d.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })
+      })
+      .filter((value): value is string => Boolean(value))
+
+    if (preview.length === 0) return ''
+    const remaining = occurrences.length - preview.length
+    return `First dates: ${preview.join(', ')}${remaining > 0 ? ` (+${remaining} more)` : ''}`
+  })()
 
   useEffect(() => {
     async function fetchForms() {
@@ -82,6 +158,30 @@ export function CustomEventRequestForm() {
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {}
 
+    if (!startDateTime) newErrors.startDateTime = 'Start date and time is required'
+    if (!endDateTime) newErrors.endDateTime = 'End date and time is required'
+
+    if (startDateTime && endDateTime) {
+      const start = new Date(startDateTime)
+      const end = new Date(endDateTime)
+      if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+        newErrors.startDateTime = 'Please enter valid date/time values'
+      } else if (end <= start) {
+        newErrors.endDateTime = 'End date/time must be after start date/time'
+      } else if (occurrences.length === 0) {
+        newErrors.endDateTime = 'No valid weekly occurrences generated from this range'
+      }
+    }
+
+    for (let i = 0; i < occurrences.length; i++) {
+      const occ = occurrences[i]
+      const start = new Date(occ.startDateTime)
+      const end = new Date(occ.endDateTime)
+      if (isNaN(start.getTime()) || isNaN(end.getTime()) || end <= start) {
+        newErrors[`occurrence-${i}`] = `Occurrence ${i + 1} has invalid start/end time`
+      }
+    }
+
     if (!selectedFormId) {
       newErrors.formTemplate = 'Please select a form'
     }
@@ -107,9 +207,18 @@ export function CustomEventRequestForm() {
     if (!validateForm()) return
 
     startTransition(async () => {
+      const firstOccurrence = occurrences[0]
+      if (!firstOccurrence) {
+        setErrors({ submit: 'Please provide a valid date range to generate occurrences.' })
+        return
+      }
+
       const requestData = {
         formTemplateId: selectedFormId,
-        formData: formValues
+        formData: formValues,
+        startDateTime: firstOccurrence.startDateTime,
+        endDateTime: firstOccurrence.endDateTime,
+        preferredDates: occurrences,
       }
 
       const result = await createCustomEventRequest(requestData)
@@ -142,6 +251,9 @@ export function CustomEventRequestForm() {
 
   return (
     <div className="space-y-6">
+      <Link href="/dashboard/requests" className="inline-flex items-center gap-1 text-sm text-gray-600 hover:text-gray-900">
+        <ArrowLeft className="w-4 h-4" /> Back to Requests
+      </Link>
       {/* Error Banner */}
       {errors.submit && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3">
@@ -151,8 +263,107 @@ export function CustomEventRequestForm() {
       )}
 
       {/* Form Card */}
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+      <div className="bg-white rounded-lg border border-gray-200 overflow-visible">
         <div className="p-6 space-y-5">
+          <h2 className="font-semibold text-gray-900">
+            Event Schedule
+          </h2>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Event Start <span className="text-red-500">*</span>
+              </label>
+              <DateTimeInput
+                name="eventStartDateTime"
+                value={startDateTime}
+                onChange={(value) => setStartDateTime(value)}
+                required
+              />
+              {errors.startDateTime && <p className="mt-1 text-xs text-red-500">{errors.startDateTime}</p>}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Event End <span className="text-red-500">*</span>
+              </label>
+              <DateTimeInput
+                name="eventEndDateTime"
+                value={endDateTime}
+                onChange={(value) => setEndDateTime(value)}
+                required
+              />
+              {errors.endDateTime && <p className="mt-1 text-xs text-red-500">{errors.endDateTime}</p>}
+            </div>
+          </div>
+
+          <div className="rounded-lg border border-amber-200 bg-amber-50 p-3">
+            <p className="text-xs text-amber-800">
+              Weekly scheduling default: if your first event is on Monday, following weeks will also be Monday. You can customize weekly dates if needed.
+            </p>
+          </div>
+
+          <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <p className="text-sm text-gray-700">{occurrenceSummary}</p>
+                {occurrenceDatesSummary && <p className="text-xs text-gray-500 mt-0.5">{occurrenceDatesSummary}</p>}
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowOccurrenceEditor((prev) => !prev)}
+                className="text-sm font-medium text-primary-700 hover:text-primary-800"
+              >
+                {showOccurrenceEditor ? 'Hide weekly date editor' : 'Customize weekly dates'}
+              </button>
+            </div>
+          </div>
+
+          {showOccurrenceEditor && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Weekly Event Dates</label>
+              {occurrences.length === 0 ? (
+                <p className="text-xs text-gray-500">Enter a valid event range to generate weekly dates.</p>
+              ) : (
+                <div className="space-y-2 max-h-56 overflow-auto pr-1">
+                  {occurrences.map((occurrence, index) => (
+                    <div key={index} className="grid grid-cols-1 md:grid-cols-2 gap-2 rounded-lg border border-gray-200 p-2 bg-white">
+                      <DateTimeInput
+                        name={`occurrenceStart-${index}`}
+                        value={occurrence.startDateTime}
+                        onChange={(value) => {
+                          if (!value) return
+                          const parsed = new Date(value)
+                          if (isNaN(parsed.getTime())) return
+                          const next = [...occurrences]
+                          next[index] = { ...next[index], startDateTime: parsed.toISOString() }
+                          setOccurrences(next)
+                        }}
+                      />
+                      <DateTimeInput
+                        name={`occurrenceEnd-${index}`}
+                        value={occurrence.endDateTime}
+                        onChange={(value) => {
+                          if (!value) return
+                          const parsed = new Date(value)
+                          if (isNaN(parsed.getTime())) return
+                          const next = [...occurrences]
+                          next[index] = { ...next[index], endDateTime: parsed.toISOString() }
+                          setOccurrences(next)
+                        }}
+                      />
+                      {errors[`occurrence-${index}`] && (
+                        <p className="md:col-span-2 text-xs text-red-500">{errors[`occurrence-${index}`]}</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          <div className="pt-1 border-t border-gray-100" />
+
           <h2 className="font-semibold text-gray-900">
             Select Event Sign-up Form
           </h2>

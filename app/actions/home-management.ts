@@ -164,6 +164,9 @@ export async function updateHomeDetails(formData: FormData) {
   const contactEmail = formData.get("contactEmail") as string
   const contactPhone = formData.get("contactPhone") as string
   const contactPosition = formData.get("contactPosition") as string
+  const useCustomNotificationEmail = formData.get('useCustomNotificationEmail') === 'on'
+  const notificationEmailRaw = (formData.get('notificationEmail') as string | null)?.trim() || ''
+  const notificationEmail = notificationEmailRaw ? normalizeEmail(notificationEmailRaw) : null
 
   // Organization Settings
   const type = formData.get("type") as string
@@ -199,6 +202,10 @@ export async function updateHomeDetails(formData: FormData) {
     return { error: "Missing required fields" }
   }
 
+  if (useCustomNotificationEmail && !notificationEmail) {
+    return { error: "Please provide a valid notification email" }
+  }
+
   try {
     const prismaClient = prisma
 
@@ -219,6 +226,8 @@ export async function updateHomeDetails(formData: FormData) {
         contactEmail,
         contactPhone,
         contactPosition,
+        useCustomNotificationEmail,
+        notificationEmail: useCustomNotificationEmail ? notificationEmail : null,
         type,
         region,
         isPartner,
@@ -244,6 +253,7 @@ export async function updateHomeDetails(formData: FormData) {
 
     revalidatePath(`/admin/homes/${id}`)
     revalidatePath('/admin/homes')
+    revalidatePath('/admin/users')
     revalidatePath('/dashboard/profile')
 
     return { success: true }
@@ -266,6 +276,8 @@ export async function updateHome(data: {
   contactEmail?: string
   contactPhone?: string
   contactPosition?: string
+  useCustomNotificationEmail?: boolean
+  notificationEmail?: string
   // User updates
   userName?: string
   userEmail?: string
@@ -290,6 +302,10 @@ export async function updateHome(data: {
 
     if (!existingHome) {
       return { error: "Home not found" }
+    }
+
+    if (homeData.useCustomNotificationEmail && homeData.notificationEmail && !normalizeEmail(homeData.notificationEmail)) {
+      return { error: 'Invalid notification email' }
     }
 
     // Update home details
@@ -356,7 +372,8 @@ export async function updateHomeField(
   const allowedHomeFields = [
     'name', 'address', 'residentCount', 'maxCapacity',
     'specialNeeds', 'emergencyProtocol', 'contactName',
-    'contactEmail', 'contactPhone', 'contactPosition'
+    'contactEmail', 'contactPhone', 'contactPosition',
+    'useCustomNotificationEmail', 'notificationEmail'
   ]
 
   // Allowed fields for user
@@ -373,9 +390,24 @@ export async function updateHomeField(
     }
 
     if (allowedHomeFields.includes(field)) {
+      let parsedValue: string | number | boolean | null = value
+
+      if (field === 'useCustomNotificationEmail') {
+        const raw = String(value).toLowerCase()
+        parsedValue = raw === 'true' || raw === '1' || raw === 'yes' || raw === 'on'
+      }
+
+      if (field === 'notificationEmail') {
+        const normalized = normalizeEmail(String(value))
+        if (!normalized && String(value).trim()) {
+          return { error: 'Invalid notification email' }
+        }
+        parsedValue = normalized
+      }
+
       await db.geriatricHome.update({
         where: { id: homeId },
-        data: { [field]: value }
+        data: { [field]: parsedValue }
       })
     } else if (allowedUserFields.includes(field)) {
       // Map field names (remove 'user' prefix and lowercase first char)
@@ -412,7 +444,14 @@ export async function updateHomeField(
 // Update primary contact fields on a geriatric home
 export async function updatePrimaryContact(
   homeId: string,
-  data: { name: string; email: string; phone: string; position: string }
+  data: {
+    name: string
+    email: string
+    phone: string
+    position: string
+    useCustomNotificationEmail?: boolean
+    notificationEmail?: string | null
+  }
 ) {
   const session = await auth()
   if (!session?.user?.id) return { error: "Unauthorized" }
@@ -429,6 +468,11 @@ export async function updatePrimaryContact(
       return { error: "Unauthorized" }
     }
 
+    const notificationEmail = data.notificationEmail?.trim() ? normalizeEmail(data.notificationEmail) : null
+    if (data.useCustomNotificationEmail && !notificationEmail) {
+      return { error: 'Please provide a valid notification email' }
+    }
+
     await db.geriatricHome.update({
       where: { id: homeId },
       data: {
@@ -436,6 +480,8 @@ export async function updatePrimaryContact(
         contactEmail: data.email,
         contactPhone: data.phone,
         contactPosition: data.position,
+        useCustomNotificationEmail: Boolean(data.useCustomNotificationEmail),
+        notificationEmail: data.useCustomNotificationEmail ? notificationEmail : null,
       }
     })
 
@@ -563,6 +609,7 @@ export async function createAdminHome(formData: FormData) {
     })
 
     revalidatePath('/admin/homes')
+    revalidatePath('/admin/users')
     revalidatePath('/admin/import')
 
     return { success: true, homeId: home.id }

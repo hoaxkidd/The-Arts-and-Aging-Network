@@ -3,6 +3,8 @@
 import { useState } from 'react'
 import { X, Calendar, Plus, Trash2, Loader2 } from 'lucide-react'
 import { createMeetingRequest } from '@/app/actions/communication'
+import { STYLES } from '@/lib/styles'
+import { DateTimeInput } from '@/components/ui/DateTimeInput'
 
 type DateOption = {
   id: string
@@ -63,8 +65,6 @@ export function MeetingRequestModal({ staffId, staffName, isOpen, onClose }: Pro
   }
 
   // Build min datetime in local timezone for datetime-local input.
-  const minDateTime = toLocalDateTimeInputValue(new Date())
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       {/* Backdrop */}
@@ -101,14 +101,14 @@ export function MeetingRequestModal({ staffId, staffName, isOpen, onClose }: Pro
             <div className="space-y-2">
               {proposedDates.map((date, index) => (
                 <div key={date.id} className="flex items-center gap-2">
-                  <input
-                    type="datetime-local"
-                    value={date.value}
-                    onChange={(e) => updateDate(date.id, e.target.value)}
-                    min={minDateTime}
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                    required={index === 0}
-                  />
+                  <div className="flex-1">
+                    <DateTimeInput
+                      name={`meetingDateTime-${date.id}`}
+                      value={date.value}
+                      onChange={(value) => updateDate(date.id, value)}
+                      required={index === 0}
+                    />
+                  </div>
                   {proposedDates.length > 1 && (
                     <button
                       type="button"
@@ -186,13 +186,4 @@ function createDateOptionId() {
     return crypto.randomUUID()
   }
   return `date_${Date.now()}_${Math.random().toString(36).slice(2)}`
-}
-
-function toLocalDateTimeInputValue(date: Date): string {
-  const year = date.getFullYear()
-  const month = `${date.getMonth() + 1}`.padStart(2, '0')
-  const day = `${date.getDate()}`.padStart(2, '0')
-  const hours = `${date.getHours()}`.padStart(2, '0')
-  const minutes = `${date.getMinutes()}`.padStart(2, '0')
-  return `${year}-${month}-${day}T${hours}:${minutes}`
 }

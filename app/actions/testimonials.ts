@@ -6,6 +6,8 @@ import { revalidatePath } from "next/cache"
 import type { Prisma } from "@prisma/client"
 import { logger } from "@/lib/logger"
 
+const PROGRAM_TYPES = ['MUSIC', 'ART', 'DANCE', 'THEATRE', 'WELLNESS', 'OTHER'] as const
+
 // Get all testimonials (filtered)
 export async function getTestimonials(filters?: {
   status?: string
@@ -191,5 +193,57 @@ export async function deleteTestimonial(id: string) {
   } catch (error) {
     logger.serverAction("Failed to delete testimonial:", error)
     return { error: "Failed to delete testimonial" }
+  }
+}
+
+export async function submitPublicTestimonial(data: {
+  authorName: string
+  authorRole?: string
+  organizationName?: string
+  content: string
+  rating?: number
+  programType?: string
+  photoUrl?: string
+  videoUrl?: string
+}) {
+  const authorName = data.authorName?.trim()
+  const content = data.content?.trim()
+
+  if (!authorName || authorName.length < 2) {
+    return { error: 'Please provide your name' }
+  }
+  if (!content || content.length < 20) {
+    return { error: 'Please provide at least 20 characters in your testimonial' }
+  }
+
+  const rating = typeof data.rating === 'number' && Number.isFinite(data.rating)
+    ? Math.max(1, Math.min(5, Math.round(data.rating)))
+    : null
+
+  const programType = data.programType && PROGRAM_TYPES.includes(data.programType as (typeof PROGRAM_TYPES)[number])
+    ? data.programType
+    : null
+
+  try {
+    const testimonial = await prisma.testimonial.create({
+      data: {
+        authorName,
+        authorRole: data.authorRole?.trim() || null,
+        organizationName: data.organizationName?.trim() || null,
+        content,
+        rating,
+        programType,
+        photoUrl: data.photoUrl?.trim() || null,
+        videoUrl: data.videoUrl?.trim() || null,
+        status: 'PENDING',
+      },
+    })
+
+    revalidatePath('/admin/testimonials')
+    revalidatePath('/testimonials')
+    return { success: true, data: testimonial }
+  } catch (error) {
+    logger.serverAction('Failed to create public testimonial', error)
+    return { error: 'Failed to submit testimonial' }
   }
 }

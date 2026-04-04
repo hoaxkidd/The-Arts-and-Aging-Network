@@ -1,7 +1,5 @@
 import { prisma } from "@/lib/prisma"
 import { EventForm } from "@/components/admin/EventForm"
-import Link from "next/link"
-import { ArrowLeft, Calendar } from "lucide-react"
 
 export default async function EditEventPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -21,11 +19,12 @@ export default async function EditEventPage({ params }: { params: Promise<{ id: 
     <div className="h-full flex flex-col">
        <div className="flex-1 min-h-0 overflow-auto pt-4">
          <EventForm
-           locations={locations}
-           initialData={event}
-           formTemplates={formTemplates}
-         />
-       </div>
+            locations={locations}
+            initialData={event}
+            formTemplates={formTemplates}
+            backHref="/admin/events"
+          />
+        </div>
      </div>
   )
 }

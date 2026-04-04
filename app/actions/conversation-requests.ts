@@ -6,6 +6,8 @@ import { revalidatePath } from 'next/cache'
 import { createNotification } from './notifications'
 import { sendEmailWithRetry } from '@/lib/email/service'
 import { logger } from '@/lib/logger'
+import { getDmDecision } from '@/lib/dm-permissions'
+import { getInboxBasePathForRole } from '@/lib/role-routes'
 
 // Request to start a conversation with someone
 export async function requestConversation(requestedId: string, message?: string) {
@@ -15,6 +17,15 @@ export async function requestConversation(requestedId: string, message?: string)
   }
 
   try {
+    if (requestedId === session.user.id) {
+      return { error: 'You cannot request a conversation with yourself' }
+    }
+
+    const eligibility = await canMessageUser(requestedId)
+    if (eligibility.canMessage) {
+      return { error: 'You can already message this user directly' }
+    }
+
     // Check if request already exists
     const existing = await prisma.directMessageRequest.findUnique({
       where: {
@@ -140,6 +151,7 @@ export async function approveConversationRequest(requestId: string) {
         requester: {
           select: {
             id: true,
+            role: true,
             name: true,
             preferredName: true
           }
@@ -161,7 +173,7 @@ export async function approveConversationRequest(requestId: string) {
       type: 'CONVERSATION_APPROVED',
       title: 'Conversation Request Approved',
       message: `You can now message ${request.requested.preferredName || request.requested.name}`,
-      actionUrl: `/staff/inbox/${request.requested.userCode || request.requested.id}`,
+      actionUrl: `${getInboxBasePathForRole(request.requester.role)}/inbox/${request.requested.userCode || request.requested.id}`,
       metadata: JSON.stringify({ requestId: request.id })
     })
 
@@ -184,6 +196,9 @@ export async function approveConversationRequest(requestId: string) {
 
     revalidatePath('/admin/conversation-requests')
     revalidatePath('/staff/inbox')
+    revalidatePath('/facilitator/inbox')
+    revalidatePath('/board/inbox')
+    revalidatePath('/volunteers/inbox')
 
     return { success: true }
   } catch (error) {
@@ -210,7 +225,8 @@ export async function denyConversationRequest(requestId: string, note?: string) 
       include: {
         requester: {
           select: {
-            id: true
+            id: true,
+            role: true,
           }
         }
       }
@@ -222,7 +238,7 @@ export async function denyConversationRequest(requestId: string, note?: string) 
       type: 'CONVERSATION_DENIED',
       title: 'Conversation Request Denied',
       message: note || 'Your conversation request was not approved',
-      actionUrl: '/staff/inbox',
+      actionUrl: `${getInboxBasePathForRole(request.requester.role)}/inbox`,
       metadata: JSON.stringify({ requestId: request.id })
     })
 
@@ -262,29 +278,26 @@ export async function canMessageUser(userId: string) {
 
   const target = await prisma.user.findUnique({
     where: { id: userId },
-    select: { role: true }
+    select: { role: true, status: true }
   })
   if (!target) {
     return { canMessage: false, reason: 'User not found' }
   }
 
+  if (target.status !== 'ACTIVE') {
+    return { canMessage: false, reason: 'User is not active' }
+  }
+
+  if (userId === session.user.id) {
+    return { canMessage: false, reason: 'You cannot message yourself' }
+  }
+
   const myRole = session.user.role as string
   const targetRole = target.role
 
-  // Admins can message anyone
-  if (myRole === 'ADMIN') {
-    return { canMessage: true }
-  }
+  const decision = getDmDecision(myRole, targetRole)
 
-  // Anyone can message an admin (no approval required)
-  if (targetRole === 'ADMIN') {
-    return { canMessage: true }
-  }
-
-  // HOME_ADMIN → non-admin: can message if approved or existing thread; else must request
-
-  // Same role can message each other (e.g. payroll ↔ payroll)
-  if (myRole === targetRole) {
+  if (decision === 'allowed') {
     return { canMessage: true }
   }
 
@@ -316,5 +329,5 @@ export async function canMessageUser(userId: string) {
     return { canMessage: true }
   }
 
-  return { canMessage: false, reason: 'Admin approval required to start a conversation' }
+  return { canMessage: false, reason: 'Admin approval required before you can start this conversation' }
 }

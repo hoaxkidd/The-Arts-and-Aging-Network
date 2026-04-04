@@ -2,9 +2,11 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import { Search, MessageSquare } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { STYLES } from '@/lib/styles'
+import { getStaffBasePathFromPathname } from '@/lib/role-routes'
 
 type Conversation = {
   partnerId: string
@@ -33,6 +35,8 @@ type Props = {
 
 export function ConversationsList({ conversations, currentUserId, activeConversationId }: Props) {
   const [searchQuery, setSearchQuery] = useState('')
+  const pathname = usePathname()
+  const basePath = getStaffBasePathFromPathname(pathname)
 
   const filteredConversations = conversations.filter(conv => {
     const name = conv.partner.preferredName || conv.partner.name || ''
@@ -70,7 +74,7 @@ export function ConversationsList({ conversations, currentUserId, activeConversa
               Use New Message above or browse the Team Directory to start a conversation
             </p>
             <Link
-              href="/staff/directory"
+              href={`${basePath}/directory`}
               className={cn(STYLES.btn, STYLES.btnPrimary, "mt-6 text-sm")}
             >
               Browse Team
@@ -87,7 +91,7 @@ export function ConversationsList({ conversations, currentUserId, activeConversa
               return (
                 <Link
                   key={conversation.partnerId}
-                  href={`/staff/inbox/${conversation.partnerId}`}
+                  href={`${basePath}/inbox/${conversation.partnerId}`}
                   className={cn(
                     "flex items-center gap-3 p-4 min-h-[72px] hover:bg-gray-50 active:bg-gray-100 transition-colors touch-manipulation",
                     isActive && "bg-primary-50 hover:bg-primary-50 active:bg-primary-100",
@@ -154,5 +158,5 @@ function formatTime(date: Date): string {
   if (diffHours < 24) return `${diffHours}h`
   if (diffDays < 7) return `${diffDays}d`
 
-  return messageDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  return messageDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })
 }

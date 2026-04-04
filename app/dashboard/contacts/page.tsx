@@ -52,6 +52,8 @@ export default async function ContactsPage() {
               contactPosition: home.contactPosition,
               contactEmail: home.contactEmail,
               contactPhone: home.contactPhone,
+              useCustomNotificationEmail: home.useCustomNotificationEmail,
+              notificationEmail: home.notificationEmail,
               additionalContacts
             }}
           />

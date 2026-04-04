@@ -1,0 +1,20 @@
+import { auth } from '@/auth'
+import { redirect, notFound } from 'next/navigation'
+import { getEventRequestDetail } from '@/app/actions/event-requests'
+import { EditEventRequestForm } from '@/components/event-requests/EditEventRequestForm'
+
+export default async function EditHomeRequestPage({
+  params,
+}: {
+  params: Promise<{ id: string }>
+}) {
+  const session = await auth()
+  if (!session?.user?.id) redirect('/login')
+  if (session.user.role !== 'HOME_ADMIN') redirect('/dashboard/requests')
+
+  const { id } = await params
+  const result = await getEventRequestDetail(id)
+  if (result.error || !result.data) notFound()
+
+  return <EditEventRequestForm request={result.data as never} />
+}

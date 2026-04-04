@@ -148,7 +148,7 @@ export function HomeEventsClient({ events }: { events: CalendarEvent[] }) {
                     >
                       <div className="w-12 h-12 rounded-lg flex flex-col items-center justify-center shrink-0 bg-primary-50 text-primary-700">
                         <span className="text-[10px] font-semibold uppercase">
-                          {eventStart.toLocaleDateString('en-US', { month: 'short' })}
+                          {eventStart.toLocaleDateString('en-US', { month: 'long' })}
                         </span>
                         <span className="text-base font-bold leading-none">
                           {eventStart.getDate()}

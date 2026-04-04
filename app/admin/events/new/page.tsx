@@ -2,8 +2,6 @@ import { prisma } from "@/lib/prisma"
 import { auth } from "@/auth"
 import { redirect } from "next/navigation"
 import { EventForm } from "@/components/admin/EventForm"
-import Link from "next/link"
-import { ArrowLeft, Calendar } from "lucide-react"
 
 export default async function NewEventPage() {
   const session = await auth()
@@ -24,6 +22,7 @@ export default async function NewEventPage() {
         <EventForm
           locations={locations}
           formTemplates={formTemplates}
+          backHref="/admin/events"
           currentUser={session?.user ? { name: session.user.name ?? '', email: session.user.email ?? '', role: session.user.role ?? '' } : null}
         />
       </div>

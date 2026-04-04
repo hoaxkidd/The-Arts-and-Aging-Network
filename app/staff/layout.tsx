@@ -24,7 +24,12 @@ export default async function StaffLayout({
     redirect('/login')
   }
 
-  const role = session.user.role as string
+  const primaryRole = (session.user.primaryRole || session.user.role) as string
+  const role = pathname.startsWith('/facilitator')
+    ? 'FACILITATOR'
+    : pathname.startsWith('/board')
+      ? 'BOARD'
+      : primaryRole
   const allowedStaffRoles = ['FACILITATOR', 'VOLUNTEER', 'BOARD', 'PARTNER', 'ADMIN', 'PAYROLL', 'HOME_ADMIN']
 
   // Only restrict non-public staff routes to allowed staff roles

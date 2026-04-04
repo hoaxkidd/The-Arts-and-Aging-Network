@@ -141,7 +141,7 @@ export function InboxList({ inboxMessages, sentMessages, currentUserId }: InboxL
                         <Clock className="w-3 h-3 text-gray-400" />
                         <span className="text-xs text-gray-500">
                           {new Date(message.createdAt).toLocaleDateString('en-US', {
-                            month: 'short',
+                            month: 'long',
                             day: 'numeric',
                             hour: 'numeric',
                             minute: '2-digit'

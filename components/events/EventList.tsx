@@ -118,7 +118,7 @@ export function EventList({ events, canManage }: { events: any[], canManage: boo
 
               <div className="flex justify-between items-start mb-4">
                 <div className={cn("rounded-lg p-2 text-center min-w-[60px]", isPast ? "bg-gray-100 text-gray-500" : "bg-primary-50 text-primary-700")}>
-                  <span className="block text-xs font-bold uppercase">{startDate.toLocaleString('default', { month: 'short' })}</span>
+                  <span className="block text-xs font-bold uppercase">{startDate.toLocaleString('default', { month: 'long' })}</span>
                   <span className="block text-2xl font-bold">{startDate.getDate()}</span>
                 </div>
                 <div className="flex flex-col items-end gap-1">

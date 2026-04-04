@@ -219,7 +219,7 @@ export default async function StaffDashboard() {
                         "text-[9px] font-medium uppercase",
                         index === 0 ? "text-primary-100" : "text-primary-500"
                       )}>
-                        {eventDate.toLocaleDateString('en-US', { month: 'short' })}
+                        {eventDate.toLocaleDateString('en-US', { month: 'long' })}
                       </span>
                       <span className={cn(
                         "text-sm font-bold leading-none",

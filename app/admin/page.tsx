@@ -217,7 +217,7 @@ export default async function AdminDashboard() {
 
               {/* Action 4: Add Facility */}
               <Link
-                href="/admin/homes"
+                href="/admin/users?tab=homes"
                 className="group flex flex-col items-center p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg border border-blue-200 hover:border-blue-400 transition-all hover:shadow-md"
               >
                 <div className="w-10 h-10 rounded-lg bg-white shadow-sm flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">

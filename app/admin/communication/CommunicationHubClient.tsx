@@ -179,7 +179,7 @@ function GroupRequestsList({ requests }: { requests: GroupRequest[] }) {
                                     </p>
                                     <p className="text-xs text-gray-500 mt-0.5">
                                         {req.user?.role} · {new Date(req.joinedAt).toLocaleDateString('en-US', {
-                                            month: 'short',
+                                            month: 'long',
                                             day: 'numeric',
                                             hour: 'numeric',
                                             minute: '2-digit'

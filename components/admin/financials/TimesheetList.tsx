@@ -133,7 +133,7 @@ export function TimesheetList({ timesheets }: { timesheets: Timesheet[] }) {
                         <div>
                             <p className="text-xs text-gray-500 uppercase font-semibold">Week Of</p>
                             <p className="text-sm font-medium text-gray-900">
-                                {new Date(ts.weekStart).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} - {weekEnd.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                                {new Date(ts.weekStart).toLocaleDateString(undefined, { month: 'long', day: 'numeric' })} - {weekEnd.toLocaleDateString(undefined, { month: 'long', day: 'numeric' })}
                             </p>
                         </div>
                         <div className="text-right">

@@ -48,7 +48,7 @@ export function TimesheetHistoryList({ timesheets }: { timesheets: Timesheet[] }
               
               <div>
                 <p className="font-medium text-gray-900">
-                  Week of {new Date(ts.weekStart).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                  Week of {new Date(ts.weekStart).toLocaleDateString(undefined, { month: 'long', day: 'numeric' })}
                 </p>
                 <p className="text-xs text-gray-500">
                   {new Date(ts.weekStart).toLocaleDateString()} - {weekEnd.toLocaleDateString()}

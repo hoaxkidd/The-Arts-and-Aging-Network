@@ -1,10 +1,12 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Plus, Edit2, Trash2, FileText, Loader2, X, Check } from 'lucide-react'
 import { getMessageTemplates, createMessageTemplate, updateMessageTemplate, deleteMessageTemplate } from '@/app/actions/message-templates'
 import { cn } from '@/lib/utils'
+import { getStaffBasePathFromPathname } from '@/lib/role-routes'
 
 type Template = {
   id: string
@@ -19,6 +21,8 @@ type Template = {
 }
 
 export default function MessageTemplatesPage() {
+  const pathname = usePathname()
+  const basePath = getStaffBasePathFromPathname(pathname)
   const [templates, setTemplates] = useState<Template[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
@@ -107,6 +111,9 @@ export default function MessageTemplatesPage() {
   return (
     <div className="h-full flex flex-col">
       <div className="flex-1 min-h-0 overflow-auto">
+        <Link href={`${basePath}/inbox`} className="inline-flex items-center gap-1 text-sm text-gray-600 hover:text-gray-900 mb-3">
+          <ArrowLeft className="w-4 h-4" /> Back to Inbox
+        </Link>
         {loading ? (
           <div className="flex items-center justify-center py-12">
             <Loader2 className="w-6 h-6 animate-spin text-gray-400" />

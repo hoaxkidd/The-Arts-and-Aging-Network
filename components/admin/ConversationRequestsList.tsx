@@ -119,7 +119,7 @@ export function ConversationRequestsList({ requests }: Props) {
 
             <span className="text-xs text-gray-500 shrink-0">
               {new Date(request.createdAt).toLocaleDateString('en-US', {
-                month: 'short',
+                month: 'long',
                 day: 'numeric',
                 hour: 'numeric',
                 minute: '2-digit'

@@ -236,7 +236,7 @@ export default async function StaffMessagesPage() {
                         {lastMessage && (
                           <span className="text-xs text-gray-500">
                             {new Date(lastMessage.createdAt).toLocaleDateString('en-US', {
-                              month: 'short',
+                              month: 'long',
                               day: 'numeric'
                             })}
                           </span>

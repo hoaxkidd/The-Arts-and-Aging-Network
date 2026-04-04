@@ -6,6 +6,7 @@ export interface CalendarEvent {
   location?: string
   url?: string
   timezone?: string
+  uid?: string
 }
 
 function formatICSDate(date: Date): string {
@@ -21,6 +22,7 @@ function escapeICSText(text: string): string {
 }
 
 export function generateICSFile(event: CalendarEvent): string {
+  const uid = event.uid || `${Date.now()}-${Math.random().toString(36).substring(2)}@artsandaging.com`
   const lines = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
@@ -28,7 +30,7 @@ export function generateICSFile(event: CalendarEvent): string {
     'CALSCALE:GREGORIAN',
     'METHOD:PUBLISH',
     'BEGIN:VEVENT',
-    `UID:${Date.now()}-${Math.random().toString(36).substring(2)}@artsandaging.com`,
+    `UID:${uid}`,
     `DTSTAMP:${formatICSDate(new Date())}`,
     `DTSTART:${formatICSDate(event.startDateTime)}`,
     `DTEND:${formatICSDate(event.endDateTime)}`,
@@ -49,6 +51,36 @@ export function generateICSFile(event: CalendarEvent): string {
 
   lines.push('END:VEVENT', 'END:VCALENDAR')
 
+  return lines.join('\r\n')
+}
+
+export function generateICSFeedFile(events: CalendarEvent[]): string {
+  const lines = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//Arts and Aging//EN',
+    'CALSCALE:GREGORIAN',
+    'METHOD:PUBLISH',
+    `X-WR-CALNAME:${escapeICSText('Arts and Aging Schedule')}`,
+  ]
+
+  for (const event of events) {
+    const uid = event.uid || `${Date.now()}-${Math.random().toString(36).substring(2)}@artsandaging.com`
+    lines.push('BEGIN:VEVENT')
+    lines.push(`UID:${uid}`)
+    lines.push(`DTSTAMP:${formatICSDate(new Date())}`)
+    lines.push(`DTSTART:${formatICSDate(event.startDateTime)}`)
+    lines.push(`DTEND:${formatICSDate(event.endDateTime)}`)
+    lines.push(`SUMMARY:${escapeICSText(event.title)}`)
+
+    if (event.description) lines.push(`DESCRIPTION:${escapeICSText(event.description)}`)
+    if (event.location) lines.push(`LOCATION:${escapeICSText(event.location)}`)
+    if (event.url) lines.push(`URL:${escapeICSText(event.url)}`)
+
+    lines.push('END:VEVENT')
+  }
+
+  lines.push('END:VCALENDAR')
   return lines.join('\r\n')
 }
 

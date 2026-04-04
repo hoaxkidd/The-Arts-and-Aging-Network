@@ -163,7 +163,7 @@ export function HomeEventHistory({
                     </td>
                     <td className={STYLES.tableCell}>
                       <span className="text-sm text-gray-600">
-                        {eventDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                        {eventDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
                       </span>
                     </td>
                     <td className={STYLES.tableCell}>
