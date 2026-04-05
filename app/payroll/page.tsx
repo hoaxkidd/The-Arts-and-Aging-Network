@@ -17,6 +17,7 @@ import { redirect } from "next/navigation"
 import { QuickActionHandler } from "@/components/QuickActionHandler"
 import { cn } from "@/lib/utils"
 import { formatDateWords, formatDateShort } from "@/lib/date-utils"
+import { STYLES } from "@/lib/styles"
 
 export const revalidate = 60
 
@@ -79,37 +80,37 @@ export default async function PayrollDashboard() {
 
       <div className="flex-1 min-h-0 overflow-auto space-y-4">
         {/* Compact Stats */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-          <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
-            <div className="flex items-center gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className={STYLES.statsCard}>
+            <div className="flex items-center gap-3">
               <div className="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center">
                 <AlertCircle className="w-4 h-4 text-amber-600" />
               </div>
               <div>
-                <p className="text-xl font-bold text-amber-700">{pendingRequests}</p>
-                <p className="text-[10px] text-amber-600">Pending</p>
+                <p className="text-xl font-bold text-gray-900">{pendingRequests}</p>
+                <p className="text-xs text-gray-500">Pending</p>
               </div>
             </div>
           </div>
-          <div className="bg-white rounded-lg border border-gray-200 p-3">
-            <div className="flex items-center gap-2">
+          <div className={STYLES.statsCard}>
+            <div className="flex items-center gap-3">
               <div className="w-8 h-8 bg-primary-100 rounded-lg flex items-center justify-center">
                 <Clock className="w-4 h-4 text-primary-600" />
               </div>
               <div>
                 <p className="text-xl font-bold text-gray-900">{monthlyHours.toFixed(1)}</p>
-                <p className="text-[10px] text-gray-500">This Month</p>
+                <p className="text-xs text-gray-500">This Month</p>
               </div>
             </div>
           </div>
-          <div className="bg-white rounded-lg border border-gray-200 p-3">
-            <div className="flex items-center gap-2">
+          <div className={STYLES.statsCard}>
+            <div className="flex items-center gap-3">
               <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
                 <Clock className="w-4 h-4 text-blue-600" />
               </div>
               <div>
                 <p className="text-xl font-bold text-gray-900">{weeklyHours.toFixed(1)}</p>
-                <p className="text-[10px] text-gray-500">This Week</p>
+                <p className="text-xs text-gray-500">This Week</p>
               </div>
             </div>
           </div>
@@ -208,7 +209,7 @@ export default async function PayrollDashboard() {
                       {item.type === 'TIME' ? `${item.hours}h logged` :
                        item.category === 'SICK_DAY' ? 'Sick Day' : 'Expense'}
                     </p>
-                    <p className="text-[10px] text-gray-500">
+                    <p className="text-xs text-gray-500">
                       {formatDateShort(new Date(item.date))}
                     </p>
                   </div>

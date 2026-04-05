@@ -113,7 +113,7 @@ export default function HomeAdminsTable({ users }: { users: HomeAdminUser[] }) {
       </div>
 
       <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-        <div className="table-scroll-wrapper max-h-[calc(100vh-340px)]">
+        <div className="table-scroll-wrapper max-h-[calc(100vh-320px)]">
           <table className={STYLES.table}>
             <thead className="bg-gray-50">
               <tr>

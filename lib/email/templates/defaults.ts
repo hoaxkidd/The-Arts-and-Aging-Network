@@ -141,7 +141,7 @@ export const DEFAULT_TEMPLATES: DefaultTemplate[] = [
           <p style="margin: 0; color: #374151; font-size: 15px; white-space: pre-wrap;">{{message}}</p>
         </div>
         <div style="text-align: center; margin: 0 0 30px;">
-          <a href="{{appUrl}}/messages" style="display: inline-block; background: #4F46E5; color: white; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: 600;">
+          <a href="{{appUrl}}/staff/inbox" style="display: inline-block; background: #4F46E5; color: white; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: 600;">
             View Messages
           </a>
         </div>
@@ -333,7 +333,7 @@ export const DEFAULT_TEMPLATES: DefaultTemplate[] = [
           {{message}}
         </p>
         <div style="text-align: center;">
-          <a href="{{appUrl}}/expenses" style="display: inline-block; background: #4F46E5; color: white; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: 600;">
+          <a href="{{appUrl}}/payroll/requests" style="display: inline-block; background: #4F46E5; color: white; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: 600;">
             View Expenses
           </a>
         </div>
@@ -358,7 +358,7 @@ export const DEFAULT_TEMPLATES: DefaultTemplate[] = [
           <p style="margin: 10px 0 0; color: #991B1B; font-size: 15px; white-space: pre-wrap;">{{message}}</p>
         </div>
         <div style="text-align: center;">
-          <a href="{{appUrl}}/expenses" style="display: inline-block; background: #4F46E5; color: white; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: 600;">
+          <a href="{{appUrl}}/payroll/requests" style="display: inline-block; background: #4F46E5; color: white; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: 600;">
             View & Resubmit
           </a>
         </div>
@@ -510,7 +510,7 @@ export const DEFAULT_TEMPLATES: DefaultTemplate[] = [
           Your request to join <strong>{{groupName}}</strong> has been approved!
         </p>
         <div style="text-align: center; margin: 0 0 30px;">
-          <a href="{{appUrl}}/messages" style="display: inline-block; background: #4F46E5; color: white; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: 600;">
+          <a href="{{appUrl}}/staff/inbox" style="display: inline-block; background: #4F46E5; color: white; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: 600;">
             Go to Group
           </a>
         </div>

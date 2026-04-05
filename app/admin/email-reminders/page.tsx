@@ -147,7 +147,7 @@ export default async function EmailRemindersPage({
 
       {/* Reminders Table */}
       <div className="flex-1 min-h-0 bg-white rounded-lg border border-gray-200 overflow-hidden">
-        <div className="table-scroll-wrapper max-h-[calc(100vh-420px)]">
+        <div className="table-scroll-wrapper max-h-[calc(100vh-320px)]">
         <table className={STYLES.table}>
           <thead className="bg-gray-50">
             <tr>
@@ -163,7 +163,7 @@ export default async function EmailRemindersPage({
           <tbody className="divide-y divide-gray-100">
             {remindersWithRecipients.length === 0 ? (
               <tr>
-                <td colSpan={7} className={`${STYLES.tableCell} text-center`}>
+                <td colSpan={7} className={cn(STYLES.tableCell, "text-center py-12")}>
                   No reminders found
                 </td>
               </tr>

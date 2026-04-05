@@ -116,11 +116,8 @@ const nextAuthConfig = {
       // Skip database check in JWT callback - this causes issues in Edge Runtime
       // The database status check will happen in server actions when needed
       // For now, we trust the token is valid once established
-      if (token.id) {
-        // Keep volunteerReviewStatus from initial login if available
-        // This avoids Prisma calls in middleware which fail on Edge Runtime
-        console.log('[Auth] Using cached session for user:', token.id)
-      }
+      // Keep volunteerReviewStatus from initial login if available
+      // This avoids Prisma calls in middleware which fail on Edge Runtime
 
       if (!token.primaryRole && token.role) {
         token.primaryRole = token.role

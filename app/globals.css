@@ -1,18 +1,13 @@
 @import "tailwindcss";
 
 @layer base {
-  html {
-    min-width: 1294px !important;
-  }
-  
   body {
-    min-width: 1294px;
     color: var(--foreground);
-    background: var(--background);
-    font-family: Arial, Helvetica, sans-serif;
+    background: var(--color-background);
+    font-family: var(--font-inter), Arial, Helvetica, sans-serif;
     font-size: 16px;
     line-height: 1.5;
-    overflow-x: auto;
+    overflow-x: hidden;
   }
 }
 
@@ -57,7 +52,7 @@
 }
 
 :root {
-  --background: #FAFBFC;
+  --background: var(--color-background);
   --foreground: #1F2937;
   --color-sidebar-bg: #1D3349;
   --color-sidebar-text: #ffffff;

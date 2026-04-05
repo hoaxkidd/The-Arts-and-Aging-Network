@@ -171,8 +171,8 @@ export default function PayrollFormsPage() {
                     <span className={cn(
                       "inline-flex items-center px-2 py-1 rounded-full text-xs font-medium",
                       form.formType === 'COMPLIANCE' && "bg-red-100 text-red-800",
-                      form.formType === 'TAX' && "bg-blue-100 text-blue-.formType === 'POLICE_CHECK'800",
-                      form && "bg-purple-100 text-purple-800",
+                      form.formType === 'TAX' && "bg-blue-100 text-blue-800",
+                      form.formType === 'POLICE_CHECK' && "bg-purple-100 text-purple-800",
                       form.formType === 'HR' && "bg-green-100 text-green-800",
                       form.formType === 'OTHER' && "bg-gray-100 text-gray-800"
                     )}>

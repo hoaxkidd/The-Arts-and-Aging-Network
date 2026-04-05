@@ -7,6 +7,8 @@ import * as XLSX from 'xlsx'
 import { ArrowLeft, Upload, Users, Check, AlertCircle, FileText, Building2 } from 'lucide-react'
 import { importStaffFromCSV, previewCSV } from '@/app/actions/staff-import'
 import { importHomesFromCSV, importHomesRows, previewHomesCSV, type HomesImportRow } from '@/app/actions/home-import'
+import { STYLES } from '@/lib/styles'
+import { cn } from '@/lib/utils'
 
 const ROLES = [
   { value: 'FACILITATOR', label: 'Facilitator' },
@@ -366,19 +368,19 @@ export default function ImportStaffPage() {
                 Uncertain Fields ({result.uncertainFields?.length || 0})
               </h3>
               <p className="text-sm text-yellow-800 mb-3">These fields had "?" values and were not imported.</p>
-              <div className="max-h-40 overflow-y-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="text-left">
-                      <th className="pb-2 font-medium">Email</th>
-                      <th className="pb-2 font-medium">Uncertain Field</th>
+              <div className="table-scroll-wrapper max-h-40">
+                <table className={STYLES.table}>
+                  <thead className="bg-yellow-50">
+                    <tr>
+                      <th className={STYLES.tableHeader}>Email</th>
+                      <th className={STYLES.tableHeader}>Uncertain Field</th>
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody className="divide-y divide-yellow-200">
                     {(result.uncertainFields || []).slice(0, 10).map((item, i) => (
-                      <tr key={i} className="border-t border-yellow-200">
-                        <td className="py-1.5">{item.email}</td>
-                        <td className="py-1.5">{item.field}</td>
+                      <tr key={i} className={STYLES.tableRow}>
+                        <td className={cn(STYLES.tableCell, "text-sm text-gray-800")}>{item.email}</td>
+                        <td className={cn(STYLES.tableCell, "text-sm text-gray-800")}>{item.field}</td>
                       </tr>
                     ))}
                   </tbody>

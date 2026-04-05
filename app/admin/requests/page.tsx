@@ -76,7 +76,7 @@ export default async function AdminRequestsPage() {
                       {req.status}
                     </span>
                   </td>
-                  <td className={`${STYLES.tableCell} text-right`}>
+                  <td className={cn(STYLES.tableCell, "text-right")}>
                     {req.status === 'PENDING' && (
                       <div className="flex items-center justify-end gap-2">
                         <form action={async () => {
@@ -102,7 +102,7 @@ export default async function AdminRequestsPage() {
               ))}
               {requests.length === 0 && (
                 <tr>
-                  <td colSpan={7} className={`${STYLES.tableCell} text-center`}>
+                  <td colSpan={7} className={cn(STYLES.tableCell, "text-center py-12")}>
                     No requests found.
                   </td>
                 </tr>

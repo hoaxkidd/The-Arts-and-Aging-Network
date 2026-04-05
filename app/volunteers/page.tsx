@@ -12,6 +12,7 @@ import Link from "next/link"
 import { redirect } from "next/navigation"
 import { QuickActionHandler } from "@/components/QuickActionHandler"
 import { formatDateWords, formatDateShort } from "@/lib/date-utils"
+import { STYLES } from "@/lib/styles"
 
 export const revalidate = 60
 
@@ -34,32 +35,49 @@ export default async function VolunteersDashboard() {
 
   let upcomingEvents: { id: string; title: string; startDateTime: Date }[] = []
   let recentSubmissions: { id: string; status: string; createdAt: Date; template: { title: string } }[] = []
+  let totalSubmissions = 0
+  let pendingSubmissions = 0
 
   try {
     const now = new Date()
-    upcomingEvents = await prisma.event.findMany({
-      where: {
-        startDateTime: { gte: now },
-      },
-      orderBy: { startDateTime: 'asc' },
-      take: 3,
-      select: {
-        id: true,
-        title: true,
-        startDateTime: true
-      }
-    })
+    const [eventsResult, submissionsResult, totalSubmissionsResult, pendingSubmissionsResult] = await Promise.all([
+      prisma.event.findMany({
+        where: {
+          startDateTime: { gte: now },
+        },
+        orderBy: { startDateTime: 'asc' },
+        take: 3,
+        select: {
+          id: true,
+          title: true,
+          startDateTime: true,
+        },
+      }),
+      prisma.formSubmission.findMany({
+        where: { submittedBy: userId },
+        orderBy: { createdAt: 'desc' },
+        take: 3,
+        include: {
+          template: {
+            select: { title: true },
+          },
+        },
+      }),
+      prisma.formSubmission.count({
+        where: { submittedBy: userId },
+      }),
+      prisma.formSubmission.count({
+        where: {
+          submittedBy: userId,
+          status: { in: ['SUBMITTED', 'REVIEWED'] },
+        },
+      }),
+    ])
 
-    recentSubmissions = await prisma.formSubmission.findMany({
-      where: { submittedBy: userId },
-      orderBy: { createdAt: 'desc' },
-      take: 3,
-      include: {
-        template: {
-          select: { title: true }
-        }
-      }
-    })
+    upcomingEvents = eventsResult
+    recentSubmissions = submissionsResult
+    totalSubmissions = totalSubmissionsResult
+    pendingSubmissions = pendingSubmissionsResult
   } catch (err) {
     logger.serverAction("[VolunteersDashboard] DB error:", err instanceof Error ? err.message : String(err))
   }
@@ -93,6 +111,42 @@ export default async function VolunteersDashboard() {
           </div>
         </div>
 
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className={STYLES.statsCard}>
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-primary-100 rounded-lg flex items-center justify-center">
+                <Calendar className="w-4 h-4 text-primary-600" />
+              </div>
+              <div>
+                <p className="text-xl font-bold text-gray-900">{upcomingEvents.length}</p>
+                <p className="text-xs text-gray-500">Upcoming Events</p>
+              </div>
+            </div>
+          </div>
+          <div className={STYLES.statsCard}>
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                <FileText className="w-4 h-4 text-blue-600" />
+              </div>
+              <div>
+                <p className="text-xl font-bold text-gray-900">{totalSubmissions}</p>
+                <p className="text-xs text-gray-500">Total Submissions</p>
+              </div>
+            </div>
+          </div>
+          <div className={STYLES.statsCard}>
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center">
+                <Clock className="w-4 h-4 text-yellow-600" />
+              </div>
+              <div>
+                <p className="text-xl font-bold text-gray-900">{pendingSubmissions}</p>
+                <p className="text-xs text-gray-500">Pending Review</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {/* Upcoming Events */}
           <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
@@ -110,7 +164,7 @@ export default async function VolunteersDashboard() {
                   className="flex items-start gap-3 px-4 py-3 hover:bg-gray-50 transition-colors"
                 >
                   <div className="w-10 h-10 rounded-lg bg-primary-50 text-primary-600 flex flex-col items-center justify-center flex-shrink-0">
-                    <span className="text-[10px] font-medium text-primary-600">
+                    <span className="text-xs font-medium text-primary-600">
                       {event.startDateTime.toLocaleDateString('en-US', { month: 'long' })}
                     </span>
                     <span className="text-sm font-bold text-primary-700">
@@ -161,7 +215,7 @@ export default async function VolunteersDashboard() {
                       {formatDateShort(new Date(submission.createdAt))}
                     </p>
                   </div>
-                  <span className={`px-2 py-0.5 rounded text-[10px] font-medium ${
+                  <span className={`px-2 py-0.5 rounded text-xs font-medium ${
                     submission.status === 'APPROVED' ? 'bg-green-100 text-green-700' :
                     submission.status === 'REJECTED' ? 'bg-red-100 text-red-700' :
                     submission.status === 'REVIEWED' ? 'bg-blue-100 text-blue-700' :

@@ -65,7 +65,7 @@ export default function AdminPeopleHomesTabs({
 
   return (
     <div className="space-y-4">
-      <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+      <div className="rounded-lg border border-gray-200 bg-white overflow-hidden">
         <div className="border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white p-2 sm:p-3 flex gap-2">
           <button
             type="button"

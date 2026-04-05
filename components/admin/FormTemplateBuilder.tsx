@@ -666,7 +666,7 @@ export function FormTemplateBuilder({
 
       {/* Right: Live preview */}
       <div className="lg:w-[45%] xl:w-[45%] flex-shrink-0 flex flex-col min-h-0">
-        <div className="sticky top-4 flex-1 min-h-0 flex flex-col border border-gray-200 rounded-lg bg-white shadow-sm overflow-hidden">
+        <div className="sticky top-4 flex-1 min-h-0 flex flex-col border border-gray-200 rounded-lg bg-white overflow-hidden">
           <div className="flex-shrink-0 flex items-center gap-2 px-4 py-2.5 border-b border-gray-200 bg-gray-50">
             <Eye className="w-4 h-4 text-gray-500" />
             <span className="text-sm font-medium text-gray-700">

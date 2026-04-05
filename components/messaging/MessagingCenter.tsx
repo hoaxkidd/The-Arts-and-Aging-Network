@@ -91,7 +91,7 @@ export function MessagingCenter({
         )}
         {activeTab === 'groups' && (
           <Link
-            href="/staff/groups/new"
+            href="/staff/groups"
             className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 font-medium flex items-center gap-2 shadow-sm"
           >
             <Plus className="w-4 h-4" />
@@ -153,7 +153,7 @@ export function MessagingCenter({
                 <Users className="w-12 h-12 text-gray-300 mx-auto mb-3" />
                 <p className="text-sm text-gray-500 mb-4">No groups yet</p>
                 <Link
-                  href="/staff/groups/new"
+                  href="/staff/groups"
                   className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 font-medium"
                 >
                   <Plus className="w-4 h-4" />

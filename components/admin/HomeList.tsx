@@ -60,7 +60,7 @@ export function HomeList({ initialHomes }: { initialHomes: Home[] }) {
           filteredHomes.map((home) => {
             const capacityPercent = home.maxCapacity > 0 ? Math.min((home.residentCount / home.maxCapacity) * 100, 100) : 0
             return (
-              <div key={home.id} className="bg-white rounded-lg border border-gray-200 shadow-sm p-4">
+              <div key={home.id} className="bg-white rounded-lg border border-gray-200 p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p className="font-semibold text-gray-900 truncate">{home.name}</p>
@@ -95,7 +95,7 @@ export function HomeList({ initialHomes }: { initialHomes: Home[] }) {
             )
           })
         ) : (
-          <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-8 text-center text-gray-500 text-sm">
+          <div className="bg-white rounded-lg border border-gray-200 p-8 text-center text-gray-500 text-sm">
             No homes found matching your search.
           </div>
         )}
@@ -159,7 +159,7 @@ export function HomeList({ initialHomes }: { initialHomes: Home[] }) {
                         </div>
                       </div>
                     </td>
-                    <td className={`${STYLES.tableCell} text-right`}>
+                    <td className={cn(STYLES.tableCell, "text-right")}>
                       <div className="flex items-center justify-end gap-2">
                         {/* Quick View Button */}
                         <button
@@ -183,7 +183,7 @@ export function HomeList({ initialHomes }: { initialHomes: Home[] }) {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={5} className={`${STYLES.tableCell} text-center`}>
+                  <td colSpan={5} className={cn(STYLES.tableCell, "text-center py-12")}>
                     No homes found matching your search.
                   </td>
                 </tr>

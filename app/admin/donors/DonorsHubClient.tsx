@@ -162,7 +162,7 @@ export function DonorsHubClient({ donors: initialDonors }: Props) {
       </div>
 
       <div className="flex-1 min-h-0 bg-white rounded-lg border border-gray-200 overflow-hidden">
-        <div className="table-scroll-wrapper h-full max-h-[calc(100vh-360px)]">
+        <div className="table-scroll-wrapper h-full max-h-[calc(100vh-320px)]">
         <table className={STYLES.table}>
           <thead className="bg-gray-50">
             <tr>
@@ -171,17 +171,17 @@ export function DonorsHubClient({ donors: initialDonors }: Props) {
               <th className={STYLES.tableHeader}>Tier</th>
               <th className={STYLES.tableHeader}>Payment method</th>
               <th className={STYLES.tableHeader}>Campaign / Event</th>
-              <th className={`${STYLES.tableHeader} text-right`}>Total donated</th>
-              <th className={`${STYLES.tableHeader} text-center`}>Donations</th>
+              <th className={cn(STYLES.tableHeader, "text-right")}>Total donated</th>
+              <th className={cn(STYLES.tableHeader, "text-center")}>Donations</th>
               <th className={STYLES.tableHeader}>Last donation</th>
               <th className={STYLES.tableHeader}>Status</th>
-              <th className={`${STYLES.tableHeader} text-right`}>Actions</th>
+              <th className={cn(STYLES.tableHeader, "text-right")}>Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
             {filtered.length === 0 ? (
               <tr>
-                <td colSpan={10} className={`${STYLES.tableCell} text-center`}>
+                <td colSpan={10} className={cn(STYLES.tableCell, "text-center py-12")}>
                   {initialDonors.length === 0 ? 'No donors yet.' : 'No donors match your filters.'}
                 </td>
               </tr>
@@ -207,7 +207,7 @@ export function DonorsHubClient({ donors: initialDonors }: Props) {
                   </td>
                   <td className={STYLES.tableCell}>{latestMethod(donor)}</td>
                   <td className={STYLES.tableCell}>{latestCampaign(donor)}</td>
-                  <td className={`${STYLES.tableCell} text-right`}>
+                  <td className={cn(STYLES.tableCell, "text-right")}>
                     <button
                       type="button"
                       onClick={() => setDonationHistoryDonor(donor)}
@@ -217,7 +217,7 @@ export function DonorsHubClient({ donors: initialDonors }: Props) {
                       <History className="w-4 h-4" aria-hidden />
                     </button>
                   </td>
-                  <td className={`${STYLES.tableCell} text-center`}>{donor.donationCount}</td>
+                  <td className={cn(STYLES.tableCell, "text-center")}>{donor.donationCount}</td>
                   <td className={STYLES.tableCell}>
                     {donor.lastDonation
                       ? new Date(donor.lastDonation).toLocaleDateString('en-CA', { month: 'long', day: 'numeric', year: 'numeric' })
@@ -235,7 +235,7 @@ export function DonorsHubClient({ donors: initialDonors }: Props) {
                       {donor.status}
                     </span>
                   </td>
-                  <td className={`${STYLES.tableCell} text-right`}>
+                  <td className={cn(STYLES.tableCell, "text-right")}>
                     <div className="flex items-center justify-end gap-1">
                       <button
                         type="button"

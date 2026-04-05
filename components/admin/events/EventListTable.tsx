@@ -110,7 +110,7 @@ export function EventListTable({ events }: { events: Event[] }) {
           const end = new Date(event.endDateTime)
           const confirmed = event.attendances.filter((a) => a.status === 'YES').length
           return (
-            <div key={event.id} className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
+            <div key={event.id} className="bg-white rounded-lg border border-gray-200 p-4">
               <div className="flex items-start justify-between gap-3 mb-3">
                 <div>
                   <h3 className="font-medium text-gray-900">{event.title}</h3>

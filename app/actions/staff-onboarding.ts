@@ -9,6 +9,8 @@ import { createUserWithGeneratedCode } from '@/lib/user-code'
 import { generateNextInviteCode } from '@/lib/invite-code'
 import { sendEmail } from '@/lib/email/service'
 import { logger } from '@/lib/logger'
+import { getRoleHomePath } from '@/lib/role-routes'
+import { cookies } from 'next/headers'
 
 const APP_URL = process.env.NEXTAUTH_URL || 'https://artsandaging.com'
 
@@ -286,24 +288,38 @@ export async function createPlaceholderStaffUser(formData: FormData) {
 
 export async function completeOnboarding() {
   const session = await auth()
-  console.log('[staff-onboarding] completeOnboarding called, session:', session?.user?.id)
-  
+
   if (!session?.user?.id) {
-    console.log('[staff-onboarding] No session, returning error')
     return { error: 'Unauthorized' }
   }
 
   try {
-    console.log('[staff-onboarding] Updating user:', session.user.id)
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { role: true, roleAssignments: { where: { isActive: true }, orderBy: [{ isPrimary: 'desc' }, { assignedAt: 'asc' }], select: { role: true, isPrimary: true } } },
+    })
+
+    const primaryRole = user?.roleAssignments?.find((a) => a.isPrimary)?.role || user?.role || 'FACILITATOR'
+
     await prisma.user.update({
       where: { id: session.user.id },
       data: { onboardingCompletedAt: new Date() },
     })
+
+    const cookieStore = await cookies()
+    cookieStore.set('onboarding_completed', '1', { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', maxAge: 60 * 60 * 24 * 365 })
+
     revalidatePath('/staff/onboarding')
+    revalidatePath('/facilitator/onboarding')
+    revalidatePath('/volunteers/onboarding')
     revalidatePath('/staff')
+    revalidatePath('/facilitator')
+    revalidatePath('/volunteers')
     revalidatePath('/dashboard')
-    console.log('[staff-onboarding] Success!')
-    return { success: true }
+    revalidatePath('/payroll')
+    revalidatePath('/board')
+
+    return { success: true, redirectTo: getRoleHomePath(primaryRole) }
   } catch (e) {
     console.error('[staff-onboarding] completeOnboarding error:', e)
     logger.serverAction('completeOnboarding error:', e)
@@ -313,22 +329,44 @@ export async function completeOnboarding() {
 
 export async function skipOnboarding() {
   const session = await auth()
-  console.log('[staff-onboarding] skipOnboarding called, session:', session?.user?.id)
-  
+
   if (!session?.user?.id) {
-    console.log('[staff-onboarding] No session, returning error')
     return { error: 'Unauthorized' }
   }
 
   try {
-    console.log('[staff-onboarding] Incrementing skip count for user:', session.user.id)
-    await prisma.user.update({
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { role: true, roleAssignments: { where: { isActive: true }, orderBy: [{ isPrimary: 'desc' }, { assignedAt: 'asc' }], select: { role: true, isPrimary: true } } },
+    })
+
+    const primaryRole = user?.roleAssignments?.find((a) => a.isPrimary)?.role || user?.role || 'FACILITATOR'
+
+    const updated = await prisma.user.update({
       where: { id: session.user.id },
       data: { onboardingSkipCount: { increment: 1 } },
+      select: { onboardingSkipCount: true },
     })
+
+    const cookieStore = await cookies()
+    cookieStore.set('onboarding_completed', '1', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: updated.onboardingSkipCount >= 3 ? 60 * 60 * 24 * 365 : 60 * 60 * 24,
+    })
+
     revalidatePath('/staff/onboarding')
-    console.log('[staff-onboarding] Success!')
-    return { success: true }
+    revalidatePath('/facilitator/onboarding')
+    revalidatePath('/volunteers/onboarding')
+    revalidatePath('/staff')
+    revalidatePath('/facilitator')
+    revalidatePath('/volunteers')
+    revalidatePath('/dashboard')
+    revalidatePath('/payroll')
+    revalidatePath('/board')
+
+    return { success: true, redirectTo: getRoleHomePath(primaryRole) }
   } catch (e) {
     console.error('[staff-onboarding] skipOnboarding error:', e)
     logger.serverAction('skipOnboarding error:', e)

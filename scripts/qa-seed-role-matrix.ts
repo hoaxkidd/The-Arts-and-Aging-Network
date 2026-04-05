@@ -55,6 +55,8 @@ async function upsertQaUser(config: QaUserConfig, hashedPassword: string) {
       role: config.primaryRole,
       status: 'ACTIVE',
       volunteerReviewStatus: allRoles.includes('VOLUNTEER') ? 'APPROVED' : null,
+      onboardingCompletedAt: new Date(),
+      onboardingSkipCount: 3,
       roleData: '{}',
     })
     console.log(`Created user: ${config.email}`)
@@ -67,6 +69,8 @@ async function upsertQaUser(config: QaUserConfig, hashedPassword: string) {
         status: 'ACTIVE',
         password: hashedPassword,
         volunteerReviewStatus: allRoles.includes('VOLUNTEER') ? 'APPROVED' : user.volunteerReviewStatus,
+        onboardingCompletedAt: user.onboardingCompletedAt || new Date(),
+        onboardingSkipCount: user.onboardingSkipCount ?? 3,
       },
     })
     console.log(`Updated user: ${config.email}`)

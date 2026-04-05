@@ -6,7 +6,7 @@ import { Providers } from "./providers";
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
 export const viewport: Viewport = {
-  width: 1294,
+  width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
 };
@@ -31,7 +31,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" style={{ minWidth: '1294px' }}>
+    <html lang="en">
       <body 
         className={`${inter.variable} font-sans min-h-screen bg-background text-gray-900`}
         suppressHydrationWarning={true}

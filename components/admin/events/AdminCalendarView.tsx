@@ -279,7 +279,7 @@ export function AdminCalendarView({
       </div>
 
       {/* Calendar */}
-      <div className="flex-1 min-h-0 bg-white rounded-xl border border-gray-200 shadow-sm flex flex-col overflow-hidden">
+      <div className="flex-1 min-h-0 bg-white rounded-lg border border-gray-200 flex flex-col overflow-hidden">
         {/* Header */}
         <div className="flex-shrink-0 px-4 py-3 border-b border-gray-200 flex items-center justify-between bg-gray-50/50">
           <h2 className="text-base font-semibold text-gray-900">

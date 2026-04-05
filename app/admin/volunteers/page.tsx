@@ -55,7 +55,7 @@ export default async function AdminVolunteersPage() {
       </div>
 
       {/* Pending Review Section */}
-      <div className={cn(STYLES.card, "bg-white p-6 rounded-lg shadow-sm border border-gray-100")}>
+      <div className={cn(STYLES.card, "p-6")}>
         <div className="flex items-center gap-2 mb-4">
           <Clock className="w-5 h-5 text-yellow-600" />
           <h2 className="text-lg font-semibold text-gray-900">Pending Review ({pendingVolunteers.length})</h2>
@@ -73,7 +73,7 @@ export default async function AdminVolunteersPage() {
       </div>
 
       {/* Needs Corrections Section */}
-      <div className={cn(STYLES.card, "bg-white p-6 rounded-lg shadow-sm border border-gray-100")}>
+      <div className={cn(STYLES.card, "p-6")}>
         <div className="flex items-center gap-2 mb-4">
           <X className="w-5 h-5 text-red-600" />
           <h2 className="text-lg font-semibold text-gray-900">Request Corrections ({correctionVolunteers.length})</h2>
@@ -91,7 +91,7 @@ export default async function AdminVolunteersPage() {
       </div>
 
       {/* Approved Section */}
-      <div className={cn(STYLES.card, "bg-white p-6 rounded-lg shadow-sm border border-gray-100")}>
+      <div className={cn(STYLES.card, "p-6")}>
         <div className="flex items-center gap-2 mb-4">
           <Check className="w-5 h-5 text-green-600" />
           <h2 className="text-lg font-semibold text-gray-900">Recently Approved ({approvedVolunteers.length})</h2>

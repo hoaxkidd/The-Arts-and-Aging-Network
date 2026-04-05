@@ -436,7 +436,7 @@ export function AdminMessagingPanel({ groups, currentUserId }: { groups: any[], 
 
     return (
         <>
-            <div className="flex flex-col md:flex-row flex-1 w-full max-w-full min-w-0 bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm">
+            <div className="flex flex-col md:flex-row flex-1 w-full max-w-full min-w-0 bg-white rounded-lg border border-gray-200 overflow-hidden">
                 {/* Sidebar - full width on mobile when no selection, hidden when chat shown */}
                 <div className={cn(
                     "flex flex-col bg-gray-50 min-h-0 min-w-0 shrink-0",

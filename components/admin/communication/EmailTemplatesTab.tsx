@@ -55,6 +55,8 @@ function RichTextEditor({
   variables: EmailVariable[]
   onInsertVariable: (variable: string) => void
 }) {
+  const [showVariableMenu, setShowVariableMenu] = useState(false)
+
   const editor = useEditor({
     immediatelyRender: false,
     extensions: [
@@ -169,28 +171,42 @@ function RichTextEditor({
         <div className="w-px h-6 bg-gray-300 mx-1" />
 
         {/* Variable dropdown */}
-        <div className="relative group">
+        <div className="relative">
           <button
             type="button"
+            onClick={() => setShowVariableMenu((prev) => !prev)}
             className="px-3 py-2 text-xs font-medium text-gray-700 bg-white border border-gray-200 rounded hover:bg-gray-50 transition-colors"
           >
             Insert Variable
           </button>
-          <div className="absolute top-full left-0 mt-1 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-50 hidden group-hover:block p-2">
-            <div className="grid grid-cols-2 gap-1">
-              {variables.map((v) => (
-                <button
-                  key={v.key}
-                  type="button"
-                  onClick={() => onInsertVariable(v.key)}
-                  className="text-left px-2 py-1.5 text-xs bg-gray-50 hover:bg-gray-100 rounded transition-colors"
-                  title={v.description}
-                >
-                  <span className="text-primary-600 font-mono">{v.key}</span>
-                </button>
-              ))}
-            </div>
-          </div>
+          {showVariableMenu && (
+            <>
+              <button
+                type="button"
+                aria-label="Close variable menu"
+                className="fixed inset-0 z-10"
+                onClick={() => setShowVariableMenu(false)}
+              />
+              <div className="absolute top-full left-0 mt-1 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-20 p-2 animate-in fade-in zoom-in-95 duration-200">
+                <div className="grid grid-cols-2 gap-1">
+                  {variables.map((v) => (
+                    <button
+                      key={v.key}
+                      type="button"
+                      onClick={() => {
+                        onInsertVariable(v.key)
+                        setShowVariableMenu(false)
+                      }}
+                      className="text-left px-2 py-1.5 text-xs bg-gray-50 hover:bg-gray-100 rounded transition-colors"
+                      title={v.description}
+                    >
+                      <span className="text-primary-600 font-mono">{v.key}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
         </div>
       </div>
 

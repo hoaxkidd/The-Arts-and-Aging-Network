@@ -17,7 +17,9 @@ import {
   MapPin,
   Receipt,
   Inbox,
-  FileSearch
+  FileSearch,
+  Mail,
+  Upload
 } from "lucide-react"
 
 export type MenuItem = {
@@ -31,7 +33,13 @@ export const adminMenu = [
   { label: "Audit Log", href: "/admin/audit-log", icon: FileSearch },
   { label: "Financial Management", href: "/admin/financials", icon: Receipt },
   { label: "Event Management", href: "/admin/events", icon: Calendar },
+  { label: "Event Requests", href: "/admin/event-requests", icon: ClipboardList },
+  { label: "Broadcasts", href: "/admin/broadcasts", icon: Mail },
+  { label: "Email Reminders", href: "/admin/email-reminders", icon: Mail },
   { label: "Communication Hub", href: "/admin/communication", icon: MessageSquare },
+  { label: "Conversation Requests", href: "/admin/conversation-requests", icon: MessageSquare },
+  { label: "Payroll Forms", href: "/admin/payroll-forms", icon: FileText },
+  { label: "Payroll Requests", href: "/admin/requests", icon: ClipboardList },
   { label: "Homes", href: "/admin/homes", icon: Building },
   { label: "User Management", href: "/admin/users", icon: Users },
   { label: "Team Directory", href: "/staff/directory", icon: Users },
@@ -39,6 +47,8 @@ export const adminMenu = [
   { label: "Donors", href: "/admin/donors", icon: Heart },
   { label: "Testimonials", href: "/admin/testimonials", icon: Quote },
   { label: "Forms", href: "/admin/forms", icon: FileText },
+  { label: "Form Submissions", href: "/admin/form-submissions", icon: FileText },
+  { label: "Import Data", href: "/admin/import", icon: Upload },
   { label: "Settings", href: "/admin/settings", icon: Settings },
   { label: "My Profile", href: "/admin/profile", icon: UserCircle },
 ]
@@ -50,7 +60,6 @@ export const staffMenu = [
   { label: "Team Directory", href: "/staff/directory", icon: Users },
   { label: "Inbox", href: "/staff/inbox", icon: Inbox },
   { label: "Form Templates", href: "/staff/forms", icon: FileText },
-  { label: "Groups", href: "/staff/groups", icon: MessageSquare },
   { label: "My Profile", href: "/staff/profile", icon: UserCircle },
   { label: "Settings", href: "/staff/settings", icon: Settings },
 ]
@@ -85,7 +94,9 @@ export const boardMenu = [
 
 export const homeAdminMenu = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { label: "Calendar", href: "/dashboard/calendar", icon: Calendar },
   { label: "Events", href: "/dashboard/events", icon: Calendar },
+  { label: "Engagement", href: "/dashboard/engagement", icon: MessageSquare },
   { label: "Inbox", href: "/staff/inbox", icon: Inbox },
   { label: "My Requests", href: "/dashboard/requests", icon: ClipboardList },
   { label: "Forms", href: "/dashboard/forms", icon: FileText },
@@ -101,6 +112,7 @@ export const MENU_ITEMS: Record<string, MenuItem[]> = {
   PAYROLL: [
     { label: "Dashboard", href: "/payroll", icon: LayoutDashboard },
     { label: "Events", href: "/events", icon: Calendar },
+    { label: "Schedule", href: "/payroll/schedule", icon: CalendarCheck },
     { label: "Team Directory", href: "/staff/directory", icon: Users },
     { label: "Inbox", href: "/staff/inbox", icon: Inbox },
     { label: "Forms", href: "/payroll/forms", icon: FileText },

@@ -14,6 +14,7 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { getStaffBasePathFromPathname } from '@/lib/role-routes'
+import { STYLES } from '@/lib/styles'
 
 type Event = {
   id: string
@@ -64,19 +65,19 @@ export function StaffScheduleView({ events }: { events: Event[] }) {
     <div className="space-y-6">
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
+        <div className={STYLES.statsCard}>
           <p className="text-sm text-gray-500">Total Events</p>
           <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
         </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
+        <div className={STYLES.statsCard}>
           <p className="text-sm text-gray-500">Upcoming</p>
           <p className="text-2xl font-bold text-blue-600">{stats.upcoming}</p>
         </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
+        <div className={STYLES.statsCard}>
           <p className="text-sm text-gray-500">Today</p>
           <p className="text-2xl font-bold text-yellow-600">{stats.today}</p>
         </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
+        <div className={STYLES.statsCard}>
           <p className="text-sm text-gray-500">Checked In</p>
           <p className="text-2xl font-bold text-green-600">{stats.checkedIn}</p>
         </div>

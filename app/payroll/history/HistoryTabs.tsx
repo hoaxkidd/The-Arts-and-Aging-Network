@@ -114,7 +114,7 @@ export function HistoryTabs({ historyEntries, timesheets }: Props) {
                 ))}
                 {historyEntries.length === 0 && (
                   <tr>
-                    <td colSpan={4} className={`${STYLES.tableCell} text-center`}>
+                    <td colSpan={4} className={cn(STYLES.tableCell, "text-center py-12")}>
                       No history found.
                     </td>
                   </tr>

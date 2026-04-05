@@ -4,6 +4,7 @@ import { Calendar, Clock, ArrowUpRight, ArrowUp, ArrowDown, MapPin, Plus, Users,
 import { cn } from "@/lib/utils"
 import Link from "next/link"
 import { logger } from "@/lib/logger"
+import { STYLES } from "@/lib/styles"
 
 const quickActions = [
   { label: "New Request", icon: Plus, href: "/dashboard/requests/new", color: "bg-primary-500", hover: "hover:bg-primary-600" },
@@ -52,74 +53,77 @@ export default async function HomeAdminDashboard() {
   return (
     <div className="h-full flex flex-col">
       <div className="flex-1 min-h-0 overflow-auto pt-4">
-        <div className="space-y-5">
-          {/* Row: Stats + Action Buttons (50:50 split) */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Left Column - Stats (2x2 grid, compact) */}
-            <div className="flex flex-col">
-              <div className="grid grid-cols-2 gap-2 content-start">
-                <div className="flex items-center gap-2 bg-white rounded-xl border border-gray-200 p-2 min-h-[50px]">
-                  <div className="w-6 h-6 rounded bg-blue-100 text-blue-600 flex items-center justify-center shrink-0">
-                    <Calendar className="w-3 h-3" />
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <p className="text-sm font-bold text-gray-900">{events.length}</p>
-                    <p className="text-[10px] text-gray-500">Total</p>
-                  </div>
+        <div className="space-y-4">
+          {/* Inline Stats */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
+            <div className={STYLES.statsCard}>
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center shrink-0">
+                  <Calendar className="w-4 h-4" />
                 </div>
-                <div className="flex items-center gap-2 bg-white rounded-xl border border-gray-200 p-2 min-h-[50px]">
-                  <div className="w-6 h-6 rounded bg-green-100 text-green-600 flex items-center justify-center shrink-0">
-                    <ArrowUp className="w-3 h-3" />
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <p className="text-sm font-bold text-gray-900">{upcoming.length}</p>
-                    <p className="text-[10px] text-gray-500">Upcoming</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 bg-white rounded-xl border border-gray-200 p-2 min-h-[50px]">
-                  <div className="w-6 h-6 rounded bg-yellow-100 text-yellow-600 flex items-center justify-center shrink-0">
-                    <Clock className="w-3 h-3" />
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <p className="text-sm font-bold text-gray-900">{pendingCount}</p>
-                    <p className="text-[10px] text-gray-500">Pending</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 bg-white rounded-xl border border-gray-200 p-2 min-h-[50px]">
-                  <div className="w-6 h-6 rounded bg-gray-100 text-gray-600 flex items-center justify-center shrink-0">
-                    <ArrowDown className="w-3 h-3" />
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <p className="text-sm font-bold text-gray-900">{past.length}</p>
-                    <p className="text-[10px] text-gray-500">Past</p>
-                  </div>
+                <div>
+                  <p className="text-xl font-bold text-gray-900">{events.length}</p>
+                  <p className="text-xs text-gray-500">Total</p>
                 </div>
               </div>
             </div>
-
-            {/* Right Column - Action Buttons (2x3 grid) */}
-            <div className="flex flex-col">
-              <div className="grid grid-cols-2 gap-2 flex-1 content-start">
-                {quickActions.map((action) => (
-                  <Link
-                    key={action.label}
-                    href={action.href}
-                    className={cn(
-                      "flex items-center gap-2 p-2 rounded-xl text-white transition-all duration-200 shadow-sm",
-                      action.color,
-                      action.hover
-                    )}
-                  >
-                    <action.icon className="w-4 h-4 shrink-0" />
-                    <span className="text-sm font-medium">{action.label}</span>
-                  </Link>
-                ))}
+            <div className={STYLES.statsCard}>
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-green-100 text-green-600 flex items-center justify-center shrink-0">
+                  <ArrowUp className="w-4 h-4" />
+                </div>
+                <div>
+                  <p className="text-xl font-bold text-gray-900">{upcoming.length}</p>
+                  <p className="text-xs text-gray-500">Upcoming</p>
+                </div>
+              </div>
+            </div>
+            <div className={STYLES.statsCard}>
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-yellow-100 text-yellow-600 flex items-center justify-center shrink-0">
+                  <Clock className="w-4 h-4" />
+                </div>
+                <div>
+                  <p className="text-xl font-bold text-gray-900">{pendingCount}</p>
+                  <p className="text-xs text-gray-500">Pending</p>
+                </div>
+              </div>
+            </div>
+            <div className={STYLES.statsCard}>
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-gray-100 text-gray-600 flex items-center justify-center shrink-0">
+                  <ArrowDown className="w-4 h-4" />
+                </div>
+                <div>
+                  <p className="text-xl font-bold text-gray-900">{past.length}</p>
+                  <p className="text-xs text-gray-500">Past</p>
+                </div>
               </div>
             </div>
           </div>
 
+          {/* Quick Actions */}
+          <div className="bg-white rounded-lg border border-gray-200 p-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {quickActions.map((action) => (
+                <Link
+                  key={action.label}
+                  href={action.href}
+                  className={cn(
+                    "flex items-center gap-2 p-2 rounded-lg text-white transition-all duration-200 shadow-sm",
+                    action.color,
+                    action.hover
+                  )}
+                >
+                  <action.icon className="w-4 h-4 shrink-0" />
+                  <span className="text-sm font-medium">{action.label}</span>
+                </Link>
+              ))}
+            </div>
+          </div>
+
           {/* Full Width: Upcoming Schedule */}
-          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+          <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
             <div className="px-4 py-3 border-b border-gray-100 bg-gray-50/50 flex items-center justify-between">
               <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
                 <Calendar className="w-4 h-4 text-primary-500" />
@@ -145,7 +149,7 @@ export default async function HomeAdminDashboard() {
                       )}
                     >
                       <div className={cn(
-                        "w-12 h-12 rounded-xl flex flex-col items-center justify-center shrink-0",
+                        "w-12 h-12 rounded-lg flex flex-col items-center justify-center shrink-0",
                         index === 0 ? "bg-primary-500 text-white" : "bg-primary-50 text-primary-700"
                       )}>
                         <span className="text-[9px] font-semibold uppercase">
@@ -171,7 +175,7 @@ export default async function HomeAdminDashboard() {
                         </div>
                       </div>
                       <span className={cn(
-                        "px-2 py-1 rounded-lg text-[10px] font-semibold shrink-0",
+                        "px-2 py-1 rounded-lg text-xs font-semibold shrink-0",
                         event.attendances?.[0]?.status === 'YES' ? "bg-green-100 text-green-700" :
                         event.attendances?.[0]?.status === 'NO' ? "bg-red-100 text-red-700" :
                         event.attendances?.[0]?.status === 'MAYBE' ? "bg-yellow-100 text-yellow-700" :

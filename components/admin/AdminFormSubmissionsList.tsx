@@ -298,146 +298,148 @@ export function AdminFormSubmissionsList({
             <p className="text-sm text-gray-500">No submissions found</p>
           </div>
         ) : (
-          <table className={STYLES.table}>
-            <thead className="bg-gray-50">
-              <tr>
-                <th className={STYLES.tableHeader}>
-                  <button 
-                    onClick={() => handleSort('form')}
-                    className="flex items-center hover:text-gray-700"
-                  >
-                    Form {getSortIcon('form')}
-                  </button>
-                </th>
-                <th className={STYLES.tableHeader}>
-                  <button 
-                    onClick={() => handleSort('user')}
-                    className="flex items-center hover:text-gray-700"
-                  >
-                    Submitter {getSortIcon('user')}
-                  </button>
-                </th>
-                <th className={STYLES.tableHeader}>Event</th>
-                <th className={STYLES.tableHeader}>
-                  <button 
-                    onClick={() => handleSort('status')}
-                    className="flex items-center hover:text-gray-700"
-                  >
-                    Status {getSortIcon('status')}
-                  </button>
-                </th>
-                <th className={STYLES.tableHeader}>
-                  <button 
-                    onClick={() => handleSort('createdAt')}
-                    className="flex items-center hover:text-gray-700"
-                  >
-                    Date {getSortIcon('createdAt')}
-                  </button>
-                </th>
-                <th className={STYLES.tableHeader}>Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {filteredSubmissions.map((submission) => (
-                <tr key={submission.id} className={STYLES.tableRow}>
-                  <td className={STYLES.tableCell}>
-                    <Link 
-                      href={`/admin/form-templates/${submission.template.id}/edit`}
-                      className="text-sm font-medium text-gray-900 hover:text-primary-600"
+          <div className="table-scroll-wrapper max-h-[calc(100vh-320px)]">
+            <table className={STYLES.table}>
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className={STYLES.tableHeader}>
+                    <button
+                      onClick={() => handleSort('form')}
+                      className="flex items-center hover:text-gray-700"
                     >
-                      {submission.template.title}
-                    </Link>
-                    <p className="text-xs text-gray-500">{categoryLabels[submission.template.category] || submission.template.category}</p>
-                  </td>
-                  <td className={STYLES.tableCell}>
-                    <p className="text-sm text-gray-900">{submission.submitter.name || 'Unknown'}</p>
-                    <p className="text-xs text-gray-500">{submission.submitter.email}</p>
-                  </td>
-                  <td className={STYLES.tableCell}>
-                    {submission.event ? (
-                      <span className="text-xs text-gray-600">{submission.event.title}</span>
-                    ) : (
-                      <span className="text-xs text-gray-400">-</span>
-                    )}
-                  </td>
-                  <td className={STYLES.tableCell}>
-                    <div className="flex flex-col gap-1">
-                      <span className={cn(
-                        "inline-flex px-2 py-0.5 rounded text-xs font-medium",
-                        submission.status === 'SUBMITTED' && "bg-yellow-100 text-yellow-700",
-                        submission.status === 'REVIEWED' && "bg-blue-100 text-blue-700",
-                        submission.status === 'APPROVED' && "bg-green-100 text-green-700",
-                        submission.status === 'REJECTED' && "bg-red-100 text-red-700"
-                      )}>
-                        {submission.status}
-                      </span>
-                      {submission.editRequested && (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-700">
-                          <Edit className="w-3 h-3" />
-                          Edit Request
-                        </span>
-                      )}
-                    </div>
-                  </td>
-                  <td className={STYLES.tableCell}>
-                    {new Date(submission.createdAt).toLocaleDateString('en-US', {
-                      month: 'long',
-                      day: 'numeric',
-                      year: 'numeric'
-                    })}
-                  </td>
-                  <td className={STYLES.tableCell}>
-                    <div className="flex items-center gap-1">
-                      <button
-                        onClick={() => setShowDetailsModal(submission)}
-                        className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded"
-                        title="View Details"
-                      >
-                        <Eye className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => {
-                          setShowReviewModal(submission)
-                          setReviewStatus(submission.status as any)
-                          setReviewNotes(submission.reviewNotes || '')
-                        }}
-                        className="p-1.5 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded"
-                        title="Review"
-                      >
-                        <CheckCircle className="w-4 h-4" />
-                      </button>
-                      {submission.editRequested && !submission.editApproved && (
-                        <div className="flex items-center gap-1 ml-2 pl-2 border-l border-gray-200">
-                          <button
-                            onClick={() => handleApprove(submission.id)}
-                            disabled={processingId === submission.id}
-                            className="p-1 text-green-600 hover:text-green-700 hover:bg-green-50 rounded disabled:opacity-50"
-                            title="Approve Edit"
-                          >
-                            {processingId === submission.id ? (
-                              <Loader2 className="w-4 h-4 animate-spin" />
-                            ) : (
-                              <Check className="w-4 h-4" />
-                            )}
-                          </button>
-                          <button
-                            onClick={() => setShowDenyModal(submission.id)}
-                            className="p-1 text-red-600 hover:text-red-700 hover:bg-red-50 rounded"
-                            title="Deny Edit"
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
-                        </div>
-                      )}
-                      {submission.editApproved && (
-                        <span className="text-xs text-green-600 ml-2">Edit access granted</span>
-                      )}
-                    </div>
-                  </td>
+                      Form {getSortIcon('form')}
+                    </button>
+                  </th>
+                  <th className={STYLES.tableHeader}>
+                    <button
+                      onClick={() => handleSort('user')}
+                      className="flex items-center hover:text-gray-700"
+                    >
+                      Submitter {getSortIcon('user')}
+                    </button>
+                  </th>
+                  <th className={STYLES.tableHeader}>Event</th>
+                  <th className={STYLES.tableHeader}>
+                    <button
+                      onClick={() => handleSort('status')}
+                      className="flex items-center hover:text-gray-700"
+                    >
+                      Status {getSortIcon('status')}
+                    </button>
+                  </th>
+                  <th className={STYLES.tableHeader}>
+                    <button
+                      onClick={() => handleSort('createdAt')}
+                      className="flex items-center hover:text-gray-700"
+                    >
+                      Date {getSortIcon('createdAt')}
+                    </button>
+                  </th>
+                  <th className={STYLES.tableHeader}>Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {filteredSubmissions.map((submission) => (
+                  <tr key={submission.id} className={STYLES.tableRow}>
+                    <td className={STYLES.tableCell}>
+                      <Link
+                        href={`/admin/form-templates/${submission.template.id}/edit`}
+                        className="text-sm font-medium text-gray-900 hover:text-primary-600"
+                      >
+                        {submission.template.title}
+                      </Link>
+                      <p className="text-xs text-gray-500">{categoryLabels[submission.template.category] || submission.template.category}</p>
+                    </td>
+                    <td className={STYLES.tableCell}>
+                      <p className="text-sm text-gray-900">{submission.submitter.name || 'Unknown'}</p>
+                      <p className="text-xs text-gray-500">{submission.submitter.email}</p>
+                    </td>
+                    <td className={STYLES.tableCell}>
+                      {submission.event ? (
+                        <span className="text-xs text-gray-600">{submission.event.title}</span>
+                      ) : (
+                        <span className="text-xs text-gray-400">-</span>
+                      )}
+                    </td>
+                    <td className={STYLES.tableCell}>
+                      <div className="flex flex-col gap-1">
+                        <span className={cn(
+                          "inline-flex px-2 py-0.5 rounded text-xs font-medium",
+                          submission.status === 'SUBMITTED' && "bg-yellow-100 text-yellow-700",
+                          submission.status === 'REVIEWED' && "bg-blue-100 text-blue-700",
+                          submission.status === 'APPROVED' && "bg-green-100 text-green-700",
+                          submission.status === 'REJECTED' && "bg-red-100 text-red-700"
+                        )}>
+                          {submission.status}
+                        </span>
+                        {submission.editRequested && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-700">
+                            <Edit className="w-3 h-3" />
+                            Edit Request
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                    <td className={STYLES.tableCell}>
+                      {new Date(submission.createdAt).toLocaleDateString('en-US', {
+                        month: 'long',
+                        day: 'numeric',
+                        year: 'numeric'
+                      })}
+                    </td>
+                    <td className={STYLES.tableCell}>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => setShowDetailsModal(submission)}
+                          className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded"
+                          title="View Details"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => {
+                            setShowReviewModal(submission)
+                            setReviewStatus(submission.status as any)
+                            setReviewNotes(submission.reviewNotes || '')
+                          }}
+                          className="p-1.5 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded"
+                          title="Review"
+                        >
+                          <CheckCircle className="w-4 h-4" />
+                        </button>
+                        {submission.editRequested && !submission.editApproved && (
+                          <div className="flex items-center gap-1 ml-2 pl-2 border-l border-gray-200">
+                            <button
+                              onClick={() => handleApprove(submission.id)}
+                              disabled={processingId === submission.id}
+                              className="p-1 text-green-600 hover:text-green-700 hover:bg-green-50 rounded disabled:opacity-50"
+                              title="Approve Edit"
+                            >
+                              {processingId === submission.id ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                              ) : (
+                                <Check className="w-4 h-4" />
+                              )}
+                            </button>
+                            <button
+                              onClick={() => setShowDenyModal(submission.id)}
+                              className="p-1 text-red-600 hover:text-red-700 hover:bg-red-50 rounded"
+                              title="Deny Edit"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                        )}
+                        {submission.editApproved && (
+                          <span className="text-xs text-green-600 ml-2">Edit access granted</span>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
 

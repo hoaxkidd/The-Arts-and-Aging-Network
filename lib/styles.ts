@@ -64,9 +64,9 @@ export const STYLES = {
 
   // Tables - See TABLE STANDARDS documentation above
   // IMPORTANT: Always wrap tables in .table-scroll-wrapper for sticky headers
-  table: "w-full text-sm min-w-full divide-y divide-gray-200",
+  table: "w-full text-sm min-w-full",
   tableWrapper: "table-scroll-wrapper border border-gray-200 rounded-lg overflow-hidden bg-white",
-  tableHeader: "sticky top-0 text-left text-xs font-bold text-gray-600 uppercase tracking-wider px-3 py-2.5 bg-gray-50 border-b border-gray-200",
+  tableHeader: "sticky top-0 text-left text-xs font-bold text-gray-600 uppercase tracking-wider px-4 py-3 bg-gray-50 border-b border-gray-200",
   tableCell: "px-4 py-3 text-sm text-gray-600",
   tableRow: "border-b border-gray-100 hover:bg-gray-50 transition-colors",
 

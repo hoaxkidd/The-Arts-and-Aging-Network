@@ -13,6 +13,8 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { isCheckInOpen } from "@/lib/event-checkin"
+import { STYLES } from "@/lib/styles"
+import { getStaffBasePathForRole } from "@/lib/role-routes"
 
 export const revalidate = 60
 
@@ -79,42 +81,43 @@ export default async function StaffDashboard() {
   )
 
   const checkedInCount = myAttendances.filter((a: any) => a.checkInTime).length
+  const basePath = getStaffBasePathForRole(session.user.role)
 
   return (
     <div className="h-full flex flex-col">
       <div className="flex-1 min-h-0 overflow-auto space-y-4">
         {/* Compact Stats */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-          <Link href="/staff/my-events" className="bg-white rounded-lg border border-gray-200 p-3 transition-colors">
-            <div className="flex items-center gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <Link href={`${basePath}/my-events`} className={cn(STYLES.statsCard, "transition-colors") }>
+            <div className="flex items-center gap-3">
               <div className="w-8 h-8 bg-primary-100 rounded-lg flex items-center justify-center">
                 <Calendar className="w-4 h-4 text-primary-600" />
               </div>
               <div>
                 <p className="text-xl font-bold text-gray-900">{upcomingEvents.length}</p>
-                <p className="text-[10px] text-gray-500">Upcoming</p>
+                <p className="text-xs text-gray-500">Upcoming</p>
               </div>
             </div>
           </Link>
-          <Link href="/staff/my-events" className="bg-white rounded-lg border border-gray-200 p-3 transition-colors">
-            <div className="flex items-center gap-2">
+          <Link href={`${basePath}/my-events`} className={cn(STYLES.statsCard, "transition-colors") }>
+            <div className="flex items-center gap-3">
               <div className="w-8 h-8 bg-secondary-100 rounded-lg flex items-center justify-center">
                 <Clock className="w-4 h-4 text-secondary-600" />
               </div>
               <div>
                 <p className="text-xl font-bold text-gray-900">{todayEvents.length}</p>
-                <p className="text-[10px] text-gray-500">Today</p>
+                <p className="text-xs text-gray-500">Today</p>
               </div>
             </div>
           </Link>
-          <Link href="/staff/my-events" className="bg-white rounded-lg border border-gray-200 p-3 transition-colors">
-            <div className="flex items-center gap-2">
+          <Link href={`${basePath}/my-events`} className={cn(STYLES.statsCard, "transition-colors") }>
+            <div className="flex items-center gap-3">
               <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
                 <CheckCircle className="w-4 h-4 text-green-600" />
               </div>
               <div>
                 <p className="text-xl font-bold text-gray-900">{checkedInCount}</p>
-                <p className="text-[10px] text-gray-500">Check-ins</p>
+                <p className="text-xs text-gray-500">Check-ins</p>
               </div>
             </div>
           </Link>
@@ -151,7 +154,7 @@ export default async function StaffDashboard() {
                 return (
                   <Link
                     key={event.id}
-                    href={`/staff/events/${event.id}`}
+                    href={`${basePath}/events/${event.id}`}
                     className="flex items-center justify-between bg-white rounded-lg p-3 transition-colors border border-gray-100"
                   >
                     <div className="flex items-center gap-3">
@@ -166,11 +169,11 @@ export default async function StaffDashboard() {
                       </div>
                     </div>
                     {canCheckIn ? (
-                      <span className="px-2 py-0.5 bg-green-100 text-green-700 rounded text-[10px] font-medium animate-pulse">
+                      <span className="px-2 py-0.5 bg-green-100 text-green-700 rounded text-xs font-medium animate-pulse">
                         Check In
                       </span>
                     ) : (
-                      <span className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded text-[10px] font-medium flex items-center gap-0.5">
+                      <span className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded text-xs font-medium flex items-center gap-0.5">
                         <CheckCircle className="w-2.5 h-2.5" /> Done
                       </span>
                     )}
@@ -189,7 +192,7 @@ export default async function StaffDashboard() {
               Upcoming Schedule
             </h3>
             <Link
-              href="/staff/my-events"
+              href={`${basePath}/my-events`}
               className="text-xs text-primary-500 hover:text-primary-600 font-medium flex items-center gap-1"
             >
               View All <ArrowUpRight className="w-3 h-3" />
@@ -205,7 +208,7 @@ export default async function StaffDashboard() {
                 return (
                   <Link
                     key={event.id}
-                    href={`/staff/events/${event.id}`}
+                    href={`${basePath}/events/${event.id}`}
                     className={cn(
                       "flex items-center gap-3 p-3 hover:bg-gray-50 transition-colors",
                       index === 0 && "bg-primary-50/50"
@@ -242,7 +245,7 @@ export default async function StaffDashboard() {
                       </div>
                     </div>
                     {event.geriatricHome && (
-                      <span className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded text-[10px] font-medium">
+                      <span className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded text-xs font-medium">
                         {event.geriatricHome.name}
                       </span>
                     )}
@@ -258,7 +261,7 @@ export default async function StaffDashboard() {
               <p className="text-sm font-medium text-gray-900">No Upcoming Events</p>
               <p className="text-xs text-gray-500 mt-1">Browse available events and confirm your attendance.</p>
               <Link
-                href="/staff/events"
+                href={`${basePath}/events`}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 mt-3 text-xs font-medium bg-primary-600 text-white rounded-lg hover:bg-primary-700"
               >
                 Browse Events
@@ -270,7 +273,7 @@ export default async function StaffDashboard() {
         {/* Quick Actions */}
         <div className="grid grid-cols-2 gap-3">
           <Link
-            href="/staff/events"
+            href={`${basePath}/events`}
             className="group flex items-center gap-3 p-3 bg-gradient-to-br from-primary-50 to-primary-100 rounded-lg border border-primary-200 hover:border-primary-400 transition-colors"
           >
             <div className="w-9 h-9 bg-white shadow-sm rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
@@ -278,13 +281,13 @@ export default async function StaffDashboard() {
             </div>
             <div className="flex-1">
               <h3 className="text-sm font-semibold text-gray-900">Browse Events</h3>
-              <p className="text-[10px] text-gray-500">Find and confirm attendance</p>
+              <p className="text-xs text-gray-500">Find and confirm attendance</p>
             </div>
             <ArrowRight className="w-4 h-4 text-primary-300 group-hover:text-primary-500" />
           </Link>
 
           <Link
-            href="/staff/my-events"
+            href={`${basePath}/my-events`}
             className="group flex items-center gap-3 p-3 bg-gradient-to-br from-accent-50 to-accent-100 rounded-lg border border-accent-200 hover:border-accent-400 transition-colors"
           >
             <div className="w-9 h-9 bg-white shadow-sm rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
@@ -292,7 +295,7 @@ export default async function StaffDashboard() {
             </div>
             <div className="flex-1">
               <h3 className="text-sm font-semibold text-gray-900">My Schedule</h3>
-              <p className="text-[10px] text-gray-500">View confirmed events</p>
+              <p className="text-xs text-gray-500">View confirmed events</p>
             </div>
             <ArrowRight className="w-4 h-4 text-accent-300 group-hover:text-accent-500" />
           </Link>

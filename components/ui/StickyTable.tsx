@@ -103,7 +103,7 @@ type StickyTableHeadProps = {
 
 export function StickyTableHead({ children, className }: StickyTableHeadProps) {
   return (
-    <div className={cn("overflow-x-auto", className)}>
+    <div className={cn("table-scroll-wrapper", className)}>
       <table className={STYLES.table}>
         <thead className="bg-gray-50">
           {children}

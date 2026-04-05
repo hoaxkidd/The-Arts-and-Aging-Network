@@ -247,7 +247,6 @@ export default async function HomeAdminFormsPage({
               /* Table View */
               <StickyTable 
                 headers={["Form", "Category", "Status", "Access", "Submissions"]}
-                className="bg-white rounded-lg border border-gray-200"
               >
                 {templates.map((template: any) => {
                   const category = categories.find(c => c.value === template.category)

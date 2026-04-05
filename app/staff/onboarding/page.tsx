@@ -1,9 +1,11 @@
 import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
 import { redirect } from "next/navigation"
-import { ClipboardList, Clock, CheckCircle } from "lucide-react"
+import { Clock, CheckCircle } from "lucide-react"
 import { ProfileForm } from "@/components/staff/ProfileForm"
 import { OnboardingActions } from "@/components/staff/OnboardingActions"
+import { getRoleHomePath } from "@/lib/role-routes"
+import { needsOnboarding } from "@/lib/onboarding"
 
 export default async function StaffOnboardingPage(props: { searchParams: Promise<{ new?: string }> }) {
   const params = await props.searchParams
@@ -12,26 +14,44 @@ export default async function StaffOnboardingPage(props: { searchParams: Promise
 
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
-    include: { documents: { orderBy: { createdAt: "desc" } } },
+    include: {
+      documents: { orderBy: { createdAt: "desc" } },
+      roleAssignments: { where: { isActive: true }, orderBy: [{ isPrimary: 'desc' }, { assignedAt: 'asc' }], select: { role: true, isPrimary: true } },
+    },
   })
 
   if (!user) return <div>User not found</div>
 
-  const isVolunteer = user.role === 'VOLUNTEER'
-  const isNewVolunteer = params.new === 'true'
+  const primaryRole = user.roleAssignments?.find((a) => a.isPrimary)?.role || user.role || 'FACILITATOR'
+  const isVolunteer = user.role === 'VOLUNTEER' || user.roleAssignments?.some((a) => a.role === 'VOLUNTEER')
   const volunteerStatus = user.volunteerReviewStatus
-  
-  // Determine redirect based on role and approval status
+
   const getRedirectUrl = () => {
     if (isVolunteer && volunteerStatus === 'APPROVED') {
-      return '/volunteers'
+      return getRoleHomePath('VOLUNTEER')
     }
-    return '/staff'
+    return getRoleHomePath(primaryRole)
+  }
+
+  const redirectTo = getRedirectUrl()
+
+  const shouldStillOnboard = needsOnboarding({
+    id: user.id,
+    role: primaryRole,
+    onboardingCompletedAt: user.onboardingCompletedAt ? user.onboardingCompletedAt.toISOString() : null,
+    onboardingSkipCount: user.onboardingSkipCount ?? 0,
+  })
+
+  if (!isVolunteer && !shouldStillOnboard) {
+    redirect(redirectTo)
+  }
+
+  if (isVolunteer && volunteerStatus === 'APPROVED' && !shouldStillOnboard) {
+    redirect(redirectTo)
   }
 
   return (
     <div className="h-full flex flex-col">
-      {/* Volunteer Status Banner */}
       {isVolunteer && volunteerStatus === 'PENDING_REVIEW' && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
           <div className="flex items-center gap-3">
@@ -86,8 +106,7 @@ export default async function StaffOnboardingPage(props: { searchParams: Promise
               showSaveButton={false}
             />
             <OnboardingActions 
-              redirectTo={getRedirectUrl()} 
-              role={user.role || 'FACILITATOR'}
+              redirectTo={redirectTo}
             />
           </div>
         </div>

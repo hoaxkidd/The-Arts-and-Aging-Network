@@ -17,6 +17,7 @@ export default authMiddleware((req: NextRequest & { auth: unknown }) => {
   const authUser = user?.user
   const hasRole = (role: string) => userRoles.includes(role)
   const hasAnyRole = (roles: string[]) => roles.some((role) => userRoles.includes(role))
+  const onboardingCookie = req.cookies.get('onboarding_completed')
 
   // Add pathname to headers so layouts/components can access it
   const requestHeaders = new Headers(req.headers)
@@ -29,31 +30,44 @@ export default authMiddleware((req: NextRequest & { auth: unknown }) => {
     return NextResponse.redirect(new URL(`${roleBase}${suffix}`, req.nextUrl))
   }
 
-  // Role-named namespaces rewritten to shared /staff route tree
-  if (pathname.startsWith('/facilitator') || pathname.startsWith('/board')) {
+  // Facilitator namespace uses mirrored route files under /facilitator
+  if (pathname.startsWith('/facilitator')) {
     if (!isLoggedIn) return NextResponse.redirect(new URL('/login', req.nextUrl))
 
-    if (pathname.startsWith('/facilitator') && !hasRole('FACILITATOR') && !hasRole('ADMIN')) {
+    if (!hasRole('FACILITATOR') && !hasRole('ADMIN')) {
       return NextResponse.redirect(new URL(getRoleHomePath(primaryRole), req.nextUrl))
     }
 
-    if (pathname.startsWith('/board') && !hasRole('BOARD') && !hasRole('ADMIN')) {
-      return NextResponse.redirect(new URL(getRoleHomePath(primaryRole), req.nextUrl))
-    }
-
-    if (authUser && needsOnboarding(authUser)) {
+    if (authUser && needsOnboarding(authUser) && onboardingCookie?.value !== '1') {
       const onboardingPath = getOnboardingPath(primaryRole ?? '')
       if (pathname !== onboardingPath && !pathname.startsWith('/login') && !pathname.startsWith('/invite')) {
         return NextResponse.redirect(new URL(onboardingPath, req.nextUrl))
       }
     }
 
-    const suffix = pathname.startsWith('/facilitator')
-      ? pathname.slice('/facilitator'.length)
-      : pathname.slice('/board'.length)
-    const rewriteUrl = new URL(req.nextUrl.toString())
-    rewriteUrl.pathname = `/staff${suffix}`
-    return NextResponse.rewrite(rewriteUrl, {
+    return NextResponse.next({
+      request: {
+        headers: requestHeaders,
+      },
+    })
+  }
+
+  // Board namespace uses mirrored route files under /board
+  if (pathname.startsWith('/board')) {
+    if (!isLoggedIn) return NextResponse.redirect(new URL('/login', req.nextUrl))
+
+    if (!hasRole('BOARD') && !hasRole('ADMIN')) {
+      return NextResponse.redirect(new URL(getRoleHomePath(primaryRole), req.nextUrl))
+    }
+
+    if (authUser && needsOnboarding(authUser) && onboardingCookie?.value !== '1') {
+      const onboardingPath = getOnboardingPath(primaryRole ?? '')
+      if (pathname !== onboardingPath && !pathname.startsWith('/login') && !pathname.startsWith('/invite')) {
+        return NextResponse.redirect(new URL(onboardingPath, req.nextUrl))
+      }
+    }
+
+    return NextResponse.next({
       request: {
         headers: requestHeaders,
       },
@@ -74,7 +88,8 @@ export default authMiddleware((req: NextRequest & { auth: unknown }) => {
   }
 
   // Onboarding: redirect staff/dashboard users who haven't completed profile
-  if (isLoggedIn && authUser && needsOnboarding(authUser)) {
+  // Also check cookie-based completion flag to avoid stale JWT issues
+  if (isLoggedIn && authUser && needsOnboarding(authUser) && onboardingCookie?.value !== '1') {
     const onboardingPath = getOnboardingPath(primaryRole ?? '')
     if (pathname !== onboardingPath && !pathname.startsWith('/login') && !pathname.startsWith('/invite')) {
       if (

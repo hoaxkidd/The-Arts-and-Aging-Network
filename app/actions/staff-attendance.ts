@@ -94,6 +94,8 @@ export async function confirmStaffAttendance(eventId: string, _notes?: string) {
 
     revalidatePath('/staff/events')
     revalidatePath('/staff/my-events')
+    revalidatePath('/facilitator/events')
+    revalidatePath('/facilitator/my-events')
     revalidatePath('/admin/events')
 
     return { success: true, data: attendance }
@@ -144,6 +146,8 @@ export async function withdrawStaffAttendance(eventId: string) {
 
     revalidatePath('/staff/events')
     revalidatePath('/staff/my-events')
+    revalidatePath('/facilitator/events')
+    revalidatePath('/facilitator/my-events')
     revalidatePath('/admin/events')
 
     return { success: true }
@@ -346,6 +350,9 @@ export async function staffCheckIn(eventId: string) {
     revalidatePath('/staff/events')
     revalidatePath('/staff/my-events')
     revalidatePath(`/staff/events/${eventId}`)
+    revalidatePath('/facilitator/events')
+    revalidatePath('/facilitator/my-events')
+    revalidatePath(`/facilitator/events/${eventId}`)
     revalidatePath(`/events/${eventId}`)
 
     return { success: true }

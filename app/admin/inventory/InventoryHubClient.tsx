@@ -155,7 +155,7 @@ export function InventoryHubClient({ items: initialItems, userRole }: Props) {
 
       {/* Table */}
       <div className="flex-1 min-h-0 bg-white rounded-lg border border-gray-200 overflow-hidden">
-        <div className="table-scroll-wrapper h-full max-h-[calc(100vh-360px)]">
+        <div className="table-scroll-wrapper h-full max-h-[calc(100vh-320px)]">
         <table className={STYLES.table}>
           <thead className="bg-gray-50">
             <tr>
@@ -165,17 +165,17 @@ export function InventoryHubClient({ items: initialItems, userRole }: Props) {
               <th className={STYLES.tableHeader}>Unit</th>
               <th className={STYLES.tableHeader}>Min</th>
               <th className={STYLES.tableHeader}>Max</th>
-              <th className={`${STYLES.tableHeader} text-right`}>Cost (per unit)</th>
-              <th className={`${STYLES.tableHeader} text-right`}>Price (per unit)</th>
-              <th className={`${STYLES.tableHeader} text-right`}>Total value</th>
+              <th className={cn(STYLES.tableHeader, "text-right")}>Cost (per unit)</th>
+              <th className={cn(STYLES.tableHeader, "text-right")}>Price (per unit)</th>
+              <th className={cn(STYLES.tableHeader, "text-right")}>Total value</th>
               <th className={STYLES.tableHeader}>Distributor</th>
-              <th className={`${STYLES.tableHeader} text-right`}>Actions</th>
+              <th className={cn(STYLES.tableHeader, "text-right")}>Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
             {filtered.length === 0 ? (
               <tr>
-                <td colSpan={11} className={`${STYLES.tableCell} text-center`}>
+                <td colSpan={11} className={cn(STYLES.tableCell, "text-center py-12")}>
                   {initialItems.length === 0
                     ? 'No inventory items yet. Click "Add item" to create one.'
                     : 'No items match your search.'}
@@ -233,17 +233,17 @@ export function InventoryHubClient({ items: initialItems, userRole }: Props) {
                   <td className={STYLES.tableCell}>{item.unit}</td>
                   <td className={STYLES.tableCell}>{item.minQuantity}</td>
                   <td className={STYLES.tableCell}>{item.maxQuantity ?? '—'}</td>
-                  <td className={`${STYLES.tableCell} text-right`}>
+                  <td className={cn(STYLES.tableCell, "text-right")}>
                     {item.cost != null ? `$${item.cost.toFixed(2)}` : '—'}
                   </td>
-                  <td className={`${STYLES.tableCell} text-right`}>
+                  <td className={cn(STYLES.tableCell, "text-right")}>
                     {item.price != null ? (
                       <span className="text-green-600 font-medium">${item.price.toFixed(2)}</span>
                     ) : (
                       '—'
                     )}
                   </td>
-                  <td className={`${STYLES.tableCell} text-right font-medium`}>
+                  <td className={cn(STYLES.tableCell, "text-right font-medium")}>
                     {item.cost != null
                       ? `$${((item.cost || 0) * item.quantity).toFixed(2)}`
                       : '—'}
@@ -282,7 +282,7 @@ export function InventoryHubClient({ items: initialItems, userRole }: Props) {
                       <span className="text-xs text-gray-400">—</span>
                     )}
                   </td>
-                  <td className={`${STYLES.tableCell} text-right`}>
+                  <td className={cn(STYLES.tableCell, "text-right")}>
                     <div className="flex items-center justify-end gap-1">
                       {canManage && (
                         <>

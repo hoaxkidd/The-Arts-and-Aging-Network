@@ -7,11 +7,9 @@ import { STYLES } from '@/lib/styles'
 import { cn } from '@/lib/utils'
 
 export function OnboardingActions({ 
-  redirectTo = '/staff',
-  role = 'FACILITATOR'
+  redirectTo = '/staff'
 }: { 
   redirectTo?: string
-  role?: string 
 }) {
   const router = useRouter()
   const [isCompleting, setIsCompleting] = useState(false)
@@ -29,56 +27,42 @@ export function OnboardingActions({
   }
 
   async function handleComplete() {
-    console.log('[OnboardingActions] handleComplete called, role:', role)
     setIsCompleting(true)
     setError(null)
     
     try {
-      console.log('[OnboardingActions] Calling completeOnboarding...')
       const result = await completeOnboarding()
-      console.log('[OnboardingActions] Complete result:', result)
       
       if (result?.success) {
-        console.log('[OnboardingActions] Success, redirecting to:', getRedirectUrl())
-        router.push(getRedirectUrl())
+        const target = result.redirectTo || getRedirectUrl()
         router.refresh()
+        router.push(target)
       } else if (result?.error) {
-        console.error('[OnboardingActions] Complete error:', result.error)
         setError(result.error)
-        alert('Failed to complete onboarding: ' + result.error)
       }
     } catch (e) {
-      console.error('[OnboardingActions] Exception:', e)
       setError('An unexpected error occurred')
-      alert('An unexpected error occurred')
     }
     
     setIsCompleting(false)
   }
 
   async function handleSkip() {
-    console.log('[OnboardingActions] handleSkip called, role:', role)
     setIsSkipping(true)
     setError(null)
     
     try {
-      console.log('[OnboardingActions] Calling skipOnboarding...')
       const result = await skipOnboarding()
-      console.log('[OnboardingActions] Skip result:', result)
       
       if (result?.success) {
-        console.log('[OnboardingActions] Success, redirecting to:', getRedirectUrl())
-        router.push(getRedirectUrl())
+        const target = result.redirectTo || getRedirectUrl()
         router.refresh()
+        router.push(target)
       } else if (result?.error) {
-        console.error('[OnboardingActions] Skip error:', result.error)
         setError(result.error)
-        alert('Failed to skip onboarding: ' + result.error)
       }
     } catch (e) {
-      console.error('[OnboardingActions] Skip exception:', e)
       setError('An unexpected error occurred')
-      alert('An unexpected error occurred')
     }
     
     setIsSkipping(false)

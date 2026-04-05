@@ -352,11 +352,11 @@ export function HomeQuickView({ homeId, isOpen, onClose }: HomeQuickViewProps) {
               <div className="overflow-y-auto flex-1 p-5 bg-gray-50/30">
                 {/* Facility tab */}
                 {activeTab === 'facility' && (
-                  <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+                  <div className="rounded-lg border border-gray-200 bg-white overflow-hidden">
                     <div className="px-4 py-3 border-b border-gray-100 bg-gray-50/80">
                       <h3 className="text-sm font-semibold text-gray-700">Facility information</h3>
                     </div>
-                    <table className="w-full">
+                    <table className={STYLES.table}>
                       <tbody className="divide-y divide-gray-100">
                         <tr className="hover:bg-gray-50/50 transition-colors"><td className="w-[38%] py-3 px-4 text-sm font-medium text-gray-600">Facility name</td><td className="py-3 px-4"><EditableField label="" value={home.name} field="name" homeId={home.id} onUpdate={handleUpdate} hideLabel /></td></tr>
                         <tr className="hover:bg-gray-50/50 transition-colors"><td className="py-3 px-4 text-sm font-medium text-gray-600">Address</td><td className="py-3 px-4"><EditableField label="" value={home.address} field="address" homeId={home.id} onUpdate={handleUpdate} hideLabel /></td></tr>
@@ -385,12 +385,12 @@ export function HomeQuickView({ homeId, isOpen, onClose }: HomeQuickViewProps) {
 
                 {/* Contact tab */}
                 {activeTab === 'contact' && (
-                  <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+                  <div className="rounded-lg border border-gray-200 bg-white overflow-hidden">
                     <div className="px-4 py-3 border-b border-gray-100 bg-gray-50/80">
                       <h3 className="text-sm font-semibold text-gray-700">Primary contact</h3>
                       <p className="text-xs text-gray-500 mt-0.5">Main point of contact for this facility</p>
                     </div>
-                    <table className="w-full">
+                    <table className={STYLES.table}>
                       <tbody className="divide-y divide-gray-100">
                         <tr className="hover:bg-gray-50/50 transition-colors"><td className="w-[38%] py-3 px-4 text-sm font-medium text-gray-600">Name</td><td className="py-3 px-4"><EditableField label="" value={home.contactName} field="contactName" homeId={home.id} onUpdate={handleUpdate} hideLabel /></td></tr>
                         <tr className="hover:bg-gray-50/50 transition-colors"><td className="py-3 px-4 text-sm font-medium text-gray-600">Position</td><td className="py-3 px-4"><EditableField label="" value={home.contactPosition} field="contactPosition" homeId={home.id} onUpdate={handleUpdate} hideLabel /></td></tr>
@@ -421,12 +421,12 @@ export function HomeQuickView({ homeId, isOpen, onClose }: HomeQuickViewProps) {
 
                 {/* Account tab */}
                 {activeTab === 'account' && (
-                  <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+                  <div className="rounded-lg border border-gray-200 bg-white overflow-hidden">
                     <div className="px-4 py-3 border-b border-gray-100 bg-gray-50/80">
                       <h3 className="text-sm font-semibold text-gray-700">Login account</h3>
                       <p className="text-xs text-gray-500 mt-0.5">User account linked to this facility</p>
                     </div>
-                    <table className="w-full">
+                    <table className={STYLES.table}>
                       <tbody className="divide-y divide-gray-100">
                         <tr className="hover:bg-gray-50/50 transition-colors"><td className="w-[38%] py-3 px-4 text-sm font-medium text-gray-600">Name</td><td className="py-3 px-4"><EditableField label="" value={home.user.name} field="userName" homeId={home.id} onUpdate={handleUpdate} hideLabel /></td></tr>
                         <tr className="hover:bg-gray-50/50 transition-colors"><td className="py-3 px-4 text-sm font-medium text-gray-600">Email</td><td className="py-3 px-4"><EditableField label="" value={home.user.email} field="userEmail" homeId={home.id} type="email" onUpdate={handleUpdate} hideLabel /></td></tr>
@@ -450,7 +450,7 @@ export function HomeQuickView({ homeId, isOpen, onClose }: HomeQuickViewProps) {
                 {/* Protocol tab */}
                 {activeTab === 'protocol' && (
                   <div className="space-y-5">
-                    <div className="rounded-xl border border-amber-200/80 bg-white shadow-sm overflow-hidden">
+                    <div className="rounded-lg border border-amber-200/80 bg-white overflow-hidden">
                       <div className="px-4 py-3 border-b border-amber-100 bg-amber-50/80">
                         <h3 className="text-sm font-semibold text-amber-800 flex items-center gap-2"><AlertTriangle className="w-4 h-4" /> Special needs & accommodations</h3>
                         <p className="text-xs text-amber-700/80 mt-0.5">Notes for staff and facilitators</p>
@@ -459,7 +459,7 @@ export function HomeQuickView({ homeId, isOpen, onClose }: HomeQuickViewProps) {
                         <EditableField label="" value={home.specialNeeds} field="specialNeeds" homeId={home.id} type="textarea" onUpdate={handleUpdate} hideLabel />
                       </div>
                     </div>
-                    <div className="rounded-xl border border-red-200/80 bg-white shadow-sm overflow-hidden">
+                    <div className="rounded-lg border border-red-200/80 bg-white overflow-hidden">
                       <div className="px-4 py-3 border-b border-red-100 bg-red-50/80">
                         <h3 className="text-sm font-semibold text-red-800 flex items-center gap-2"><Shield className="w-4 h-4" /> Emergency protocol</h3>
                         <p className="text-xs text-red-700/80 mt-0.5">Procedures in case of emergency</p>
@@ -473,31 +473,31 @@ export function HomeQuickView({ homeId, isOpen, onClose }: HomeQuickViewProps) {
 
                 {/* Events tab */}
                 {activeTab === 'events' && (
-                  <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+                  <div className="rounded-lg border border-gray-200 bg-white overflow-hidden">
                     <div className="px-4 py-3 border-b border-gray-100 bg-gray-50/80">
                       <h3 className="text-sm font-semibold text-gray-700">Recent events</h3>
                       <p className="text-xs text-gray-500 mt-0.5">Events this facility is linked to (up to 10)</p>
                     </div>
                     {home.events.length > 0 ? (
-                      <div className="overflow-x-auto">
-                        <table className="w-full">
-                          <thead className="bg-gray-50/80">
+                      <div className="table-scroll-wrapper">
+                        <table className={STYLES.table}>
+                          <thead className="bg-gray-50">
                             <tr>
-                              <th className="py-3 px-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Event</th>
-                              <th className="py-3 px-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Date</th>
-                              <th className="py-3 px-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
-                              <th className="py-3 px-4 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Action</th>
+                              <th className={STYLES.tableHeader}>Event</th>
+                              <th className={STYLES.tableHeader}>Date</th>
+                              <th className={STYLES.tableHeader}>Status</th>
+                              <th className={cn(STYLES.tableHeader, "text-right")}>Action</th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-gray-100">
                             {[...home.events]
                               .sort((a, b) => new Date(b.startDateTime).getTime() - new Date(a.startDateTime).getTime())
                               .map((event) => (
-                                <tr key={event.id} className="hover:bg-gray-50/50 transition-colors">
-                                  <td className="py-3 px-4 text-sm font-medium text-gray-900">{event.title}</td>
-                                  <td className="py-3 px-4 text-sm text-gray-600">{new Date(event.startDateTime).toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}</td>
-                                  <td className="py-3 px-4"><span className={cn("text-xs font-medium", event.status === 'PUBLISHED' ? "text-emerald-700" : event.status === 'COMPLETED' ? "text-sky-700" : "text-gray-600")}>{event.status}</span></td>
-                                  <td className="py-3 px-4 text-right"><a href={`/admin/events/${event.id}/edit`} className="text-primary-600 hover:text-primary-700 hover:underline text-sm font-medium inline-flex items-center gap-1"><ExternalLink className="w-3.5 h-3.5" /> Edit</a></td>
+                                <tr key={event.id} className={STYLES.tableRow}>
+                                  <td className={cn(STYLES.tableCell, "font-medium text-gray-900")}>{event.title}</td>
+                                  <td className={STYLES.tableCell}>{new Date(event.startDateTime).toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}</td>
+                                  <td className={STYLES.tableCell}><span className={cn("text-xs font-medium", event.status === 'PUBLISHED' ? "text-emerald-700" : event.status === 'COMPLETED' ? "text-sky-700" : "text-gray-600")}>{event.status}</span></td>
+                                  <td className={cn(STYLES.tableCell, "text-right")}><a href={`/admin/events/${event.id}/edit`} className="text-primary-600 hover:text-primary-700 hover:underline text-sm font-medium inline-flex items-center gap-1"><ExternalLink className="w-3.5 h-3.5" /> Edit</a></td>
                                 </tr>
                               ))}
                           </tbody>

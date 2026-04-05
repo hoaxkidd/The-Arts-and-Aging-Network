@@ -24,7 +24,7 @@ export default async function InvitationsPage() {
   return (
     <div className="space-y-8">
       {/* Create Invitation Form */}
-      <div className={cn(STYLES.card, "bg-white p-6 rounded-lg shadow-sm border border-gray-100")}>
+      <div className={cn(STYLES.card, "p-6")}>
         <div className="flex items-center gap-2 mb-6 text-primary-700">
           <Mail className="w-5 h-5" />
           <h2 className="text-lg font-semibold">Send New Invitation</h2>
@@ -72,7 +72,7 @@ export default async function InvitationsPage() {
 
       {/* Invitations List */}
       <div className={cn(STYLES.card, "p-0 overflow-hidden")}>
-        <div className="table-scroll-wrapper max-h-[calc(100vh-400px)]">
+        <div className="table-scroll-wrapper max-h-[calc(100vh-320px)]">
           <table className={STYLES.table}>
             <thead className="bg-gray-50">
               <tr>
@@ -100,13 +100,13 @@ export default async function InvitationsPage() {
                     </div>
                   </td>
                   <td className={STYLES.tableCell}>
-                    <span className={`inline-flex text-xs font-medium ${
+                    <span className={cn("inline-flex text-xs font-medium",
                       inv.status === 'ACCEPTED' 
-                        ? 'text-green-700' 
+                        ? 'text-green-700'
                         : inv.status === 'EXPIRED'
                         ? 'text-red-700'
                         : 'text-yellow-700'
-                    }`}>
+                    )}>
                       {inv.status}
                     </span>
                   </td>
@@ -142,7 +142,7 @@ export default async function InvitationsPage() {
               ))}
               {invitations.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
+                  <td colSpan={6} className={cn(STYLES.tableCell, "text-center py-12")}>
                     No invitations sent yet.
                   </td>
                 </tr>
