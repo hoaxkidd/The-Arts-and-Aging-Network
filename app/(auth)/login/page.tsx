@@ -28,6 +28,15 @@ function LoginForm({ searchParams, router, tabParam }: { searchParams: ReturnTyp
   )
   const [state, dispatch] = useActionState(authenticate, undefined as AuthState)
   const [showPassword, setShowPassword] = useState(false)
+  const [csrfToken, setCsrfToken] = useState('')
+
+  useEffect(() => {
+    // Get CSRF token from cookie on mount
+    const match = document.cookie.match(/authjs\.csrf-token=([^;]+)/)
+    if (match) {
+      setCsrfToken(match[1])
+    }
+  }, [])
 
   const setTab = (tab: 'login' | 'register') => {
     setActiveTab(tab)
@@ -88,6 +97,7 @@ function LoginForm({ searchParams, router, tabParam }: { searchParams: ReturnTyp
               </div>
               
               <form action={dispatch} className="space-y-5 sm:space-y-6">
+                <input type="hidden" name="csrfToken" value={csrfToken} />
                 <input type="hidden" name="callbackUrl" value={callbackUrl} />
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-1.5 sm:mb-2">Email Address</label>
