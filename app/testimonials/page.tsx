@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { prisma } from '@/lib/prisma'
 import { MessageSquareQuote, Star } from 'lucide-react'
 
-export const revalidate = 300
+export const dynamic = 'force-dynamic'
 
 export default async function PublicTestimonialsPage() {
   const testimonials = await prisma.testimonial.findMany({
