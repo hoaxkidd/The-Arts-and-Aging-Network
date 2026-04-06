@@ -135,18 +135,23 @@ export default async function AdminMessagingPage() {
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
-                <span className={cn(
-                  "text-xs px-2 py-1 rounded",
+                <div className="flex items-center gap-2">
+                  <span className={cn(
+                    "text-xs px-2 py-1 rounded",
                   group.type === 'CUSTOM' && "bg-purple-100 text-purple-700",
                   group.type === 'EVENT_BASED' && "bg-blue-100 text-blue-700",
                   group.type === 'ROLE_BASED' && "bg-green-100 text-green-700"
                 )}>
                   {group.type}
-                </span>
-                {group.allowAllStaff && (
-                  <span className="text-xs px-2 py-1 bg-green-100 text-green-700 rounded">
-                    Open to All Staff
+                  </span>
+                  {group.isAttachableToForms && (
+                    <span className="text-xs px-2 py-1 bg-emerald-100 text-emerald-700 rounded">
+                      Form-attachable
+                    </span>
+                  )}
+                  {group.allowAllStaff && (
+                    <span className="text-xs px-2 py-1 bg-green-100 text-green-700 rounded">
+                      Open to All Staff
                   </span>
                 )}
               </div>

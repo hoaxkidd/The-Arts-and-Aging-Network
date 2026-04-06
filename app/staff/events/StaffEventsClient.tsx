@@ -4,15 +4,17 @@ import { useState } from 'react'
 import { Calendar, List } from 'lucide-react'
 import { PublicCalendarView } from '@/components/events/PublicCalendarView'
 import { StaffEventList } from '@/components/staff/StaffEventList'
+import { FacilitatorRequestQueue } from '@/components/staff/FacilitatorRequestQueue'
 import { cn } from '@/lib/utils'
 
 type StaffEventsClientProps = {
   events: any[]
+  pendingFacilitatorRequests: any[]
   userRole: string
   canCreateEvents: boolean
 }
 
-export function StaffEventsClient({ events, userRole, canCreateEvents }: StaffEventsClientProps) {
+export function StaffEventsClient({ events, pendingFacilitatorRequests, userRole, canCreateEvents }: StaffEventsClientProps) {
   const [view, setView] = useState<'calendar' | 'list'>('calendar')
 
   // Format events for calendar view (needs simpler shape)
@@ -60,6 +62,7 @@ export function StaffEventsClient({ events, userRole, canCreateEvents }: StaffEv
 
       {/* Content */}
       <div className="flex-1 min-h-0">
+        <FacilitatorRequestQueue items={pendingFacilitatorRequests} />
         {view === 'calendar' ? (
           <PublicCalendarView
             events={calendarEvents}

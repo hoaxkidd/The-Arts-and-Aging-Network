@@ -11,6 +11,7 @@ type Group = {
   name: string
   description: string | null
   allowAllStaff: boolean
+  isAttachableToForms?: boolean
   isActive: boolean
 }
 
@@ -21,7 +22,8 @@ export function GroupSettings({ group }: { group: Group }) {
   const [formData, setFormData] = useState({
     name: group.name,
     description: group.description || '',
-    allowAllStaff: group.allowAllStaff
+    allowAllStaff: group.allowAllStaff,
+    isAttachableToForms: group.isAttachableToForms || false
   })
 
   const handleUpdate = async () => {
@@ -94,6 +96,21 @@ export function GroupSettings({ group }: { group: Group }) {
               </div>
             </label>
 
+            <label className="flex items-start gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
+              <input
+                type="checkbox"
+                checked={formData.isAttachableToForms}
+                onChange={(e) => setFormData(prev => ({ ...prev, isAttachableToForms: e.target.checked }))}
+                className="mt-1"
+              />
+              <div>
+                <p className="text-sm font-medium text-gray-900">Attachable to event forms</p>
+                <p className="text-xs text-gray-600">
+                  Allow this group to be selected in form template facilitator targeting.
+                </p>
+              </div>
+            </label>
+
             <div className="flex items-center gap-2 pt-2">
               <button
                 onClick={handleUpdate}
@@ -105,12 +122,13 @@ export function GroupSettings({ group }: { group: Group }) {
               <button
                 onClick={() => {
                   setEditing(false)
-                  setFormData({
-                    name: group.name,
-                    description: group.description || '',
-                    allowAllStaff: group.allowAllStaff
-                  })
-                }}
+                    setFormData({
+                      name: group.name,
+                      description: group.description || '',
+                      allowAllStaff: group.allowAllStaff,
+                      isAttachableToForms: group.isAttachableToForms || false
+                    })
+                  }}
                 className="px-4 py-2 text-gray-700 hover:text-gray-900 text-sm"
               >
                 Cancel
@@ -130,6 +148,12 @@ export function GroupSettings({ group }: { group: Group }) {
                 <p className="text-xs text-gray-500 uppercase">Status</p>
                 <p className="text-sm text-gray-900">
                   {group.isActive ? 'Active' : 'Archived'}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-500 uppercase">Form Attachment</p>
+                <p className="text-sm text-gray-900">
+                  {group.isAttachableToForms ? 'Enabled' : 'Disabled'}
                 </p>
               </div>
             </div>

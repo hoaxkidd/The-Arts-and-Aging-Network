@@ -22,6 +22,7 @@ type Request = {
   id: string
   type: 'REQUEST_EXISTING' | 'CREATE_CUSTOM'
   status: 'PENDING' | 'APPROVED' | 'REJECTED'
+  workflowStage?: string | null
   requestedAt: string
   rejectionReason: string | null
   notes: string | null
@@ -286,6 +287,9 @@ export function AdminRequestList({ requests }: { requests: Request[] }) {
                       )}>
                         {req.status}
                       </span>
+                      {req.status === 'PENDING' && req.workflowStage && req.workflowStage !== 'PENDING_INITIAL_ADMIN_APPROVAL' && (
+                        <div className="text-[10px] text-gray-500 mt-0.5">{req.workflowStage.replaceAll('_', ' ')}</div>
+                      )}
                     </td>
                     <td className={cn(STYLES.tableCell, "text-right")}>
                       <div className="flex items-center justify-end gap-2">
@@ -295,7 +299,7 @@ export function AdminRequestList({ requests }: { requests: Request[] }) {
                         >
                           <Eye className="w-4 h-4" /> View
                         </Link>
-                        {req.status === 'PENDING' && (
+                        {req.status === 'PENDING' && req.workflowStage !== 'FACILITATOR_RSVP_OPEN' && (
                           <>
                             <button
                               onClick={() => handleApprove(req.id)}

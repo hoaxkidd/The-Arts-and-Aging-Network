@@ -280,6 +280,17 @@ model EventRequest {
   notes               String?
   expectedAttendees   Int?
   programType         String?
+  workflowStage       String?                @default("PENDING_INITIAL_ADMIN_APPROVAL")
+  requiredGroupIds    String?                // JSON array snapshot of required MessageGroup IDs
+  requiredPersonIds   String?                // JSON array snapshot of directly required facilitator user IDs
+  minFacilitatorsRequired Int?               @default(0)
+  autoFinalApproveWhenMinMet Boolean         @default(false)
+  rsvpOpenedAt        DateTime?
+  rsvpDeadlineAt      DateTime?
+  facilitatorThresholdMetAt DateTime?
+  rsvpClosedById      String?
+  rsvpClosedAt        DateTime?
+  rsvpClosedReason    String?
   homeAdminReminderDays Int?    // Days before event to remind home admin (0 or null = use default)
   staffReminderDays    Int?     // Days before event to remind staff (0 or null = use default)
   reminderMessage     String?   // Custom reminder message
@@ -290,12 +301,15 @@ model EventRequest {
   geriatricHome       GeriatricHome          @relation(fields: [geriatricHomeId], references: [id])
   requester           User                   @relation("EventRequest_requester", fields: [requestedBy], references: [id], onDelete: Cascade)
   reviewer            User?                  @relation("EventRequest_reviewer", fields: [reviewedBy], references: [id], onDelete: Cascade)
+  rsvpClosedByUser    User?                  @relation("EventRequest_rsvpClosedBy", fields: [rsvpClosedById], references: [id], onDelete: SetNull)
   responses           EventRequestResponse[]
+  facilitatorRsvps    EventRequestFacilitatorRsvp[]
   formSubmission      FormSubmission?
 
   @@index([status, requestedAt])
   @@index([geriatricHomeId, status])
   @@index([requestedBy])
+  @@index([workflowStage, rsvpDeadlineAt])
 }
 
 model EventRequestResponse {
@@ -378,6 +392,11 @@ model FormTemplate {
   isActive      Boolean          @default(true)
   isPublic      Boolean          @default(true)
   allowedRoles  String?          // Comma-separated roles: "ADMIN" or "ADMIN,FACILITATOR" or null = all
+  requiredGroupIds String?       // JSON array of MessageGroup IDs to notify after admin pre-approval
+  requiredPersonIds String?      // JSON array of user IDs to notify after admin pre-approval
+  minFacilitatorsRequired Int     @default(0)
+  autoFinalApproveWhenMinMet Boolean @default(false)
+  facilitatorRsvpDeadlineHours Int? @default(48)
   uploadedBy    String
   createdAt     DateTime         @default(now())
   updatedAt     DateTime         @updatedAt
@@ -632,6 +651,7 @@ model MessageGroup {
   eventId       String?
   isActive      Boolean        @default(true)
   allowAllStaff Boolean        @default(false)
+  isAttachableToForms Boolean  @default(false)
   createdBy     String
   createdAt     DateTime       @default(now())
   updatedAt     DateTime @updatedAt
@@ -642,6 +662,24 @@ model MessageGroup {
 
   @@index([eventId])
   @@index([isActive, createdAt])
+}
+
+model EventRequestFacilitatorRsvp {
+  id          String      @id @default(cuid())
+  requestId   String
+  userId      String
+  sourceGroupId String?
+  status      String      @default("PENDING") // PENDING, YES, NO, MAYBE
+  respondedAt DateTime?
+  notes       String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  request     EventRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([requestId, userId])
+  @@index([requestId, status])
+  @@index([userId, status])
 }
 
 model MessageReaction {
@@ -973,6 +1011,8 @@ model User {
   eventRequestResponses   EventRequestResponse[]
   eventRequests           EventRequest[]        @relation("EventRequest_requester")
   eventRequestReviews     EventRequest[]        @relation("EventRequest_reviewer")
+  eventRequestRsvpClosed  EventRequest[]        @relation("EventRequest_rsvpClosedBy")
+  eventRequestFacilitatorRsvps EventRequestFacilitatorRsvp[]
   emailChangeRequests     EmailChangeRequest[]  @relation("EmailChangeRequest_targetUser")
   emailChangeRequestsCreated EmailChangeRequest[] @relation("EmailChangeRequest_requestedBy")
   expenseRequests         ExpenseRequest[]

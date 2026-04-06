@@ -5,6 +5,15 @@ import { auth } from "@/auth"
 import { revalidatePath } from "next/cache"
 import { logger } from "@/lib/logger"
 
+async function canModerateGroup(userId: string, role: string | undefined, groupId: string) {
+  if (role === 'ADMIN') return true
+  const membership = await prisma.groupMember.findUnique({
+    where: { groupId_userId: { groupId, userId } },
+    select: { role: true, isActive: true }
+  })
+  return Boolean(membership?.isActive && membership.role === 'ADMIN')
+}
+
 // ============================================
 // GROUP MANAGEMENT
 // ============================================
@@ -18,6 +27,7 @@ export async function createMessageGroup(data: {
   color?: string
   eventId?: string
   allowAllStaff?: boolean
+  isAttachableToForms?: boolean
   initialMembers?: string[] // User IDs
 }) {
   const session = await auth()
@@ -39,6 +49,7 @@ export async function createMessageGroup(data: {
         color: data.color || 'blue',
         eventId: data.eventId || null,
         allowAllStaff: data.allowAllStaff || false,
+        isAttachableToForms: data.isAttachableToForms || false,
         createdBy: session.user.id
       }
     })
@@ -628,7 +639,12 @@ export async function getGroupMessages(groupId: string, limit = 50) {
 // Add member to group (Admin)
 export async function addGroupMember(groupId: string, userId: string, role: string = 'MEMBER') {
   const session = await auth()
-  if (session?.user?.role !== 'ADMIN') {
+  if (!session?.user?.id) {
+    return { error: "Unauthorized" }
+  }
+
+  const canModerate = await canModerateGroup(session.user.id, session.user.role, groupId)
+  if (!canModerate) {
     return { error: "Unauthorized" }
   }
 
@@ -667,7 +683,12 @@ export async function addGroupMember(groupId: string, userId: string, role: stri
 // Remove member from group (Admin)
 export async function removeGroupMember(groupId: string, userId: string) {
   const session = await auth()
-  if (session?.user?.role !== 'ADMIN') {
+  if (!session?.user?.id) {
+    return { error: "Unauthorized" }
+  }
+
+  const canModerate = await canModerateGroup(session.user.id, session.user.role, groupId)
+  if (!canModerate) {
     return { error: "Unauthorized" }
   }
 
@@ -766,7 +787,12 @@ export async function leaveGroup(groupId: string) {
 // Update member role (Admin)
 export async function updateMemberRole(groupId: string, userId: string, role: string) {
   const session = await auth()
-  if (session?.user?.role !== 'ADMIN') {
+  if (!session?.user?.id) {
+    return { error: "Unauthorized" }
+  }
+
+  const canModerate = await canModerateGroup(session.user.id, session.user.role, groupId)
+  if (!canModerate) {
     return { error: "Unauthorized" }
   }
 
@@ -792,11 +818,21 @@ export async function updateMessageGroup(groupId: string, data: {
   name?: string
   description?: string
   allowAllStaff?: boolean
+  isAttachableToForms?: boolean
   isActive?: boolean
 }) {
   const session = await auth()
-  if (session?.user?.role !== 'ADMIN') {
+  if (!session?.user?.id) {
     return { error: "Unauthorized" }
+  }
+
+  const canModerate = await canModerateGroup(session.user.id, session.user.role, groupId)
+  if (!canModerate) {
+    return { error: "Unauthorized" }
+  }
+
+  if (session.user.role !== 'ADMIN' && (data.isAttachableToForms !== undefined || data.isActive !== undefined)) {
+    return { error: 'Only platform admins can change form-attachment or archive state' }
   }
 
   try {

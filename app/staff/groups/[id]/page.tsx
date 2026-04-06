@@ -162,6 +162,7 @@ export default async function GroupMessagesPage({
           groupId={group.id}
           currentUserId={session.user.id}
           currentUserRole={session.user.role as string}
+          myGroupRole={membership?.role || 'MEMBER'}
           initialMessages={messages}
           members={members}
           isMuted={membership?.isMuted || false}

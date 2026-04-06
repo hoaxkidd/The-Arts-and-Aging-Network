@@ -102,6 +102,272 @@ function buildEventEmailVariables(params: {
   }
 }
 
+function parseJsonIds(value: string | null | undefined): string[] {
+  if (!value) return []
+  try {
+    const parsed = JSON.parse(value) as unknown
+    return Array.isArray(parsed) ? parsed.filter((item): item is string => typeof item === 'string') : []
+  } catch {
+    return []
+  }
+}
+
+function safeTemplateMin(min: number | null | undefined): number {
+  if (typeof min !== 'number' || Number.isNaN(min)) return 0
+  return Math.max(0, Math.floor(min))
+}
+
+function hasFacilitatorTargeting(request: {
+  requiredGroupIds?: string | null
+  requiredPersonIds?: string | null
+  minFacilitatorsRequired?: number | null
+}) {
+  return parseJsonIds(request.requiredGroupIds).length > 0 || parseJsonIds(request.requiredPersonIds).length > 0 || safeTemplateMin(request.minFacilitatorsRequired) > 0
+}
+
+async function getEligibleFacilitatorUserIdsFromSnapshot(params: {
+  requiredGroupIdsJson: string | null | undefined
+  requiredPersonIdsJson: string | null | undefined
+}) {
+  const groupIds = parseJsonIds(params.requiredGroupIdsJson)
+  const personIds = parseJsonIds(params.requiredPersonIdsJson)
+
+  const groupMembers = groupIds.length > 0
+    ? await db.groupMember.findMany({
+        where: { groupId: { in: groupIds }, isActive: true },
+        select: { userId: true }
+      })
+    : []
+
+  const candidateIds = Array.from(new Set([...groupMembers.map((m) => m.userId), ...personIds]))
+  if (candidateIds.length === 0) return [] as string[]
+
+  const eligibleUsers = await db.user.findMany({
+    where: {
+      id: { in: candidateIds },
+      status: 'ACTIVE',
+      OR: [
+        { role: 'FACILITATOR' },
+        { roleAssignments: { some: { role: 'FACILITATOR', isActive: true } } }
+      ]
+    },
+    select: { id: true }
+  })
+
+  return eligibleUsers.map((user) => user.id)
+}
+
+async function getFacilitatorRsvpSummary(requestId: string) {
+  const request = await db.eventRequest.findUnique({
+    where: { id: requestId },
+    select: {
+      id: true,
+      minFacilitatorsRequired: true,
+      autoFinalApproveWhenMinMet: true,
+      rsvpDeadlineAt: true,
+      workflowStage: true,
+      facilitatorThresholdMetAt: true
+    }
+  })
+  if (!request) return null
+
+  const rsvps = await db.eventRequestFacilitatorRsvp.findMany({
+    where: { requestId },
+    include: {
+      user: { select: { id: true, name: true, preferredName: true, role: true } }
+    }
+  })
+
+  const yes = rsvps.filter((r) => r.status === 'YES')
+  const no = rsvps.filter((r) => r.status === 'NO')
+  const maybe = rsvps.filter((r) => r.status === 'MAYBE')
+  const pending = rsvps.filter((r) => r.status === 'PENDING')
+  const minRequired = safeTemplateMin(request.minFacilitatorsRequired)
+  const minMet = minRequired > 0 ? yes.length >= minRequired : yes.length > 0
+  const allResponded = pending.length === 0 && rsvps.length > 0
+  const deadlineReached = !!request.rsvpDeadlineAt && new Date() >= new Date(request.rsvpDeadlineAt)
+
+  return {
+    request,
+    totals: {
+      totalTargets: rsvps.length,
+      yes: yes.length,
+      no: no.length,
+      maybe: maybe.length,
+      pending: pending.length,
+      minRequired,
+      minMet,
+      allResponded,
+      deadlineReached
+    },
+    participants: {
+      yes: yes.map((item) => ({ id: item.user.id, name: item.user.preferredName || item.user.name || 'User' })),
+      no: no.map((item) => ({ id: item.user.id, name: item.user.preferredName || item.user.name || 'User' })),
+      maybe: maybe.map((item) => ({ id: item.user.id, name: item.user.preferredName || item.user.name || 'User' })),
+      pending: pending.map((item) => ({ id: item.user.id, name: item.user.preferredName || item.user.name || 'User' }))
+    }
+  }
+}
+
+async function notifyAdminsFacilitatorSummary(requestId: string, summaryText: string) {
+  const admins = await db.user.findMany({
+    where: { role: 'ADMIN', status: 'ACTIVE' },
+    select: { id: true }
+  })
+  if (admins.length === 0) return
+
+  await db.notification.createMany({
+    data: admins.map((admin) => ({
+      userId: admin.id,
+      type: 'EVENT_REQUEST_READY',
+      title: 'Facilitator RSVP Summary Ready',
+      message: summaryText,
+      link: `/admin/event-requests/${requestId}`
+    }))
+  })
+}
+
+async function autoFinalizeEventRequest(requestId: string, reviewerUserId: string) {
+  const request = await db.eventRequest.findUnique({
+    where: { id: requestId },
+    include: {
+      geriatricHome: true,
+      existingEvent: true
+    }
+  })
+
+  if (!request) return { error: 'Request not found' }
+  if (request.status !== 'PENDING') return { error: 'Request is no longer pending' }
+
+  let approvedEventId = request.existingEventId
+  const approvedEventIds: string[] = request.existingEventId ? [request.existingEventId] : []
+
+  if (request.type === 'CREATE_CUSTOM') {
+    let locationId: string
+    if (request.customLocationName) {
+      const location = await db.location.create({
+        data: {
+          name: request.customLocationName,
+          address: request.customLocationAddress || request.customLocationName,
+          type: 'HOME',
+          updatedAt: new Date()
+        }
+      })
+      locationId = location.id
+    } else {
+      const location = await db.location.create({
+        data: {
+          name: request.geriatricHome.name,
+          address: request.geriatricHome.address,
+          type: 'HOME',
+          updatedAt: new Date()
+        }
+      })
+      locationId = location.id
+    }
+
+    const eventTitle = request.customTitle
+    const eventStartDateTime = request.customStartDateTime
+    const eventEndDateTime = request.customEndDateTime
+    if (!eventTitle || !eventStartDateTime || !eventEndDateTime) {
+      return { error: 'Missing custom event schedule for auto-approval' }
+    }
+
+    const parsedPreferredDates = (() => {
+      if (!request.preferredDates) return [] as Array<{ startDateTime: Date; endDateTime: Date }>
+      try {
+        const slots = JSON.parse(request.preferredDates) as Array<{ startDateTime?: string; endDateTime?: string }>
+        return slots
+          .map((slot) => ({
+            startDateTime: parseEventDateTime(slot.startDateTime),
+            endDateTime: parseEventDateTime(slot.endDateTime),
+          }))
+          .filter((slot) => slot.startDateTime && slot.endDateTime && slot.endDateTime > slot.startDateTime)
+          .map((slot) => ({ startDateTime: slot.startDateTime!, endDateTime: slot.endDateTime! }))
+      } catch {
+        return []
+      }
+    })()
+
+    const eventSlots = parsedPreferredDates.length > 0
+      ? parsedPreferredDates
+      : [{ startDateTime: eventStartDateTime, endDateTime: eventEndDateTime }]
+
+    for (const slot of eventSlots) {
+      const event = await db.event.create({
+        data: {
+          title: eventTitle,
+          description: request.customDescription || undefined,
+          startDateTime: slot.startDateTime,
+          endDateTime: slot.endDateTime,
+          locationId,
+          geriatricHomeId: request.geriatricHomeId,
+          status: 'PUBLISHED',
+          origin: 'HOME_REQUESTED',
+          homeAdminReminderDays: request.homeAdminReminderDays || 5,
+          staffReminderDays: request.staffReminderDays || 3,
+          reminderMessage: request.reminderMessage || null,
+          updatedAt: new Date()
+        }
+      })
+      approvedEventIds.push(event.id)
+    }
+
+    approvedEventId = approvedEventIds[0] || null
+  } else if (request.existingEventId) {
+    await db.event.update({
+      where: { id: request.existingEventId },
+      data: { geriatricHomeId: request.geriatricHomeId }
+    })
+  }
+
+  await db.eventRequest.update({
+    where: { id: requestId },
+    data: {
+      status: 'APPROVED',
+      workflowStage: 'FINAL_APPROVED',
+      reviewedBy: reviewerUserId,
+      reviewedAt: new Date(),
+      approvedEventId: request.type === 'CREATE_CUSTOM' ? approvedEventId : null
+    }
+  })
+
+  await db.notification.create({
+    data: {
+      userId: request.geriatricHome.userId,
+      type: 'EVENT_REQUEST_APPROVED',
+      title: 'Event Request Approved',
+      message: `Your event request has been approved automatically after facilitator confirmations.`,
+      link: '/dashboard/my-events'
+    }
+  })
+
+  await prisma.auditLog.create({
+    data: {
+      action: 'EVENT_REQUEST_AUTO_APPROVED',
+      details: JSON.stringify({ requestId, approvedEventId }),
+      userId: reviewerUserId
+    }
+  })
+
+  if (approvedEventIds.length > 0) {
+    for (const eventId of approvedEventIds) {
+      try {
+        await scheduleEventReminders(eventId)
+      } catch (error) {
+        logger.error('Failed to schedule auto-approved event reminder', error)
+      }
+    }
+  }
+
+  revalidatePath('/admin/event-requests')
+  revalidatePath('/staff/events')
+  revalidatePath('/dashboard/requests')
+  revalidatePath('/dashboard/my-events')
+
+  return { success: true, approvedEventId }
+}
+
 // ============================================
 // HOME_ADMIN ACTIONS
 // ============================================
@@ -219,6 +485,7 @@ export async function submitEventSignUpForm(
     if (!event.requiredFormTemplateId || !event.requiredFormTemplate) {
       return { error: "This event does not require a sign-up form" }
     }
+    const requiredTemplate = event.requiredFormTemplate
 
     const existingRequest = await db.eventRequest.findFirst({
       where: {
@@ -246,7 +513,12 @@ export async function submitEventSignUpForm(
           geriatricHomeId: home.id,
           type: 'REQUEST_EXISTING',
           existingEventId: eventId,
-          requestedBy: session.user.id
+          requestedBy: session.user.id,
+          workflowStage: 'PENDING_INITIAL_ADMIN_APPROVAL',
+          requiredGroupIds: requiredTemplate.requiredGroupIds || null,
+          requiredPersonIds: requiredTemplate.requiredPersonIds || null,
+          minFacilitatorsRequired: safeTemplateMin(requiredTemplate.minFacilitatorsRequired),
+          autoFinalApproveWhenMinMet: !!requiredTemplate.autoFinalApproveWhenMinMet
         }
       })
       await tx.formSubmission.update({
@@ -327,7 +599,17 @@ export async function createCustomEventRequest(data: {
     if (data.formTemplateId && data.formData) {
       // Validate form template exists
       const formTemplate = await db.formTemplate.findUnique({
-        where: { id: data.formTemplateId }
+        where: { id: data.formTemplateId },
+        select: {
+          id: true,
+          title: true,
+          formFields: true,
+          requiredGroupIds: true,
+          requiredPersonIds: true,
+          minFacilitatorsRequired: true,
+          autoFinalApproveWhenMinMet: true,
+          facilitatorRsvpDeadlineHours: true
+        }
       })
 
       if (!formTemplate) return { error: "Form template not found" }
@@ -389,6 +671,11 @@ export async function createCustomEventRequest(data: {
           notes: (data.formData.notes as string) || (data.formData.Notes as string) || null,
           expectedAttendees: (data.formData.expectedAttendees as number) || (data.formData.ExpectedAttendees as number) || null,
           status: 'PENDING',
+          workflowStage: 'PENDING_INITIAL_ADMIN_APPROVAL',
+          requiredGroupIds: formTemplate.requiredGroupIds || null,
+          requiredPersonIds: formTemplate.requiredPersonIds || null,
+          minFacilitatorsRequired: safeTemplateMin(formTemplate.minFacilitatorsRequired),
+          autoFinalApproveWhenMinMet: !!formTemplate.autoFinalApproveWhenMinMet,
           requestedAt: new Date(),
           updatedAt: new Date()
         }
@@ -921,6 +1208,19 @@ export async function getEventRequestDetail(requestId: string) {
         },
         formSubmission: {
           include: { template: { select: { title: true, formFields: true } } }
+        },
+        facilitatorRsvps: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                preferredName: true,
+                role: true
+              }
+            }
+          },
+          orderBy: { createdAt: 'asc' }
         }
       }
     })
@@ -966,12 +1266,103 @@ export async function approveEventRequest(
       where: { id: requestId },
       include: {
         geriatricHome: true,
-        existingEvent: true
+        existingEvent: true,
+        formSubmission: {
+          include: {
+            template: {
+              select: {
+                requiredGroupIds: true,
+                requiredPersonIds: true,
+                minFacilitatorsRequired: true,
+                autoFinalApproveWhenMinMet: true,
+                facilitatorRsvpDeadlineHours: true
+              }
+            }
+          }
+        }
       }
     })
 
     if (!request) return { error: "Request not found" }
-    if (request.status !== 'PENDING') return { error: "Request is not pending" }
+    if (!['PENDING'].includes(request.status)) return { error: "Request is not pending" }
+
+    const templateSnapshot = request.formSubmission?.template
+    const requiredGroupIds = request.requiredGroupIds || templateSnapshot?.requiredGroupIds || null
+    const requiredPersonIds = request.requiredPersonIds || templateSnapshot?.requiredPersonIds || null
+    const minFacilitatorsRequired = safeTemplateMin(request.minFacilitatorsRequired ?? templateSnapshot?.minFacilitatorsRequired)
+    const autoFinalApproveWhenMinMet = request.autoFinalApproveWhenMinMet ?? !!templateSnapshot?.autoFinalApproveWhenMinMet
+    const deadlineHours = Math.max(1, templateSnapshot?.facilitatorRsvpDeadlineHours || 48)
+
+    const hasTargeting = parseJsonIds(requiredGroupIds).length > 0 || parseJsonIds(requiredPersonIds).length > 0
+    const needsFacilitatorPhase = hasTargeting && minFacilitatorsRequired > 0
+    const workflowStage = request.workflowStage || 'PENDING_INITIAL_ADMIN_APPROVAL'
+
+    if (needsFacilitatorPhase && workflowStage === 'PENDING_INITIAL_ADMIN_APPROVAL') {
+      const targetUserIds = await getEligibleFacilitatorUserIdsFromSnapshot({
+        requiredGroupIdsJson: requiredGroupIds,
+        requiredPersonIdsJson: requiredPersonIds
+      })
+
+      if (targetUserIds.length === 0) {
+        return { error: 'No active facilitators found in the required groups/personnel. Update the form targeting first.' }
+      }
+
+      const now = new Date()
+      const deadline = new Date(now.getTime() + deadlineHours * 60 * 60 * 1000)
+
+      await db.$transaction(async (tx) => {
+        await tx.eventRequest.update({
+          where: { id: requestId },
+          data: {
+            workflowStage: 'FACILITATOR_RSVP_OPEN',
+            requiredGroupIds,
+            requiredPersonIds,
+            minFacilitatorsRequired,
+            autoFinalApproveWhenMinMet,
+            rsvpOpenedAt: now,
+            rsvpDeadlineAt: deadline,
+            updatedAt: now
+          }
+        })
+
+        await tx.eventRequestFacilitatorRsvp.createMany({
+          data: targetUserIds.map((userId) => ({
+            requestId,
+            userId,
+            status: 'PENDING'
+          })),
+          skipDuplicates: true
+        })
+
+        await tx.notification.createMany({
+          data: targetUserIds.map((userId) => ({
+            userId,
+            type: 'EVENT_REQUEST_AVAILABILITY',
+            title: 'Facilitator RSVP Needed',
+            message: `${request.geriatricHome.name} needs facilitator RSVP for "${request.customTitle || request.existingEvent?.title || 'Event request'}"`,
+            link: '/staff/events'
+          }))
+        })
+      })
+
+      await prisma.auditLog.create({
+        data: {
+          action: 'EVENT_REQUEST_PREAPPROVED_FOR_FACILITATOR_RSVP',
+          details: JSON.stringify({ requestId, targetCount: targetUserIds.length, minFacilitatorsRequired, deadlineHours }),
+          userId: session.user.id
+        }
+      })
+
+      revalidatePath('/admin/event-requests')
+      revalidatePath(`/admin/event-requests/${requestId}`)
+      revalidatePath('/staff/events')
+
+      return { success: true, stage: 'FACILITATOR_RSVP_OPEN' }
+    }
+
+    if (needsFacilitatorPhase && workflowStage === 'FACILITATOR_RSVP_OPEN') {
+      return { error: 'Facilitator RSVP phase is still open. Close RSVP or wait for threshold/deadline.' }
+    }
 
     let approvedEventId = request.existingEventId
     let approvedEventIds: string[] = request.existingEventId ? [request.existingEventId] : []
@@ -1079,6 +1470,7 @@ export async function approveEventRequest(
       where: { id: requestId },
       data: {
         status: 'APPROVED',
+        workflowStage: 'FINAL_APPROVED',
         reviewedBy: session.user.id,
         reviewedAt: new Date(),
         approvedEventId: request.type === 'CREATE_CUSTOM' ? approvedEventId : null
@@ -1183,11 +1575,13 @@ export async function approveEventRequest(
       })
     }
 
+    const finalRsvpSummary = hasTargeting ? await getFacilitatorRsvpSummary(requestId) : null
+
     // Create audit log
     await prisma.auditLog.create({
       data: {
         action: 'EVENT_REQUEST_APPROVED',
-        details: JSON.stringify({ requestId, approvedEventId }),
+        details: JSON.stringify({ requestId, approvedEventId, facilitatorRsvpSummary: finalRsvpSummary?.totals || null }),
         userId: session.user.id
       }
     })
@@ -1238,6 +1632,7 @@ export async function rejectEventRequest(requestId: string, reason: string) {
       where: { id: requestId },
       data: {
         status: 'REJECTED',
+        workflowStage: 'FINAL_DENIED',
         reviewedBy: session.user.id,
         reviewedAt: new Date(),
         rejectionReason: reason
@@ -1333,6 +1728,182 @@ export async function rejectEventRequest(requestId: string, reason: string) {
   } catch (error) {
     logger.serverAction("Failed to reject request", error)
     return { error: "Failed to reject request" }
+  }
+}
+
+async function evaluateFacilitatorRsvpProgress(requestId: string, actorUserId: string, options?: { manualClose?: boolean; manualReason?: string }) {
+  const summary = await getFacilitatorRsvpSummary(requestId)
+  if (!summary) return { error: 'Request not found' as const }
+
+  if (summary.request.workflowStage !== 'FACILITATOR_RSVP_OPEN') {
+    return { success: true, summary }
+  }
+
+  const complete = summary.totals.minMet || summary.totals.allResponded || summary.totals.deadlineReached || !!options?.manualClose
+  if (!complete) return { success: true, summary }
+
+  const now = new Date()
+  const updateData: Record<string, unknown> = {
+    workflowStage: 'PENDING_FINAL_ADMIN_APPROVAL',
+    updatedAt: now
+  }
+
+  if (summary.totals.minMet && !summary.request.facilitatorThresholdMetAt) {
+    updateData.facilitatorThresholdMetAt = now
+  }
+
+  if (options?.manualClose) {
+    updateData.rsvpClosedAt = now
+    updateData.rsvpClosedById = actorUserId
+    updateData.rsvpClosedReason = options.manualReason || 'Closed by admin'
+  }
+
+  await db.eventRequest.update({ where: { id: requestId }, data: updateData })
+
+  const summaryText = `Request has YES ${summary.totals.yes}/${summary.totals.minRequired}, NO ${summary.totals.no}, MAYBE ${summary.totals.maybe}, pending ${summary.totals.pending}. Final admin decision required.`
+  await notifyAdminsFacilitatorSummary(requestId, summaryText)
+
+  await prisma.auditLog.create({
+    data: {
+      action: options?.manualClose ? 'EVENT_REQUEST_RSVP_CLOSED_MANUALLY' : 'EVENT_REQUEST_FACILITATOR_RSVP_COMPLETED',
+      details: JSON.stringify({
+        requestId,
+        minMet: summary.totals.minMet,
+        allResponded: summary.totals.allResponded,
+        deadlineReached: summary.totals.deadlineReached,
+        manualClose: !!options?.manualClose,
+        reason: options?.manualReason || null,
+        totals: summary.totals
+      }),
+      userId: actorUserId
+    }
+  })
+
+  if (summary.request.autoFinalApproveWhenMinMet && summary.totals.minMet) {
+    const adminReviewer = await db.user.findFirst({
+      where: { role: 'ADMIN', status: 'ACTIVE' },
+      select: { id: true }
+    })
+    const reviewerId = adminReviewer?.id || actorUserId
+    await autoFinalizeEventRequest(requestId, reviewerId)
+  }
+
+  revalidatePath('/admin/event-requests')
+  revalidatePath(`/admin/event-requests/${requestId}`)
+  revalidatePath('/staff/events')
+
+  return { success: true, summary }
+}
+
+export async function respondToFacilitatorRequestRsvp(data: {
+  requestId: string
+  status: 'YES' | 'NO' | 'MAYBE'
+  notes?: string
+}) {
+  const session = await auth()
+  if (!session?.user?.id) return { error: 'Unauthorized' }
+
+  if (!['YES', 'NO', 'MAYBE'].includes(data.status)) {
+    return { error: 'Invalid RSVP status' }
+  }
+
+  try {
+    const request = await db.eventRequest.findUnique({
+      where: { id: data.requestId },
+      select: { id: true, status: true, workflowStage: true, rsvpDeadlineAt: true }
+    })
+    if (!request) return { error: 'Request not found' }
+    if (request.status !== 'PENDING' || request.workflowStage !== 'FACILITATOR_RSVP_OPEN') {
+      return { error: 'This request is not accepting facilitator RSVPs' }
+    }
+    if (request.rsvpDeadlineAt && new Date() > new Date(request.rsvpDeadlineAt)) {
+      return { error: 'RSVP deadline has passed' }
+    }
+
+    const row = await db.eventRequestFacilitatorRsvp.findUnique({
+      where: { requestId_userId: { requestId: data.requestId, userId: session.user.id } }
+    })
+    if (!row) return { error: 'You are not a required facilitator for this request' }
+
+    await db.eventRequestFacilitatorRsvp.update({
+      where: { requestId_userId: { requestId: data.requestId, userId: session.user.id } },
+      data: { status: data.status, notes: data.notes || null, respondedAt: new Date() }
+    })
+
+    await prisma.auditLog.create({
+      data: {
+        action: 'EVENT_REQUEST_FACILITATOR_RSVP',
+        details: JSON.stringify({ requestId: data.requestId, status: data.status }),
+        userId: session.user.id
+      }
+    })
+
+    await evaluateFacilitatorRsvpProgress(data.requestId, session.user.id)
+
+    revalidatePath('/staff/events')
+    revalidatePath(`/admin/event-requests/${data.requestId}`)
+    return { success: true }
+  } catch (error) {
+    logger.serverAction('Failed to submit facilitator RSVP', error)
+    return { error: 'Failed to submit RSVP' }
+  }
+}
+
+export async function closeFacilitatorRsvpPhase(requestId: string, reason: string) {
+  const session = await auth()
+  if (session?.user?.role !== 'ADMIN' || !session.user.id) return { error: 'Unauthorized' }
+  if (!reason?.trim()) return { error: 'Reason is required to close RSVP early' }
+
+  try {
+    const request = await db.eventRequest.findUnique({
+      where: { id: requestId },
+      select: { id: true, workflowStage: true, status: true }
+    })
+    if (!request) return { error: 'Request not found' }
+    if (request.status !== 'PENDING' || request.workflowStage !== 'FACILITATOR_RSVP_OPEN') {
+      return { error: 'RSVP phase is not open' }
+    }
+
+    await evaluateFacilitatorRsvpProgress(requestId, session.user.id, {
+      manualClose: true,
+      manualReason: reason.trim()
+    })
+
+    return { success: true }
+  } catch (error) {
+    logger.serverAction('Failed to close facilitator RSVP phase', error)
+    return { error: 'Failed to close RSVP phase' }
+  }
+}
+
+export async function getPendingFacilitatorRsvpRequests() {
+  const session = await auth()
+  if (!session?.user?.id) return { error: 'Unauthorized' }
+
+  try {
+    const rows = await db.eventRequestFacilitatorRsvp.findMany({
+      where: {
+        userId: session.user.id,
+        request: {
+          status: 'PENDING',
+          workflowStage: 'FACILITATOR_RSVP_OPEN'
+        }
+      },
+      include: {
+        request: {
+          include: {
+            geriatricHome: { select: { id: true, name: true } },
+            existingEvent: { select: { id: true, title: true } }
+          }
+        }
+      },
+      orderBy: { createdAt: 'desc' }
+    })
+
+    return { success: true, data: rows }
+  } catch (error) {
+    logger.serverAction('Failed to load facilitator RSVP queue', error)
+    return { error: 'Failed to load facilitator RSVP queue' }
   }
 }
 

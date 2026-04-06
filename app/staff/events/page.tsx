@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma"
 import { redirect } from "next/navigation"
 import { Calendar } from "lucide-react"
 import { StaffEventsClient } from "./StaffEventsClient"
+import { getPendingFacilitatorRsvpRequests } from "@/app/actions/event-requests"
 
 const db = prisma as any
 
@@ -13,7 +14,8 @@ export default async function StaffEventsPage() {
   if (!session?.user?.id) redirect('/login')
 
   // Get published events (past month + future) for calendar view
-  const events = await db.event.findMany({
+  const [events, pendingRsvpsResult] = await Promise.all([
+    db.event.findMany({
     where: {
       status: 'PUBLISHED',
       startDateTime: {
@@ -29,7 +31,9 @@ export default async function StaffEventsPage() {
       _count: { select: { attendances: true, photos: true } }
     },
     orderBy: { startDateTime: 'asc' }
-  })
+  }),
+    getPendingFacilitatorRsvpRequests()
+  ])
 
   // Add user's attendance status to each event
   const eventsWithStatus = events.map((event: any) => {
@@ -57,12 +61,14 @@ export default async function StaffEventsPage() {
 
   const userRole = session?.user?.role || 'FACILITATOR'
   const canCreateEvents = ['ADMIN', 'HOME_ADMIN', 'FACILITATOR'].includes(userRole)
+  const pendingFacilitatorRequests = pendingRsvpsResult.success ? pendingRsvpsResult.data : []
 
   return (
     <div className="h-full flex flex-col">
       <div className="flex-1 min-h-0">
         <StaffEventsClient
           events={eventsWithStatus}
+          pendingFacilitatorRequests={pendingFacilitatorRequests}
           userRole={userRole}
           canCreateEvents={canCreateEvents}
         />

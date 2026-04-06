@@ -1,9 +1,7 @@
 import { auth } from '@/auth'
 import { redirect, notFound } from 'next/navigation'
-import Link from 'next/link'
 import { prisma } from '@/lib/prisma'
 import { FormTemplateBuilder } from '@/components/admin/FormTemplateBuilder'
-import { ArrowLeft, FileText } from 'lucide-react'
 
 export default async function EditFormTemplatePage({
   params,
@@ -14,9 +12,21 @@ export default async function EditFormTemplatePage({
   if (session?.user?.role !== 'ADMIN') redirect('/dashboard')
 
   const { id } = await params
-  const template = await prisma.formTemplate.findUnique({
-    where: { id },
-  })
+  const [template, groups, facilitators] = await Promise.all([
+    prisma.formTemplate.findUnique({
+      where: { id },
+    }),
+    prisma.messageGroup.findMany({
+      where: { isActive: true, isAttachableToForms: true },
+      select: { id: true, name: true, iconEmoji: true },
+      orderBy: { name: 'asc' }
+    }),
+    prisma.user.findMany({
+      where: { status: 'ACTIVE', role: 'FACILITATOR' },
+      select: { id: true, name: true, preferredName: true, role: true },
+      orderBy: { name: 'asc' }
+    })
+  ])
 
   if (!template) notFound()
 
@@ -35,6 +45,13 @@ export default async function EditFormTemplatePage({
           initialFormFields={safeFormFields}
           initialIsPublic={template.isPublic ?? true}
           initialAllowedRoles={template.allowedRoles ?? null}
+          initialRequiredGroupIds={template.requiredGroupIds ?? null}
+          initialRequiredPersonIds={template.requiredPersonIds ?? null}
+          initialMinFacilitatorsRequired={template.minFacilitatorsRequired ?? 0}
+          initialAutoFinalApproveWhenMinMet={template.autoFinalApproveWhenMinMet ?? false}
+          initialFacilitatorRsvpDeadlineHours={template.facilitatorRsvpDeadlineHours ?? 48}
+          availableGroups={groups}
+          availableFacilitators={facilitators}
         />
       </div>
     </div>

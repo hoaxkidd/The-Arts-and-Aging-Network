@@ -33,6 +33,7 @@ interface Group {
   name: string
   color: string
   iconEmoji: string
+  isAttachableToForms?: boolean
   _count?: {
     members?: number
     messages?: number
@@ -114,6 +115,11 @@ function GroupsList({ groups }: { groups: Group[] }) {
                         </div>
                     </div>
                     <div className="mt-4 pt-4 border-t border-gray-100">
+                        {group.isAttachableToForms && (
+                            <span className="inline-flex mb-2 px-2 py-0.5 text-[11px] rounded-full bg-emerald-100 text-emerald-700 font-medium">
+                                Attachable to Forms
+                            </span>
+                        )}
                         <span className="text-sm font-medium text-primary-600 group-hover:text-primary-700">
                             Manage Settings →
                         </span>

@@ -12,7 +12,7 @@
     "test:run": "vitest run",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest --coverage",
-    "db:push": "node scripts/with-env.js .env.local -- npx prisma db push",
+    "db:push": "node scripts/with-env.mjs .env.local -- npx prisma db push",
     "db:seed": "npx prisma db seed",
     "qa:role-matrix": "node scripts/qa-role-matrix.mjs",
     "qa:seed-role-matrix": "npx tsx scripts/qa-seed-role-matrix.ts",

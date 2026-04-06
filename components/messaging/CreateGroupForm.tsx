@@ -56,6 +56,7 @@ export function CreateGroupForm({ staff, events }: CreateGroupFormProps) {
     color: 'blue',
     eventId: '',
     allowAllStaff: false,
+    isAttachableToForms: false,
     initialMembers: [] as string[]
   })
 
@@ -239,6 +240,23 @@ export function CreateGroupForm({ staff, events }: CreateGroupFormProps) {
               <p className="font-medium text-gray-900">Allow All Staff</p>
               <p className="text-sm text-gray-600">
                 Staff members can join automatically without admin approval
+              </p>
+            </div>
+          </label>
+
+          <label htmlFor="attach-to-forms" className="flex items-start gap-3 p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
+            <input
+              id="attach-to-forms"
+              name="isAttachableToForms"
+              type="checkbox"
+              checked={formData.isAttachableToForms}
+              onChange={(e) => setFormData(prev => ({ ...prev, isAttachableToForms: e.target.checked }))}
+              className="mt-1"
+            />
+            <div>
+              <p className="font-medium text-gray-900">Attachable to Event Forms</p>
+              <p className="text-sm text-gray-600">
+                This group can be selected on event sign-up templates for facilitator RSVP targeting.
               </p>
             </div>
           </label>

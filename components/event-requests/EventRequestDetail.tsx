@@ -10,11 +10,13 @@ import {
   XCircle,
   Loader2,
   Eye,
-  FileText
+  FileText,
+  Timer,
+  Users
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { STYLES } from '@/lib/styles'
-import { approveEventRequest, grantEventRequestEditAccess, rejectEventRequest } from '@/app/actions/event-requests'
+import { approveEventRequest, closeFacilitatorRsvpPhase, grantEventRequestEditAccess, rejectEventRequest } from '@/app/actions/event-requests'
 import { triggerNotificationRefresh } from '@/lib/notification-refresh'
 import { FormTemplateView } from '@/components/forms/FormTemplateView'
 import type { FormTemplateField } from '@/lib/form-template-types'
@@ -23,6 +25,9 @@ type Request = {
   id: string
   type: string
   status: string
+  workflowStage?: string | null
+  minFacilitatorsRequired?: number | null
+  rsvpDeadlineAt?: Date | string | null
   requestedAt: Date | string
   rejectionReason: string | null
   notes: string | null
@@ -37,6 +42,11 @@ type Request = {
   formSubmission?: { id: string; formData: string; template: { title: string; formFields: string | null } } | null
   editAccessGranted?: boolean
   preferredDates?: string | null
+  facilitatorRsvps?: Array<{
+    id: string
+    status: string
+    user: { id: string; name: string | null; preferredName: string | null; role: string }
+  }>
 }
 
 function parsePreferredDates(preferredDates?: string | null): Array<{ startDateTime: Date; endDateTime: Date }> {
@@ -126,6 +136,7 @@ export function EventRequestDetail({ request }: { request: Request }) {
   const [isPending, startTransition] = useTransition()
   const [rejectOpen, setRejectOpen] = useState(false)
   const [grantingEdit, setGrantingEdit] = useState(false)
+  const [closingRsvp, setClosingRsvp] = useState(false)
 
   const isCustom = request.type === 'CREATE_CUSTOM'
   const title = isCustom ? request.customTitle : request.existingEvent?.title
@@ -137,11 +148,37 @@ export function EventRequestDetail({ request }: { request: Request }) {
       ? request.requestedAt
       : ''
 
+  const facilitatorTotals = (request.facilitatorRsvps || []).reduce((acc, row) => {
+    const key = row.status.toUpperCase()
+    if (key === 'YES') acc.yes += 1
+    else if (key === 'NO') acc.no += 1
+    else if (key === 'MAYBE') acc.maybe += 1
+    else acc.pending += 1
+    return acc
+  }, { yes: 0, no: 0, maybe: 0, pending: 0 })
+
+  const minRequired = request.minFacilitatorsRequired || 0
+  const minMet = minRequired > 0 ? facilitatorTotals.yes >= minRequired : facilitatorTotals.yes > 0
+
   const handleApprove = () => {
     startTransition(async () => {
       const res = await approveEventRequest(request.id)
       if (res.error) return
       triggerNotificationRefresh()
+      router.refresh()
+    })
+  }
+
+  const handleCloseRsvp = () => {
+    const reason = prompt('Why are you closing RSVP now?')
+    if (!reason?.trim()) return
+    setClosingRsvp(true)
+    startTransition(async () => {
+      const res = await closeFacilitatorRsvpPhase(request.id, reason.trim())
+      if (res.error) {
+        alert(res.error)
+      }
+      setClosingRsvp(false)
       router.refresh()
     })
   }
@@ -209,6 +246,9 @@ export function EventRequestDetail({ request }: { request: Request }) {
           )}>
             {request.status}
           </span>
+          {request.status === 'PENDING' && request.workflowStage && request.workflowStage !== 'PENDING_INITIAL_ADMIN_APPROVAL' && (
+            <span className="text-xs text-gray-500">{request.workflowStage.replaceAll('_', ' ')}</span>
+          )}
           <span className="text-gray-500">
             Requested {requestedAt ? new Date(requestedAt).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' }) : '—'}
           </span>
@@ -274,6 +314,38 @@ export function EventRequestDetail({ request }: { request: Request }) {
         <p className="text-sm text-gray-600">{request.notes || '—'}</p>
       </div>
 
+      {request.workflowStage === 'FACILITATOR_RSVP_OPEN' && (
+        <div className={cn(STYLES.card)}>
+          <h2 className="text-base font-semibold text-gray-900 border-b border-gray-100 pb-2 mb-3 flex items-center gap-2">
+            <Users className="w-4 h-4 text-primary-600" /> Facilitator RSVP Progress
+          </h2>
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-sm">
+            <div className="rounded-lg border border-gray-200 p-2"><p className="text-xs text-gray-500">YES</p><p className="font-semibold">{facilitatorTotals.yes}</p></div>
+            <div className="rounded-lg border border-gray-200 p-2"><p className="text-xs text-gray-500">NO</p><p className="font-semibold">{facilitatorTotals.no}</p></div>
+            <div className="rounded-lg border border-gray-200 p-2"><p className="text-xs text-gray-500">MAYBE</p><p className="font-semibold">{facilitatorTotals.maybe}</p></div>
+            <div className="rounded-lg border border-gray-200 p-2"><p className="text-xs text-gray-500">PENDING</p><p className="font-semibold">{facilitatorTotals.pending}</p></div>
+            <div className={cn("rounded-lg border p-2", minMet ? "border-green-200 bg-green-50" : "border-amber-200 bg-amber-50")}>
+              <p className="text-xs text-gray-500">MIN REQUIRED</p>
+              <p className="font-semibold">{facilitatorTotals.yes}/{minRequired}</p>
+            </div>
+          </div>
+          {request.rsvpDeadlineAt && (
+            <p className="text-xs text-gray-500 mt-3 flex items-center gap-1">
+              <Timer className="w-3 h-3" /> Deadline {new Date(request.rsvpDeadlineAt).toLocaleString()}
+            </p>
+          )}
+        </div>
+      )}
+
+      {request.workflowStage === 'PENDING_FINAL_ADMIN_APPROVAL' && (
+        <div className="bg-blue-50 rounded-lg border border-blue-200 p-4">
+          <h2 className="text-sm font-semibold text-blue-900 mb-1">Final Admin Review</h2>
+          <p className="text-sm text-blue-700">
+            Facilitator responses complete: YES {facilitatorTotals.yes}, NO {facilitatorTotals.no}, MAYBE {facilitatorTotals.maybe}, Pending {facilitatorTotals.pending}. Min required: {minRequired}.
+          </p>
+        </div>
+      )}
+
       {/* Form responses */}
       {request.formSubmission && formFields.length > 0 && (
         <div className={cn(STYLES.card)}>
@@ -308,7 +380,7 @@ export function EventRequestDetail({ request }: { request: Request }) {
               className={cn(STYLES.btn, "bg-green-600 text-white hover:bg-green-700 flex items-center gap-2")}
             >
               {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
-              Approve
+              {request.workflowStage === 'PENDING_FINAL_ADMIN_APPROVAL' ? 'Final Approve' : 'Initial Approve'}
             </button>
             <button
               onClick={() => setRejectOpen(true)}
@@ -317,6 +389,16 @@ export function EventRequestDetail({ request }: { request: Request }) {
             >
               <XCircle className="w-4 h-4" /> Decline
             </button>
+            {request.workflowStage === 'FACILITATOR_RSVP_OPEN' && (
+              <button
+                onClick={handleCloseRsvp}
+                disabled={isPending || closingRsvp}
+                className={cn(STYLES.btn, STYLES.btnSecondary, "flex items-center gap-2")}
+              >
+                {closingRsvp ? <Loader2 className="w-4 h-4 animate-spin" /> : <Timer className="w-4 h-4" />}
+                Close RSVP Phase
+              </button>
+            )}
           </>
         )}
         {request.status === 'APPROVED' && request.approvedEvent && (

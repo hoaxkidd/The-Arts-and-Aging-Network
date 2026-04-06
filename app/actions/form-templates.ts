@@ -170,6 +170,11 @@ export async function createFormTemplate(data: {
   requiredFor?: string[]
   isPublic?: boolean
   allowedRoles?: string[]
+  requiredGroupIds?: string[]
+  requiredPersonIds?: string[]
+  minFacilitatorsRequired?: number
+  autoFinalApproveWhenMinMet?: boolean
+  facilitatorRsvpDeadlineHours?: number
 }) {
   const session = await auth()
   if (session?.user?.role !== 'ADMIN') {
@@ -203,6 +208,11 @@ export async function createFormTemplate(data: {
         requiredFor: data.requiredFor ? JSON.stringify(data.requiredFor) : null,
         isPublic: data.isPublic !== undefined ? data.isPublic : true,
         allowedRoles: allowedRolesStr,
+        requiredGroupIds: data.requiredGroupIds && data.requiredGroupIds.length > 0 ? JSON.stringify(data.requiredGroupIds) : null,
+        requiredPersonIds: data.requiredPersonIds && data.requiredPersonIds.length > 0 ? JSON.stringify(data.requiredPersonIds) : null,
+        minFacilitatorsRequired: data.minFacilitatorsRequired ?? 0,
+        autoFinalApproveWhenMinMet: data.autoFinalApproveWhenMinMet ?? false,
+        facilitatorRsvpDeadlineHours: data.facilitatorRsvpDeadlineHours ?? 48,
         uploadedBy: session.user.id
       }
     })
@@ -243,6 +253,11 @@ export async function updateFormTemplate(
     isActive?: boolean
     version?: string
     allowedRoles?: string[]
+    requiredGroupIds?: string[]
+    requiredPersonIds?: string[]
+    minFacilitatorsRequired?: number
+    autoFinalApproveWhenMinMet?: boolean
+    facilitatorRsvpDeadlineHours?: number
   }
 ) {
   const session = await auth()
@@ -270,6 +285,21 @@ export async function updateFormTemplate(
       updates.allowedRoles = data.allowedRoles && data.allowedRoles.length > 0 
         ? data.allowedRoles.join(',') 
         : null
+    }
+    if (data.requiredGroupIds !== undefined) {
+      updates.requiredGroupIds = data.requiredGroupIds.length > 0 ? JSON.stringify(data.requiredGroupIds) : null
+    }
+    if (data.requiredPersonIds !== undefined) {
+      updates.requiredPersonIds = data.requiredPersonIds.length > 0 ? JSON.stringify(data.requiredPersonIds) : null
+    }
+    if (data.minFacilitatorsRequired !== undefined) {
+      updates.minFacilitatorsRequired = Math.max(0, data.minFacilitatorsRequired)
+    }
+    if (data.autoFinalApproveWhenMinMet !== undefined) {
+      updates.autoFinalApproveWhenMinMet = data.autoFinalApproveWhenMinMet
+    }
+    if (data.facilitatorRsvpDeadlineHours !== undefined) {
+      updates.facilitatorRsvpDeadlineHours = Math.max(1, data.facilitatorRsvpDeadlineHours)
     }
 
     const template = await prisma.formTemplate.update({

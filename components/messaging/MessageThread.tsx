@@ -49,6 +49,7 @@ type MessageThreadProps = {
   groupId: string
   currentUserId: string
   currentUserRole?: string
+  myGroupRole?: string
   initialMessages: Message[]
   members: Member[]
   isMuted: boolean
@@ -58,6 +59,7 @@ export function MessageThread({
   groupId,
   currentUserId,
   currentUserRole = 'VOLUNTEER',
+  myGroupRole = 'MEMBER',
   initialMessages,
   members,
   isMuted
@@ -72,7 +74,9 @@ export function MessageThread({
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const router = useRouter()
 
-  const isAdmin = currentUserRole === 'ADMIN'
+  const isPlatformAdmin = currentUserRole === 'ADMIN'
+  const isGroupAdmin = myGroupRole === 'ADMIN'
+  const canModerateMembers = isPlatformAdmin || isGroupAdmin
 
   // Sync with new initialMessages when they change (e.g. parent re-fetches)
   useEffect(() => {
@@ -324,7 +328,7 @@ export function MessageThread({
                   <p className="text-xs text-gray-500">{member.user.role}</p>
                 </div>
                 {/* Admin remove button (can't remove self) */}
-                {isAdmin && member.user.id !== currentUserId && (
+                {canModerateMembers && member.user.id !== currentUserId && (
                   <button
                     onClick={() => handleRemoveMember(member.user.id, member.user.preferredName || member.user.name || 'this user')}
                     disabled={removingUserId === member.user.id}
@@ -339,7 +343,7 @@ export function MessageThread({
           </div>
 
           {/* Leave group button */}
-          {!isAdmin && (
+          {!isPlatformAdmin && (
             <div className="p-3 border-t border-gray-200">
               <button
                 onClick={handleLeaveGroup}
