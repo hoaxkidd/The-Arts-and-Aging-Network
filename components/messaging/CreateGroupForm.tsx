@@ -19,6 +19,7 @@ type Event = {
   id: string
   title: string
   startDateTime: Date
+  status: string
 }
 
 type CreateGroupFormProps = {
@@ -215,7 +216,7 @@ export function CreateGroupForm({ staff, events }: CreateGroupFormProps) {
                 <option value="">Choose an event...</option>
                 {events.map(event => (
                   <option key={event.id} value={event.id}>
-                    {event.title} - {new Date(event.startDateTime).toLocaleDateString()}
+                    [{event.status}] {event.title} - {new Date(event.startDateTime).toLocaleDateString()}
                   </option>
                 ))}
               </select>
@@ -268,36 +269,62 @@ export function CreateGroupForm({ staff, events }: CreateGroupFormProps) {
             <h2 className="text-lg font-semibold text-gray-900">Initial Members</h2>
             <p className="text-sm text-gray-600">Select staff to add to this group</p>
 
-            <div className="max-h-64 overflow-y-auto border border-gray-200 rounded-lg">
-              {staff.map(member => (
-                <label
-                  key={member.id}
-                  htmlFor={`member-${member.id}`}
-                  className="flex items-center gap-3 p-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-0"
-                >
-                  <input
-                    id={`member-${member.id}`}
-                    name="initialMembers"
-                    type="checkbox"
-                    value={member.id}
-                    checked={formData.initialMembers.includes(member.id)}
-                    onChange={() => toggleMember(member.id)}
-                  />
-                  <div className="w-8 h-8 rounded-full bg-primary-100 text-primary-600 flex items-center justify-center text-sm font-medium">
-                    {member.name?.[0] || 'U'}
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-900">
-                      {member.preferredName || member.name}
-                    </p>
-                    <p className="text-xs text-gray-500">{member.email || 'No email'}</p>
-                  </div>
-                  <span className="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded">
-                    {member.role}
-                  </span>
-                </label>
-              ))}
-            </div>
+            {/* Group by role */}
+            {(() => {
+              const staffByRole = staff.reduce((acc, member) => {
+                const role = member.role || 'OTHER'
+                if (!acc[role]) acc[role] = []
+                acc[role].push(member)
+                return acc
+              }, {} as Record<string, typeof staff>)
+
+              const roles = Object.keys(staffByRole).sort()
+
+              return (
+                <div className="space-y-2">
+                  {roles.map(role => (
+                    <div key={role} className="border border-gray-200 rounded-lg overflow-hidden">
+                      <details className="group">
+                        <summary className="flex items-center justify-between p-3 bg-gray-50 cursor-pointer hover:bg-gray-100">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium text-gray-900">{role}</span>
+                            <span className="text-xs text-gray-500">({staffByRole[role].length})</span>
+                          </div>
+                          <span className="text-xs text-gray-400 group-open:rotate-90 transition-transform">▶</span>
+                        </summary>
+                        <div className="max-h-48 overflow-y-auto divide-y divide-gray-100">
+                          {staffByRole[role].map(member => (
+                            <label
+                              key={member.id}
+                              htmlFor={`member-${member.id}`}
+                              className="flex items-center gap-3 p-3 hover:bg-gray-50 cursor-pointer"
+                            >
+                              <input
+                                id={`member-${member.id}`}
+                                name="initialMembers"
+                                type="checkbox"
+                                value={member.id}
+                                checked={formData.initialMembers.includes(member.id)}
+                                onChange={() => toggleMember(member.id)}
+                              />
+                              <div className="w-8 h-8 rounded-full bg-primary-100 text-primary-600 flex items-center justify-center text-sm font-medium">
+                                {member.name?.[0] || 'U'}
+                              </div>
+                              <div className="flex-1">
+                                <p className="text-sm font-medium text-gray-900">
+                                  {member.preferredName || member.name}
+                                </p>
+                                <p className="text-xs text-gray-500">{member.email || 'No email'}</p>
+                              </div>
+                            </label>
+                          ))}
+                        </div>
+                      </details>
+                    </div>
+                  ))}
+                </div>
+              )
+            })()}
 
             <p className="text-sm text-gray-600">
               {formData.initialMembers.length} member(s) selected

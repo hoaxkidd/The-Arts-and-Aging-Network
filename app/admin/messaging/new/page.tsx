@@ -26,19 +26,19 @@ export default async function NewMessageGroupPage() {
     orderBy: { name: 'asc' }
   })
 
-  // Get all active events for event-based groups
+  // Get all events for event-based groups (both upcoming and recent past)
   const events = await prisma.event.findMany({
     where: {
-      status: 'PUBLISHED',
-      startDateTime: { gte: new Date() }
+      status: { in: ['DRAFT', 'PUBLISHED'] }
     },
     select: {
       id: true,
       title: true,
-      startDateTime: true
+      startDateTime: true,
+      status: true
     },
-    orderBy: { startDateTime: 'asc' },
-    take: 50
+    orderBy: { startDateTime: 'desc' },
+    take: 100
   })
 
   return (

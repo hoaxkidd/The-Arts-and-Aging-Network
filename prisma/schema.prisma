@@ -403,6 +403,7 @@ model FormTemplate {
   submissions   FormSubmission[]
   uploader      User             @relation(fields: [uploadedBy], references: [id], onDelete: Cascade)
   events        Event[]
+  groupAttachments MessageGroupForm[]
 
   @@index([isActive, createdAt])
   @@index([category, isActive])
@@ -654,14 +655,33 @@ model MessageGroup {
   isAttachableToForms Boolean  @default(false)
   createdBy     String
   createdAt     DateTime       @default(now())
-  updatedAt     DateTime @updatedAt
+  updatedAt     DateTime       @updatedAt
   members       GroupMember[]
   messages      GroupMessage[]
   creator       User           @relation(fields: [createdBy], references: [id], onDelete: Cascade)
   event         Event?         @relation(fields: [eventId], references: [id])
+  formAttachments MessageGroupForm[]
 
   @@index([eventId])
   @@index([isActive, createdAt])
+}
+
+model MessageGroupForm {
+  id                          String       @id @default(cuid())
+  groupId                     String
+  formTemplateId               String
+  minFacilitatorsRequired     Int           @default(1)
+  autoFinalApproveWhenMinMet  Boolean       @default(false)
+  rsvpDeadlineHours           Int           @default(48)
+  isActive                    Boolean       @default(true)
+  createdAt                   DateTime      @default(now())
+  updatedAt                   DateTime      @updatedAt
+  group                       MessageGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  formTemplate                FormTemplate @relation(fields: [formTemplateId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, formTemplateId])
+  @@index([groupId])
+  @@index([formTemplateId])
 }
 
 model EventRequestFacilitatorRsvp {

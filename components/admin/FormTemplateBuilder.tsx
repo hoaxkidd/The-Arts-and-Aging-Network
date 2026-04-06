@@ -36,16 +36,6 @@ function newField(type: FormFieldType): FormTemplateField {
   return base as FormTemplateField
 }
 
-function parseIdJson(value: string | null | undefined): string[] {
-  if (!value) return []
-  try {
-    const parsed = JSON.parse(value) as unknown
-    return Array.isArray(parsed) ? parsed.filter((item): item is string => typeof item === 'string') : []
-  } catch {
-    return []
-  }
-}
-
 type Props = {
   templateId?: string
   initialTitle?: string
@@ -55,13 +45,6 @@ type Props = {
   initialFormFields?: string | null
   initialIsPublic?: boolean
   initialAllowedRoles?: string | null
-  initialRequiredGroupIds?: string | null
-  initialRequiredPersonIds?: string | null
-  initialMinFacilitatorsRequired?: number
-  initialAutoFinalApproveWhenMinMet?: boolean
-  initialFacilitatorRsvpDeadlineHours?: number | null
-  availableGroups?: Array<{ id: string; name: string; iconEmoji?: string | null }>
-  availableFacilitators?: Array<{ id: string; name: string | null; preferredName: string | null; role: string }>
   /** Called after successful create (not on update). Receives the new template. */
   onCreated?: (template: { id: string; title: string }) => void
 }
@@ -75,13 +58,6 @@ export function FormTemplateBuilder({
   initialFormFields = null,
   initialIsPublic = true,
   initialAllowedRoles = null,
-  initialRequiredGroupIds = null,
-  initialRequiredPersonIds = null,
-  initialMinFacilitatorsRequired = 0,
-  initialAutoFinalApproveWhenMinMet = false,
-  initialFacilitatorRsvpDeadlineHours = 48,
-  availableGroups = [],
-  availableFacilitators = [],
   onCreated,
 }: Props) {
   const [title, setTitle] = useState(initialTitle)
@@ -92,15 +68,6 @@ export function FormTemplateBuilder({
   const [selectedRoles, setSelectedRoles] = useState<string[]>(
     initialAllowedRoles ? initialAllowedRoles.split(',') : []
   )
-  const [selectedGroupIds, setSelectedGroupIds] = useState<string[]>(
-    parseIdJson(initialRequiredGroupIds)
-  )
-  const [selectedPersonIds, setSelectedPersonIds] = useState<string[]>(
-    parseIdJson(initialRequiredPersonIds)
-  )
-  const [minFacilitatorsRequired, setMinFacilitatorsRequired] = useState<number>(initialMinFacilitatorsRequired || 0)
-  const [autoFinalApproveWhenMinMet, setAutoFinalApproveWhenMinMet] = useState<boolean>(initialAutoFinalApproveWhenMinMet)
-  const [facilitatorRsvpDeadlineHours, setFacilitatorRsvpDeadlineHours] = useState<number>(initialFacilitatorRsvpDeadlineHours || 48)
   const [fields, setFields] = useState<FormTemplateField[]>(() =>
     parseFormFields(initialFormFields)
   )
@@ -126,11 +93,6 @@ export function FormTemplateBuilder({
     category: string
     isPublic: boolean
     selectedRoles: string[]
-    selectedGroupIds: string[]
-    selectedPersonIds: string[]
-    minFacilitatorsRequired: number
-    autoFinalApproveWhenMinMet: boolean
-    facilitatorRsvpDeadlineHours: number
     fields: FormTemplateField[]
   } | null>(null)
 
@@ -144,16 +106,11 @@ export function FormTemplateBuilder({
         category: initialCategory,
         isPublic: initialIsPublic,
         selectedRoles: initialAllowedRoles ? initialAllowedRoles.split(',') : [],
-        selectedGroupIds: parseIdJson(initialRequiredGroupIds),
-        selectedPersonIds: parseIdJson(initialRequiredPersonIds),
-        minFacilitatorsRequired: initialMinFacilitatorsRequired || 0,
-        autoFinalApproveWhenMinMet: initialAutoFinalApproveWhenMinMet,
-        facilitatorRsvpDeadlineHours: initialFacilitatorRsvpDeadlineHours || 48,
         fields: parseFormFields(initialFormFields)
       }
       setMounted(true)
     }
-  }, [mounted, initialTitle, initialDescription, initialDescriptionHtml, initialCategory, initialIsPublic, initialAllowedRoles, initialRequiredGroupIds, initialRequiredPersonIds, initialMinFacilitatorsRequired, initialAutoFinalApproveWhenMinMet, initialFacilitatorRsvpDeadlineHours, initialFormFields])
+  }, [mounted, initialTitle, initialDescription, initialDescriptionHtml, initialCategory, initialIsPublic, initialAllowedRoles, initialFormFields])
 
   // Track unsaved changes - only after mount and snapshot is initialized
   useEffect(() => {
@@ -165,17 +122,12 @@ export function FormTemplateBuilder({
     const categoryChanged = category !== initialSnapshot.current.category
     const isPublicChanged = isPublic !== initialSnapshot.current.isPublic
     const rolesChanged = JSON.stringify(selectedRoles || []) !== JSON.stringify(initialSnapshot.current.selectedRoles || [])
-    const groupsChanged = JSON.stringify(selectedGroupIds || []) !== JSON.stringify(initialSnapshot.current.selectedGroupIds || [])
-    const peopleChanged = JSON.stringify(selectedPersonIds || []) !== JSON.stringify(initialSnapshot.current.selectedPersonIds || [])
-    const minFacilitatorsChanged = minFacilitatorsRequired !== initialSnapshot.current.minFacilitatorsRequired
-    const autoFinalApproveChanged = autoFinalApproveWhenMinMet !== initialSnapshot.current.autoFinalApproveWhenMinMet
-    const rsvpDeadlineChanged = facilitatorRsvpDeadlineHours !== initialSnapshot.current.facilitatorRsvpDeadlineHours
     const fieldsChanged = JSON.stringify(fields || []) !== JSON.stringify(initialSnapshot.current.fields || [])
     
-    const hasChanges = titleChanged || descChanged || descHtmlChanged || categoryChanged || isPublicChanged || rolesChanged || groupsChanged || peopleChanged || minFacilitatorsChanged || autoFinalApproveChanged || rsvpDeadlineChanged || fieldsChanged
+    const hasChanges = titleChanged || descChanged || descHtmlChanged || categoryChanged || isPublicChanged || rolesChanged || fieldsChanged
     
     setHasUnsavedChanges(hasChanges)
-  }, [title, description, descriptionHtml, category, isPublic, selectedRoles, selectedGroupIds, selectedPersonIds, minFacilitatorsRequired, autoFinalApproveWhenMinMet, facilitatorRsvpDeadlineHours, fields, mounted])
+  }, [title, description, descriptionHtml, category, isPublic, selectedRoles, fields, mounted])
 
   // Browser-level warning for unsaved changes
   useEffect(() => {
@@ -266,14 +218,6 @@ export function FormTemplateBuilder({
     )
   }
 
-  const toggleGroup = (groupId: string) => {
-    setSelectedGroupIds((prev) => prev.includes(groupId) ? prev.filter((id) => id !== groupId) : [...prev, groupId])
-  }
-
-  const togglePerson = (userId: string) => {
-    setSelectedPersonIds((prev) => prev.includes(userId) ? prev.filter((id) => id !== userId) : [...prev, userId])
-  }
-
   const handleSave = async () => {
     setError(null)
     setSuccess(false)
@@ -299,14 +243,9 @@ export function FormTemplateBuilder({
           category,
           formFields: formFieldsJson,
           isFillable,
-            isPublic,
-            allowedRoles: selectedRoles,
-            requiredGroupIds: selectedGroupIds,
-            requiredPersonIds: selectedPersonIds,
-            minFacilitatorsRequired,
-            autoFinalApproveWhenMinMet,
-            facilitatorRsvpDeadlineHours,
-          })
+          isPublic,
+          allowedRoles: selectedRoles,
+        })
         if (res.error) throw new Error(res.error)
       } else {
         const res = await createFormTemplate({
@@ -316,14 +255,9 @@ export function FormTemplateBuilder({
           category,
           formFields: formFieldsJson,
           isFillable,
-            isPublic,
-            allowedRoles: selectedRoles,
-            requiredGroupIds: selectedGroupIds,
-            requiredPersonIds: selectedPersonIds,
-            minFacilitatorsRequired,
-            autoFinalApproveWhenMinMet,
-            facilitatorRsvpDeadlineHours,
-          })
+          isPublic,
+          allowedRoles: selectedRoles,
+        })
         if (res.error) throw new Error(res.error)
         if (res.data && onCreated) onCreated({ id: res.data.id, title: res.data.title })
       }
@@ -517,71 +451,6 @@ export function FormTemplateBuilder({
             </div>
           )}
 
-          <div className="border border-gray-200 rounded-lg p-4 space-y-4">
-            <h3 className="text-sm font-semibold text-gray-900">Facilitator Request Rules</h3>
-            <p className="text-xs text-gray-500">
-              Attach communication groups and/or people. After admin pre-approval, these facilitators will be asked to RSVP.
-            </p>
-
-            <div>
-              <p className="text-sm font-medium text-gray-700 mb-2">Attach groups to this form</p>
-              <div className="max-h-40 overflow-y-auto border border-gray-200 rounded-lg divide-y divide-gray-100">
-                {availableGroups.length === 0 ? (
-                  <p className="text-xs text-gray-500 p-3">No attachable groups available in Communication Hub.</p>
-                ) : availableGroups.map((group) => (
-                  <label key={group.id} className="flex items-center gap-2 p-2 hover:bg-gray-50 cursor-pointer">
-                    <input type="checkbox" checked={selectedGroupIds.includes(group.id)} onChange={() => toggleGroup(group.id)} />
-                    <span className="text-sm text-gray-700">{group.iconEmoji || '👥'} {group.name}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <p className="text-sm font-medium text-gray-700 mb-2">Attach specific facilitators</p>
-              <div className="max-h-40 overflow-y-auto border border-gray-200 rounded-lg divide-y divide-gray-100">
-                {availableFacilitators.length === 0 ? (
-                  <p className="text-xs text-gray-500 p-3">No facilitators available.</p>
-                ) : availableFacilitators.map((person) => (
-                  <label key={person.id} className="flex items-center gap-2 p-2 hover:bg-gray-50 cursor-pointer">
-                    <input type="checkbox" checked={selectedPersonIds.includes(person.id)} onChange={() => togglePerson(person.id)} />
-                    <span className="text-sm text-gray-700">{person.preferredName || person.name || 'User'} ({person.role})</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <label className="block">
-                <span className="block text-sm font-medium text-gray-700 mb-1">Min facilitators</span>
-                <input
-                  type="number"
-                  min={0}
-                  value={minFacilitatorsRequired}
-                  onChange={(e) => setMinFacilitatorsRequired(Math.max(0, Number(e.target.value || 0)))}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
-                />
-              </label>
-              <label className="block">
-                <span className="block text-sm font-medium text-gray-700 mb-1">RSVP deadline (hours)</span>
-                <input
-                  type="number"
-                  min={1}
-                  value={facilitatorRsvpDeadlineHours}
-                  onChange={(e) => setFacilitatorRsvpDeadlineHours(Math.max(1, Number(e.target.value || 48)))}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
-                />
-              </label>
-              <label className="flex items-center gap-2 mt-6">
-                <input
-                  type="checkbox"
-                  checked={autoFinalApproveWhenMinMet}
-                  onChange={(e) => setAutoFinalApproveWhenMinMet(e.target.checked)}
-                />
-                <span className="text-sm text-gray-700">Auto final approve when minimum is met</span>
-              </label>
-            </div>
-          </div>
         </div>
 
         <div className="border border-gray-200 rounded-lg p-4 space-y-4">

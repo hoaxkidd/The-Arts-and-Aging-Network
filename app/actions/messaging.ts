@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma"
 import { auth } from "@/auth"
 import { revalidatePath } from "next/cache"
 import { logger } from "@/lib/logger"
+import { Prisma } from "@prisma/client"
 
 async function canModerateGroup(userId: string, role: string | undefined, groupId: string) {
   if (role === 'ADMIN') return true
@@ -874,5 +875,120 @@ export async function deleteMessageGroup(groupId: string) {
   } catch (error) {
     logger.serverAction("Failed to delete group:", error)
     return { error: "Failed to delete group" }
+  }
+}
+
+// Attach a form template to a group (Admin)
+export async function attachFormToGroup(data: {
+  groupId: string
+  formTemplateId: string
+  minFacilitatorsRequired?: number
+  autoFinalApproveWhenMinMet?: boolean
+  rsvpDeadlineHours?: number
+}) {
+  const session = await auth()
+  if (session?.user?.role !== 'ADMIN') {
+    return { error: "Unauthorized" }
+  }
+
+  try {
+    const attachment = await prisma.messageGroupForm.create({
+      data: {
+        groupId: data.groupId,
+        formTemplateId: data.formTemplateId,
+        minFacilitatorsRequired: data.minFacilitatorsRequired ?? 1,
+        autoFinalApproveWhenMinMet: data.autoFinalApproveWhenMinMet ?? false,
+        rsvpDeadlineHours: data.rsvpDeadlineHours ?? 48,
+      }
+    })
+
+    revalidatePath(`/admin/messaging/${data.groupId}`)
+    return { success: true, data: attachment }
+  } catch (error) {
+    logger.serverAction("Failed to attach form to group:", error)
+    return { error: "Failed to attach form to group" }
+  }
+}
+
+// Remove form attachment from group (Admin)
+export async function removeFormFromGroup(groupId: string, formTemplateId: string) {
+  const session = await auth()
+  if (session?.user?.role !== 'ADMIN') {
+    return { error: "Unauthorized" }
+  }
+
+  try {
+    await prisma.messageGroupForm.delete({
+      where: {
+        groupId_formTemplateId: { groupId, formTemplateId }
+      }
+    })
+
+    revalidatePath(`/admin/messaging/${groupId}`)
+    return { success: true }
+  } catch (error) {
+    logger.serverAction("Failed to remove form from group:", error)
+    return { error: "Failed to remove form from group" }
+  }
+}
+
+// Update form attachment settings (Admin)
+export async function updateFormAttachment(data: {
+  groupId: string
+  formTemplateId: string
+  minFacilitatorsRequired?: number
+  autoFinalApproveWhenMinMet?: boolean
+  rsvpDeadlineHours?: number
+}) {
+  const session = await auth()
+  if (session?.user?.role !== 'ADMIN') {
+    return { error: "Unauthorized" }
+  }
+
+  try {
+    const updates: Record<string, unknown> = {}
+    if (data.minFacilitatorsRequired !== undefined) {
+      updates.minFacilitatorsRequired = Math.max(0, data.minFacilitatorsRequired)
+    }
+    if (data.autoFinalApproveWhenMinMet !== undefined) {
+      updates.autoFinalApproveWhenMinMet = data.autoFinalApproveWhenMinMet
+    }
+    if (data.rsvpDeadlineHours !== undefined) {
+      updates.rsvpDeadlineHours = Math.max(1, data.rsvpDeadlineHours)
+    }
+
+    await prisma.messageGroupForm.update({
+      where: {
+        groupId_formTemplateId: { groupId: data.groupId, formTemplateId: data.formTemplateId }
+      },
+      data: updates
+    })
+
+    revalidatePath(`/admin/messaging/${data.groupId}`)
+    return { success: true }
+  } catch (error) {
+    logger.serverAction("Failed to update form attachment:", error)
+    return { error: "Failed to update form attachment" }
+  }
+}
+
+// Get groups attached to a form template
+export async function getGroupsAttachedToForm(formTemplateId: string) {
+  try {
+    const attachments = await prisma.messageGroupForm.findMany({
+      where: {
+        formTemplateId,
+        isActive: true
+      },
+      include: {
+        group: {
+          select: { id: true, name: true, iconEmoji: true, isActive: true }
+        }
+      }
+    })
+    return { success: true, data: attachments }
+  } catch (error) {
+    logger.serverAction("Failed to get groups attached to form:", error)
+    return { error: "Failed to get groups attached to form" }
   }
 }
