@@ -4,7 +4,7 @@ import { redirect } from "next/navigation"
 import { InventoryHubClient } from "./InventoryHubClient"
 import { Package } from "lucide-react"
 
-export const revalidate = 60
+export const dynamic = 'force-dynamic'
 
 export default async function AdminInventoryPage() {
   const session = await auth()

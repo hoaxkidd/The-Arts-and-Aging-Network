@@ -10,7 +10,7 @@ import { FormTemplateFilters } from "@/components/admin/FormTemplateFilters"
 import { AdminFormSubmissionsList } from "@/components/admin/AdminFormSubmissionsList"
 import { CreateTemplateButton } from "@/components/admin/CreateTemplateButton"
 
-export const revalidate = 60
+export const dynamic = 'force-dynamic'
 
 export default async function AdminFormsPage({
   searchParams

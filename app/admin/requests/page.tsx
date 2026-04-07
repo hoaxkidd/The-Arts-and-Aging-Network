@@ -5,7 +5,7 @@ import { STYLES } from "@/lib/styles"
 import { cn } from "@/lib/utils"
 import { formatDateShort } from "@/lib/date-utils"
 
-export const revalidate = 30
+export const dynamic = 'force-dynamic'
 
 export default async function AdminRequestsPage() {
   const requests = await prisma.expenseRequest.findMany({

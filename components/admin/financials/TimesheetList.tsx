@@ -8,6 +8,7 @@ import Link from "next/link"
 import { Clock, CheckCircle, XCircle, AlertCircle, Trash2, Loader2 } from "lucide-react"
 import { deleteTimesheet } from "@/app/actions/timesheet"
 import { useRouter } from "next/navigation"
+import { LinedStatusTabs } from "@/components/ui/LinedStatusTabs"
 
 type Timesheet = {
   id: string
@@ -53,43 +54,24 @@ export function TimesheetList({ timesheets }: { timesheets: Timesheet[] }) {
     DRAFT: timesheets.filter(t => t.status === 'DRAFT').length
   }
 
+  const statusTabs = [
+    { id: 'SUBMITTED' as const, label: 'Pending', icon: AlertCircle, count: counts.SUBMITTED },
+    { id: 'APPROVED' as const, label: 'Approved', icon: CheckCircle, count: counts.APPROVED },
+    { id: 'REJECTED' as const, label: 'Rejected', icon: XCircle, count: counts.REJECTED },
+    { id: 'DRAFT' as const, label: 'Draft', icon: Clock, count: counts.DRAFT },
+  ]
+
+  const filterLabel =
+    filter === 'SUBMITTED' ? 'pending' : filter === 'APPROVED' ? 'approved' : filter === 'REJECTED' ? 'rejected' : 'draft'
+
   return (
     <div className="space-y-6">
-      {/* Filter Tabs */}
-      <div className="flex gap-2 border-b border-gray-200 pb-1 overflow-x-auto">
-        {(['SUBMITTED', 'APPROVED', 'REJECTED', 'DRAFT'] as const).map((status) => (
-            <button
-                key={status}
-                onClick={() => setFilter(status)}
-                className={cn(
-                    "px-4 py-2 text-sm font-medium rounded-t-lg transition-colors border-b-2",
-                    filter === status 
-                        ? "border-primary-500 text-primary-700 bg-primary-50/50" 
-                        : "border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50"
-                )}
-            >
-                <div className="flex items-center gap-2">
-                    {status === 'SUBMITTED' && <AlertCircle className="w-4 h-4" />}
-                    {status === 'APPROVED' && <CheckCircle className="w-4 h-4" />}
-                    {status === 'REJECTED' && <XCircle className="w-4 h-4" />}
-                    {status === 'DRAFT' && <Clock className="w-4 h-4" />}
-                    
-                    <span className="capitalize">
-                        {status === 'SUBMITTED' ? 'Pending' : status.toLowerCase()}
-                    </span>
-                    
-                    {counts[status] > 0 && (
-                        <span className={cn(
-                            "px-1.5 py-0.5 rounded-full text-xs",
-                            filter === status ? "bg-white text-primary-700 shadow-sm" : "bg-gray-200 text-gray-600"
-                        )}>
-                            {counts[status]}
-                        </span>
-                    )}
-                </div>
-            </button>
-        ))}
-      </div>
+      <LinedStatusTabs
+        aria-label="Timesheet status"
+        tabs={statusTabs}
+        activeId={filter}
+        onChange={setFilter}
+      />
 
       {/* Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -166,7 +148,7 @@ export function TimesheetList({ timesheets }: { timesheets: Timesheet[] }) {
       {filtered.length === 0 && (
         <div className="p-12 text-center text-gray-500 bg-gray-50 rounded-lg border border-dashed border-gray-300">
             <Clock className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-            <p>No {filter.toLowerCase()} timesheets found.</p>
+            <p>No {filterLabel} timesheets found.</p>
         </div>
       )}
     </div>

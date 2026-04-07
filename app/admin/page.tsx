@@ -6,7 +6,7 @@ import Link from "next/link"
 import { formatDateShort, getRelativeTime } from "@/lib/date-utils"
 import { STYLES } from "@/lib/styles"
 
-export const revalidate = 60
+export const dynamic = 'force-dynamic'
 
 export default async function AdminDashboard() {
   const session = await auth()

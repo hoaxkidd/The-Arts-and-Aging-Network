@@ -4,9 +4,11 @@ This document defines the canonical table implementation pattern for all pages a
 
 ## Template Reference
 
-The canonical implementation can be found in:
-- **Component:** `components/admin/events/EventListTable.tsx`
-- **Page:** `/admin/events`
+Primary references (migrate new work toward these):
+
+- **Status filter strip (lined tabs):** `components/ui/LinedStatusTabs.tsx` — used by **Financials → Timesheets** (`components/admin/financials/TimesheetList.tsx`), e.g. Pending / Approved / Rejected / Draft.
+- **Table with lined header row:** `components/admin/financials/MileageList.tsx` — `<thead><tr className={STYLES.tableHeadRow}>` plus `STYLES.tableHeader` on each `<th>`.
+- **Legacy reference:** `components/admin/events/EventListTable.tsx` / `/admin/events` (align new tables with `tableHeadRow` when touched).
 
 ## Standard Table Structure
 
@@ -25,10 +27,10 @@ The canonical implementation can be found in:
 <table className={STYLES.table}>
 ```
 
-### 4. Header Row
+### 4. Header Row (lined band)
 ```tsx
 <thead className="bg-gray-50">
-  <tr>
+  <tr className={STYLES.tableHeadRow}>
     <th className={STYLES.tableHeader}>Column Header</th>
     ...
   </tr>
@@ -52,10 +54,11 @@ The canonical implementation can be found in:
 All table styles are defined in `lib/styles.ts`:
 
 ```ts
-STYLES.table        // Base table styles
-STYLES.tableWrapper // Card wrapper with scroll
-STYLES.tableHeader  // Header cell styling
-STYLES.tableCell    // Standard cell padding (px-4 py-3)
+STYLES.table         // Base table styles
+STYLES.tableWrapper  // Card wrapper with scroll
+STYLES.tableHeadRow  // `<tr>` in thead — strong bottom border (lined header)
+STYLES.tableHeader   // Header cell styling
+STYLES.tableCell     // Standard cell padding (px-4 py-3)
 STYLES.tableRow      // Row with hover state
 ```
 
@@ -71,7 +74,7 @@ export function MyDataTable({ data }: { data: Item[] }) {
       <div className="table-scroll-wrapper max-h-[calc(100vh-320px)]">
         <table className={STYLES.table}>
           <thead className="bg-gray-50">
-            <tr>
+            <tr className={STYLES.tableHeadRow}>
               <th className={STYLES.tableHeader}>Name</th>
               <th className={STYLES.tableHeader}>Status</th>
               <th className={cn(STYLES.tableHeader, "text-right")}>Actions</th>

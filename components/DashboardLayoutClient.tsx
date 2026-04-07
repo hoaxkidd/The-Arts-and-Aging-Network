@@ -5,7 +5,8 @@ import { usePathname } from 'next/navigation'
 import Link from "next/link"
 import Image from "next/image"
 import { LogOut, Menu, ChevronRight, X, Calendar, Users, Home, DollarSign, FileText, Settings, MessageSquare, Mail, Clock, Car, Quote, Upload, UserCircle, CheckCircle, LayoutDashboard, ClipboardList, Package, Heart, Bell, Plus, Building2, FileSearch, Inbox, Edit } from "lucide-react"
-import { MENU_ITEMS, adminMenu, homeAdminMenu } from "@/lib/menu"
+import { MENU_ITEMS, homeAdminMenu } from "@/lib/menu"
+import { AdminSidebarGroupedNav } from "@/components/AdminSidebarGroupedNav"
 import { NotificationBell } from "@/components/notifications/NotificationBell"
 import { cn } from "@/lib/utils"
 import { logout } from "@/app/actions/auth"
@@ -388,9 +389,8 @@ export function DashboardLayoutClient({ children, role, title = "Arts & Aging", 
   const currentTitle = getPageTitle(normalizedPathname, homeName)
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
-  const menuItems = role === 'ADMIN' ? adminMenu
-    : role === 'HOME_ADMIN' ? homeAdminMenu
-    : MENU_ITEMS[role] || []
+  const menuItems =
+    role === 'HOME_ADMIN' ? homeAdminMenu : role === 'ADMIN' ? [] : MENU_ITEMS[role] || []
 
   const assignedRoles = Array.isArray(userSession?.roles) ? userSession.roles : (userSession?.role ? [userSession.role] : [])
   const rolePortalLinks: Array<{ role: string; href: string; label: string }> = assignedRoles
@@ -477,29 +477,37 @@ export function DashboardLayoutClient({ children, role, title = "Arts & Aging", 
               </div>
             </div>
           )}
-          {menuItems.map((item) => {
-            const Icon = item.icon
-            const isActive = pathname === item.href
-            return (
-              <Link
-                key={item.href + item.label}
-                href={item.href}
-                className={cn(
+          {role === 'ADMIN' ? (
+            <AdminSidebarGroupedNav pathname={pathname} />
+          ) : (
+            menuItems.map((item) => {
+              const Icon = item.icon
+              const isActive = pathname === item.href
+              return (
+                <Link
+                  key={item.href + item.label}
+                  href={item.href}
+                  className={cn(
                     "group flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200",
                     isActive ? "bg-white/10 text-white shadow-inner" : "hover:bg-white/5 text-primary-100"
-                )}
-              >
-                <div className={cn(
-                    "w-8 h-8 rounded-lg flex items-center justify-center transition-colors",
-                    isActive ? "bg-secondary-400 text-primary-900" : "bg-white/10 group-hover:bg-secondary-400/80 group-hover:text-primary-900"
-                )}>
-                  <Icon className="w-4 h-4" />
-                </div>
-                <span className="flex-1 font-medium">{item.label}</span>
-                {isActive && <ChevronRight className="w-4 h-4 text-secondary-400" />}
-              </Link>
-            )
-          })}
+                  )}
+                >
+                  <div
+                    className={cn(
+                      "w-8 h-8 rounded-lg flex items-center justify-center transition-colors",
+                      isActive
+                        ? "bg-secondary-400 text-primary-900"
+                        : "bg-white/10 group-hover:bg-secondary-400/80 group-hover:text-primary-900"
+                    )}
+                  >
+                    <Icon className="w-4 h-4" />
+                  </div>
+                  <span className="flex-1 font-medium">{item.label}</span>
+                  {isActive && <ChevronRight className="w-4 h-4 text-secondary-400" />}
+                </Link>
+              )
+            })
+          )}
         </nav>
 
         <div className="p-4 border-t border-white/10">
@@ -573,30 +581,38 @@ export function DashboardLayoutClient({ children, role, title = "Arts & Aging", 
                   </div>
                 </div>
               )}
-              {menuItems.map((item) => {
-                const Icon = item.icon
-                const isActive = pathname === item.href
-                return (
-                  <Link
-                    key={item.href + item.label}
-                    href={item.href}
-                    onClick={() => setSidebarOpen(false)}
-                    className={cn(
-                      "group flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200",
-                      isActive ? "bg-white/10 text-white" : "hover:bg-white/5 text-primary-100"
-                    )}
-                  >
-                    <div className={cn(
-                      "w-8 h-8 rounded-lg flex items-center justify-center",
-                      isActive ? "bg-secondary-400 text-primary-900" : "bg-white/10 group-hover:bg-secondary-400/80 group-hover:text-primary-900"
-                    )}>
-                      <Icon className="w-4 h-4" />
-                    </div>
-                    <span className="flex-1 font-medium">{item.label}</span>
-                    {isActive && <ChevronRight className="w-4 h-4 text-secondary-400" />}
-                  </Link>
-                )
-              })}
+              {role === 'ADMIN' ? (
+                <AdminSidebarGroupedNav pathname={pathname} onNavigate={() => setSidebarOpen(false)} />
+              ) : (
+                menuItems.map((item) => {
+                  const Icon = item.icon
+                  const isActive = pathname === item.href
+                  return (
+                    <Link
+                      key={item.href + item.label}
+                      href={item.href}
+                      onClick={() => setSidebarOpen(false)}
+                      className={cn(
+                        "group flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200",
+                        isActive ? "bg-white/10 text-white" : "hover:bg-white/5 text-primary-100"
+                      )}
+                    >
+                      <div
+                        className={cn(
+                          "w-8 h-8 rounded-lg flex items-center justify-center",
+                          isActive
+                            ? "bg-secondary-400 text-primary-900"
+                            : "bg-white/10 group-hover:bg-secondary-400/80 group-hover:text-primary-900"
+                        )}
+                      >
+                        <Icon className="w-4 h-4" />
+                      </div>
+                      <span className="flex-1 font-medium">{item.label}</span>
+                      {isActive && <ChevronRight className="w-4 h-4 text-secondary-400" />}
+                    </Link>
+                  )
+                })
+              )}
             </nav>
             <div className="p-4 border-t border-white/10">
               <div className="flex items-center gap-3 px-3 py-2 mb-3">

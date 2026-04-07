@@ -5,7 +5,7 @@ import { Quote, Star, CheckCircle, Clock, XCircle } from "lucide-react"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
 
-export const revalidate = 60
+export const dynamic = 'force-dynamic'
 
 export default async function TestimonialsPage() {
   const session = await auth()

@@ -8,7 +8,7 @@ import Link from "next/link"
 import { getRelativeTime } from "@/lib/date-utils"
 import { AuditLogDetailsCell } from "./AuditLogDetailsCell"
 
-export const revalidate = 60
+export const dynamic = 'force-dynamic'
 
 interface SearchParams {
   page?: string

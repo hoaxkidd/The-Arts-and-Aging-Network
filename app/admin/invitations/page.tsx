@@ -7,7 +7,7 @@ import { formatDateShort } from "@/lib/date-utils"
 import { logger } from "@/lib/logger"
 import { CopyInviteButton } from "@/components/admin/CopyInviteButton"
 
-export const revalidate = 30
+export const dynamic = 'force-dynamic'
 
 function inviteUrl(token: string) {
   const base = (process.env.NEXTAUTH_URL ?? '').replace(/\/$/, '')

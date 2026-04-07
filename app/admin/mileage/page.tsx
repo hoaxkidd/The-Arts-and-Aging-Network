@@ -8,7 +8,7 @@ import { STYLES } from "@/lib/styles"
 import { MileageApprovalActions } from "./MileageApprovalActions"
 import { formatDateShort } from "@/lib/date-utils"
 
-export const revalidate = 30
+export const dynamic = 'force-dynamic'
 
 export default async function AdminMileagePage() {
   const session = await auth()

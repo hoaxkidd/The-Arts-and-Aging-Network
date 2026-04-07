@@ -3,7 +3,7 @@ import { redirect } from "next/navigation"
 import { getPendingConversationRequests } from "@/app/actions/conversation-requests"
 import { ConversationRequestsList } from "@/components/admin/ConversationRequestsList"
 
-export const revalidate = 30
+export const dynamic = 'force-dynamic'
 
 export default async function ConversationRequestsPage() {
   const session = await auth()

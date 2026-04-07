@@ -9,7 +9,7 @@ import { formatDateShort } from "@/lib/date-utils"
 import { sendEmailWithCustomContent } from "@/lib/email/service"
 import { createNotification } from "@/lib/notifications"
 
-export const revalidate = 30
+export const dynamic = 'force-dynamic'
 
 export default async function AdminVolunteersPage() {
   const session = await auth()

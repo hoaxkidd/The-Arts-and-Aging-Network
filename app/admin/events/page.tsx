@@ -1,5 +1,5 @@
 import EventManagementHubPage from "./EventManagementHub"
 
-export const revalidate = 30
+export const dynamic = 'force-dynamic'
 
 export default EventManagementHubPage

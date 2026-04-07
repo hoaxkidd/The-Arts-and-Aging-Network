@@ -8,7 +8,7 @@
  * 1. Card wrapper: bg-white rounded-lg border border-gray-200 overflow-hidden
  * 2. Table wrapper: table-scroll-wrapper with max-h-[calc(100vh-320px)]
  * 3. Table element: STYLES.table
- * 4. Header row: bg-gray-50 with STYLES.tableHeader cells
+ * 4. Header row: thead tr with STYLES.tableHeadRow; th cells use STYLES.tableHeader
  * 5. Body: divide-y divide-gray-100
  * 6. Rows: STYLES.tableRow (includes hover state)
  * 7. Cells: STYLES.tableCell (px-4 py-3)
@@ -66,6 +66,8 @@ export const STYLES = {
   // IMPORTANT: Always wrap tables in .table-scroll-wrapper for sticky headers
   table: "w-full text-sm min-w-full",
   tableWrapper: "table-scroll-wrapper border border-gray-200 rounded-lg overflow-hidden bg-white",
+  /** Use on `<thead><tr>` for a strong lined header band (global table template). */
+  tableHeadRow: "border-b-2 border-gray-200",
   tableHeader: "sticky top-0 text-left text-xs font-bold text-gray-600 uppercase tracking-wider px-4 py-3 bg-gray-50 border-b border-gray-200",
   tableCell: "px-4 py-3 text-sm text-gray-600",
   tableRow: "border-b border-gray-100 hover:bg-gray-50 transition-colors",

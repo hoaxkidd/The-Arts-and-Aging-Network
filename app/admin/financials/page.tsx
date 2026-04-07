@@ -5,7 +5,7 @@ import { TimesheetList } from "@/components/admin/financials/TimesheetList"
 import { MileageList } from "@/components/admin/financials/MileageList"
 import { ExpenseRequestList } from "@/components/admin/financials/ExpenseRequestList"
 
-export const revalidate = 30
+export const dynamic = 'force-dynamic'
 
 // Client Wrapper Component
 import { FinancialsHubClient } from "./FinancialsHubClient"

@@ -3,7 +3,7 @@ import { auth } from "@/auth"
 import { redirect } from "next/navigation"
 import { CommunicationHubClient } from "./CommunicationHubClient"
 
-export const revalidate = 30
+export const dynamic = 'force-dynamic'
 
 export default async function CommunicationHubPage() {
   const session = await auth()

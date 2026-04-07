@@ -4,7 +4,7 @@ import { redirect } from "next/navigation"
 import { DonorsHubClient } from "./DonorsHubClient"
 import { Heart } from "lucide-react"
 
-export const revalidate = 60
+export const dynamic = 'force-dynamic'
 
 export default async function DonorsPage() {
   const session = await auth()

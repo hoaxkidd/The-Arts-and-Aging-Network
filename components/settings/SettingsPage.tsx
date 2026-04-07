@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react'
 import { useFormState } from 'react-dom'
 import {
-  Settings,
   Bell,
   User,
   Shield,
@@ -16,9 +15,18 @@ import {
   Sun,
   Moon,
   Monitor,
+  Mail,
+  FileSearch,
+  Clock,
+  Home,
+  Users,
+  XCircle,
+  ExternalLink,
 } from 'lucide-react'
+import Link from 'next/link'
 import { NotificationPreferences } from '@/components/notifications/NotificationPreferences'
 import { cn } from '@/lib/utils'
+import { STYLES } from '@/lib/styles'
 import { updateStaffProfile } from '@/app/actions/staff'
 import { changePassword } from '@/app/actions/user'
 
@@ -31,6 +39,27 @@ type SettingsPageProps = {
     email: boolean
     sms: boolean
     inApp: boolean
+  }
+  adminNotificationData?: {
+    auditLogs: {
+      id: string
+      action: string
+      userName: string
+      details: string | null
+      createdAt: string
+    }[]
+    emailReminders: {
+      id: string
+      eventTitle: string
+      homeName: string | null
+      recipientName: string
+      recipientType: string
+      reminderType: string
+      status: string
+      scheduledFor: string
+      sentAt: string | null
+      error: string | null
+    }[]
   }
 }
 
@@ -59,13 +88,18 @@ export function SettingsPage({
   userEmail,
   initialPhone = '',
   notificationPreferences,
+  adminNotificationData,
 }: SettingsPageProps) {
   const [activeTab, setActiveTab] = useState<SettingsTab>('notifications')
+  const [notificationTab, setNotificationTab] = useState<'preferences' | 'reminders' | 'audit'>('preferences')
   const [theme, setTheme] = useState<'light' | 'dark' | 'system'>('system')
   const [compact, setCompact] = useState(false)
 
   const [profileState, profileAction] = useFormState(profileReducer, {})
   const [passwordState, passwordAction] = useFormState(passwordReducer, {})
+
+  const [reminderStatusFilter, setReminderStatusFilter] = useState('ALL')
+  const [reminderTypeFilter, setReminderTypeFilter] = useState('ALL')
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -105,6 +139,48 @@ export function SettingsPage({
     { id: 'appearance', label: 'Appearance', icon: Palette },
   ]
 
+  const reminderStats = adminNotificationData
+    ? {
+        total: adminNotificationData.emailReminders.length,
+        pending: adminNotificationData.emailReminders.filter((r) => r.status === 'PENDING').length,
+        sent: adminNotificationData.emailReminders.filter((r) => r.status === 'SENT').length,
+        failed: adminNotificationData.emailReminders.filter((r) => r.status === 'FAILED').length,
+      }
+    : null
+
+  const formatAction = (action: string) =>
+    action
+      .split('_')
+      .map((part) => part.charAt(0) + part.slice(1).toLowerCase())
+      .join(' ')
+
+  const formatAuditDetails = (details: string | null): string => {
+    if (!details) return '-'
+    try {
+      const parsed = JSON.parse(details)
+      const { name, title, email, eventId, updates } = parsed as Record<string, unknown>
+      if (updates && typeof updates === 'object') {
+        const keys = Object.keys(updates)
+        if (keys.length === 1) return `Changed ${keys[0]}`
+        if (keys.length === 2) return `Changed ${keys[0]} and ${keys[1]}`
+        return `Changed ${keys.slice(0, 2).join(', ')} and ${keys.length - 2} more`
+      }
+      if (typeof name === 'string') return name
+      if (typeof title === 'string') return title
+      if (typeof email === 'string') return email
+      if (typeof eventId === 'string') return 'Event action'
+      return '-'
+    } catch {
+      return details.length > 50 ? details.slice(0, 50) + '...' : details
+    }
+  }
+
+  const filteredReminders = adminNotificationData
+    ? adminNotificationData.emailReminders
+        .filter(r => reminderStatusFilter === 'ALL' || r.status === reminderStatusFilter)
+        .filter(r => reminderTypeFilter === 'ALL' || r.recipientType === reminderTypeFilter)
+    : []
+
   return (
     <div className="h-full flex flex-col">
       <div className="flex-shrink-0 border-b border-gray-200 -mb-px">
@@ -139,9 +215,223 @@ export function SettingsPage({
           <section
             id="panel-notifications"
             aria-labelledby="tab-notifications"
-            className="max-w-2xl"
+            className="space-y-4"
           >
-            <NotificationPreferences initialPreferences={notificationPreferences} />
+            {/* Sub-tab navigation */}
+            <div className="border-b border-gray-200">
+              <div className="flex items-center gap-4 overflow-x-auto">
+                <button
+                  type="button"
+                  onClick={() => setNotificationTab('preferences')}
+                  className={cn(
+                    'py-2 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap',
+                    notificationTab === 'preferences'
+                      ? 'border-primary-500 text-primary-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  )}
+                >
+                  Preferences
+                </button>
+                {adminNotificationData && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setNotificationTab('reminders')}
+                      className={cn(
+                        'py-2 text-sm font-medium border-b-2 -mb-px transition-colors inline-flex items-center gap-2 whitespace-nowrap',
+                        notificationTab === 'reminders'
+                          ? 'border-primary-500 text-primary-600'
+                          : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                      )}
+                    >
+                      <Mail className="w-4 h-4" /> Email Reminders
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setNotificationTab('audit')}
+                      className={cn(
+                        'py-2 text-sm font-medium border-b-2 -mb-px transition-colors inline-flex items-center gap-2 whitespace-nowrap',
+                        notificationTab === 'audit'
+                          ? 'border-primary-500 text-primary-600'
+                          : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                      )}
+                    >
+                      <FileSearch className="w-4 h-4" /> Audit Log
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* Preferences Tab */}
+            {notificationTab === 'preferences' && (
+              <div className="max-w-2xl">
+                <NotificationPreferences initialPreferences={notificationPreferences} />
+              </div>
+            )}
+
+            {/* Email Reminders Tab */}
+            {notificationTab === 'reminders' && adminNotificationData && reminderStats && (
+              <div className="space-y-4">
+                {/* Stats Cards */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  <div className="bg-white rounded-lg border border-gray-200 p-3">
+                    <p className="text-xs text-gray-500">Total</p>
+                    <p className="text-lg font-bold text-gray-900">{reminderStats.total}</p>
+                  </div>
+                  <div className="bg-white rounded-lg border border-yellow-200 p-3">
+                    <p className="text-xs text-yellow-700">Pending</p>
+                    <p className="text-lg font-bold text-yellow-700">{reminderStats.pending}</p>
+                  </div>
+                  <div className="bg-white rounded-lg border border-green-200 p-3">
+                    <p className="text-xs text-green-700">Sent</p>
+                    <p className="text-lg font-bold text-green-700">{reminderStats.sent}</p>
+                  </div>
+                  <div className="bg-white rounded-lg border border-red-200 p-3">
+                    <p className="text-xs text-red-700">Failed</p>
+                    <p className="text-lg font-bold text-red-700">{reminderStats.failed}</p>
+                  </div>
+                </div>
+
+                {/* Filters */}
+                <div className="flex flex-wrap items-center justify-between gap-3 bg-white rounded-lg border border-gray-200 p-3">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <select
+                      value={reminderStatusFilter}
+                      onChange={(e) => setReminderStatusFilter(e.target.value)}
+                      className="text-sm border border-gray-300 rounded-md px-2 py-1.5"
+                    >
+                      <option value="ALL">All Status</option>
+                      <option value="PENDING">Pending</option>
+                      <option value="SENT">Sent</option>
+                      <option value="FAILED">Failed</option>
+                      <option value="CANCELLED">Cancelled</option>
+                    </select>
+                    <select
+                      value={reminderTypeFilter}
+                      onChange={(e) => setReminderTypeFilter(e.target.value)}
+                      className="text-sm border border-gray-300 rounded-md px-2 py-1.5"
+                    >
+                      <option value="ALL">All Types</option>
+                      <option value="HOME_ADMIN">Home Admin</option>
+                      <option value="STAFF">Staff</option>
+                    </select>
+                  </div>
+                  <Link href="/admin/email-reminders" className="inline-flex items-center gap-1 text-sm text-primary-600 hover:text-primary-700">
+                    <ExternalLink className="w-3.5 h-3.5" /> Open Full Page
+                  </Link>
+                </div>
+
+                {/* Table */}
+                <div className="rounded-lg border border-gray-200 bg-white overflow-hidden">
+                  <div className="table-scroll-wrapper max-h-[calc(100vh-400px)]">
+                    <table className={STYLES.table}>
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className={STYLES.tableHeader}>Event</th>
+                          <th className={STYLES.tableHeader}>Recipient</th>
+                          <th className={STYLES.tableHeader}>Type</th>
+                          <th className={STYLES.tableHeader}>Timing</th>
+                          <th className={STYLES.tableHeader}>Scheduled</th>
+                          <th className={STYLES.tableHeader}>Status</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100">
+                        {filteredReminders.map((row) => (
+                          <tr key={row.id} className={STYLES.tableRow}>
+                            <td className={STYLES.tableCell}>
+                              <p className="font-medium text-gray-900">{row.eventTitle}</p>
+                              {row.homeName && <p className="text-xs text-gray-500 flex items-center gap-1"><Home className="w-3 h-3" />{row.homeName}</p>}
+                            </td>
+                            <td className={STYLES.tableCell}>
+                              <div className="flex items-center gap-2">
+                                <div className="w-6 h-6 rounded-full bg-primary-100 text-primary-600 flex items-center justify-center text-xs font-medium shrink-0">
+                                  {row.recipientName.charAt(0) || '?'}
+                                </div>
+                                <span className="text-sm text-gray-900 truncate max-w-[100px]">{row.recipientName}</span>
+                              </div>
+                            </td>
+                            <td className={STYLES.tableCell}>
+                              <span className={cn(
+                                "inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium",
+                                row.recipientType === 'HOME_ADMIN' ? "bg-blue-100 text-blue-700" : "bg-purple-100 text-purple-700"
+                              )}>
+                                {row.recipientType === 'HOME_ADMIN' ? <><Home className="w-3 h-3" />Home Admin</> : <><Users className="w-3 h-3" />Staff</>}
+                              </span>
+                            </td>
+                            <td className={STYLES.tableCell}>
+                              <span className="text-sm text-gray-600">{row.reminderType.replaceAll('_', ' ')}</span>
+                            </td>
+                            <td className={STYLES.tableCell}>
+                              <span className="text-sm text-gray-900">{new Date(row.scheduledFor).toLocaleDateString()}</span>
+                              <span className="text-xs text-gray-500 block">{new Date(row.scheduledFor).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</span>
+                            </td>
+                            <td className={STYLES.tableCell}>
+                              <span className={cn(
+                                "inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium",
+                                row.status === 'SENT' && "bg-green-100 text-green-700",
+                                row.status === 'PENDING' && "bg-yellow-100 text-yellow-700",
+                                row.status === 'FAILED' && "bg-red-100 text-red-700",
+                                row.status === 'CANCELLED' && "bg-gray-100 text-gray-700"
+                              )}>
+                                {row.status === 'SENT' && <CheckCircle2 className="w-3 h-3" />}
+                                {row.status === 'PENDING' && <Clock className="w-3 h-3" />}
+                                {row.status === 'FAILED' && <XCircle className="w-3 h-3" />}
+                                {row.status}
+                              </span>
+                              {row.error && <p className="text-xs text-red-500 mt-1 max-w-[150px] truncate" title={row.error}>{row.error}</p>}
+                            </td>
+                          </tr>
+                        ))}
+                        {filteredReminders.length === 0 && (
+                          <tr>
+                            <td colSpan={6} className={cn(STYLES.tableCell, "text-center py-12")}>No reminders match your filters</td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Audit Log Tab */}
+            {notificationTab === 'audit' && adminNotificationData && (
+              <div className="rounded-lg border border-gray-200 bg-white overflow-hidden">
+                <div className="flex items-center justify-between p-3 bg-gray-50 border-b border-gray-200">
+                  <p className="text-sm font-medium text-gray-700">Recent Activity</p>
+                  <Link href="/admin/audit-log" className="inline-flex items-center gap-1 text-sm text-primary-600 hover:text-primary-700">
+                    <ExternalLink className="w-3.5 h-3.5" /> Open Full Page
+                  </Link>
+                </div>
+                <div className="table-scroll-wrapper max-h-[calc(100vh-340px)]">
+                  <table className={STYLES.table}>
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className={STYLES.tableHeader}>Action</th>
+                        <th className={STYLES.tableHeader}>User</th>
+                        <th className={STYLES.tableHeader}>Details</th>
+                        <th className={STYLES.tableHeader}>Time</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {adminNotificationData.auditLogs.map((row) => (
+                        <tr key={row.id} className={STYLES.tableRow}>
+                          <td className={cn(STYLES.tableCell, 'font-medium text-gray-900')}>{formatAction(row.action)}</td>
+                          <td className={STYLES.tableCell}>{row.userName}</td>
+                          <td className={cn(STYLES.tableCell, 'max-w-[300px] truncate')} title={formatAuditDetails(row.details)}>{formatAuditDetails(row.details)}</td>
+                          <td className={STYLES.tableCell}>
+                            <span className="inline-flex items-center gap-1 text-gray-600">
+                              <Clock className="w-3 h-3 shrink-0" /> {new Date(row.createdAt).toLocaleString()}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
           </section>
         )}
 

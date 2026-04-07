@@ -1,3 +1,4 @@
+import type { LucideIcon } from "lucide-react"
 import {
   LayoutDashboard,
   Users,
@@ -25,33 +26,140 @@ import {
 export type MenuItem = {
   label: string
   href: string
-  icon: any
+  icon: LucideIcon
 }
 
-export const adminMenu = [
-  { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
-  { label: "Audit Log", href: "/admin/audit-log", icon: FileSearch },
-  { label: "Financial Management", href: "/admin/financials", icon: Receipt },
-  { label: "Event Management", href: "/admin/events", icon: Calendar },
-  { label: "Event Requests", href: "/admin/event-requests", icon: ClipboardList },
-  { label: "Broadcasts", href: "/admin/broadcasts", icon: Mail },
-  { label: "Email Reminders", href: "/admin/email-reminders", icon: Mail },
-  { label: "Communication Hub", href: "/admin/communication", icon: MessageSquare },
-  { label: "Conversation Requests", href: "/admin/conversation-requests", icon: MessageSquare },
-  { label: "Payroll Forms", href: "/admin/payroll-forms", icon: FileText },
-  { label: "Payroll Requests", href: "/admin/requests", icon: ClipboardList },
-  { label: "Homes", href: "/admin/homes", icon: Building },
-  { label: "User Management", href: "/admin/users", icon: Users },
-  { label: "Team Directory", href: "/staff/directory", icon: Users },
-  { label: "Inventory", href: "/admin/inventory", icon: Package },
-  { label: "Donors", href: "/admin/donors", icon: Heart },
-  { label: "Testimonials", href: "/admin/testimonials", icon: Quote },
-  { label: "Forms", href: "/admin/forms", icon: FileText },
-  { label: "Form Submissions", href: "/admin/form-submissions", icon: FileText },
-  { label: "Import Data", href: "/admin/import", icon: Upload },
-  { label: "Settings", href: "/admin/settings", icon: Settings },
-  { label: "My Profile", href: "/admin/profile", icon: UserCircle },
+/** Single link under an admin nav group (sidebar). */
+export type AdminNavChild = {
+  label: string
+  href: string
+  icon: LucideIcon
+}
+
+/** Collapsible admin sidebar group with nested links (8 groups, 22 routes). */
+export type AdminNavGroup = {
+  id: string
+  label: string
+  icon: LucideIcon
+  children: AdminNavChild[]
+}
+
+/**
+ * Admin IA: 8 top-level groups, 22 destinations — every href must stay in sync with App Router.
+ */
+export const adminNavGroups: AdminNavGroup[] = [
+  {
+    id: "dashboard",
+    label: "Dashboard",
+    icon: LayoutDashboard,
+    children: [{ label: "Dashboard", href: "/admin", icon: LayoutDashboard }],
+  },
+  {
+    id: "events",
+    label: "Events & outreach",
+    icon: Calendar,
+    children: [
+      { label: "Event Management", href: "/admin/events", icon: Calendar },
+      { label: "Event Requests", href: "/admin/event-requests", icon: ClipboardList },
+      { label: "Broadcasts", href: "/admin/broadcasts", icon: Mail },
+      { label: "Email Reminders", href: "/admin/email-reminders", icon: Mail },
+    ],
+  },
+  {
+    id: "finance",
+    label: "Finance & payroll",
+    icon: Receipt,
+    children: [
+      { label: "Financial Management", href: "/admin/financials", icon: Receipt },
+      { label: "Payroll Forms", href: "/admin/payroll-forms", icon: FileText },
+      { label: "Payroll Requests", href: "/admin/requests", icon: ClipboardList },
+    ],
+  },
+  {
+    id: "people",
+    label: "People & homes",
+    icon: Users,
+    children: [
+      { label: "Homes", href: "/admin/homes", icon: Building },
+      { label: "User Management", href: "/admin/users", icon: Users },
+      { label: "Team Directory", href: "/staff/directory", icon: Users },
+    ],
+  },
+  {
+    id: "communication",
+    label: "Communication",
+    icon: MessageSquare,
+    children: [
+      { label: "Communication Hub", href: "/admin/communication", icon: MessageSquare },
+      { label: "Conversation Requests", href: "/admin/conversation-requests", icon: MessageSquare },
+    ],
+  },
+  {
+    id: "forms",
+    label: "Forms & content",
+    icon: FileText,
+    children: [
+      { label: "Testimonials", href: "/admin/testimonials", icon: Quote },
+      { label: "Forms", href: "/admin/forms", icon: FileText },
+      { label: "Form Submissions", href: "/admin/form-submissions", icon: FileText },
+      { label: "Import Data", href: "/admin/import", icon: Upload },
+    ],
+  },
+  {
+    id: "inventory",
+    label: "Inventory & donors",
+    icon: Package,
+    children: [
+      { label: "Inventory", href: "/admin/inventory", icon: Package },
+      { label: "Donors", href: "/admin/donors", icon: Heart },
+    ],
+  },
+  {
+    id: "system",
+    label: "System & account",
+    icon: Settings,
+    children: [
+      { label: "Audit Log", href: "/admin/audit-log", icon: FileSearch },
+      { label: "Settings", href: "/admin/settings", icon: Settings },
+      { label: "My Profile", href: "/admin/profile", icon: UserCircle },
+    ],
+  },
 ]
+
+/** Frozen list of 22 sidebar hrefs (merge / QA parity). */
+export const CANONICAL_ADMIN_NAV_HREFS: readonly string[] = adminNavGroups.flatMap((g) =>
+  g.children.map((c) => c.href)
+) as readonly string[]
+
+/** Whether `pathname` should highlight the nav child for `href`. */
+export function adminNavHrefIsActive(pathname: string, href: string): boolean {
+  const path = pathname.split("?")[0] || pathname
+  if (href === "/admin") {
+    return path === "/admin" || path === "/admin/"
+  }
+  if (path === href) return true
+  return path.startsWith(href.endsWith("/") ? href : `${href}/`)
+}
+
+/** Group id containing the active child for `pathname`, or null. */
+export function getAdminNavGroupIdForPath(pathname: string): string | null {
+  const path = pathname.split("?")[0] || pathname
+  for (const g of adminNavGroups) {
+    for (const c of g.children) {
+      if (adminNavHrefIsActive(path, c.href)) return g.id
+    }
+  }
+  return null
+}
+
+/** Flat list of all admin links — backward compatible with code expecting 22 rows. */
+export const adminMenu: MenuItem[] = adminNavGroups.flatMap((g) =>
+  g.children.map((c) => ({
+    label: c.label,
+    href: c.href,
+    icon: c.icon,
+  }))
+)
 
 export const staffMenu = [
   { label: "Dashboard", href: "/staff", icon: LayoutDashboard },

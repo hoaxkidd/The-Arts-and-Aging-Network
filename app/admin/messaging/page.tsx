@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils"
 import Link from "next/link"
 import { STYLES } from "@/lib/styles"
 
-export const revalidate = 30
+export const dynamic = 'force-dynamic'
 
 export default async function AdminMessagingPage() {
   const session = await auth()
