@@ -1,12 +1,30 @@
 import { auth } from "@/auth"
-import { Users, Mail, Activity, ShieldCheck, LayoutDashboard, ArrowUpRight, Calendar, ClipboardList, Building2, TrendingUp, MailPlus, PlusCircle, BuildingIcon, ClipboardCheck, DollarSign, Plus } from "lucide-react"
+import { Users, Activity, ShieldCheck, LayoutDashboard, ArrowUpRight, MailPlus, PlusCircle, BuildingIcon, ClipboardCheck, DollarSign, Plus, Calendar, ClipboardList, Building2, TrendingUp, Mail } from "lucide-react"
 import { prisma } from "@/lib/prisma"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
 import { formatDateShort, getRelativeTime } from "@/lib/date-utils"
-import { STYLES } from "@/lib/styles"
+import { InlineStatStrip } from "@/components/ui/InlineStatStrip"
 
 export const revalidate = 60
+
+async function debugLog(hypothesisId: string, location: string, message: string, data: Record<string, unknown>) {
+  // #region agent log
+  await fetch('http://127.0.0.1:7932/ingest/d150821c-e880-4593-9da4-b74c1d3885d0', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '7a8fa1' },
+    body: JSON.stringify({
+      sessionId: '7a8fa1',
+      runId: 'repro-2',
+      hypothesisId,
+      location,
+      message,
+      data,
+      timestamp: Date.now(),
+    }),
+  }).catch(() => {})
+  // #endregion
+}
 
 export default async function AdminDashboard() {
   const session = await auth()
@@ -15,28 +33,51 @@ export default async function AdminDashboard() {
   const now = new Date()
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
 
-  // Batch all count queries for performance
-  const [userCount, activeEventsCount, pendingRequestsCount, homeCount, monthEventsCount, inviteCount, logCount] = await Promise.all([
-    prisma.user.count(),
-    prisma.event.count({
-      where: { startDateTime: { gte: new Date() }, status: 'PUBLISHED' }
-    }),
-    prisma.eventRequest.count({
-      where: { status: 'PENDING' }
-    }),
-    prisma.geriatricHome.count(),
-    prisma.event.count({
-      where: { createdAt: { gte: startOfMonth } }
-    }),
-    prisma.invitation.count({ where: { status: 'PENDING' } }),
-    prisma.auditLog.count()
-  ])
-
-  const recentLogs = await prisma.auditLog.findMany({
-    take: 5,
-    orderBy: { createdAt: 'desc' },
-    include: { user: true }
+  await debugLog('H3', 'app/admin/page.tsx:AdminDashboard', 'Admin dashboard DB query start', {
+    hasSession: Boolean(session?.user?.id),
+    startOfMonthIso: startOfMonth.toISOString(),
   })
+
+  let userCount = 0
+  let activeEventsCount = 0
+  let pendingRequestsCount = 0
+  let homeCount = 0
+  let monthEventsCount = 0
+  let inviteCount = 0
+  let logCount = 0
+  let recentLogs: Awaited<ReturnType<typeof prisma.auditLog.findMany>> = []
+
+  try {
+    // Batch all count queries for performance
+    ;[userCount, activeEventsCount, pendingRequestsCount, homeCount, monthEventsCount, inviteCount, logCount] = await Promise.all([
+      prisma.user.count(),
+      prisma.event.count({
+        where: { startDateTime: { gte: new Date() }, status: 'PUBLISHED' }
+      }),
+      prisma.eventRequest.count({
+        where: { status: 'PENDING' }
+      }),
+      prisma.geriatricHome.count(),
+      prisma.event.count({
+        where: { createdAt: { gte: startOfMonth } }
+      }),
+      prisma.invitation.count({ where: { status: 'PENDING' } }),
+      prisma.auditLog.count()
+    ])
+
+    recentLogs = await prisma.auditLog.findMany({
+      take: 5,
+      orderBy: { createdAt: 'desc' },
+      include: { user: true }
+    })
+  } catch (err) {
+    const error = err instanceof Error ? err : new Error(String(err))
+    await debugLog('H1', 'app/admin/page.tsx:AdminDashboard', 'Admin dashboard DB query failed', {
+      name: error.name,
+      message: error.message,
+    })
+    throw err
+  }
 
   function formatAction(action: string) {
     return action.split('_').map(word => word.charAt(0) + word.slice(1).toLowerCase()).join(' ')
@@ -50,85 +91,17 @@ export default async function AdminDashboard() {
     <div className="h-full flex flex-col">
       <div className="flex-1 min-h-0 overflow-auto space-y-4 pt-4 pb-6">
         {/* Stats Cards - 6 columns */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-          {/* Stats Card 1: Total Users */}
-          <div className={STYLES.statsCard}>
-            <div className="flex items-center gap-3">
-              <div className={cn(STYLES.statsIcon, "bg-primary-100 text-primary-600")}>
-                <Users className="w-5 h-5" />
-              </div>
-              <div>
-                <p className={STYLES.statsValue}>{userCount}</p>
-                <p className={STYLES.statsLabel}>Users</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Stats Card 2: Active Events */}
-          <div className={STYLES.statsCard}>
-            <div className="flex items-center gap-3">
-              <div className={cn(STYLES.statsIcon, "bg-green-100 text-green-600")}>
-                <Calendar className="w-5 h-5" />
-              </div>
-              <div>
-                <p className={STYLES.statsValue}>{activeEventsCount}</p>
-                <p className={STYLES.statsLabel}>Active Events</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Stats Card 3: Pending Requests */}
-          <div className={STYLES.statsCard}>
-            <div className="flex items-center gap-3">
-              <div className={cn(STYLES.statsIcon, "bg-amber-100 text-amber-600")}>
-                <ClipboardList className="w-5 h-5" />
-              </div>
-              <div>
-                <p className={STYLES.statsValue}>{pendingRequestsCount}</p>
-                <p className={STYLES.statsLabel}>Pending Requests</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Stats Card 4: Facilities */}
-          <div className={STYLES.statsCard}>
-            <div className="flex items-center gap-3">
-              <div className={cn(STYLES.statsIcon, "bg-blue-100 text-blue-600")}>
-                <Building2 className="w-5 h-5" />
-              </div>
-              <div>
-                <p className={STYLES.statsValue}>{homeCount}</p>
-                <p className={STYLES.statsLabel}>Facilities</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Stats Card 5: This Month Events */}
-          <div className={STYLES.statsCard}>
-            <div className="flex items-center gap-3">
-              <div className={cn(STYLES.statsIcon, "bg-purple-100 text-purple-600")}>
-                <TrendingUp className="w-5 h-5" />
-              </div>
-              <div>
-                <p className={STYLES.statsValue}>{monthEventsCount}</p>
-                <p className={STYLES.statsLabel}>This Month</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Stats Card 6: Pending Invites */}
-          <div className={STYLES.statsCard}>
-            <div className="flex items-center gap-3">
-              <div className={cn(STYLES.statsIcon, "bg-rose-100 text-rose-600")}>
-                <Mail className="w-5 h-5" />
-              </div>
-              <div>
-                <p className={STYLES.statsValue}>{inviteCount}</p>
-                <p className={STYLES.statsLabel}>Pending Invites</p>
-              </div>
-            </div>
-          </div>
-        </div>
+        <InlineStatStrip
+          className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2"
+          items={[
+            { value: userCount, label: "Users", icon: Users, iconClassName: "bg-primary-100 text-primary-600" },
+            { value: activeEventsCount, label: "Active Events", icon: Calendar, iconClassName: "bg-green-100 text-green-600" },
+            { value: pendingRequestsCount, label: "Pending Requests", icon: ClipboardList, iconClassName: "bg-amber-100 text-amber-600" },
+            { value: homeCount, label: "Facilities", icon: Building2, iconClassName: "bg-blue-100 text-blue-600" },
+            { value: monthEventsCount, label: "This Month", icon: TrendingUp, iconClassName: "bg-purple-100 text-purple-600" },
+            { value: inviteCount, label: "Pending Invites", icon: Mail, iconClassName: "bg-rose-100 text-rose-600" },
+          ]}
+        />
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {/* Recent Activity */}
@@ -217,7 +190,7 @@ export default async function AdminDashboard() {
 
               {/* Action 4: Add Facility */}
               <Link
-                href="/admin/users?tab=homes"
+                href="/admin/homes?tab=homes"
                 className="group flex flex-col items-center p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg border border-blue-200 hover:border-blue-400 transition-all hover:shadow-md"
               >
                 <div className="w-10 h-10 rounded-lg bg-white shadow-sm flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">

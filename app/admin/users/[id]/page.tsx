@@ -187,7 +187,7 @@ export default async function EditUserPage({
           </div>
           <div className="flex items-center gap-2">
             <label className="text-xs text-gray-500">Status</label>
-            <select name="status" defaultValue={user.status} className="text-sm rounded-md border-gray-300 py-1.5 pr-8 pl-2">
+            <select name="status" defaultValue={user.status} className={cn(STYLES.input, STYLES.select, "text-sm w-full sm:w-auto")}>
               <option value="PENDING">Pending signup</option>
               <option value="ACTIVE">Active</option>
               <option value="INACTIVE">Inactive</option>

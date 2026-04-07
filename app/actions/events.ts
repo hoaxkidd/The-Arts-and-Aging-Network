@@ -84,6 +84,7 @@ const EventSchema = z.object({
   reminderMessage: z.string().optional(),
   homeAdminReminderDays: z.coerce.number().min(1).max(30).optional(),
   staffReminderDays: z.coerce.number().min(1).max(30).optional(),
+  recurrenceInfo: z.string().optional(),
 })
 
 export async function createEvent(formData: FormData) {
@@ -174,6 +175,7 @@ export async function createEvent(formData: FormData) {
                 reminderMessage: validated.data.reminderMessage?.trim() || null,
                 homeAdminReminderDays: validated.data.homeAdminReminderDays || null,
                 staffReminderDays: validated.data.staffReminderDays || null,
+                recurrenceInfo: validated.data.recurrenceInfo ? JSON.parse(validated.data.recurrenceInfo) : null,
             },
             include: { location: true }
         })
@@ -313,6 +315,7 @@ export async function createEvent(formData: FormData) {
                 reminderMessage: validated.data.reminderMessage?.trim() || null,
                 homeAdminReminderDays: validated.data.homeAdminReminderDays || null,
                 staffReminderDays: validated.data.staffReminderDays || null,
+                recurrenceInfo: validated.data.recurrenceInfo ? JSON.parse(validated.data.recurrenceInfo) : null,
                 updatedAt: new Date()
             },
             include: { location: true }

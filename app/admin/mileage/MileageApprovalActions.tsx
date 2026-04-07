@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { CheckCircle, XCircle, Loader2 } from 'lucide-react'
 import { approveMileageEntry, rejectMileageEntry } from '@/app/actions/mileage'
 import { useRouter } from 'next/navigation'
+import { toast } from 'sonner'
 
 type Props = {
   entryId: string
@@ -19,7 +20,7 @@ export function MileageApprovalActions({ entryId }: Props) {
     setIsPending(true)
     const result = await approveMileageEntry(entryId)
     if (result.error) {
-      alert(result.error)
+      toast.error(result.error)
     } else {
       router.refresh()
     }
@@ -28,13 +29,13 @@ export function MileageApprovalActions({ entryId }: Props) {
 
   async function handleReject() {
     if (!rejectReason.trim()) {
-      alert('Please provide a reason for rejection')
+      toast.error('Please provide a reason for rejection')
       return
     }
     setIsPending(true)
     const result = await rejectMileageEntry(entryId, rejectReason)
     if (result.error) {
-      alert(result.error)
+      toast.error(result.error)
     } else {
       router.refresh()
     }

@@ -8,8 +8,8 @@ export default async function UsersPage({
   searchParams: Promise<{ tab?: string }>
 }) {
   const params = await searchParams
-  const tab: 'team' | 'home-admins' | 'homes' =
-    params.tab === 'homes' || params.tab === 'home-admins' ? params.tab : 'team'
+  const tab: 'team' | 'home-admins' =
+    params.tab === 'home-admins' ? params.tab : 'team'
 
-  return <AdminPeopleHomesPage defaultTab={tab} />
+  return <AdminPeopleHomesPage defaultTab={tab} showHomesTab={false} />
 }

@@ -1,14 +1,15 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useEffect, useState } from 'react'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import Image from "next/image"
-import { MessageSquare, UserPlus, Mail, Users, Check, X, Loader2, FileText } from "lucide-react"
+import { MessageSquare, UserPlus, Mail, Users, Check, X, Loader2, FileText, Quote, Megaphone, BellRing, ClipboardCheck } from "lucide-react"
 import { TabNavigation } from "@/components/admin/shared/TabNavigation"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
 import { STYLES } from "@/lib/styles"
 import { approveGroupAccess, denyGroupAccess } from "@/app/actions/messaging"
+import { toast } from "sonner"
 
 // Import or recreate list components
 // For brevity, we will inline simple versions or reuse existing logic patterns
@@ -16,6 +17,7 @@ import { ConversationRequestsList } from "@/components/admin/ConversationRequest
 
 import { AdminMessagingPanel } from "@/components/admin/communication/AdminMessagingPanel"
 import { EmailTemplatesTab } from "@/components/admin/communication/EmailTemplatesTab"
+import { TestimonialsFeedbackTab } from "@/components/admin/communication/TestimonialsFeedbackTab"
 
 // --- Sub-Components ---
 
@@ -137,7 +139,7 @@ function GroupRequestsList({ requests }: { requests: GroupRequest[] }) {
     async function handleApprove(groupId: string, userId: string, requestId: string) {
         setProcessing(requestId)
         const result = await approveGroupAccess(groupId, userId)
-        if (result.error) alert(result.error)
+        if (result.error) toast.error(result.error)
         else router.refresh()
         setProcessing(null)
     }
@@ -145,7 +147,7 @@ function GroupRequestsList({ requests }: { requests: GroupRequest[] }) {
     async function handleDeny(groupId: string, userId: string, requestId: string) {
         setProcessing(requestId)
         const result = await denyGroupAccess(groupId, userId)
-        if (result.error) alert(result.error)
+        if (result.error) toast.error(result.error)
         else router.refresh()
         setProcessing(null)
     }
@@ -342,11 +344,48 @@ type CommunicationHubClientProps = {
     pendingGroupRequests: GroupRequest[]
     pendingConversationRequests: ConversationRequest[]
     invitations: Invitation[]
+    testimonials: {
+        id: string
+        authorName: string
+        authorRole: string | null
+        content: string
+        rating: number | null
+        status: string
+        featured: boolean
+        event: { id: string; title: string } | null
+        collector: { name: string } | null
+        createdAt: Date
+    }[]
+    eventFeedback: {
+        id: string
+        feedbackRating: number | null
+        feedbackComment: string | null
+        user: { id: string; name: string | null; preferredName: string | null }
+        event: { id: string; title: string; startDateTime: Date }
+        updatedAt: Date
+    }[]
     currentUserId: string
+    initialTab?: string
 }
 
-export function CommunicationHubClient({ groups, pendingGroupRequests, pendingConversationRequests, invitations, currentUserId }: CommunicationHubClientProps) {
-    const [activeTab, setActiveTab] = useState('messages') // Default to messages for better UX
+export function CommunicationHubClient({ 
+    groups, 
+    pendingGroupRequests, 
+    pendingConversationRequests, 
+    invitations, 
+    testimonials,
+    eventFeedback,
+    currentUserId,
+    initialTab = 'messages'
+}: CommunicationHubClientProps) {
+    const router = useRouter()
+    const pathname = usePathname()
+    const searchParams = useSearchParams()
+    const [activeTab, setActiveTab] = useState(initialTab)
+
+    useEffect(() => {
+        setActiveTab(initialTab)
+    }, [initialTab])
 
     const totalRequests = pendingGroupRequests.length + pendingConversationRequests.length
 
@@ -355,6 +394,22 @@ export function CommunicationHubClient({ groups, pendingGroupRequests, pendingCo
             id: 'messages', 
             label: 'Messages', 
             icon: MessageSquare 
+        },
+        {
+            id: 'broadcasts',
+            label: 'Broadcasts',
+            icon: Megaphone
+        },
+        {
+            id: 'reminders',
+            label: 'Email Reminders',
+            icon: BellRing
+        },
+        {
+            id: 'conversationRequests',
+            label: 'Conversation Requests',
+            icon: ClipboardCheck,
+            count: pendingConversationRequests.length
         },
         { 
             id: 'groups', 
@@ -376,21 +431,89 @@ export function CommunicationHubClient({ groups, pendingGroupRequests, pendingCo
             id: 'invitations', 
             label: 'System Invites', 
             icon: Mail 
+        },
+        { 
+            id: 'testimonials', 
+            label: 'Testimonials', 
+            icon: Quote 
         }
         
     ]
 
+    const handleTabChange = (tab: string) => {
+        setActiveTab(tab)
+        const params = new URLSearchParams(searchParams.toString())
+        params.set('tab', tab)
+        router.replace(`${pathname}?${params.toString()}`, { scroll: false })
+    }
+
     return (
-        <div className="h-full min-h-0 flex flex-col w-full max-w-full min-w-0 overflow-x-hidden">
+        <div className="h-full min-h-0 flex flex-col w-full max-w-full min-w-0 overflow-visible">
             <TabNavigation
                 tabs={tabs}
                 activeTab={activeTab}
-                onChange={setActiveTab}
+                onChange={handleTabChange}
             />
 
-            <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden overscroll-contain flex flex-col w-full min-w-0 pt-2 sm:pt-0">
+            <div className="flex-1 min-h-0 overflow-auto overscroll-contain flex flex-col w-full min-w-0 pt-2 sm:pt-0">
                 {activeTab === 'groups' && <GroupsList groups={groups} />}
-                {activeTab === 'messages' && <AdminMessagingPanel groups={groups} currentUserId={currentUserId} />}
+                {activeTab === 'broadcasts' && (
+                    <div className="px-4 pt-4">
+                        <div className="bg-white rounded-lg border border-gray-200 p-5">
+                            <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+                                <Megaphone className="w-4 h-4 text-primary-500" /> Broadcast Center
+                            </h3>
+                            <p className="mt-1 text-sm text-gray-600">Create announcements for all users, specific roles, or selected groups.</p>
+                            <div className="mt-4 flex flex-wrap gap-2">
+                                <Link href="/admin/broadcasts" className={cn(STYLES.btn, STYLES.btnPrimary, "text-xs")}>Open Broadcasts</Link>
+                                <Link href="/admin/messaging" className={cn(STYLES.btn, STYLES.btnSecondary, "text-xs")}>Open Messaging Hub</Link>
+                            </div>
+                        </div>
+                    </div>
+                )}
+                {activeTab === 'reminders' && (
+                    <div className="px-4 pt-4">
+                        <div className="bg-white rounded-lg border border-gray-200 p-5">
+                            <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+                                <BellRing className="w-4 h-4 text-primary-500" /> Reminder Manager
+                            </h3>
+                            <p className="mt-1 text-sm text-gray-600">Configure and monitor automated staff and home-admin reminder delivery for events.</p>
+                            <div className="mt-4 flex flex-wrap gap-2">
+                                <Link href="/admin/email-reminders" className={cn(STYLES.btn, STYLES.btnPrimary, "text-xs")}>Open Email Reminders</Link>
+                            </div>
+                        </div>
+                    </div>
+                )}
+                {activeTab === 'conversationRequests' && (
+                    <div className="px-4 pt-4">
+                        <div className="bg-white rounded-lg border border-gray-200 p-5">
+                            <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+                                <ClipboardCheck className="w-4 h-4 text-primary-500" /> 1-on-1 Conversation Requests
+                            </h3>
+                            <p className="mt-1 text-sm text-gray-600">
+                                {pendingConversationRequests.length} pending request{pendingConversationRequests.length === 1 ? '' : 's'} require review.
+                            </p>
+                            <div className="mt-4 flex flex-wrap gap-2">
+                                <Link href="/admin/conversation-requests" className={cn(STYLES.btn, STYLES.btnPrimary, "text-xs")}>Open Conversation Requests</Link>
+                            </div>
+                        </div>
+                    </div>
+                )}
+                {activeTab === 'messages' && (
+                    <>
+                        <div className="px-4 pt-4">
+                            <div className="bg-white rounded-lg border border-gray-200 p-3">
+                                <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">Communication Tools</p>
+                                <div className="flex flex-wrap gap-2">
+                                    <Link href="/admin/broadcasts" className={cn(STYLES.btn, STYLES.btnSecondary, "text-xs")}>Broadcasts</Link>
+                                    <Link href="/admin/email-reminders" className={cn(STYLES.btn, STYLES.btnSecondary, "text-xs")}>Email Reminders</Link>
+                                    <Link href="/admin/conversation-requests" className={cn(STYLES.btn, STYLES.btnSecondary, "text-xs")}>Conversation Requests</Link>
+                                </div>
+                            </div>
+                        </div>
+                        <AdminMessagingPanel groups={groups} currentUserId={currentUserId} />
+                    </>
+                )}
                 {activeTab === 'requests' && (
                     <AccessRequestsList 
                         groupRequests={pendingGroupRequests} 
@@ -399,6 +522,12 @@ export function CommunicationHubClient({ groups, pendingGroupRequests, pendingCo
                 )}
                 {activeTab === 'invitations' && <InvitationsList invitations={invitations} />}
                 {activeTab === 'emailTemplates' && <EmailTemplatesTab />}
+                {activeTab === 'testimonials' && (
+                    <TestimonialsFeedbackTab 
+                        testimonials={testimonials} 
+                        eventFeedback={eventFeedback}
+                    />
+                )}
             </div>
         </div>
     )

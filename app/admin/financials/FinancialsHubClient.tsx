@@ -32,7 +32,7 @@ export function FinancialsHubClient({ timesheets, mileageEntries, expenseRequest
         },
         { 
             id: 'expenses', 
-            label: 'Requests & Expenses', 
+            label: 'Expense Requests', 
             icon: DollarSign,
             count: expenseRequests.filter(r => r.status === 'PENDING').length
         }

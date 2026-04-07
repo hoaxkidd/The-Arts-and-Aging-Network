@@ -2,12 +2,13 @@ import { prisma } from "@/lib/prisma"
 import { auth } from "@/auth"
 import { redirect } from "next/navigation"
 import { Prisma } from "@prisma/client"
-import { Mail, CheckCircle, XCircle, Clock, AlertCircle, Users, Home } from "lucide-react"
+import { CheckCircle, XCircle, Clock, AlertCircle, Users, Home } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { STYLES } from "@/lib/styles"
 import Link from "next/link"
 import { ManualReminderTrigger } from "@/components/admin/ManualReminderTrigger"
 import { EmailReminderFilters } from "@/components/admin/EmailReminderFilters"
+import { InlineStatStrip } from "@/components/ui/InlineStatStrip"
 
 export const revalidate = 60
 
@@ -80,57 +81,16 @@ export default async function EmailRemindersPage({
   return (
     <div className="h-full flex flex-col">
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mb-6">
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs text-gray-500 uppercase">Total</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
-            </div>
-            <Mail className="w-8 h-8 text-gray-400" />
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg border border-yellow-200 p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs text-yellow-600 uppercase">Pending</p>
-              <p className="text-2xl font-bold text-yellow-600">{stats.pending}</p>
-            </div>
-            <Clock className="w-8 h-8 text-yellow-400" />
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg border border-green-200 p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs text-green-600 uppercase">Sent</p>
-              <p className="text-2xl font-bold text-green-600">{stats.sent}</p>
-            </div>
-            <CheckCircle className="w-8 h-8 text-green-400" />
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg border border-red-200 p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs text-red-600 uppercase">Failed</p>
-              <p className="text-2xl font-bold text-red-600">{stats.failed}</p>
-            </div>
-            <XCircle className="w-8 h-8 text-red-400" />
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs text-gray-500 uppercase">Cancelled</p>
-              <p className="text-2xl font-bold text-gray-500">{stats.cancelled}</p>
-            </div>
-            <AlertCircle className="w-8 h-8 text-gray-400" />
-          </div>
-        </div>
-      </div>
+      <InlineStatStrip
+        className="mb-6 grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-2"
+        items={[
+          { value: stats.total, label: "Total" },
+          { value: stats.pending, label: "Pending", tone: "warning" },
+          { value: stats.sent, label: "Sent", tone: "success" },
+          { value: stats.failed, label: "Failed", tone: "danger" },
+          { value: stats.cancelled, label: "Cancelled", tone: "muted" },
+        ]}
+      />
 
       {/* Manual Trigger */}
       <div className="flex-shrink-0 mb-4">

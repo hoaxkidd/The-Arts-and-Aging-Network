@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils"
 import { STYLES } from "@/lib/styles"
 import { MileageApprovalActions } from "./MileageApprovalActions"
 import { formatDateShort } from "@/lib/date-utils"
+import { InlineStatStrip } from "@/components/ui/InlineStatStrip"
 
 export const revalidate = 30
 
@@ -52,43 +53,14 @@ export default async function AdminMileagePage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-4">
-        <div className={cn(STYLES.card, "p-4")}>
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-yellow-100 flex items-center justify-center">
-              <AlertCircle className="w-5 h-5 text-yellow-600" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-gray-900">{pending.length}</p>
-              <p className="text-sm text-gray-500">Pending Review</p>
-            </div>
-          </div>
-        </div>
-
-        <div className={cn(STYLES.card, "p-4")}>
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center">
-              <CheckCircle className="w-5 h-5 text-green-600" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-gray-900">{approvedKm.toFixed(1)}</p>
-              <p className="text-sm text-gray-500">km Approved (This Month)</p>
-            </div>
-          </div>
-        </div>
-
-        <div className={cn(STYLES.card, "p-4")}>
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
-              <Car className="w-5 h-5 text-blue-600" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-gray-900">{entries.length}</p>
-              <p className="text-sm text-gray-500">Total Entries</p>
-            </div>
-          </div>
-        </div>
-      </div>
+      <InlineStatStrip
+        className="grid grid-cols-1 sm:grid-cols-3 gap-2"
+        items={[
+          { value: pending.length, label: "Pending Review", tone: "warning" },
+          { value: approvedKm.toFixed(1), label: "km Approved (This Month)", tone: "success" },
+          { value: entries.length, label: "Total Entries", tone: "info" },
+        ]}
+      />
 
       {/* Pending Entries */}
       {pending.length > 0 && (

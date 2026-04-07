@@ -15,11 +15,14 @@ export type AuthState = { error?: string; redirect?: string } | undefined
 
 /** Base URL for redirects: prefer configured env URL; avoid host-header trust in production. */
 function getBaseUrl(headersList: Headers): string {
+  const host = headersList.get('x-forwarded-host') ?? headersList.get('host')
+  const proto = headersList.get('x-forwarded-proto') ?? 'https'
+  if (process.env.NODE_ENV !== 'production' && host) {
+    return `${proto === 'https' ? 'https' : 'http'}://${host}`
+  }
   const envUrl = process.env.NEXTAUTH_URL ?? process.env.AUTH_URL
   if (envUrl) return envUrl.replace(/\/$/, '')
   if (process.env.NODE_ENV === 'production') return 'https://the-arts-and-aging-network.vercel.app'
-  const host = headersList.get('x-forwarded-host') ?? headersList.get('host')
-  const proto = headersList.get('x-forwarded-proto') ?? 'https'
   if (host) return `${proto === 'https' ? 'https' : 'http'}://${host}`
   return 'http://localhost:3000'
 }

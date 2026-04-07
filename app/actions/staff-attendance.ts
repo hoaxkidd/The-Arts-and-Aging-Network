@@ -3,11 +3,40 @@
 import { prisma } from "@/lib/prisma"
 import { auth } from "@/auth"
 import { revalidatePath } from "next/cache"
-import type { PrismaClient } from "@prisma/client"
+import { Prisma, PrismaClient } from "@prisma/client"
 import { checkInNotOpenMessage, getCheckInWindowMinutes, getCheckInWindowStart } from "@/lib/event-checkin"
 import { logger } from "@/lib/logger"
+import { notifyAdminsAboutRSVP } from "@/lib/notifications"
 
-// Type-safe prisma client reference
+type DbEvent = Prisma.EventGetPayload<{
+  include: {
+    location: true
+    recurrenceInfo: true
+    geriatricHome: {
+      select: {
+        id: true
+        name: true
+        address: true
+        contactName: true
+        contactPhone: true
+        contactEmail: true
+        accessibilityInfo: true
+        triggerWarnings: true
+        accommodations: true
+        photoPermissions: true
+      }
+    }
+    attendances: {
+      include: {
+        user: { select: { id: true; name: true; role: true; image: true } }
+      }
+    }
+    photos: true
+    comments: true
+    testimonials: true
+  }
+}>
+
 const db = prisma as PrismaClient & Record<string, unknown>
 
 // ============================================
@@ -26,7 +55,7 @@ export async function confirmStaffAttendance(eventId: string, _notes?: string) {
 
   try {
     // Verify event exists and is available
-    const event = await db.event.findUnique({
+    const event = await prisma.event.findUnique({
       where: { id: eventId },
       include: {
         attendances: true,
@@ -49,7 +78,7 @@ export async function confirmStaffAttendance(eventId: string, _notes?: string) {
     }
 
     // Create or update attendance
-    const attendance = await db.eventAttendance.upsert({
+    const attendance = await prisma.eventAttendance.upsert({
       where: {
         eventId_userId: {
           eventId,
@@ -67,12 +96,12 @@ export async function confirmStaffAttendance(eventId: string, _notes?: string) {
     })
 
     // Notify admins
-    const admins = await db.user.findMany({
+    const admins = await prisma.user.findMany({
       where: { role: 'ADMIN', status: 'ACTIVE' }
     })
 
     for (const admin of admins) {
-      await db.notification.create({
+      await prisma.notification.create({
         data: {
           userId: admin.id,
           type: 'STAFF_ATTENDANCE_CONFIRMED',
@@ -111,7 +140,7 @@ export async function withdrawStaffAttendance(eventId: string) {
   if (!session?.user?.id) return { error: "Unauthorized" }
 
   try {
-    const event = await db.event.findUnique({
+    const event = await prisma.event.findUnique({
       where: { id: eventId }
     })
 
@@ -123,7 +152,7 @@ export async function withdrawStaffAttendance(eventId: string) {
     }
 
     // Update attendance to NO
-    await db.eventAttendance.update({
+    await prisma.eventAttendance.update({
       where: {
         eventId_userId: {
           eventId,
@@ -134,6 +163,18 @@ export async function withdrawStaffAttendance(eventId: string) {
         status: 'NO'
       }
     })
+
+    try {
+      await notifyAdminsAboutRSVP({
+        staffName: session.user.name || 'A staff member',
+        staffId: session.user.id,
+        eventId,
+        eventTitle: event.title,
+        rsvpStatus: 'NO',
+      })
+    } catch (notifyError) {
+      logger.serverAction('Failed to notify admins about withdrawal', notifyError)
+    }
 
     // Create audit log
     await prisma.auditLog.create({
@@ -168,7 +209,7 @@ export async function getAvailableEventsForStaff() {
   }
 
   try {
-    const events = await db.event.findMany({
+    const events = await prisma.event.findMany({
       where: {
         status: 'PUBLISHED',
         startDateTime: { gte: new Date() }
@@ -212,7 +253,7 @@ export async function getMyConfirmedEvents() {
   if (!session?.user?.id) return { error: "Unauthorized" }
 
   try {
-    const attendances = await db.eventAttendance.findMany({
+    const attendances = await prisma.eventAttendance.findMany({
       where: {
         userId: session.user.id,
         status: 'YES'
@@ -273,7 +314,7 @@ export async function staffCheckIn(eventId: string) {
   if (!session?.user?.id) return { error: "Unauthorized" }
 
   try {
-    const event = await db.event.findUnique({
+    const event = await prisma.event.findUnique({
       where: { id: eventId }
     })
 
@@ -295,7 +336,7 @@ export async function staffCheckIn(eventId: string) {
     }
 
     // Check if user has attendance record
-    const attendance = await db.eventAttendance.findUnique({
+    const attendance = await prisma.eventAttendance.findUnique({
       where: {
         eventId_userId: {
           eventId,
@@ -313,7 +354,7 @@ export async function staffCheckIn(eventId: string) {
     }
 
     // Update check-in
-    await db.eventAttendance.update({
+    await prisma.eventAttendance.update({
       where: { id: attendance.id },
       data: {
         checkInTime: now,
@@ -322,12 +363,12 @@ export async function staffCheckIn(eventId: string) {
     })
 
     // Notify admins
-    const admins = await db.user.findMany({
+    const admins = await prisma.user.findMany({
       where: { role: 'ADMIN', status: 'ACTIVE' }
     })
 
     for (const admin of admins) {
-      await db.notification.create({
+      await prisma.notification.create({
         data: {
           userId: admin.id,
           type: 'STAFF_CHECKIN',
@@ -372,6 +413,7 @@ export async function getStaffEventDetail(eventId: string) {
       where: { id: eventId },
       include: {
         location: true,
+        recurrenceInfo: true,
         geriatricHome: {
           select: {
             id: true,
@@ -380,7 +422,6 @@ export async function getStaffEventDetail(eventId: string) {
             contactName: true,
             contactPhone: true,
             contactEmail: true,
-            // Important Info fields
             accessibilityInfo: true,
             triggerWarnings: true,
             accommodations: true,
@@ -392,36 +433,96 @@ export async function getStaffEventDetail(eventId: string) {
             user: { select: { id: true, name: true, role: true, image: true } }
           }
         },
-        photos: { take: 6, orderBy: { createdAt: 'desc' } },
-        comments: {
-          take: 5,
+        photos: {
+          take: 60,
           orderBy: { createdAt: 'desc' },
-          include: { user: { select: { name: true, image: true } } }
+          include: {
+            uploader: { select: { id: true, name: true } },
+            reactions: {
+              include: {
+                user: { select: { id: true, name: true } }
+              }
+            }
+          }
+        },
+        comments: {
+          where: { parentId: null },
+          orderBy: { createdAt: 'desc' },
+          include: {
+            user: { select: { id: true, name: true, image: true, role: true } },
+            reactions: {
+              include: {
+                user: { select: { id: true, name: true } }
+              }
+            },
+            replies: {
+              include: {
+                user: { select: { id: true, name: true, image: true, role: true } },
+                reactions: {
+                  include: {
+                    user: { select: { id: true, name: true } }
+                  }
+                }
+              },
+              orderBy: { createdAt: 'asc' }
+            }
+          }
         },
         _count: { select: { attendances: true, photos: true, comments: true } }
       }
-    })
+    } as never)
 
-    if (!event) return { error: "Event not found" }
+    const typedEvent = event as DbEvent
+
+    if (!typedEvent) return { error: "Event not found" }
 
     // Get user's attendance
-    const myAttendance = event.attendances.find(
+    const myAttendance = typedEvent.attendances.find(
       (a) => a.userId === session.user.id
     )
 
+    let canAccessCommunity = false
+    const role = session.user.role
+    if (role === 'ADMIN' || role === 'PAYROLL') {
+      canAccessCommunity = true
+    } else if (myAttendance?.checkInTime) {
+      canAccessCommunity = true
+    } else if (role === 'HOME_ADMIN') {
+      const home = await prisma.geriatricHome.findUnique({
+        where: { userId: session.user.id },
+        select: { id: true }
+      })
+
+      if (home) {
+        const approvedRequest = await prisma.eventRequest.findFirst({
+          where: {
+            geriatricHomeId: home.id,
+            status: 'APPROVED',
+            OR: [
+              { existingEventId: eventId },
+              { approvedEventId: eventId }
+            ]
+          },
+          select: { id: true }
+        })
+
+        canAccessCommunity = !!approvedRequest
+      }
+    }
+
     // Calculate stats
-    const confirmedStaff = event.attendances.filter(
+    const confirmedStaff = typedEvent.attendances.filter(
       (a) => a.status === 'YES' && a.user && ['FACILITATOR'].includes(a.user.role)
     )
-    const checkedInStaff = event.attendances.filter(
+    const checkedInStaff = typedEvent.attendances.filter(
       (a) => a.checkInTime !== null && a.user && ['FACILITATOR'].includes(a.user.role)
     )
 
     // Determine event status
     const now = new Date()
-    const eventStart = new Date(event.startDateTime)
-    const eventEnd = new Date(event.endDateTime)
-    const checkInWindowMinutes = getCheckInWindowMinutes(event.checkInWindowMinutes)
+    const eventStart = new Date(typedEvent.startDateTime)
+    const eventEnd = new Date(typedEvent.endDateTime)
+    const checkInWindowMinutes = getCheckInWindowMinutes(typedEvent.checkInWindowMinutes)
     const checkInWindowStart = getCheckInWindowStart(eventStart, checkInWindowMinutes)
 
     let eventStatus: 'upcoming' | 'check-in-open' | 'in-progress' | 'past'
@@ -442,14 +543,18 @@ export async function getStaffEventDetail(eventId: string) {
     return {
       success: true,
       data: {
-        ...event,
+        ...typedEvent,
         myAttendance,
+        viewerRole: role,
+        currentUserId: session.user.id,
+        canManage: role === 'ADMIN' || role === 'PAYROLL',
+        canAccessCommunity,
         eventStatus,
         canCheckIn,
         stats: {
           confirmedStaffCount: confirmedStaff.length,
           checkedInStaffCount: checkedInStaff.length,
-          spotsRemaining: event.maxAttendees - confirmedStaff.length
+          spotsRemaining: typedEvent.maxAttendees - confirmedStaff.length
         },
         confirmedStaff,
         checkedInStaff

@@ -5,6 +5,7 @@ import { MessageSquare, Users, Plus, Settings } from "lucide-react"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
 import { STYLES } from "@/lib/styles"
+import { InlineStatStrip } from "@/components/ui/InlineStatStrip"
 
 export const revalidate = 30
 
@@ -65,22 +66,14 @@ export default async function AdminMessagingPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-6">
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <p className="text-xs text-gray-500 uppercase">Total Groups</p>
-          <p className="text-2xl font-bold text-gray-900">{groups.length}</p>
-        </div>
-        <div className="bg-white rounded-lg border border-blue-200 p-4">
-          <p className="text-xs text-blue-600 uppercase">Total Members</p>
-          <p className="text-2xl font-bold text-blue-600">
-            {groups.reduce((sum, g) => sum + g._count.members, 0)}
-          </p>
-        </div>
-        <div className="bg-white rounded-lg border border-yellow-200 p-4">
-          <p className="text-xs text-yellow-600 uppercase">Pending Requests</p>
-          <p className="text-2xl font-bold text-yellow-600">{pendingRequests.length}</p>
-        </div>
-      </div>
+      <InlineStatStrip
+        className="mb-6 grid grid-cols-2 sm:grid-cols-3 gap-2"
+        items={[
+          { value: groups.length, label: "Total Groups" },
+          { value: groups.reduce((sum, g) => sum + g._count.members, 0), label: "Total Members", tone: "info" },
+          { value: pendingRequests.length, label: "Pending Requests", tone: "warning" },
+        ]}
+      />
 
       {/* Pending Requests Alert */}
       {pendingRequests.length > 0 && (

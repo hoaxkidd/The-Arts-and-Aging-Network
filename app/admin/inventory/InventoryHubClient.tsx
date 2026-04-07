@@ -22,6 +22,8 @@ import {
   deactivateInventoryItem,
   updateInventoryItem,
 } from '@/app/actions/inventory'
+import { useAppDialogs } from '@/components/ui/AppDialogs'
+import { toast } from 'sonner'
 
 type Item = {
   id: string
@@ -48,6 +50,7 @@ type Props = {
 
 export function InventoryHubClient({ items: initialItems, userRole }: Props) {
   const router = useRouter()
+  const { confirm: confirmDialog } = useAppDialogs()
   const [search, setSearch] = useState('')
   const [categoryFilter, setCategoryFilter] = useState<string>('ALL')
   const [showAddModal, setShowAddModal] = useState(false)
@@ -75,11 +78,16 @@ export function InventoryHubClient({ items: initialItems, userRole }: Props) {
   const lowStockCount = initialItems.filter((i) => i.quantity <= i.minQuantity).length
   const totalValue = initialItems.reduce((sum, i) => sum + (i.cost || 0) * i.quantity, 0)
 
-  const handleDeactivate = (id: string) => {
-    if (!confirm('Remove this item from active inventory? You can re-add it later.')) return
+  const handleDeactivate = async (id: string) => {
+    const ok = await confirmDialog({
+      title: 'Remove from active inventory?',
+      message: 'You can re-add it later.',
+      confirmLabel: 'Remove',
+    })
+    if (!ok) return
     startTransition(async () => {
       const result = await deactivateInventoryItem(id)
-      if (result?.error) alert(result.error)
+      if (result?.error) toast.error(result.error)
       else router.refresh()
     })
   }
@@ -95,7 +103,7 @@ export function InventoryHubClient({ items: initialItems, userRole }: Props) {
         reason: type === 'IN' ? 'Restock' : 'Used / sold',
       })
       setAdjustingId(null)
-      if (result?.error) alert(result.error)
+      if (result?.error) toast.error(result.error)
       else router.refresh()
     })
   }
@@ -153,8 +161,106 @@ export function InventoryHubClient({ items: initialItems, userRole }: Props) {
         )}
       </div>
 
-      {/* Table */}
-      <div className="flex-1 min-h-0 bg-white rounded-lg border border-gray-200 overflow-hidden">
+      {/* Table + mobile cards */}
+      <div className="flex-1 min-h-0 flex flex-col gap-3">
+        <div className="md:hidden flex-1 min-h-0 overflow-y-auto space-y-3 pb-2 -mx-1 px-1">
+          {filtered.length === 0 ? (
+            <div className="bg-white rounded-lg border border-gray-200 p-8 text-center text-sm text-gray-500">
+              {initialItems.length === 0
+                ? 'No inventory items yet. Click "Add item" to create one.'
+                : 'No items match your search.'}
+            </div>
+          ) : (
+            filtered.map((item) => (
+              <div key={item.id} className="bg-white rounded-lg border border-gray-200 p-4 space-y-3 shadow-sm">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Package className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-gray-900">{item.name}</p>
+                      {item.sku && <p className="text-xs text-gray-500">SKU: {item.sku}</p>}
+                    </div>
+                  </div>
+                  <span className="text-xs text-gray-500">{item.category}</span>
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-xs text-gray-600">
+                  <div>
+                    <span className="text-gray-400 block">Qty</span>
+                    <span className={cn('font-medium', item.quantity <= item.minQuantity ? 'text-red-600' : 'text-gray-900')}>
+                      {item.quantity} {item.unit}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-gray-400 block">Min / max</span>
+                    {item.minQuantity} / {item.maxQuantity ?? '—'}
+                  </div>
+                  <div>
+                    <span className="text-gray-400 block">Cost</span>
+                    {item.cost != null ? `$${item.cost.toFixed(2)}` : '—'}
+                  </div>
+                  <div>
+                    <span className="text-gray-400 block">Value</span>
+                    {item.cost != null ? `$${((item.cost || 0) * item.quantity).toFixed(2)}` : '—'}
+                  </div>
+                </div>
+                {canAdjustQuantity && (
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleAdjustQuantity(item.id, 'IN', 1)}
+                      disabled={isPending}
+                      className="px-3 py-1 rounded bg-green-100 text-green-700 text-sm font-medium"
+                    >
+                      +1
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleAdjustQuantity(item.id, 'OUT', 1)}
+                      disabled={isPending || item.quantity <= 0}
+                      className="px-3 py-1 rounded bg-red-100 text-red-700 text-sm font-medium disabled:opacity-50"
+                    >
+                      −1
+                    </button>
+                  </div>
+                )}
+                {(item.supplier || item.supplierEmail || item.supplierPhone) && (
+                  <button
+                    type="button"
+                    onClick={() => setDistributorItem(item)}
+                    className="text-xs text-primary-600 hover:underline flex items-center gap-1"
+                  >
+                    <Building2 className="w-3.5 h-3.5" />
+                    {item.supplier || 'Distributor'}
+                  </button>
+                )}
+                {canManage && (
+                  <div className="flex justify-end gap-1 pt-2 border-t border-gray-100">
+                    <button
+                      type="button"
+                      onClick={() => setEditingItem(item)}
+                      disabled={isPending}
+                      className="p-2 text-gray-500 hover:text-primary-600 rounded-lg"
+                      title="Edit item"
+                    >
+                      <Pencil className="w-4 h-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDeactivate(item.id)}
+                      disabled={isPending}
+                      className="p-2 text-gray-500 hover:text-red-600 rounded-lg"
+                      title="Remove from inventory"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
+              </div>
+            ))
+          )}
+        </div>
+
+        <div className="hidden md:flex flex-1 min-h-0 flex-col bg-white rounded-lg border border-gray-200 overflow-hidden">
         <div className="table-scroll-wrapper h-full max-h-[calc(100vh-320px)]">
         <table className={STYLES.table}>
           <thead className="bg-gray-50">
@@ -313,6 +419,7 @@ export function InventoryHubClient({ items: initialItems, userRole }: Props) {
             )}
           </tbody>
         </table>
+        </div>
         </div>
       </div>
 

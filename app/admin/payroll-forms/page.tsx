@@ -12,6 +12,9 @@ import { logger } from '@/lib/logger'
 import { cn } from '@/lib/utils'
 import { DateInput } from '@/components/ui/DateInput'
 import { toInputDate } from '@/lib/date-utils'
+import { InlineStatStrip } from '@/components/ui/InlineStatStrip'
+import { useAppDialogs } from '@/components/ui/AppDialogs'
+import { toast } from 'sonner'
 
 const FORM_TYPES = [
   { value: 'COMPLIANCE', label: 'Compliance' },
@@ -45,6 +48,7 @@ type Form = {
 }
 
 export default function PayrollFormsPage() {
+  const { confirm: confirmDialog } = useAppDialogs()
   const [forms, setForms] = useState<Form[]>([])
   const [loading, setLoading] = useState(true)
   const [showCreateModal, setShowCreateModal] = useState(false)
@@ -83,13 +87,20 @@ export default function PayrollFormsPage() {
   }
 
   async function handleDelete(id: string) {
-    if (!confirm('Are you sure you want to delete this form?')) return
+    const ok = await confirmDialog({
+      title: 'Delete this form?',
+      message: 'This cannot be undone.',
+      confirmLabel: 'Delete',
+      variant: 'danger',
+    })
+    if (!ok) return
     setDeleting(id)
     const res = await deletePayrollForm(id)
     if (res.success) {
       setForms(forms.filter(f => f.id !== id))
+      toast.success('Form deleted')
     } else {
-      alert(res.error)
+      toast.error(res.error ?? 'Delete failed')
     }
     setDeleting(null)
   }
@@ -107,25 +118,16 @@ export default function PayrollFormsPage() {
 
       {/* Stats */}
       {stats && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="bg-white rounded-lg border border-gray-200 p-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-primary-100 text-primary-600 flex items-center justify-center">
-                <FileText className="w-5 h-5" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-gray-900">{stats.totalForms}</p>
-                <p className="text-xs text-gray-500">Total Forms</p>
-              </div>
-            </div>
-          </div>
-          {stats.formsByType.map((type) => (
-            <div key={type.formType} className="bg-white rounded-lg border border-gray-200 p-4">
-              <p className="text-2xl font-bold text-gray-900">{type._count}</p>
-              <p className="text-xs text-gray-500">{type.formType.replace('_', ' ')}</p>
-            </div>
-          ))}
-        </div>
+        <InlineStatStrip
+          className="grid grid-cols-2 md:grid-cols-4 gap-2"
+          items={[
+            { value: stats.totalForms, label: "Total Forms" },
+            ...stats.formsByType.map((type) => ({
+              value: type._count,
+              label: type.formType.replace('_', ' '),
+            })),
+          ]}
+        />
       )}
 
       {/* Forms List */}

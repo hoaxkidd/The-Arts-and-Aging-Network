@@ -117,6 +117,57 @@ function safeTemplateMin(min: number | null | undefined): number {
   return Math.max(0, Math.floor(min))
 }
 
+async function resolveTemplateWorkflowConfig(params: {
+  templateId: string
+  requiredGroupIds: string | null | undefined
+  requiredPersonIds: string | null | undefined
+  minFacilitatorsRequired: number | null | undefined
+  autoFinalApproveWhenMinMet: boolean | null | undefined
+  facilitatorRsvpDeadlineHours: number | null | undefined
+}) {
+  const attachments = await db.messageGroupForm.findMany({
+    where: {
+      formTemplateId: params.templateId,
+      isActive: true,
+      group: { isActive: true },
+    },
+    select: {
+      groupId: true,
+      minFacilitatorsRequired: true,
+      autoFinalApproveWhenMinMet: true,
+      rsvpDeadlineHours: true,
+    },
+  })
+
+  const templateGroupIds = parseJsonIds(params.requiredGroupIds)
+  const mergedGroupIds = Array.from(new Set([...templateGroupIds, ...attachments.map((a) => a.groupId)]))
+
+  const summedMinFromAttachments = attachments.reduce(
+    (sum, attachment) => sum + safeTemplateMin(attachment.minFacilitatorsRequired),
+    0,
+  )
+
+  const minFacilitatorsRequired = attachments.length > 0
+    ? summedMinFromAttachments
+    : safeTemplateMin(params.minFacilitatorsRequired)
+
+  const autoFinalApproveWhenMinMet = attachments.length > 0
+    ? attachments.every((attachment) => attachment.autoFinalApproveWhenMinMet)
+    : !!params.autoFinalApproveWhenMinMet
+
+  const facilitatorRsvpDeadlineHours = attachments.length > 0
+    ? Math.max(1, ...attachments.map((attachment) => Math.max(1, attachment.rsvpDeadlineHours || 48)))
+    : Math.max(1, params.facilitatorRsvpDeadlineHours || 48)
+
+  return {
+    requiredGroupIds: mergedGroupIds.length > 0 ? JSON.stringify(mergedGroupIds) : null,
+    requiredPersonIds: params.requiredPersonIds || null,
+    minFacilitatorsRequired,
+    autoFinalApproveWhenMinMet,
+    facilitatorRsvpDeadlineHours,
+  }
+}
+
 function hasFacilitatorTargeting(request: {
   requiredGroupIds?: string | null
   requiredPersonIds?: string | null
@@ -486,6 +537,14 @@ export async function submitEventSignUpForm(
       return { error: "This event does not require a sign-up form" }
     }
     const requiredTemplate = event.requiredFormTemplate
+    const resolvedTemplateWorkflow = await resolveTemplateWorkflowConfig({
+      templateId: requiredTemplate.id,
+      requiredGroupIds: requiredTemplate.requiredGroupIds,
+      requiredPersonIds: requiredTemplate.requiredPersonIds,
+      minFacilitatorsRequired: requiredTemplate.minFacilitatorsRequired,
+      autoFinalApproveWhenMinMet: requiredTemplate.autoFinalApproveWhenMinMet,
+      facilitatorRsvpDeadlineHours: requiredTemplate.facilitatorRsvpDeadlineHours,
+    })
 
     const existingRequest = await db.eventRequest.findFirst({
       where: {
@@ -515,10 +574,10 @@ export async function submitEventSignUpForm(
           existingEventId: eventId,
           requestedBy: session.user.id,
           workflowStage: 'PENDING_INITIAL_ADMIN_APPROVAL',
-          requiredGroupIds: requiredTemplate.requiredGroupIds || null,
-          requiredPersonIds: requiredTemplate.requiredPersonIds || null,
-          minFacilitatorsRequired: safeTemplateMin(requiredTemplate.minFacilitatorsRequired),
-          autoFinalApproveWhenMinMet: !!requiredTemplate.autoFinalApproveWhenMinMet
+          requiredGroupIds: resolvedTemplateWorkflow.requiredGroupIds,
+          requiredPersonIds: resolvedTemplateWorkflow.requiredPersonIds,
+          minFacilitatorsRequired: resolvedTemplateWorkflow.minFacilitatorsRequired,
+          autoFinalApproveWhenMinMet: resolvedTemplateWorkflow.autoFinalApproveWhenMinMet
         }
       })
       await tx.formSubmission.update({
@@ -614,6 +673,15 @@ export async function createCustomEventRequest(data: {
 
       if (!formTemplate) return { error: "Form template not found" }
 
+      const resolvedTemplateWorkflow = await resolveTemplateWorkflowConfig({
+        templateId: formTemplate.id,
+        requiredGroupIds: formTemplate.requiredGroupIds,
+        requiredPersonIds: formTemplate.requiredPersonIds,
+        minFacilitatorsRequired: formTemplate.minFacilitatorsRequired,
+        autoFinalApproveWhenMinMet: formTemplate.autoFinalApproveWhenMinMet,
+        facilitatorRsvpDeadlineHours: formTemplate.facilitatorRsvpDeadlineHours,
+      })
+
       // Extract event details from form data if available
       const formData = data.formData as Record<string, unknown>
       const eventTitle = getStringByKeyCandidates(formData, ['title', 'Title', 'eventTitle', 'EventTitle']) || formTemplate.title
@@ -672,10 +740,10 @@ export async function createCustomEventRequest(data: {
           expectedAttendees: (data.formData.expectedAttendees as number) || (data.formData.ExpectedAttendees as number) || null,
           status: 'PENDING',
           workflowStage: 'PENDING_INITIAL_ADMIN_APPROVAL',
-          requiredGroupIds: formTemplate.requiredGroupIds || null,
-          requiredPersonIds: formTemplate.requiredPersonIds || null,
-          minFacilitatorsRequired: safeTemplateMin(formTemplate.minFacilitatorsRequired),
-          autoFinalApproveWhenMinMet: !!formTemplate.autoFinalApproveWhenMinMet,
+          requiredGroupIds: resolvedTemplateWorkflow.requiredGroupIds,
+          requiredPersonIds: resolvedTemplateWorkflow.requiredPersonIds,
+          minFacilitatorsRequired: resolvedTemplateWorkflow.minFacilitatorsRequired,
+          autoFinalApproveWhenMinMet: resolvedTemplateWorkflow.autoFinalApproveWhenMinMet,
           requestedAt: new Date(),
           updatedAt: new Date()
         }
@@ -1291,7 +1359,19 @@ export async function approveEventRequest(
     const requiredPersonIds = request.requiredPersonIds || templateSnapshot?.requiredPersonIds || null
     const minFacilitatorsRequired = safeTemplateMin(request.minFacilitatorsRequired ?? templateSnapshot?.minFacilitatorsRequired)
     const autoFinalApproveWhenMinMet = request.autoFinalApproveWhenMinMet ?? !!templateSnapshot?.autoFinalApproveWhenMinMet
-    const deadlineHours = Math.max(1, templateSnapshot?.facilitatorRsvpDeadlineHours || 48)
+    let deadlineHours = Math.max(1, templateSnapshot?.facilitatorRsvpDeadlineHours || 48)
+
+    if (request.formSubmission?.templateId) {
+      const attachmentDeadlineConfig = await resolveTemplateWorkflowConfig({
+        templateId: request.formSubmission.templateId,
+        requiredGroupIds,
+        requiredPersonIds,
+        minFacilitatorsRequired,
+        autoFinalApproveWhenMinMet,
+        facilitatorRsvpDeadlineHours: templateSnapshot?.facilitatorRsvpDeadlineHours,
+      })
+      deadlineHours = attachmentDeadlineConfig.facilitatorRsvpDeadlineHours
+    }
 
     const hasTargeting = parseJsonIds(requiredGroupIds).length > 0 || parseJsonIds(requiredPersonIds).length > 0
     const needsFacilitatorPhase = hasTargeting && minFacilitatorsRequired > 0
@@ -1563,6 +1643,8 @@ export async function approveEventRequest(
 
     const eventTitle = request.type === 'CREATE_CUSTOM' ? request.customTitle : request.existingEvent?.title
 
+    const staffEventLinkId = approvedEventIds[0] || approvedEventId || request.existingEventId
+
     for (const member of staff) {
       await db.notification.create({
         data: {
@@ -1570,7 +1652,7 @@ export async function approveEventRequest(
           type: 'EVENT_CREATED',
           title: 'New Event Available',
           message: `A new event "${eventTitle}" is now available for attendance`,
-          link: `/staff/events/${approvedEventId}`
+          link: staffEventLinkId ? `/events/${staffEventLinkId}` : '/staff/events'
         }
       })
     }
@@ -2354,7 +2436,7 @@ export async function approveRequestWithSelectedDate(data: {
             type: 'EVENT_CONFIRMED',
             title: 'Event Confirmed',
             message: `"${request.customTitle}" at ${request.geriatricHome.name} has been confirmed for your selected date`,
-            link: `/staff/events/${event.id}`
+            link: `/events/${event.id}`
           }
         })
       }

@@ -114,7 +114,8 @@ export async function createTestimonial(data: {
       }
     })
 
-    revalidatePath('/admin/testimonials')
+    revalidatePath('/admin/communication')
+    revalidatePath('/admin/communication?tab=testimonials')
 
     return { success: true, data: testimonial }
   } catch (error) {
@@ -160,7 +161,8 @@ export async function updateTestimonial(
       data: updates
     })
 
-    revalidatePath('/admin/testimonials')
+    revalidatePath('/admin/communication')
+    revalidatePath('/admin/communication?tab=testimonials')
 
     return { success: true, data: testimonial }
   } catch (error) {
@@ -187,7 +189,8 @@ export async function deleteTestimonial(id: string) {
       }
     })
 
-    revalidatePath('/admin/testimonials')
+    revalidatePath('/admin/communication')
+    revalidatePath('/admin/communication?tab=testimonials')
 
     return { success: true }
   } catch (error) {
@@ -239,7 +242,8 @@ export async function submitPublicTestimonial(data: {
       },
     })
 
-    revalidatePath('/admin/testimonials')
+    revalidatePath('/admin/communication')
+    revalidatePath('/admin/communication?tab=testimonials')
     revalidatePath('/testimonials')
     return { success: true, data: testimonial }
   } catch (error) {

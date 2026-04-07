@@ -20,7 +20,7 @@ This application provides role-based portals for managing:
 | Prisma | 5.22.0 | Database ORM |
 | NextAuth.js | 5.0.0-beta.30 | Authentication |
 | Tailwind CSS | 4.x | Styling |
-| SQLite | - | Development database |
+| PostgreSQL (Neon) | - | Primary database |
 | Zod | 4.3.5 | Schema validation |
 
 ## Getting Started
@@ -51,12 +51,14 @@ npm run dev
 Create a `.env` file in the root directory:
 
 ```env
-DATABASE_URL="file:./dev.db"
+DATABASE_URL="postgresql://<user>:<pass>@<host>-pooler.../neondb?sslmode=require"
+DATABASE_URL_UNPOOLED="postgresql://<user>:<pass>@<host>.../neondb?sslmode=require"
 AUTH_SECRET="your-secure-secret-here"
 NEXTAUTH_URL="http://localhost:3000"
 ```
 
 > **Important**: Change `AUTH_SECRET` to a secure random string in production.
+> If you use Vercel Neon integration variables, map `POSTGRES_URL` -> `DATABASE_URL` and `POSTGRES_URL_NON_POOLING`/`POSTGRES_URL_UNPOOLED` -> `DATABASE_URL_UNPOOLED`.
 
 ## User Roles
 
@@ -187,7 +189,7 @@ See [docs/SECURITY_AUDIT.md](docs/SECURITY_AUDIT.md) for a detailed security rev
 
 **Before deploying to production:**
 1. Change `AUTH_SECRET` to a secure random value
-2. Switch from SQLite to PostgreSQL
+2. Confirm `DATABASE_URL` and `DATABASE_URL_UNPOOLED` are set for the target environment
 3. Implement actual email/SMS services
 4. Add HTTPS enforcement
 5. Review and fix identified security issues

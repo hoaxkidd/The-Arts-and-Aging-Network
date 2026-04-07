@@ -26,7 +26,7 @@ export function EventManagementHubClient({ events, requests }: EventManagementHu
   const conflictParam = searchParams.get('conflicts')
   const initialTab = tabParam === 'requests' || tabParam === 'list' || tabParam === 'calendar'
     ? tabParam
-    : 'list'
+    : 'calendar'
 
   const [activeTab, setActiveTab] = useState(initialTab)
   const hasNotifiedRef = useRef(false)
@@ -45,13 +45,13 @@ export function EventManagementHubClient({ events, requests }: EventManagementHu
 
     const keepTab = tabParam && ['list', 'calendar', 'requests'].includes(tabParam)
       ? `?tab=${tabParam}`
-      : '?tab=list'
+      : '?tab=calendar'
     router.replace(`/admin/events${keepTab}`)
   }, [createdParam, conflictParam, tabParam, router])
 
   const tabs = [
-    { id: 'list', label: 'All Events', icon: List },
     { id: 'calendar', label: 'Calendar', icon: Calendar },
+    { id: 'list', label: 'All Events', icon: List },
     {
       id: 'requests',
       label: 'Event Requests',
@@ -77,7 +77,7 @@ export function EventManagementHubClient({ events, requests }: EventManagementHu
         )}
       </div>
 
-      <div className="flex-1 min-h-0 overflow-auto">
+      <div className="flex-1 min-h-0 overflow-hidden pb-2">
         {activeTab === 'list' && <EventListTable events={events as never[]} />}
         {activeTab === 'calendar' && <AdminCalendarView events={events as never[]} />}
         {activeTab === 'requests' && <AdminRequestList requests={requests as never[]} />}

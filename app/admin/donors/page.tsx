@@ -62,6 +62,10 @@ export default async function DonorsPage() {
     })),
   }))
 
+  // #region agent log
+  fetch('http://127.0.0.1:3010/api/debug-log',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'7a8fa1'},body:JSON.stringify({sessionId:'7a8fa1',runId:'donors-pre',hypothesisId:'H5',location:'app/admin/donors/page.tsx:DonorsPage',message:'donors page loaded summary',data:{donorCount:serialized.length,donationsWithMethod:serialized.flatMap((d)=>d.donations).filter((x)=>Boolean(x.method)).length,donationsWithCampaign:serialized.flatMap((d)=>d.donations).filter((x)=>Boolean(x.campaign)).length,donationsWithProgramType:serialized.flatMap((d)=>d.donations).filter((x)=>Boolean(x.programType)).length},timestamp:Date.now()})}).catch(()=>{})
+  // #endregion
+
   return (
     <div className="h-full flex flex-col">
       <div className="flex-1 min-h-0 overflow-auto pt-4">

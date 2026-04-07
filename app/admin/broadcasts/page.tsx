@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react'
 import { Plus, Send, Trash2, Loader2, X, Megaphone, ShieldCheck } from 'lucide-react'
 import { createBroadcast, getBroadcasts, sendBroadcast, deleteBroadcast, approveBoardVisibilityForBroadcast } from '@/app/actions/broadcast-messages'
 import { cn } from '@/lib/utils'
+import { useAppDialogs } from '@/components/ui/AppDialogs'
+import { toast } from 'sonner'
 
 type Broadcast = {
   id: string
@@ -18,6 +20,7 @@ type Broadcast = {
 }
 
 export default function BroadcastMessagesPage() {
+  const { confirm: confirmDialog } = useAppDialogs()
   const [broadcasts, setBroadcasts] = useState<Broadcast[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
@@ -57,47 +60,63 @@ export default function BroadcastMessagesPage() {
       loadBroadcasts()
       closeForm()
     } else {
-      alert(result.error)
+      toast.error(result.error)
     }
     
     setSaving(false)
   }
 
   async function handleSend(id: string) {
-    if (!confirm('Send this broadcast now?')) return
+    const ok = await confirmDialog({
+      title: 'Send broadcast?',
+      message: 'This will deliver the message to selected roles now.',
+      confirmLabel: 'Send',
+    })
+    if (!ok) return
     
     setActionId(id)
     const result = await sendBroadcast(id)
     if (!result.error) {
       loadBroadcasts()
     } else {
-      alert(result.error)
+      toast.error(result.error)
     }
     setActionId(null)
   }
 
   async function handleDelete(id: string) {
-    if (!confirm('Delete this broadcast?')) return
+    const ok = await confirmDialog({
+      title: 'Delete broadcast?',
+      message: 'This cannot be undone.',
+      confirmLabel: 'Delete',
+      variant: 'danger',
+    })
+    if (!ok) return
     
     setActionId(id)
     const result = await deleteBroadcast(id)
     if (!result.error) {
       loadBroadcasts()
     } else {
-      alert(result.error)
+      toast.error(result.error)
     }
     setActionId(null)
   }
 
   async function handleApproveBoard(id: string) {
-    if (!confirm('Approve this broadcast for board visibility?')) return
+    const ok = await confirmDialog({
+      title: 'Approve for board?',
+      message: 'Allow board members to see this broadcast.',
+      confirmLabel: 'Approve',
+    })
+    if (!ok) return
 
     setActionId(id)
     const result = await approveBoardVisibilityForBroadcast(id)
     if (!result.error) {
       loadBroadcasts()
     } else {
-      alert(result.error)
+      toast.error(result.error)
     }
     setActionId(null)
   }

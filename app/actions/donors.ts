@@ -125,6 +125,9 @@ export async function recordDonation(data: {
   }
 
   try {
+    // #region agent log
+    fetch('http://127.0.0.1:3010/api/debug-log',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'7a8fa1'},body:JSON.stringify({sessionId:'7a8fa1',runId:'donors-pre',hypothesisId:'H1',location:'app/actions/donors.ts:recordDonation:start',message:'recordDonation input',data:{donorId:data.donorId,amount:data.amount,type:data.type ?? null,method:data.method ?? null,campaign:data.campaign ?? null,programType:data.programType ?? null,donationDate:data.donationDate ? data.donationDate.toISOString() : null},timestamp:Date.now()})}).catch(()=>{})
+    // #endregion
     const donation = await prisma.donation.create({
       data: {
         donorId: data.donorId,
@@ -154,6 +157,10 @@ export async function recordDonation(data: {
         a.donationDate.getTime() - b.donationDate.getTime()
       )[0]?.donationDate
 
+      // #region agent log
+      fetch('http://127.0.0.1:3010/api/debug-log',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'7a8fa1'},body:JSON.stringify({sessionId:'7a8fa1',runId:'donors-pre',hypothesisId:'H2',location:'app/actions/donors.ts:recordDonation:stats',message:'computed donor stats before update',data:{donorId:data.donorId,donationCount:donor.donations.length,totalDonated,firstDonation:firstDonation ? firstDonation.toISOString() : null,lastDonationStrategy:'new Date()'},timestamp:Date.now()})}).catch(()=>{})
+      // #endregion
+
       await prisma.donor.update({
         where: { id: data.donorId },
         data: {
@@ -175,8 +182,15 @@ export async function recordDonation(data: {
 
     revalidatePath('/admin/donors')
 
+    // #region agent log
+    fetch('http://127.0.0.1:3010/api/debug-log',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'7a8fa1'},body:JSON.stringify({sessionId:'7a8fa1',runId:'donors-pre',hypothesisId:'H3',location:'app/actions/donors.ts:recordDonation:done',message:'recordDonation success',data:{donationId:donation.id,donorId:data.donorId},timestamp:Date.now()})}).catch(()=>{})
+    // #endregion
+
     return { success: true, data: donation }
   } catch (error) {
+    // #region agent log
+    fetch('http://127.0.0.1:3010/api/debug-log',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'7a8fa1'},body:JSON.stringify({sessionId:'7a8fa1',runId:'donors-pre',hypothesisId:'H4',location:'app/actions/donors.ts:recordDonation:error',message:'recordDonation failed',data:{error:error instanceof Error ? error.message : String(error)},timestamp:Date.now()})}).catch(()=>{})
+    // #endregion
     logger.serverAction("Failed to record donation:", error)
     return { error: "Failed to record donation" }
   }

@@ -240,9 +240,43 @@ export default async function AuditLogPage({
         </div>
       </div>
 
-      {/* Table */}
+      {/* Table + mobile cards */}
       <div className="flex-1 overflow-auto pt-4 pb-4">
-        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+        <div className="md:hidden space-y-3">
+          {logs.length > 0 ? (
+            logs.map((log) => {
+              const Icon = getActionIcon(log.action)
+              return (
+                <div key={log.id} className="bg-white rounded-lg border border-gray-200 p-4 space-y-2 shadow-sm">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className={cn("inline-flex items-center gap-1 text-xs font-semibold", getActionColor(log.action))}>
+                      <Icon className="w-3.5 h-3.5" />
+                      {formatAction(log.action)}
+                    </span>
+                    <span className="text-xs text-gray-500 whitespace-nowrap">{getRelativeTime(log.createdAt)}</span>
+                  </div>
+                  <p className="text-sm font-medium text-gray-900">{log.user?.name || 'System'}</p>
+                  <p className="text-sm text-gray-600 line-clamp-3">{formatAuditDetails(log.details)}</p>
+                </div>
+              )
+            })
+          ) : (
+            <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
+              <FileSearch className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+              <p className="text-sm text-gray-500">No audit logs found</p>
+              {search && (
+                <Link
+                  href="/admin/audit-log"
+                  className="text-xs text-primary-600 hover:text-primary-700 mt-1 inline-block"
+                >
+                  Clear search
+                </Link>
+              )}
+            </div>
+          )}
+        </div>
+
+        <div className="hidden md:block bg-white rounded-lg border border-gray-200 overflow-hidden">
           <div className="table-scroll-wrapper max-h-[calc(100vh-320px)]">
             <table className={STYLES.table}>
               <thead className="bg-gray-50">

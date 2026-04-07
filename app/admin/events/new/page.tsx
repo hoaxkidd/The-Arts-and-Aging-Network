@@ -3,9 +3,15 @@ import { auth } from "@/auth"
 import { redirect } from "next/navigation"
 import { EventForm } from "@/components/admin/EventForm"
 
-export default async function NewEventPage() {
+export default async function NewEventPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ date?: string }>
+}) {
   const session = await auth()
-  if (session?.user?.role !== 'ADMIN' && session?.user?.role !== 'PAYROLL') redirect('/dashboard')
+  if (session?.user?.role !== 'ADMIN') redirect('/dashboard')
+
+  const { date } = await searchParams
 
   const [locations, formTemplates] = await Promise.all([
     prisma.location.findMany({ orderBy: { name: 'asc' } }),
@@ -24,6 +30,7 @@ export default async function NewEventPage() {
           formTemplates={formTemplates}
           backHref="/admin/events"
           currentUser={session?.user ? { name: session.user.name ?? '', email: session.user.email ?? '', role: session.user.role ?? '' } : null}
+          initialDate={date}
         />
       </div>
     </div>

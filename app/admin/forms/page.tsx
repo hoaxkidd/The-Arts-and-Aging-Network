@@ -9,6 +9,7 @@ import { FormTemplateCard } from "@/components/admin/FormTemplateCard"
 import { FormTemplateFilters } from "@/components/admin/FormTemplateFilters"
 import { AdminFormSubmissionsList } from "@/components/admin/AdminFormSubmissionsList"
 import { CreateTemplateButton } from "@/components/admin/CreateTemplateButton"
+import { InlineStatStrip } from "@/components/ui/InlineStatStrip"
 
 export const revalidate = 60
 
@@ -194,20 +195,14 @@ function TemplatesTab({
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-          <div className="bg-white text-gray-700 border border-gray-300 px-3 py-1.5 rounded-lg font-medium text-sm hover:bg-gray-50 text-center">
-            <p className="text-sm font-semibold text-gray-900">{templateStats.total} Total Templates</p>
-          </div>
-          <div className="bg-white text-gray-700 border border-gray-300 px-3 py-1.5 rounded-lg font-medium text-sm hover:bg-gray-50 text-center">
-            <p className="text-sm font-semibold text-green-700">{templateStats.active} Active</p>
-          </div>
-          <div className="bg-white text-gray-700 border border-gray-300 px-3 py-1.5 rounded-lg font-medium text-sm hover:bg-gray-50 text-center">
-            <p className="text-sm font-semibold text-gray-600">{templateStats.archived} Archived</p>
-          </div>
-          <div className="bg-white text-gray-700 border border-gray-300 px-3 py-1.5 rounded-lg font-medium text-sm hover:bg-gray-50 text-center">
-            <p className="text-sm font-semibold text-blue-700">{templateStats.totalSubmissions} Submissions</p>
-          </div>
-        </div>
+        <InlineStatStrip
+          items={[
+            { value: templateStats.total, label: "Total Templates" },
+            { value: templateStats.active, label: "Active", tone: "success" },
+            { value: templateStats.archived, label: "Archived", tone: "muted" },
+            { value: templateStats.totalSubmissions, label: "Submissions", tone: "info" },
+          ]}
+        />
         <CreateTemplateButton />
       </div>
 

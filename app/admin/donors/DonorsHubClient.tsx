@@ -18,6 +18,8 @@ import {
 import { cn } from '@/lib/utils'
 import { STYLES } from '@/lib/styles'
 import { createDonor, deleteDonor, recordDonation, updateDonor } from '@/app/actions/donors'
+import { useAppDialogs } from '@/components/ui/AppDialogs'
+import { toast } from 'sonner'
 
 type DonationRow = {
   id: string
@@ -64,6 +66,7 @@ const TIER_STYLES: Record<string, string> = {
 
 export function DonorsHubClient({ donors: initialDonors }: Props) {
   const router = useRouter()
+  const { confirm: confirmDialog } = useAppDialogs()
   const [search, setSearch] = useState('')
   const [tierFilter, setTierFilter] = useState<string>('ALL')
   const [statusFilter, setStatusFilter] = useState<string>('ALL')
@@ -89,14 +92,21 @@ export function DonorsHubClient({ donors: initialDonors }: Props) {
 
   const totalRaised = initialDonors.reduce((sum, d) => sum + d.totalDonated, 0)
 
-  const handleDeleteDonor = (donor: DonorRow) => {
-    if (!confirm(`Delete donor "${donor.name}" and all donation history?`)) return
+  const handleDeleteDonor = async (donor: DonorRow) => {
+    const ok = await confirmDialog({
+      title: 'Delete donor?',
+      message: `Remove "${donor.name}" and all donation history? This cannot be undone.`,
+      confirmLabel: 'Delete',
+      variant: 'danger',
+    })
+    if (!ok) return
     startTransition(async () => {
       const result = await deleteDonor(donor.id)
       if (result?.error) {
-        alert(result.error)
+        toast.error(result.error)
         return
       }
+      toast.success('Donor removed')
       router.refresh()
     })
   }
@@ -137,7 +147,7 @@ export function DonorsHubClient({ donors: initialDonors }: Props) {
         <select
           value={tierFilter}
           onChange={(e) => setTierFilter(e.target.value)}
-          className="text-sm border border-gray-300 rounded-lg py-2 px-3 focus:ring-2 focus:ring-primary-500"
+          className={cn(STYLES.input, STYLES.select)}
         >
           {tiers.map((t) => (
             <option key={t} value={t}>{t === 'ALL' ? 'All tiers' : t}</option>
@@ -146,7 +156,7 @@ export function DonorsHubClient({ donors: initialDonors }: Props) {
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
-          className="text-sm border border-gray-300 rounded-lg py-2 px-3 focus:ring-2 focus:ring-primary-500"
+          className={cn(STYLES.input, STYLES.select)}
         >
           {statuses.map((s) => (
             <option key={s} value={s}>{s === 'ALL' ? 'All statuses' : s}</option>
@@ -161,7 +171,112 @@ export function DonorsHubClient({ donors: initialDonors }: Props) {
         </button>
       </div>
 
-      <div className="flex-1 min-h-0 bg-white rounded-lg border border-gray-200 overflow-hidden">
+      <div className="flex-1 min-h-0 flex flex-col gap-3">
+        <div className="md:hidden flex-1 min-h-0 overflow-y-auto space-y-3 pb-2 -mx-1 px-1">
+          {filtered.length === 0 ? (
+            <div className="bg-white rounded-lg border border-gray-200 p-8 text-center text-sm text-gray-500">
+              {initialDonors.length === 0 ? 'No donors yet.' : 'No donors match your filters.'}
+            </div>
+          ) : (
+            filtered.map((donor) => (
+              <div
+                key={donor.id}
+                className="bg-white rounded-lg border border-gray-200 p-4 space-y-3 shadow-sm"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Heart className="w-4 h-4 text-pink-500 flex-shrink-0" />
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-gray-900 truncate">{donor.name}</p>
+                      {donor.email && <p className="text-xs text-gray-500 truncate">{donor.email}</p>}
+                    </div>
+                  </div>
+                  <span
+                    className={cn(
+                      'text-xs px-2 py-1 rounded flex-shrink-0',
+                      donor.status === 'ACTIVE' && 'bg-green-100 text-green-700',
+                      donor.status === 'INACTIVE' && 'bg-gray-100 text-gray-600',
+                      donor.status === 'LAPSED' && 'bg-amber-100 text-amber-700'
+                    )}
+                  >
+                    {donor.status}
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-xs text-gray-600">
+                  <div>
+                    <span className="text-gray-400 block">Type</span>
+                    {donor.type}
+                  </div>
+                  <div>
+                    <span className="text-gray-400 block">Tier</span>
+                    <span className={cn('inline-flex px-2 py-0.5 rounded font-medium', TIER_STYLES[donor.tier] || 'bg-gray-100 text-gray-700')}>
+                      {donor.tier}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-gray-400 block">Method</span>
+                    {latestMethod(donor)}
+                  </div>
+                  <div>
+                    <span className="text-gray-400 block">Campaign</span>
+                    <span className="line-clamp-2">{latestCampaign(donor)}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-400 block">Total</span>
+                    <button
+                      type="button"
+                      onClick={() => setDonationHistoryDonor(donor)}
+                      className="font-semibold text-primary-600"
+                    >
+                      ${donor.totalDonated.toLocaleString('en-CA', { minimumFractionDigits: 2 })}
+                    </button>
+                  </div>
+                  <div>
+                    <span className="text-gray-400 block">Donations</span>
+                    {donor.donationCount}
+                  </div>
+                  <div className="col-span-2">
+                    <span className="text-gray-400 block">Last donation</span>
+                    {donor.lastDonation
+                      ? new Date(donor.lastDonation).toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' })
+                      : '—'}
+                  </div>
+                </div>
+                <div className="flex items-center justify-end gap-1 pt-2 border-t border-gray-100">
+                  <button
+                    type="button"
+                    onClick={() => setDonationDonor(donor)}
+                    className="p-2 text-gray-500 hover:text-green-600 rounded-lg"
+                    title="Record donation"
+                    disabled={isPending}
+                  >
+                    <DollarSign className="w-4 h-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEditingDonor(donor)}
+                    className="p-2 text-gray-500 hover:text-primary-600 rounded-lg"
+                    title="Edit donor"
+                    disabled={isPending}
+                  >
+                    <Pencil className="w-4 h-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteDonor(donor)}
+                    className="p-2 text-gray-500 hover:text-red-600 rounded-lg"
+                    title="Delete donor"
+                    disabled={isPending}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        <div className="hidden md:flex flex-1 min-h-0 flex-col bg-white rounded-lg border border-gray-200 overflow-hidden">
         <div className="table-scroll-wrapper h-full max-h-[calc(100vh-320px)]">
         <table className={STYLES.table}>
           <thead className="bg-gray-50">
@@ -271,6 +386,7 @@ export function DonorsHubClient({ donors: initialDonors }: Props) {
             )}
           </tbody>
         </table>
+        </div>
         </div>
       </div>
 
@@ -441,18 +557,18 @@ function DonorModal({
           </div>
           <input name="address" defaultValue={donor?.address || ''} placeholder="Address" className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" />
           <div className="grid grid-cols-3 gap-3">
-            <select name="type" defaultValue={donor?.type || 'INDIVIDUAL'} className="rounded-lg border border-gray-300 px-3 py-2 text-sm">
+            <select name="type" defaultValue={donor?.type || 'INDIVIDUAL'} className={cn(STYLES.input, STYLES.select)}>
               <option value="INDIVIDUAL">Individual</option>
               <option value="ORGANIZATION">Organization</option>
               <option value="FOUNDATION">Foundation</option>
             </select>
-            <select name="tier" defaultValue={donor?.tier || 'SUPPORTER'} className="rounded-lg border border-gray-300 px-3 py-2 text-sm">
+            <select name="tier" defaultValue={donor?.tier || 'SUPPORTER'} className={cn(STYLES.input, STYLES.select)}>
               <option value="SUPPORTER">Supporter</option>
               <option value="PATRON">Patron</option>
               <option value="BENEFACTOR">Benefactor</option>
               <option value="CHAMPION">Champion</option>
             </select>
-            <select name="status" defaultValue={donor?.status || 'ACTIVE'} className="rounded-lg border border-gray-300 px-3 py-2 text-sm">
+            <select name="status" defaultValue={donor?.status || 'ACTIVE'} className={cn(STYLES.input, STYLES.select)}>
               <option value="ACTIVE">Active</option>
               <option value="INACTIVE">Inactive</option>
               <option value="LAPSED">Lapsed</option>
@@ -486,25 +602,75 @@ function RecordDonationModal({ donor, onClose, onSuccess }: { donor: DonorRow; o
     setError(null)
     const formData = new FormData(e.currentTarget)
     const amount = Number.parseFloat(String(formData.get('amount') || '0'))
+    const type = String(formData.get('type') || 'MONETARY')
+    const method = String(formData.get('method') || '').trim() || undefined
+    const campaign = String(formData.get('campaign') || '').trim() || undefined
+    const notes = String(formData.get('notes') || '').trim() || undefined
 
     if (!Number.isFinite(amount) || amount <= 0) {
       setError('Enter a valid donation amount')
       return
     }
 
+    // #region agent log
+    fetch('/api/debug-log', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        sessionId: '7a8fa1',
+        runId: 'donors-pre',
+        hypothesisId: 'H1',
+        location: 'app/admin/donors/DonorsHubClient.tsx:RecordDonationModal.handleSubmit',
+        message: 'record donation submit payload',
+        data: { donorId: donor.id, amount, type, method: method ?? null, campaign: campaign ?? null, hasProgramTypeInput: false },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {})
+    // #endregion
+
     startTransition(async () => {
       const result = await recordDonation({
         donorId: donor.id,
         amount,
-        type: String(formData.get('type') || 'MONETARY'),
-        method: String(formData.get('method') || '').trim() || undefined,
-        campaign: String(formData.get('campaign') || '').trim() || undefined,
-        notes: String(formData.get('notes') || '').trim() || undefined,
+        type,
+        method,
+        campaign,
+        notes,
       })
       if (result?.error) {
+        // #region agent log
+        fetch('/api/debug-log', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sessionId: '7a8fa1',
+            runId: 'donors-pre',
+            hypothesisId: 'H4',
+            location: 'app/admin/donors/DonorsHubClient.tsx:RecordDonationModal.handleSubmit',
+            message: 'record donation error',
+            data: { error: result.error },
+            timestamp: Date.now(),
+          }),
+        }).catch(() => {})
+        // #endregion
         setError(result.error)
         return
       }
+      // #region agent log
+      fetch('/api/debug-log', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sessionId: '7a8fa1',
+          runId: 'donors-pre',
+          hypothesisId: 'H3',
+          location: 'app/admin/donors/DonorsHubClient.tsx:RecordDonationModal.handleSubmit',
+          message: 'record donation success',
+          data: { donorId: donor.id },
+          timestamp: Date.now(),
+        }),
+      }).catch(() => {})
+      // #endregion
       onSuccess()
     })
   }
@@ -521,7 +687,7 @@ function RecordDonationModal({ donor, onClose, onSuccess }: { donor: DonorRow; o
           {error && <div className="p-3 rounded-lg bg-red-50 text-red-700 text-sm">{error}</div>}
           <input name="amount" type="number" step="0.01" min="0" placeholder="Amount" className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" required />
           <div className="grid grid-cols-2 gap-3">
-            <select name="type" defaultValue="MONETARY" className="rounded-lg border border-gray-300 px-3 py-2 text-sm">
+            <select name="type" defaultValue="MONETARY" className={cn(STYLES.input, STYLES.select)}>
               <option value="MONETARY">Monetary</option>
               <option value="IN_KIND">In kind</option>
             </select>

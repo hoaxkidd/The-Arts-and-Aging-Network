@@ -5,6 +5,24 @@ import { getRoleHomePath, getStaffBasePathForRole } from "@/lib/role-routes"
 
 const authMiddleware = auth
 
+function debugLog(hypothesisId: string, location: string, message: string, data: Record<string, unknown>) {
+  // #region agent log
+  fetch('http://127.0.0.1:7932/ingest/d150821c-e880-4593-9da4-b74c1d3885d0', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '7a8fa1' },
+    body: JSON.stringify({
+      sessionId: '7a8fa1',
+      runId: 'repro-4',
+      hypothesisId,
+      location,
+      message,
+      data,
+      timestamp: Date.now(),
+    }),
+  }).catch(() => {})
+  // #endregion
+}
+
 export default authMiddleware((req: NextRequest & { auth: unknown }) => {
   const isLoggedIn = !!req.auth
   const { pathname } = req.nextUrl
@@ -116,8 +134,19 @@ export default authMiddleware((req: NextRequest & { auth: unknown }) => {
 
   // Protect admin routes
   if (pathname.startsWith('/admin')) {
+    debugLog('H6', 'middleware.ts:admin-guard', 'Admin route evaluated', {
+      pathname,
+      isLoggedIn,
+      primaryRole: primaryRole ?? null,
+      roles: userRoles,
+    })
     if (!isLoggedIn) return NextResponse.redirect(new URL('/login', req.nextUrl))
     if (!hasRole('ADMIN')) {
+      debugLog('H6', 'middleware.ts:admin-guard', 'Admin route redirected for non-admin role', {
+        pathname,
+        primaryRole: primaryRole ?? null,
+        roles: userRoles,
+      })
       if (hasRole('PAYROLL')) return NextResponse.redirect(new URL('/payroll', req.nextUrl))
       if (hasRole('HOME_ADMIN')) return NextResponse.redirect(new URL('/dashboard', req.nextUrl))
       if (hasAnyRole(['FACILITATOR', 'BOARD', 'PARTNER', 'VOLUNTEER'])) {
