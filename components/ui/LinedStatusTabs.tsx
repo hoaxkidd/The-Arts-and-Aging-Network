@@ -16,6 +16,8 @@ type LinedStatusTabsProps<T extends string> = {
   onChange: (id: T) => void
   /** Accessible label for the tablist */
   'aria-label'?: string
+  /** Merged onto the tablist container (e.g. drop border when wrapped with search on one row). */
+  className?: string
 }
 
 /**
@@ -27,10 +29,14 @@ export function LinedStatusTabs<T extends string>({
   activeId,
   onChange,
   'aria-label': ariaLabel = 'Filter by status',
+  className,
 }: LinedStatusTabsProps<T>) {
   return (
     <div
-      className="flex gap-2 border-b border-gray-200 pb-1 overflow-x-auto"
+      className={cn(
+        'flex gap-2 border-b border-gray-200 pb-1 overflow-x-auto',
+        className
+      )}
       role="tablist"
       aria-label={ariaLabel}
     >

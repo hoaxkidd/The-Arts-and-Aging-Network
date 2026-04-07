@@ -165,7 +165,7 @@ export function DonorsHubClient({ donors: initialDonors }: Props) {
         <div className="table-scroll-wrapper h-full max-h-[calc(100vh-320px)]">
         <table className={STYLES.table}>
           <thead className="bg-gray-50">
-            <tr>
+            <tr className={STYLES.tableHeadRow}>
               <th className={STYLES.tableHeader}>Donor / Organization</th>
               <th className={STYLES.tableHeader}>Type</th>
               <th className={STYLES.tableHeader}>Tier</th>

@@ -482,7 +482,7 @@ export function HomeQuickView({ homeId, isOpen, onClose }: HomeQuickViewProps) {
                       <div className="table-scroll-wrapper">
                         <table className={STYLES.table}>
                           <thead className="bg-gray-50">
-                            <tr>
+                            <tr className={STYLES.tableHeadRow}>
                               <th className={STYLES.tableHeader}>Event</th>
                               <th className={STYLES.tableHeader}>Date</th>
                               <th className={STYLES.tableHeader}>Status</th>

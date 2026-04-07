@@ -29,6 +29,14 @@ export const STYLES = {
   btnDanger: "bg-red-600 text-white hover:bg-red-700 focus:ring-2 focus:ring-red-500 focus:ring-offset-2",
   btnGhost: "text-gray-600 hover:text-gray-900 hover:bg-gray-100",
   btnIcon: "p-2 rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors",
+  /**
+   * Pair with `btn` + `btnPrimary` / `btnSecondary` for horizontal toolbars (exports, paired actions).
+   * Smaller type and padding below `sm` to avoid overflow on narrow viewports (all dashboard roles).
+   */
+  btnToolbar:
+    "h-9 min-h-[2.25rem] min-w-0 justify-center px-2.5 py-0 text-xs sm:px-4 sm:text-sm",
+  /** Lucide icons inside btnToolbar buttons */
+  btnToolbarIcon: "h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4",
 
   // Inputs
   input: "block w-full rounded-md border-gray-300 focus:border-primary-500 focus:ring-primary-500 text-sm px-3 py-2 border bg-white placeholder:text-gray-400",

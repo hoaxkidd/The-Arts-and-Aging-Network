@@ -387,6 +387,7 @@ export function DashboardLayoutClient({ children, role, title = "Arts & Aging", 
   const pathname = usePathname()
   const normalizedPathname = normalizeStaffNamespace(pathname)
   const currentTitle = getPageTitle(normalizedPathname, homeName)
+  const currentSubtitle = getPageSubtitle(normalizedPathname)
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   const menuItems =
@@ -637,31 +638,31 @@ export function DashboardLayoutClient({ children, role, title = "Arts & Aging", 
       )}
 
       <div className="flex-1 flex flex-col">
-        <header className="bg-secondary-400 border-b-2 border-secondary-500 px-4 md:px-6 py-4 flex items-center shadow-sm">
+        <header className="bg-secondary-400 border-b-2 border-secondary-500 px-4 md:px-6 py-4 flex items-start shadow-sm">
           <button
             onClick={() => setSidebarOpen(true)}
-            className="md:hidden p-2 text-gray-800 hover:text-gray-900 hover:bg-secondary-300 rounded-lg transition-colors"
+            className="md:hidden p-2 text-gray-800 hover:text-gray-900 hover:bg-secondary-300 rounded-lg transition-colors shrink-0 mt-0.5"
             aria-label="Open menu"
           >
             <Menu className="w-6 h-6" />
           </button>
 
-          <div className="flex items-center gap-4 ml-2 flex-1 min-w-0">
-            <div className="w-12 h-12 rounded-xl bg-white text-primary-600 flex items-center justify-center shadow-sm">
+          <div className="flex items-start gap-4 ml-2 flex-1 min-w-0 sm:items-center">
+            <div className="mt-0.5 w-12 h-12 shrink-0 rounded-xl bg-white text-primary-600 flex items-center justify-center shadow-sm sm:mt-0">
               {(() => {
                 const Icon = getPageIcon(normalizedPathname)
                 return <Icon className="w-6 h-6" />
               })()}
             </div>
-            <div className="min-w-0">
+            <div className="min-w-0 pt-0.5 sm:pt-0">
               <h1 className="text-xl font-bold text-gray-900 truncate">{currentTitle}</h1>
-              <p className="text-base text-gray-800 hidden sm:block truncate font-medium">
-                {getPageSubtitle(normalizedPathname)}
-              </p>
+              {currentSubtitle ? (
+                <p className="text-sm text-gray-800 font-medium sm:text-base line-clamp-2">{currentSubtitle}</p>
+              ) : null}
             </div>
           </div>
 
-          <div className="flex items-center gap-3 ml-4">
+          <div className="flex items-center gap-3 ml-4 shrink-0 self-start pt-0.5 sm:pt-0 sm:self-center">
             <NotificationBell
               initialNotifications={notifications}
               initialUnreadCount={unreadCount}

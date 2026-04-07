@@ -106,7 +106,7 @@ export function HomeList({ initialHomes }: { initialHomes: Home[] }) {
         <div className="table-scroll-wrapper max-h-[calc(100vh-320px)]">
           <table className={STYLES.table}>
             <thead className="bg-gray-50">
-              <tr>
+              <tr className={STYLES.tableHeadRow}>
                 <th className={STYLES.tableHeader}>Facility Name</th>
                 <th className={STYLES.tableHeader}>Location</th>
                 <th className={STYLES.tableHeader}>Capacity</th>

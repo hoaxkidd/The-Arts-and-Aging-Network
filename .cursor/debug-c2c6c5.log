@@ -1,0 +1,2 @@
+{"sessionId":"c2c6c5","runId":"pre-fix","hypothesisId":"H_render","location":"app/admin/financials/FinancialReportsPanel.tsx:render","message":"FinancialReportsPanel mounted","data":{"period":{"year":2026,"month":4},"disabled":false},"timestamp":1775541662937}
+{"sessionId":"c2c6c5","runId":"pre-fix","hypothesisId":"H_overflow","location":"app/admin/financials/FinancialReportsPanel.tsx:controls","message":"Exports controls overflow state changed","data":{"overflow":false,"clientWidth":607,"scrollWidth":607,"windowInnerWidth":1270},"timestamp":1775541662950}

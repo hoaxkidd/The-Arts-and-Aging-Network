@@ -26,7 +26,7 @@
  * - Card wrapper: bg-white rounded-lg border border-gray-200 overflow-hidden
  * - Table wrapper: table-scroll-wrapper max-h-[calc(100vh-320px)]
  * - Table: STYLES.table
- * - Header row: bg-gray-50 with STYLES.tableHeader cells
+ * - Header row: bg-gray-50 with <tr className={STYLES.tableHeadRow}> and STYLES.tableHeader cells
  * - Body: divide-y divide-gray-100
  * - Rows: STYLES.tableRow
  * - Cells: STYLES.tableCell
@@ -53,7 +53,7 @@ export function StickyTable({
       <div className={cn("table-scroll-wrapper", maxHeight)}>
         <table className={STYLES.table}>
           <thead className="bg-gray-50">
-            <tr>
+            <tr className={STYLES.tableHeadRow}>
               {headers.map((header) => (
                 <th key={header} className={STYLES.tableHeader}>
                   {header}

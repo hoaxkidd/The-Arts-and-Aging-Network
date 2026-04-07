@@ -232,9 +232,9 @@ export default async function AuditLogPage({
           <a
             href={csvUrl}
             download={`audit-log-${new Date().toISOString().split('T')[0]}.csv`}
-            className={cn(STYLES.btn, STYLES.btnSecondary, "px-3 py-2 text-xs")}
+            className={cn(STYLES.btn, STYLES.btnSecondary, STYLES.btnToolbar)}
           >
-            <Download className="w-3 h-3" />
+            <Download className={STYLES.btnToolbarIcon} />
             Export
           </a>
         </div>
@@ -246,7 +246,7 @@ export default async function AuditLogPage({
           <div className="table-scroll-wrapper max-h-[calc(100vh-320px)]">
             <table className={STYLES.table}>
               <thead className="bg-gray-50">
-                <tr>
+                <tr className={STYLES.tableHeadRow}>
                   <th className={cn(STYLES.tableHeader, "w-[20%]")}>Action</th>
                   <th className={cn(STYLES.tableHeader, "w-[20%]")}>User</th>
                   <th className={cn(STYLES.tableHeader, "w-[40%]")}>Details</th>

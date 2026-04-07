@@ -371,7 +371,7 @@ export default function ImportStaffPage() {
               <div className="table-scroll-wrapper max-h-40">
                 <table className={STYLES.table}>
                   <thead className="bg-yellow-50">
-                    <tr>
+                    <tr className={STYLES.tableHeadRow}>
                       <th className={STYLES.tableHeader}>Email</th>
                       <th className={STYLES.tableHeader}>Uncertain Field</th>
                     </tr>

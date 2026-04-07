@@ -327,7 +327,7 @@ export function SettingsPage({
                   <div className="table-scroll-wrapper max-h-[calc(100vh-400px)]">
                     <table className={STYLES.table}>
                       <thead className="bg-gray-50">
-                        <tr>
+                        <tr className={STYLES.tableHeadRow}>
                           <th className={STYLES.tableHeader}>Event</th>
                           <th className={STYLES.tableHeader}>Recipient</th>
                           <th className={STYLES.tableHeader}>Type</th>
@@ -407,7 +407,7 @@ export function SettingsPage({
                 <div className="table-scroll-wrapper max-h-[calc(100vh-340px)]">
                   <table className={STYLES.table}>
                     <thead className="bg-gray-50">
-                      <tr>
+                      <tr className={STYLES.tableHeadRow}>
                         <th className={STYLES.tableHeader}>Action</th>
                         <th className={STYLES.tableHeader}>User</th>
                         <th className={STYLES.tableHeader}>Details</th>

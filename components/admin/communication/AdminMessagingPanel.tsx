@@ -597,15 +597,15 @@ export function AdminMessagingPanel({ groups, currentUserId }: { groups: any[], 
                                         <div className="flex flex-wrap justify-center gap-3 mt-6">
                                             <button
                                                 onClick={() => setShowDMModal(true)}
-                                                className={cn(STYLES.btn, STYLES.btnPrimary, "text-sm")}
+                                                className={cn(STYLES.btn, STYLES.btnPrimary, STYLES.btnToolbar)}
                                             >
-                                                <Plus className="w-4 h-4" /> New Message
+                                                <Plus className={STYLES.btnToolbarIcon} /> New Message
                                             </button>
                                             <Link
                                                 href="/admin/messaging/new"
-                                                className={cn(STYLES.btn, STYLES.btnSecondary, "text-sm")}
+                                                className={cn(STYLES.btn, STYLES.btnSecondary, STYLES.btnToolbar)}
                                             >
-                                                <Users className="w-4 h-4" /> New Group
+                                                <Users className={STYLES.btnToolbarIcon} /> New Group
                                             </Link>
                                         </div>
                                     </>
