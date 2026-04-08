@@ -19,7 +19,7 @@ export function OnboardingActions({
   // Determine redirect URL dynamically based on role and approval status
   const getRedirectUrl = () => {
     // If already on volunteer portal path, stay there
-    if (redirectTo.includes('/volunteers')) {
+    if (redirectTo.includes('/volunteer')) {
       return redirectTo
     }
     // Otherwise use provided redirectTo (should be /staff for staff roles)

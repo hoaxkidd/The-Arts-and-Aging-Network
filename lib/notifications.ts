@@ -465,7 +465,7 @@ export async function notifyEventSignupsAboutNewEvent(event: {
   const eventTimeISO = startDate.toISOString()
   const appUrl = process.env.NEXTAUTH_URL || 'https://artsandaging.com'
   const appUrlDisplay = appUrl.replace(/^https?:\/\//, '')
-  const eventLink = `${appUrl}/volunteers/events/${event.id}`
+  const eventLink = `${appUrl}/events/${event.id}`
   const calendarLinks = generateCalendarLinks({
     title: event.title,
     startDateTime: startDate,
@@ -586,7 +586,7 @@ export async function notifyEventSignupsAboutEventUpdate(event: {
   const eventTimeISO = startDate.toISOString()
   const appUrl = process.env.NEXTAUTH_URL || 'https://artsandaging.com'
   const appUrlDisplay = appUrl.replace(/^https?:\/\//, '')
-  const eventLink = `${appUrl}/volunteers/events/${event.id}`
+  const eventLink = `${appUrl}/events/${event.id}`
   const calendarLinks = generateCalendarLinks({
     title: event.title,
     startDateTime: startDate,

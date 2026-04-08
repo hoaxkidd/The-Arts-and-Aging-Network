@@ -20,7 +20,7 @@ This application provides role-based portals for managing:
 | Prisma | 5.22.0 | Database ORM |
 | NextAuth.js | 5.0.0-beta.30 | Authentication |
 | Tailwind CSS | 4.x | Styling |
-| SQLite | - | Development database |
+| PostgreSQL | (via `DATABASE_URL`) | Primary database ([prisma/schema.prisma](prisma/schema.prisma)) |
 | Zod | 4.3.5 | Schema validation |
 
 ## Getting Started
@@ -36,8 +36,9 @@ This application provides role-based portals for managing:
 # Install dependencies
 npm install
 
-# Set up the database
+# Set up the database (see docs/CODEBASE_ARCHITECTURE.md for architecture overview)
 npx prisma db push
+# Or: npm run db:push  # loads .env.local via scripts/with-env.mjs
 
 # Seed initial data (optional)
 npx prisma db seed
@@ -51,7 +52,7 @@ npm run dev
 Create a `.env` file in the root directory:
 
 ```env
-DATABASE_URL="file:./dev.db"
+DATABASE_URL="postgresql://USER:PASSWORD@HOST:5432/DATABASE"
 AUTH_SECRET="your-secure-secret-here"
 NEXTAUTH_URL="http://localhost:3000"
 ```
@@ -60,16 +61,19 @@ NEXTAUTH_URL="http://localhost:3000"
 
 ## User Roles
 
-| Role | Access | Description |
-|------|--------|-------------|
+| Role | Primary portal | Description |
+|------|----------------|-------------|
 | `ADMIN` | `/admin/*` | Full system access, user management, approvals |
-| `PAYROLL` | `/payroll/*` | Time tracking, expense requests, event RSVP |
-| `HOME_ADMIN` | `/dashboard/*` | Geriatric home management, event requests |
-| `VOLUNTEER` | `/events/*` | Event viewing and RSVP |
-| `CONTRACTOR` | `/events/*` | Event viewing and RSVP |
-| `FACILITATOR` | `/events/*` | Event viewing and RSVP |
-| `PARTNER` | `/events/*` | Event viewing and RSVP |
-| `BOARD` | `/events/*` | Event viewing and RSVP |
+| `PAYROLL` | `/payroll/*` | Time tracking, mileage, forms, requests |
+| `HOME_ADMIN` | `/dashboard/*` | Geriatric home management, event requests, forms |
+| `FACILITATOR` | `/staff/*` (+ shared `/events`) | Staff inbox, events, directory, forms, profile |
+| `BOARD` | `/staff/*` (+ shared `/events`) | Board member staff shell |
+| `PARTNER` | `/staff/*` (+ shared `/events`) | Partner staff shell |
+| `VOLUNTEER` | `/volunteers/*` (+ `/staff/inbox`, `/staff/groups`, `/events`) | Volunteer portal; messaging subsets per middleware |
+
+See [lib/roles.ts](lib/roles.ts) and [middleware.ts](middleware.ts) for the source of truth.
+
+**Multi-role users:** logging in without a `callbackUrl` redirects to `/choose-role`; each option links to `/role/select` (sets the `active_role` cookie) before landing in the correct portal.
 
 ## Project Structure
 
@@ -82,7 +86,9 @@ NEXTAUTH_URL="http://localhost:3000"
   /events              # Event pages (all authenticated users)
   /invite/[token]      # Invitation acceptance
   /register/home       # Geriatric home self-registration
-  /actions             # Server actions (business logic)
+  /volunteers          # Volunteer portal (VOLUNTEER role)
+  /notifications       # Notification center (authenticated)
+  /actions             # Server actions ('use server' modules)
   /api                 # API routes
 
 /components
@@ -104,8 +110,10 @@ NEXTAUTH_URL="http://localhost:3000"
   migrations/          # Database migrations
 
 /docs
-  SECURITY_AUDIT.md    # Security review findings
-  PAYROLL_USER_GUIDE.md # Payroll user documentation
+  CODEBASE_ARCHITECTURE.md  # Stack, domains, routes, auth, actions inventory
+  SECURITY_AUDIT.md         # Security review findings
+  PAYROLL_USER_GUIDE.md     # Payroll user documentation
+  TABLE_STANDARDS.md        # UI table conventions
 ```
 
 ## Key Features
@@ -140,22 +148,24 @@ NEXTAUTH_URL="http://localhost:3000"
 - Event calendar specific to facility
 - Staff contact directory
 
-## API Routes
+## Architecture and server actions
 
-All business logic is implemented as Server Actions in `/app/actions/`:
+For a full **feature and architecture inventory** (stack, Prisma domains, routing by role, middleware, and action modules), see **[docs/CODEBASE_ARCHITECTURE.md](docs/CODEBASE_ARCHITECTURE.md)**.
 
-| File | Functions |
-|------|-----------|
-| `auth.ts` | `authenticate` |
-| `events.ts` | `createEvent`, `deleteEvent`, `updateEventStatus` |
-| `attendance.ts` | `checkInToEvent`, `rsvpToEvent` |
-| `engagement.ts` | `postComment`, `submitFeedback`, `uploadPhoto`, `deleteComment`, `deletePhoto` |
-| `invitation.ts` | `createInvitation`, `acceptInvitation`, `cancelInvitation` |
-| `payroll.ts` | `submitTimeEntry` |
-| `requests.ts` | `submitRequest` |
-| `admin.ts` | `updateRequestStatus` |
-| `user.ts` | `updateUser`, `updateNotificationPreferences` |
-| `home-registration.ts` | `registerGeriatricHome` |
+Business logic is implemented primarily as **Server Actions** in [`app/actions/`](app/actions/) (dozens of modules). Examples:
+
+| File | Examples |
+|------|----------|
+| `auth.ts` | Authentication helpers |
+| `events.ts` | Event CRUD and workflows |
+| `attendance.ts` | RSVP, check-in |
+| `invitation.ts` | Invites and acceptance |
+| `payroll.ts` | Payroll submissions |
+| `user.ts` / `user-management.ts` | Profile and admin user updates |
+| `home-registration.ts` | Geriatric home registration |
+| `event-requests.ts` | Home admin event requests |
+
+See the architecture doc for the complete categorized list.
 
 ## Database Schema
 
@@ -181,13 +191,21 @@ npm run start    # Start production server
 npm run lint     # Run ESLint
 ```
 
+## UI Standards
+
+For consistent, professional UI across portals:
+
+- **Tables**: follow `docs/TABLE_STANDARDS.md`
+- **Shared styles**: use `lib/styles.ts` (`STYLES`)
+- **Agent guidance**: see `AGENTS.md`
+
 ## Security Considerations
 
 See [docs/SECURITY_AUDIT.md](docs/SECURITY_AUDIT.md) for a detailed security review.
 
 **Before deploying to production:**
 1. Change `AUTH_SECRET` to a secure random value
-2. Switch from SQLite to PostgreSQL
+2. Confirm production `DATABASE_URL` and database backups
 3. Implement actual email/SMS services
 4. Add HTTPS enforcement
 5. Review and fix identified security issues
@@ -202,6 +220,3 @@ See [docs/SECURITY_AUDIT.md](docs/SECURITY_AUDIT.md) for a detailed security rev
 ## License
 
 Private - All rights reserved.
-# test
-# The-Arts-and-Aging-Network
-# The-Arts-and-Aging-Network

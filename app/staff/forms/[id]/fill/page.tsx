@@ -4,6 +4,7 @@ import { redirect, notFound } from "next/navigation"
 import { Lock } from "lucide-react"
 import Link from "next/link"
 import { StaffFormFill } from "./StaffFormFill"
+import { canAccessTemplate } from "@/lib/form-access"
 
 export default async function StaffFormFillPage({
   params
@@ -22,15 +23,15 @@ export default async function StaffFormFillPage({
   if (!template) notFound()
 
   // Check access - Staff can access public forms OR role-restricted forms
-  const userRole = session.user.role || ''
   const isAdmin = session.user.role === 'ADMIN'
+  const roles = Array.isArray(session.user.roles) ? session.user.roles : (session.user.role ? [session.user.role] : [])
 
   if (!isAdmin) {
-    // Check if user has access
-    const hasAccess = template.isPublic || 
-      (template.allowedRoles && template.allowedRoles.includes(userRole))
-    
-    if (!hasAccess) {
+    const allowed = canAccessTemplate(
+      { isActive: Boolean(template.isActive), isPublic: Boolean(template.isPublic), allowedRoles: template.allowedRoles ?? null },
+      { roles, isHomeAdmin: false }
+    )
+    if (!allowed) {
       return (
         <div className="p-8 text-center">
           <Lock className="w-12 h-12 text-gray-300 mx-auto mb-4" />

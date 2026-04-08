@@ -143,7 +143,9 @@ export function HomeList({ initialHomes }: { initialHomes: Home[] }) {
                               "h-full rounded-full transition-all",
                               getCapacityColor(home.residentCount, home.maxCapacity)
                             )}
-                            style={{ width: `${Math.min((home.residentCount / home.maxCapacity) * 100, 100)}%` }}
+                            style={{
+                              width: `${home.maxCapacity > 0 ? Math.min((home.residentCount / home.maxCapacity) * 100, 100) : 0}%`,
+                            }}
                           />
                         </div>
                         <span className="text-xs font-medium text-gray-600">

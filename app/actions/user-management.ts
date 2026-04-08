@@ -8,6 +8,9 @@ import type { Prisma } from "@prisma/client"
 import { reassignUserCodeForName, shouldReassignUserCode } from "@/lib/user-code"
 import { logger } from "@/lib/logger"
 
+const VALID_STATUSES = ['ACTIVE', 'PENDING', 'INACTIVE', 'SUSPENDED'] as const
+type ValidStatus = (typeof VALID_STATUSES)[number]
+
 /**
  * Delete a user (Admin only)
  */
@@ -117,6 +120,54 @@ export async function deleteUser(userId: string) {
     logger.serverAction('Delete user error:', error)
     return { error: 'Failed to delete user' }
   }
+}
+
+/**
+ * Set a user's status (Admin only)
+ */
+export async function setUserStatus(userId: string, status: ValidStatus) {
+  const session = await auth()
+  if (!session?.user || session.user.role !== 'ADMIN') {
+    return { error: 'Unauthorized' }
+  }
+
+  // Prevent admins from changing their own status to a non-active state
+  if (session.user.id === userId && status !== 'ACTIVE') {
+    return { error: 'Cannot change your own account status' }
+  }
+
+  if (!VALID_STATUSES.includes(status)) {
+    return { error: 'Invalid status' }
+  }
+
+  try {
+    const user = await prisma.user.findUnique({ where: { id: userId } })
+    if (!user) {
+      return { error: 'User not found' }
+    }
+
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: { status },
+    })
+
+    revalidatePath('/admin/users')
+    revalidatePath(`/admin/users/${userId}`)
+    revalidatePath(`/admin/users/${updatedUser.userCode || userId}`)
+
+    return { success: true, user: updatedUser }
+  } catch (error) {
+    logger.serverAction('Set status error:', error)
+    return { error: 'Failed to update user status' }
+  }
+}
+
+/**
+ * Kick a user (Admin only)
+ * Phase 1: sets status to SUSPENDED (blocks new sign-ins). Existing JWT sessions may persist until re-auth.
+ */
+export async function kickUser(userId: string) {
+  return await setUserStatus(userId, 'SUSPENDED')
 }
 
 /**

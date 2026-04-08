@@ -63,8 +63,8 @@ export default async function DonorsPage() {
   }))
 
   return (
-    <div className="h-full flex flex-col">
-      <div className="flex-1 min-h-0 overflow-auto pt-4">
+    <div className="h-full flex flex-col min-w-0">
+      <div className="flex-1 min-h-0 min-w-0 overflow-auto pt-4">
         <DonorsHubClient donors={serialized} />
       </div>
     </div>

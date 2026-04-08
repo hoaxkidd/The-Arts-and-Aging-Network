@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils"
 import Link from "next/link"
 import { STYLES } from "@/lib/styles"
 import { sanitizeHtml } from "@/lib/dompurify"
+import { canAccessTemplate } from "@/lib/form-access"
 
 export default async function HomeAdminFormDetailPage({
   params
@@ -37,28 +38,20 @@ export default async function HomeAdminFormDetailPage({
 
   if (!template) notFound()
 
-  // Check access - Home admins can only view non-public (role-restricted) forms
-  const userRole = session.user.role || ''
+  // Strict access: deny-by-default; match against any assigned role.
   const isAdmin = session.user.role === 'ADMIN'
   const isHomeAdmin = session.user.role === 'HOME_ADMIN'
+  const roles = Array.isArray(session.user.roles) ? session.user.roles : (session.user.role ? [session.user.role] : [])
 
-  if (isHomeAdmin) {
-    // Home admin can only access non-public forms
-    if (template.isPublic) {
+  if (!isAdmin) {
+    const allowed = canAccessTemplate(
+      { isActive: Boolean(template.isActive), isPublic: Boolean(template.isPublic), allowedRoles: template.allowedRoles ?? null },
+      { roles, isHomeAdmin }
+    )
+    if (!allowed) {
       return (
         <div className="p-8 text-center">
           <Lock className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-          <p className="text-gray-500">This form is not accessible to Home Administrators.</p>
-          <Link href="/dashboard/forms" className="text-primary-600 hover:text-primary-700 text-sm mt-2 inline-block">
-            Back to Forms
-          </Link>
-        </div>
-      )
-    }
-  } else if (!template.isActive || !template.isPublic) {
-    if (!isAdmin) {
-      return (
-        <div className="p-8 text-center">
           <p className="text-gray-500">This template is not available</p>
           <Link href="/dashboard/forms" className="text-primary-600 hover:text-primary-700 text-sm mt-2 inline-block">
             Back to Forms

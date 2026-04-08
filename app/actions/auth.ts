@@ -10,6 +10,7 @@ import { hash } from 'bcryptjs'
 import { sendEmailWithRetry } from '@/lib/email/service'
 import { logger } from '@/lib/logger'
 import { getRoleHomePath } from '@/lib/role-routes'
+import { normalizeRoleList } from '@/lib/roles'
 
 export type AuthState = { error?: string; redirect?: string } | undefined
 
@@ -28,7 +29,8 @@ function getRoleDestination(role: string | null | undefined): string {
   return getRoleHomePath(role)
 }
 
-async function getPrimaryRoleByEmail(email: string): Promise<string | null> {
+/** Post-login path when no callbackUrl: multi-role users land on role picker. */
+async function getPostLoginDestinationByEmail(email: string): Promise<string> {
   const user = await prisma.user.findUnique({
     where: { email },
     include: {
@@ -41,8 +43,12 @@ async function getPrimaryRoleByEmail(email: string): Promise<string | null> {
       },
     },
   })
-  if (!user) return null
-  return user.roleAssignments.find((assignment) => assignment.isPrimary)?.role || user.role
+  if (!user) return '/'
+  const assignedRoles = user.roleAssignments.map((a) => a.role)
+  const roles = normalizeRoleList(assignedRoles.length > 0 ? assignedRoles : [user.role])
+  const primary = user.roleAssignments.find((a) => a.isPrimary)?.role || user.role
+  if (roles.length > 1) return '/choose-role'
+  return getRoleDestination(primary)
 }
 
 function sanitizeCallbackUrl(callbackUrl: string, baseUrl: string): string | null {
@@ -103,7 +109,7 @@ export async function authenticate(
       let destination = safeCallback || '/'
 
       if (!safeCallback && email) {
-        destination = getRoleDestination(await getPrimaryRoleByEmail(email))
+        destination = await getPostLoginDestinationByEmail(email)
       }
       
       const redirectUrl = isAuthCallback 
@@ -118,7 +124,7 @@ export async function authenticate(
       let destination = safeCallback || '/'
 
       if (!safeCallback && email) {
-        destination = getRoleDestination(await getPrimaryRoleByEmail(email))
+        destination = await getPostLoginDestinationByEmail(email)
       }
        
       const redirectUrl = `${baseUrl}${destination.startsWith('/') ? '' : '/'}${destination}`

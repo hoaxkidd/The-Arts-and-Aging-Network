@@ -903,8 +903,12 @@ export async function attachFormToGroup(data: {
     })
 
     revalidatePath(`/admin/messaging/${data.groupId}`)
+    revalidatePath(`/admin/form-templates/${data.formTemplateId}/edit`)
     return { success: true, data: attachment }
   } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      return { error: "This form is already attached to the group." }
+    }
     logger.serverAction("Failed to attach form to group:", error)
     return { error: "Failed to attach form to group" }
   }
@@ -925,6 +929,7 @@ export async function removeFormFromGroup(groupId: string, formTemplateId: strin
     })
 
     revalidatePath(`/admin/messaging/${groupId}`)
+    revalidatePath(`/admin/form-templates/${formTemplateId}/edit`)
     return { success: true }
   } catch (error) {
     logger.serverAction("Failed to remove form from group:", error)
@@ -965,6 +970,7 @@ export async function updateFormAttachment(data: {
     })
 
     revalidatePath(`/admin/messaging/${data.groupId}`)
+    revalidatePath(`/admin/form-templates/${data.formTemplateId}/edit`)
     return { success: true }
   } catch (error) {
     logger.serverAction("Failed to update form attachment:", error)
@@ -972,23 +978,92 @@ export async function updateFormAttachment(data: {
   }
 }
 
-// Get groups attached to a form template
+// Get groups attached to a form template (admin only)
 export async function getGroupsAttachedToForm(formTemplateId: string) {
+  const session = await auth()
+  if (session?.user?.role !== "ADMIN") {
+    return { error: "Unauthorized" }
+  }
+
   try {
     const attachments = await prisma.messageGroupForm.findMany({
       where: {
         formTemplateId,
-        isActive: true
+        isActive: true,
       },
       include: {
         group: {
-          select: { id: true, name: true, iconEmoji: true, isActive: true }
-        }
-      }
+          select: { id: true, name: true, iconEmoji: true, isActive: true },
+        },
+      },
     })
     return { success: true, data: attachments }
   } catch (error) {
     logger.serverAction("Failed to get groups attached to form:", error)
     return { error: "Failed to get groups attached to form" }
+  }
+}
+
+// Get forms attached to a message group (admin only)
+export async function getFormsAttachedToGroup(groupId: string) {
+  const session = await auth()
+  if (session?.user?.role !== "ADMIN") {
+    return { error: "Unauthorized" }
+  }
+
+  try {
+    const attachments = await prisma.messageGroupForm.findMany({
+      where: {
+        groupId,
+        isActive: true,
+      },
+      include: {
+        formTemplate: {
+          select: { id: true, title: true, category: true, isActive: true },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+    })
+    return { success: true, data: attachments }
+  } catch (error) {
+    logger.serverAction("Failed to get forms attached to group:", error)
+    return { error: "Failed to get forms attached to group" }
+  }
+}
+
+/** One round-trip for FormTemplateGroupLinksPanel (e.g. Access Control modal). Admin only. */
+export async function getFormTemplateGroupLinksEditorData(formTemplateId: string) {
+  const session = await auth()
+  if (session?.user?.role !== "ADMIN") {
+    return { error: "Unauthorized" as const }
+  }
+
+  try {
+    const [attachmentRows, groups] = await Promise.all([
+      prisma.messageGroupForm.findMany({
+        where: { formTemplateId, isActive: true },
+        include: {
+          group: {
+            select: { id: true, name: true, iconEmoji: true, isActive: true },
+          },
+        },
+        orderBy: { createdAt: "desc" },
+      }),
+      prisma.messageGroup.findMany({
+        where: { isActive: true },
+        select: { id: true, name: true, iconEmoji: true, isAttachableToForms: true },
+        orderBy: { name: "asc" },
+      }),
+    ])
+
+    const attachments = attachmentRows.map((a) => ({
+      groupId: a.groupId,
+      group: a.group,
+    }))
+
+    return { success: true as const, data: { attachments, groups } }
+  } catch (error) {
+    logger.serverAction("Failed to load form template group links:", error)
+    return { error: "Failed to load group links" as const }
   }
 }

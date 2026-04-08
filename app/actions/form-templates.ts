@@ -5,14 +5,69 @@ import { auth } from "@/auth"
 import { revalidatePath } from "next/cache"
 import type { Prisma } from "@prisma/client"
 import { createNotification } from "./notifications"
+import { sendDirectMessage } from "./direct-messages"
 import { logger } from "@/lib/logger"
+import { canAccessTemplate } from "@/lib/form-access"
 
-function hasTemplateAccess(template: { isActive: boolean; isPublic: boolean; allowedRoles: string | null }, role?: string | null) {
-  if (role === 'ADMIN') return true
-  if (!template.isActive) return false
-  if (template.isPublic) return true
-  if (!role || !template.allowedRoles) return false
-  return template.allowedRoles.split(',').map((r) => r.trim()).includes(role)
+function hasTemplateAccess(
+  template: { isActive: boolean; isPublic: boolean; allowedRoles: string | null },
+  roles: string[],
+  opts?: { isHomeAdmin?: boolean }
+) {
+  return canAccessTemplate(template, { roles, isHomeAdmin: opts?.isHomeAdmin })
+}
+
+// ============================================
+// ADMIN: REQUEST RESUBMISSION
+// ============================================
+
+export async function requestUserResubmission(formData: FormData): Promise<{ success?: true; error?: string }> {
+  const session = await auth()
+  if (!session?.user?.id || session.user.role !== 'ADMIN') {
+    return { error: "Unauthorized" }
+  }
+
+  const userId = String(formData.get('userId') || '').trim()
+  const title = String(formData.get('title') || '').trim()
+  const message = String(formData.get('message') || '').trim()
+  const actionUrl = String(formData.get('actionUrl') || '').trim()
+
+  if (!userId || !title || !message) {
+    return { error: "Missing required fields" }
+  }
+
+  try {
+    // Notify in-app
+    await createNotification({
+      userId,
+      type: 'RESUBMISSION_REQUEST',
+      title,
+      message,
+      actionUrl: actionUrl || undefined,
+    })
+
+    // Also send as a direct message (email relay when possible)
+    await sendDirectMessage({
+      recipientId: userId,
+      subject: title,
+      content: actionUrl ? `${message}\n\nOpen: ${actionUrl}` : message,
+    })
+
+    await prisma.auditLog.create({
+      data: {
+        action: 'USER_RESUBMISSION_REQUESTED',
+        details: JSON.stringify({ targetUserId: userId, title, actionUrl: actionUrl || null }),
+        userId: session.user.id,
+      },
+    })
+
+    revalidatePath(`/admin/users/${userId}`)
+    revalidatePath('/admin/users')
+    return { success: true }
+  } catch (error) {
+    logger.serverAction("Failed to request resubmission", error)
+    return { error: "Failed to request resubmission" }
+  }
 }
 
 // ============================================
@@ -109,6 +164,7 @@ export async function getFormTemplate(id: string) {
   if (!session?.user?.id) {
     return { error: "Unauthorized" }
   }
+  const roles = Array.isArray(session.user.roles) ? session.user.roles : (session.user.role ? [session.user.role] : [])
 
   try {
     const template = await prisma.formTemplate.findUnique({
@@ -145,7 +201,8 @@ export async function getFormTemplate(id: string) {
     }
 
     // Check access
-    if (!hasTemplateAccess(template, session.user.role)) {
+    const isHomeAdmin = session.user.role === 'HOME_ADMIN'
+    if (!hasTemplateAccess(template, roles, { isHomeAdmin })) {
       return { error: "Template not accessible" }
     }
 
@@ -358,6 +415,7 @@ export async function submitForm(data: {
   if (!session?.user?.id) {
     return { error: "Unauthorized" }
   }
+  const roles = Array.isArray(session.user.roles) ? session.user.roles : (session.user.role ? [session.user.role] : [])
 
   try {
     const template = await prisma.formTemplate.findUnique({
@@ -372,7 +430,8 @@ export async function submitForm(data: {
       return { error: "Template is not active" }
     }
 
-    if (!hasTemplateAccess(template, session.user.role)) {
+    const isHomeAdmin = session.user.role === 'HOME_ADMIN'
+    if (!hasTemplateAccess(template, roles, { isHomeAdmin })) {
       return { error: "Template not accessible" }
     }
 

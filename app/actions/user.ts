@@ -5,7 +5,7 @@ import { auth } from "@/auth"
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
 import bcrypt from "bcryptjs"
-import { VALID_ROLES, canMergeRoles, normalizeRoleList } from "@/lib/roles"
+import { VALID_ROLES, canMergeRoles, isValidRole, normalizeRoleList } from "@/lib/roles"
 import { randomBytes } from "crypto"
 import { sendEmail } from "@/lib/email/service"
 import { logger } from "@/lib/logger"
@@ -20,7 +20,6 @@ const PrefsSchema = z.object({
 const VALID_STATUSES = ['ACTIVE', 'PENDING', 'INACTIVE', 'SUSPENDED'] as const
 
 const UpdateUserSchema = z.object({
-  role: z.enum(VALID_ROLES),
   status: z.enum(VALID_STATUSES),
 })
 
@@ -279,14 +278,13 @@ export async function updateUser(id: string, formData: FormData) {
   if (!session?.user?.id) return { error: 'Unauthorized' }
   if (session.user.role !== 'ADMIN') return { error: 'Unauthorized' }
 
-  const role = formData.get('role') as string
   const status = formData.get('status') as string
   const requestedEmailRaw = (formData.get('email') as string | null) || ''
   const requestedEmail = requestedEmailRaw.trim().toLowerCase()
   const expiryRaw = (formData.get('emailExpiryHours') as string | null) || ''
 
   // Validate input using schema
-  const validation = UpdateUserSchema.safeParse({ role, status })
+  const validation = UpdateUserSchema.safeParse({ status })
   if (!validation.success) {
     const errorMessage = validation.error.issues[0]?.message || 'Invalid input'
     return { error: errorMessage }
@@ -320,18 +318,6 @@ export async function updateUser(id: string, formData: FormData) {
 
     if (!targetUser) {
       return { error: 'User not found' }
-    }
-
-    const activeRoles = await getActiveRolesForUser(id, targetUser.role, session.user.id)
-
-    const mergeCheck = canMergeRoles(activeRoles, validation.data.role)
-    if (!mergeCheck.ok) {
-      return { error: mergeCheck.error }
-    }
-
-    // Prevent admins from demoting themselves (safety check)
-    if (id === session.user.id && activeRoles.includes('ADMIN') && validation.data.role !== 'ADMIN') {
-      return { error: 'You cannot change your own admin role' }
     }
 
     let pendingEmailChange:
@@ -384,52 +370,9 @@ export async function updateUser(id: string, formData: FormData) {
       await tx.user.update({
         where: { id },
         data: {
-          role: validation.data.role,
           status: validation.data.status,
         }
       })
-
-      const existingAssignments = await tx.userRoleAssignment.findMany({
-        where: { userId: id },
-      })
-
-      if (existingAssignments.length === 0) {
-        await tx.userRoleAssignment.create({
-          data: {
-            userId: id,
-            role: validation.data.role,
-            isPrimary: true,
-            isActive: true,
-            assignedById: session.user.id,
-          },
-        })
-      } else {
-        await tx.userRoleAssignment.updateMany({
-          where: { userId: id },
-          data: { isPrimary: false },
-        })
-
-        await tx.userRoleAssignment.upsert({
-          where: {
-            userId_role: {
-              userId: id,
-              role: validation.data.role,
-            },
-          },
-          create: {
-            userId: id,
-            role: validation.data.role,
-            isPrimary: true,
-            isActive: true,
-            assignedById: session.user.id,
-          },
-          update: {
-            isPrimary: true,
-            isActive: true,
-            assignedById: session.user.id,
-          },
-        })
-      }
     })
 
     // Create audit log for role/status changes
@@ -438,7 +381,7 @@ export async function updateUser(id: string, formData: FormData) {
         action: 'USER_UPDATED',
         details: JSON.stringify({
           targetUserId: id,
-          changes: { role: validation.data.role, status: validation.data.status }
+          changes: { status: validation.data.status }
         }),
         userId: session.user.id
       }
@@ -535,6 +478,148 @@ export async function getUserRoleAssignments(userId: string) {
 
   const assignments = await ensureRoleAssignments(userId, user.role, session.user.id)
   return { success: true, roles: assignments }
+}
+
+export async function updateUserRoles(userId: string, formData: FormData) {
+  const session = await auth()
+  if (!session?.user?.id) return { error: 'Unauthorized' }
+  if (session.user.role !== 'ADMIN') return { error: 'Unauthorized' }
+
+  const selectedRoleValues = formData
+    .getAll('roles')
+    .map((value) => (typeof value === 'string' ? value.trim() : ''))
+    .filter(Boolean)
+
+  if (selectedRoleValues.length === 0) {
+    return { error: 'Select at least one role' }
+  }
+
+  const invalidRoles = selectedRoleValues.filter((role) => !isValidRole(role))
+  if (invalidRoles.length > 0) {
+    return { error: 'One or more selected roles are invalid' }
+  }
+
+  const selectedRoles = normalizeRoleList(selectedRoleValues)
+  const requestedPrimaryRoleRaw = formData.get('primaryRole')
+  const requestedPrimaryRoleValue = typeof requestedPrimaryRoleRaw === 'string' ? requestedPrimaryRoleRaw.trim() : ''
+  const requestedPrimaryRole = requestedPrimaryRoleValue && isValidRole(requestedPrimaryRoleValue) ? requestedPrimaryRoleValue : undefined
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      id: true,
+      userCode: true,
+      role: true,
+      roleAssignments: {
+        where: { isActive: true },
+        orderBy: [{ isPrimary: 'desc' }, { assignedAt: 'asc' }],
+      },
+    },
+  })
+
+  if (!user) return { error: 'User not found' }
+
+  // Preserve existing primary if still selected and caller did not provide one.
+  const existingPrimaryRoleRaw = user.roleAssignments.find((assignment) => assignment.isPrimary)?.role
+  const existingPrimaryRole = existingPrimaryRoleRaw && isValidRole(existingPrimaryRoleRaw) ? existingPrimaryRoleRaw : undefined
+  const fallbackPrimaryRole = selectedRoles[0]
+  const primaryRole = requestedPrimaryRole || (existingPrimaryRole && selectedRoles.includes(existingPrimaryRole) ? existingPrimaryRole : fallbackPrimaryRole)
+
+  if (!primaryRole || !selectedRoles.includes(primaryRole)) {
+    return { error: 'Primary role must be one of the selected roles' }
+  }
+
+  const mergeErrors: string[] = []
+  const mergedSoFar: string[] = []
+  for (const role of selectedRoles) {
+    const mergeCheck = canMergeRoles(mergedSoFar, role)
+    if (!mergeCheck.ok) {
+      mergeErrors.push(mergeCheck.error || 'Invalid role combination')
+      break
+    }
+    mergedSoFar.push(role)
+  }
+  if (mergeErrors.length > 0) {
+    return { error: mergeErrors[0] }
+  }
+
+  if (userId === session.user.id && !selectedRoles.includes('ADMIN')) {
+    return { error: 'You cannot remove your own ADMIN role' }
+  }
+
+  try {
+    await prisma.$transaction(async (tx) => {
+      const existingAssignments = await tx.userRoleAssignment.findMany({
+        where: { userId },
+      })
+
+      const existingByRole = new Map(existingAssignments.map((assignment) => [assignment.role, assignment]))
+
+      for (const role of selectedRoles) {
+        const existing = existingByRole.get(role)
+        if (existing) {
+          await tx.userRoleAssignment.update({
+            where: { id: existing.id },
+            data: {
+              isActive: true,
+              isPrimary: role === primaryRole,
+              assignedById: session.user.id,
+            },
+          })
+        } else {
+          await tx.userRoleAssignment.create({
+            data: {
+              userId,
+              role,
+              isActive: true,
+              isPrimary: role === primaryRole,
+              assignedById: session.user.id,
+            },
+          })
+        }
+      }
+
+      const rolesToDeactivate = existingAssignments
+        .map((assignment) => assignment.role)
+        .filter((role) => !isValidRole(role) || !selectedRoles.includes(role))
+
+      if (rolesToDeactivate.length > 0) {
+        await tx.userRoleAssignment.updateMany({
+          where: { userId, role: { in: rolesToDeactivate } },
+          data: {
+            isActive: false,
+            isPrimary: false,
+          },
+        })
+      }
+
+      await tx.user.update({
+        where: { id: userId },
+        data: { role: primaryRole },
+      })
+    })
+
+    await prisma.auditLog.create({
+      data: {
+        action: 'USER_ROLES_UPDATED',
+        details: JSON.stringify({
+          targetUserId: userId,
+          roles: selectedRoles,
+          primaryRole,
+        }),
+        userId: session.user.id,
+      },
+    })
+
+    revalidatePath('/admin/users')
+    revalidatePath(`/admin/users/${userId}`)
+    revalidatePath(`/admin/users/${user.userCode || userId}`)
+    revalidatePath('/staff/directory')
+    return { success: true }
+  } catch (error) {
+    logger.serverAction('Failed to update user roles', error)
+    return { error: 'Failed to update user roles' }
+  }
 }
 
 export async function addSecondaryRole(userId: string, role: string) {
@@ -661,6 +746,81 @@ export async function setPrimaryRole(userId: string, role: string) {
   revalidatePath(`/admin/users/${userId}`)
   revalidatePath('/admin/users')
   return { success: true }
+}
+
+export async function setMyPrimaryRole(formData: FormData): Promise<void> {
+  const session = await auth()
+  if (!session?.user?.id) return
+
+  const raw = formData.get('primaryRole')
+  const requested = typeof raw === 'string' ? raw.trim() : ''
+  if (!isValidRole(requested)) return
+
+  const userId = session.user.id
+
+  const assignments = await prisma.userRoleAssignment.findMany({
+    where: { userId, isActive: true },
+    orderBy: [{ isPrimary: 'desc' }, { assignedAt: 'asc' }],
+  })
+
+  const activeRoles = normalizeRoleList(assignments.map((a) => a.role))
+  if (!activeRoles.includes(requested)) {
+    return
+  }
+
+  // Enforce merge constraints when selecting a role to be primary (same constraints as admin role editor).
+  const mergeErrors: string[] = []
+  const mergedSoFar: string[] = []
+  for (const role of activeRoles) {
+    const mergeCheck = canMergeRoles(mergedSoFar, role)
+    if (!mergeCheck.ok) {
+      mergeErrors.push(mergeCheck.error || 'Invalid role combination')
+      break
+    }
+    mergedSoFar.push(role)
+  }
+  if (mergeErrors.length > 0) return
+
+  try {
+    await prisma.$transaction(async (tx) => {
+      await tx.userRoleAssignment.updateMany({
+        where: { userId, isActive: true },
+        data: { isPrimary: false },
+      })
+      await tx.userRoleAssignment.updateMany({
+        where: { userId, role: requested, isActive: true },
+        data: { isPrimary: true },
+      })
+      await tx.user.update({
+        where: { id: userId },
+        data: { role: requested },
+      })
+    })
+
+    await prisma.auditLog.create({
+      data: {
+        action: 'USER_PRIMARY_ROLE_SET_SELF',
+        details: JSON.stringify({ userId, role: requested }),
+        userId,
+      },
+    })
+
+    // Revalidate key entry points; layouts will pull the updated session on next navigation.
+    revalidatePath('/staff/profile')
+    revalidatePath('/facilitator/profile')
+    revalidatePath('/board/profile')
+    revalidatePath('/payroll/profile')
+    revalidatePath('/volunteer/profile')
+    revalidatePath('/partner/profile')
+    revalidatePath('/dashboard/profile')
+    revalidatePath('/admin/profile')
+    return
+  } catch (error) {
+    logger.serverAction('Failed to set my primary role', error)
+    // Swallow error to satisfy `<form action>` typing; callers can rely on revalidation + UI refresh.
+    // If you want user-visible errors later, we can convert this to a client component with optimistic UI.
+    return
+  }
 }
 
 export async function updateVolunteerReviewStatus(userId: string, reviewStatus: 'PENDING_REVIEW' | 'APPROVED' | 'REQUEST_CORRECTIONS') {

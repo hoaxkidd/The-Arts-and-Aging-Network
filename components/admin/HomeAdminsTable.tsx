@@ -35,7 +35,7 @@ export default function HomeAdminsTable({ users }: { users: HomeAdminUser[] }) {
         (user.email?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false) ||
         (user.phone?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false) ||
         (user.userCode?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false) ||
-        (user.geriatricHome?.name.toLowerCase().includes(searchQuery.toLowerCase()) ?? false) ||
+        (user.geriatricHome?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false) ||
         (user.geriatricHome?.contactEmail?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false) ||
         (user.geriatricHome?.contactPhone?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false)
 

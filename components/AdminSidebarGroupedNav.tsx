@@ -77,10 +77,8 @@ export function AdminSidebarGroupedNav({ pathname, onNavigate }: AdminSidebarGro
   const toggle = (id: string) => {
     if (searchActive) return
     setExpanded((prev) => {
-      const next = new Set(prev)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
-      return next
+      if (prev.has(id)) return new Set()
+      return new Set([id])
     })
   }
 

@@ -14,6 +14,10 @@ export default authMiddleware((req: NextRequest & { auth: unknown }) => {
     ? user.user.roles
     : (userRole ? [userRole] : [])
   const primaryRole = user?.user?.primaryRole || userRole
+  const requestedActiveRoleCookie = req.cookies.get('active_role')?.value
+  const activeRole = requestedActiveRoleCookie && userRoles.includes(requestedActiveRoleCookie)
+    ? requestedActiveRoleCookie
+    : primaryRole
   const authUser = user?.user
   const hasRole = (role: string) => userRoles.includes(role)
   const hasAnyRole = (roles: string[]) => roles.some((role) => userRoles.includes(role))
@@ -23,9 +27,30 @@ export default authMiddleware((req: NextRequest & { auth: unknown }) => {
   const requestHeaders = new Headers(req.headers)
   requestHeaders.set('x-pathname', pathname)
 
+  // Multi-role landing: must not be intercepted by onboarding redirects
+  if (pathname === '/choose-role' || pathname.startsWith('/choose-role/')) {
+    if (!isLoggedIn) {
+      const login = new URL('/login', req.nextUrl)
+      login.searchParams.set('callbackUrl', '/choose-role')
+      return NextResponse.redirect(login)
+    }
+    return NextResponse.next({
+      request: { headers: requestHeaders },
+    })
+  }
+
+  // Canonicalize legacy plural volunteer namespace to singular
+  if (pathname === '/volunteers' || pathname.startsWith('/volunteers/')) {
+    const suffix = pathname.slice('/volunteers'.length)
+    const dest = `/volunteer${suffix || ''}`
+    const url = req.nextUrl.clone()
+    url.pathname = dest
+    return NextResponse.redirect(url)
+  }
+
   // Canonicalize legacy /staff URLs for role-specific namespaces
-  if (isLoggedIn && pathname.startsWith('/staff') && (primaryRole === 'FACILITATOR' || primaryRole === 'BOARD')) {
-    const roleBase = getStaffBasePathForRole(primaryRole)
+  if (isLoggedIn && pathname.startsWith('/staff') && (activeRole === 'FACILITATOR' || activeRole === 'BOARD' || activeRole === 'PARTNER')) {
+    const roleBase = getStaffBasePathForRole(activeRole)
     const suffix = pathname.slice('/staff'.length)
     return NextResponse.redirect(new URL(`${roleBase}${suffix}`, req.nextUrl))
   }
@@ -35,11 +60,11 @@ export default authMiddleware((req: NextRequest & { auth: unknown }) => {
     if (!isLoggedIn) return NextResponse.redirect(new URL('/login', req.nextUrl))
 
     if (!hasRole('FACILITATOR') && !hasRole('ADMIN')) {
-      return NextResponse.redirect(new URL(getRoleHomePath(primaryRole), req.nextUrl))
+      return NextResponse.redirect(new URL(getRoleHomePath(activeRole), req.nextUrl))
     }
 
     if (authUser && needsOnboarding(authUser) && onboardingCookie?.value !== '1') {
-      const onboardingPath = getOnboardingPath(primaryRole ?? '')
+      const onboardingPath = getOnboardingPath(activeRole ?? '')
       if (pathname !== onboardingPath && !pathname.startsWith('/login') && !pathname.startsWith('/invite')) {
         return NextResponse.redirect(new URL(onboardingPath, req.nextUrl))
       }
@@ -57,11 +82,11 @@ export default authMiddleware((req: NextRequest & { auth: unknown }) => {
     if (!isLoggedIn) return NextResponse.redirect(new URL('/login', req.nextUrl))
 
     if (!hasRole('BOARD') && !hasRole('ADMIN')) {
-      return NextResponse.redirect(new URL(getRoleHomePath(primaryRole), req.nextUrl))
+      return NextResponse.redirect(new URL(getRoleHomePath(activeRole), req.nextUrl))
     }
 
     if (authUser && needsOnboarding(authUser) && onboardingCookie?.value !== '1') {
-      const onboardingPath = getOnboardingPath(primaryRole ?? '')
+      const onboardingPath = getOnboardingPath(activeRole ?? '')
       if (pathname !== onboardingPath && !pathname.startsWith('/login') && !pathname.startsWith('/invite')) {
         return NextResponse.redirect(new URL(onboardingPath, req.nextUrl))
       }
@@ -75,9 +100,9 @@ export default authMiddleware((req: NextRequest & { auth: unknown }) => {
   }
 
   // Volunteer role-named onboarding route rewritten to shared onboarding page
-  if (pathname.startsWith('/volunteers/onboarding')) {
+  if (pathname.startsWith('/volunteer/onboarding')) {
     if (!isLoggedIn) return NextResponse.redirect(new URL('/login', req.nextUrl))
-    if (!hasRole('VOLUNTEER')) return NextResponse.redirect(new URL(getRoleHomePath(primaryRole), req.nextUrl))
+    if (!hasRole('VOLUNTEER')) return NextResponse.redirect(new URL(getRoleHomePath(activeRole), req.nextUrl))
     const rewriteUrl = new URL(req.nextUrl.toString())
     rewriteUrl.pathname = '/staff/onboarding'
     return NextResponse.rewrite(rewriteUrl, {
@@ -90,13 +115,13 @@ export default authMiddleware((req: NextRequest & { auth: unknown }) => {
   // Onboarding: redirect staff/dashboard users who haven't completed profile
   // Also check cookie-based completion flag to avoid stale JWT issues
   if (isLoggedIn && authUser && needsOnboarding(authUser) && onboardingCookie?.value !== '1') {
-    const onboardingPath = getOnboardingPath(primaryRole ?? '')
+    const onboardingPath = getOnboardingPath(activeRole ?? '')
     if (pathname !== onboardingPath && !pathname.startsWith('/login') && !pathname.startsWith('/invite')) {
       if (
         pathname.startsWith('/staff') ||
         pathname.startsWith('/dashboard') ||
         pathname.startsWith('/facilitator') ||
-        pathname.startsWith('/volunteers')
+        pathname.startsWith('/volunteer')
       ) {
         console.log('[Middleware] Redirecting to onboarding, pathname:', pathname, 'role:', userRole)
         return NextResponse.redirect(new URL(onboardingPath, req.nextUrl))
@@ -121,7 +146,7 @@ export default authMiddleware((req: NextRequest & { auth: unknown }) => {
       if (hasRole('PAYROLL')) return NextResponse.redirect(new URL('/payroll', req.nextUrl))
       if (hasRole('HOME_ADMIN')) return NextResponse.redirect(new URL('/dashboard', req.nextUrl))
       if (hasAnyRole(['FACILITATOR', 'BOARD', 'PARTNER', 'VOLUNTEER'])) {
-        return NextResponse.redirect(new URL(getRoleHomePath(primaryRole), req.nextUrl))
+        return NextResponse.redirect(new URL(getRoleHomePath(activeRole), req.nextUrl))
       }
       return NextResponse.redirect(new URL('/', req.nextUrl))
     }
@@ -135,7 +160,7 @@ export default authMiddleware((req: NextRequest & { auth: unknown }) => {
       if (hasRole('ADMIN')) return NextResponse.redirect(new URL('/admin', req.nextUrl))
       if (hasRole('HOME_ADMIN')) return NextResponse.redirect(new URL('/dashboard', req.nextUrl))
       if (hasAnyRole(['FACILITATOR', 'BOARD', 'PARTNER', 'VOLUNTEER'])) {
-        return NextResponse.redirect(new URL(getRoleHomePath(primaryRole), req.nextUrl))
+        return NextResponse.redirect(new URL(getRoleHomePath(activeRole), req.nextUrl))
       }
        return NextResponse.redirect(new URL('/', req.nextUrl))
     }
@@ -148,7 +173,7 @@ export default authMiddleware((req: NextRequest & { auth: unknown }) => {
       if (hasRole('ADMIN')) return NextResponse.redirect(new URL('/admin', req.nextUrl))
       if (hasRole('PAYROLL')) return NextResponse.redirect(new URL('/payroll', req.nextUrl))
       if (hasAnyRole(['FACILITATOR', 'BOARD', 'PARTNER', 'VOLUNTEER'])) {
-        return NextResponse.redirect(new URL(getRoleHomePath(primaryRole), req.nextUrl))
+        return NextResponse.redirect(new URL(getRoleHomePath(activeRole), req.nextUrl))
       }
       return NextResponse.redirect(new URL('/', req.nextUrl))
     }
@@ -171,7 +196,7 @@ export default authMiddleware((req: NextRequest & { auth: unknown }) => {
       return NextResponse.redirect(new URL('/dashboard', req.nextUrl))
     }
     if (hasRole('VOLUNTEER') && !hasAnyRole(['ADMIN', 'FACILITATOR', 'PAYROLL', 'BOARD', 'PARTNER'])) {
-      return NextResponse.redirect(new URL('/volunteers', req.nextUrl))
+      return NextResponse.redirect(new URL('/volunteer', req.nextUrl))
     }
     return NextResponse.next({
       request: {
@@ -202,26 +227,39 @@ export default authMiddleware((req: NextRequest & { auth: unknown }) => {
     }
   }
 
-  // Protect volunteers routes (VOLUNTEER only - must be approved)
-  if (pathname.startsWith('/volunteers')) {
+  // Protect partner routes (PARTNER only; allow ADMIN as well)
+  if (pathname.startsWith('/partner')) {
+    if (!isLoggedIn) return NextResponse.redirect(new URL('/login', req.nextUrl))
+    if (!hasRole('PARTNER') && !hasRole('ADMIN')) {
+      if (hasRole('PAYROLL')) return NextResponse.redirect(new URL('/payroll', req.nextUrl))
+      if (hasRole('HOME_ADMIN')) return NextResponse.redirect(new URL('/dashboard', req.nextUrl))
+      if (hasAnyRole(['FACILITATOR', 'BOARD', 'VOLUNTEER'])) {
+        return NextResponse.redirect(new URL(getRoleHomePath(activeRole), req.nextUrl))
+      }
+      return NextResponse.redirect(new URL('/', req.nextUrl))
+    }
+  }
+
+  // Protect volunteer routes (VOLUNTEER only - must be approved)
+  if (pathname.startsWith('/volunteer')) {
     if (!isLoggedIn) return NextResponse.redirect(new URL('/login', req.nextUrl))
     if (!hasRole('VOLUNTEER')) {
       if (hasRole('ADMIN')) return NextResponse.redirect(new URL('/admin', req.nextUrl))
       if (hasRole('PAYROLL')) return NextResponse.redirect(new URL('/payroll', req.nextUrl))
       if (hasRole('HOME_ADMIN')) return NextResponse.redirect(new URL('/dashboard', req.nextUrl))
       if (hasAnyRole(['FACILITATOR', 'BOARD', 'PARTNER'])) {
-        return NextResponse.redirect(new URL(getRoleHomePath(primaryRole), req.nextUrl))
+        return NextResponse.redirect(new URL(getRoleHomePath(activeRole), req.nextUrl))
       }
       return NextResponse.redirect(new URL('/', req.nextUrl))
     }
     // Check volunteer approval status - must be APPROVED to access volunteer portal
     const volunteerStatus = authUser?.volunteerReviewStatus
-    if (volunteerStatus !== 'APPROVED') {
-      return NextResponse.redirect(new URL('/volunteers/onboarding', req.nextUrl))
+    if (volunteerStatus !== 'APPROVED' && !pathname.startsWith('/volunteer/onboarding')) {
+      return NextResponse.redirect(new URL('/volunteer/onboarding', req.nextUrl))
     }
 
-    if (pathname.startsWith('/volunteers/inbox')) {
-      const suffix = pathname.slice('/volunteers'.length)
+    if (pathname.startsWith('/volunteer/inbox')) {
+      const suffix = pathname.slice('/volunteer'.length)
       const rewriteUrl = new URL(req.nextUrl.toString())
       rewriteUrl.pathname = `/staff${suffix}`
       return NextResponse.rewrite(rewriteUrl, {
@@ -234,12 +272,12 @@ export default authMiddleware((req: NextRequest & { auth: unknown }) => {
 
   // Redirect logged-in users away from login page
   if (pathname.startsWith('/login') && isLoggedIn) {
-    if (primaryRole === 'ADMIN') return NextResponse.redirect(new URL('/admin', req.nextUrl))
-    if (primaryRole === 'PAYROLL') return NextResponse.redirect(new URL('/payroll', req.nextUrl))
-    if (primaryRole === 'HOME_ADMIN') return NextResponse.redirect(new URL('/dashboard', req.nextUrl))
-    if (primaryRole === 'VOLUNTEER') return NextResponse.redirect(new URL('/volunteers', req.nextUrl))
-    if (primaryRole === 'FACILITATOR' || primaryRole === 'BOARD' || primaryRole === 'PARTNER') {
-      return NextResponse.redirect(new URL(getRoleHomePath(primaryRole), req.nextUrl))
+    if (activeRole === 'ADMIN') return NextResponse.redirect(new URL('/admin', req.nextUrl))
+    if (activeRole === 'PAYROLL') return NextResponse.redirect(new URL('/payroll', req.nextUrl))
+    if (activeRole === 'HOME_ADMIN') return NextResponse.redirect(new URL('/dashboard', req.nextUrl))
+    if (activeRole === 'VOLUNTEER') return NextResponse.redirect(new URL('/volunteer', req.nextUrl))
+    if (activeRole === 'FACILITATOR' || activeRole === 'BOARD' || activeRole === 'PARTNER') {
+      return NextResponse.redirect(new URL(getRoleHomePath(activeRole), req.nextUrl))
     }
     return NextResponse.redirect(new URL('/', req.nextUrl))
   }
@@ -253,12 +291,16 @@ export default authMiddleware((req: NextRequest & { auth: unknown }) => {
 
 export const config = {
   matcher: [
+    '/choose-role',
+    '/choose-role/:path*',
     '/admin/:path*',
     '/dashboard/:path*',
     '/payroll/:path*',
     '/staff/:path*',
     '/facilitator/:path*',
     '/board/:path*',
+    '/partner/:path*',
+    '/volunteer/:path*',
     '/volunteers/:path*',
     '/events/:path*',
     '/notifications/:path*',

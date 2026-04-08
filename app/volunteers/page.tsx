@@ -22,17 +22,6 @@ export default async function VolunteersDashboard() {
 
   if (!userId) redirect("/login")
 
-  // Check volunteer approval status
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { role: true, volunteerReviewStatus: true }
-  })
-  const roles = Array.isArray(session.user.roles) ? session.user.roles : [session.user.role]
-  
-  if (roles.includes('VOLUNTEER') && user?.volunteerReviewStatus !== 'APPROVED') {
-    redirect("/volunteers/onboarding")
-  }
-
   let upcomingEvents: { id: string; title: string; startDateTime: Date }[] = []
   let recentSubmissions: { id: string; status: string; createdAt: Date; template: { title: string } }[] = []
   let totalSubmissions = 0
@@ -203,7 +192,7 @@ export default async function VolunteersDashboard() {
               {recentSubmissions.length > 0 ? recentSubmissions.map((submission) => (
                 <Link
                   key={submission.id}
-                  href="/volunteers/forms?tab=submissions"
+                  href="/volunteer/forms?tab=submissions"
                   className="flex items-start gap-3 px-4 py-3 hover:bg-gray-50 transition-colors"
                 >
                   <div className="w-10 h-10 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center flex-shrink-0">
@@ -228,7 +217,7 @@ export default async function VolunteersDashboard() {
                 <div className="p-6 text-center">
                   <FileText className="w-8 h-8 text-gray-300 mx-auto mb-2" />
                   <p className="text-xs text-gray-500">No submissions yet</p>
-                  <Link href="/volunteers/forms" className="text-xs text-primary-600 hover:text-primary-700 mt-1 inline-block">
+                  <Link href="/volunteer/forms" className="text-xs text-primary-600 hover:text-primary-700 mt-1 inline-block">
                     Browse forms
                   </Link>
                 </div>

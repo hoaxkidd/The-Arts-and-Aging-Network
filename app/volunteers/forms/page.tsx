@@ -9,6 +9,7 @@ import { FormTemplateCard } from "@/components/admin/FormTemplateCard"
 import { FormTemplateFilters } from "@/components/admin/FormTemplateFilters"
 import { StickyTable } from "@/components/ui/StickyTable"
 import { STYLES } from "@/lib/styles"
+import { canAccessTemplate } from "@/lib/form-access"
 
 export default async function VolunteerFormsPage({
   searchParams
@@ -23,13 +24,12 @@ export default async function VolunteerFormsPage({
     where: { id: session.user.id },
     select: { role: true, volunteerReviewStatus: true }
   })
-  const roles = Array.isArray(session.user.roles) ? session.user.roles : [session.user.role]
+  // Scope access to the currently active role (prevents cross-role leakage).
+  const roles = session.user.role ? [session.user.role] : []
   
   if (roles.includes('VOLUNTEER') && user?.volunteerReviewStatus !== 'APPROVED') {
-    redirect('/volunteers/onboarding')
+    redirect('/volunteer/onboarding')
   }
-
-  const userRole = session.user.role || ''
 
   const params = await searchParams
   const categoryFilter = params.category || 'ALL'
@@ -72,10 +72,7 @@ export default async function VolunteerFormsPage({
     templates = await prisma.formTemplate.findMany({
       where: {
         ...where,
-        OR: [
-          { isPublic: true },
-           { allowedRoles: { contains: 'VOLUNTEER' } }
-        ]
+        isActive: statusFilter === 'active' ? true : undefined,
       },
       include: {
         _count: {
@@ -88,10 +85,7 @@ export default async function VolunteerFormsPage({
     templates = await prisma.formTemplate.findMany({
       where: {
         ...where,
-        OR: [
-          { isPublic: true },
-          { allowedRoles: { contains: userRole } }
-        ]
+        isActive: statusFilter === 'active' ? true : undefined,
       },
       include: {
         _count: {
@@ -100,6 +94,15 @@ export default async function VolunteerFormsPage({
       },
       orderBy: sort === 'title' ? { title: 'asc' } : sort === 'category' ? { category: 'asc' } : { createdAt: 'desc' }
     })
+  }
+
+  if (!isAdmin) {
+    templates = templates.filter((t: any) =>
+      canAccessTemplate(
+        { isActive: Boolean(t.isActive), isPublic: Boolean(t.isPublic), allowedRoles: t.allowedRoles ?? null },
+        { roles, isHomeAdmin: false }
+      )
+    )
   }
 
   const mySubmissions = await prisma.formSubmission.findMany({
@@ -166,7 +169,7 @@ export default async function VolunteerFormsPage({
 
       <div className="flex-shrink-0 flex items-center gap-2 mb-4 border-b border-gray-200">
         <Link
-          href={`/volunteers/forms?tab=browse&view=${view}&sort=${sort}&search=${search}&category=${categoryFilter}&status=${statusFilter}`}
+          href={`/volunteer/forms?tab=browse&view=${view}&sort=${sort}&search=${search}&category=${categoryFilter}&status=${statusFilter}`}
           className={cn(
             "px-4 py-2 text-sm font-medium border-b-2 transition-colors",
             activeTab === 'browse'
@@ -177,7 +180,7 @@ export default async function VolunteerFormsPage({
           Browse Templates ({templates.length})
         </Link>
         <Link
-          href={`/volunteers/forms?tab=submissions&view=${view}&sort=${sort}&search=${search}&category=${categoryFilter}&status=${statusFilter}`}
+          href={`/volunteer/forms?tab=submissions&view=${view}&sort=${sort}&search=${search}&category=${categoryFilter}&status=${statusFilter}`}
           className={cn(
             "px-4 py-2 text-sm font-medium border-b-2 transition-colors",
             activeTab === 'submissions'
@@ -194,7 +197,7 @@ export default async function VolunteerFormsPage({
           <div className="flex-shrink-0 mb-4">
             <div className="flex items-center gap-2 overflow-x-auto pb-2">
               <Link
-                href="/volunteers/forms?tab=browse&category=ALL"
+                href="/volunteer/forms?tab=browse&category=ALL"
                 className={cn(
                   "px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap",
                   categoryFilter === 'ALL'
@@ -207,7 +210,7 @@ export default async function VolunteerFormsPage({
               {categories.map(cat => (
                 <Link
                   key={cat.value}
-                  href={`/volunteers/forms?tab=browse&category=${cat.value}`}
+                  href={`/volunteer/forms?tab=browse&category=${cat.value}`}
                   className={cn(
                     "px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap",
                     categoryFilter === cat.value
@@ -237,7 +240,7 @@ export default async function VolunteerFormsPage({
                   return (
                     <tr key={template.id} className={STYLES.tableRow}>
                       <td className={STYLES.tableCell}>
-                        <Link href={`/volunteers/forms/${template.id}`} className="block">
+                        <Link href={`/volunteer/forms/${template.id}`} className="block">
                           <span className="text-sm font-medium text-gray-900 hover:text-primary-600">{template.title}</span>
                           {template.description && (
                             <p className="text-xs text-gray-500 line-clamp-1">{template.description}</p>
@@ -280,7 +283,7 @@ export default async function VolunteerFormsPage({
                     template={template}
                     categories={categories.map(c => ({ value: c.value, label: c.label }))}
                     mode="staff"
-                    fillUrlPrefix="/volunteers/forms"
+                    fillUrlPrefix="/volunteer/forms"
                     existingSubmission={submissionMap.get(template.id) ? {
                       id: submissionMap.get(template.id)!.id,
                       formData: submissionMap.get(template.id)!.formData,
@@ -322,7 +325,7 @@ export default async function VolunteerFormsPage({
                 <FileText className="w-10 h-10 text-gray-300 mx-auto mb-2" />
                 <p className="text-sm text-gray-500">No submissions yet</p>
                 <Link
-                  href="/volunteers/forms?tab=browse"
+                  href="/volunteer/forms?tab=browse"
                   className="text-xs text-primary-600 hover:text-primary-700 mt-2 inline-block"
                 >
                   Browse forms to get started

@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils"
 import Link from "next/link"
 import { STYLES } from "@/lib/styles"
 import { sanitizeHtml } from "@/lib/dompurify"
+import { canAccessTemplate } from "@/lib/form-access"
 
 export default async function FormTemplateDetailPage({
   params
@@ -37,9 +38,15 @@ export default async function FormTemplateDetailPage({
 
   if (!template) notFound()
 
-  // Check access
-  if (!template.isActive || !template.isPublic) {
-    if (session.user.role !== 'ADMIN') {
+  const isAdmin = session.user.role === 'ADMIN'
+  const roles = Array.isArray(session.user.roles) ? session.user.roles : (session.user.role ? [session.user.role] : [])
+
+  if (!isAdmin) {
+    const allowed = canAccessTemplate(
+      { isActive: Boolean(template.isActive), isPublic: Boolean(template.isPublic), allowedRoles: template.allowedRoles ?? null },
+      { roles, isHomeAdmin: false }
+    )
+    if (!allowed) {
       return (
         <div className="p-8 text-center">
           <p className="text-gray-500">This template is not available</p>

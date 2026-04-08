@@ -101,7 +101,7 @@ export function InventoryHubClient({ items: initialItems, userRole }: Props) {
   }
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col min-w-0 w-full">
       {/* Stats row */}
       <div className="flex-shrink-0 flex gap-4 py-3 text-sm">
         <span className="text-gray-500">
@@ -154,8 +154,8 @@ export function InventoryHubClient({ items: initialItems, userRole }: Props) {
       </div>
 
       {/* Table */}
-      <div className="flex-1 min-h-0 bg-white rounded-lg border border-gray-200 overflow-hidden">
-        <div className="table-scroll-wrapper h-full max-h-[calc(100vh-320px)]">
+      <div className="flex-1 min-h-0 min-w-0 w-full bg-white rounded-lg border border-gray-200 overflow-hidden">
+        <div className="table-scroll-wrapper h-full max-h-[calc(100vh-320px)] min-w-0">
         <table className={STYLES.table}>
           <thead className="bg-gray-50">
             <tr className={STYLES.tableHeadRow}>

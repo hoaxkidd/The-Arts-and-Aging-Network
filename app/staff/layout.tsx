@@ -29,6 +29,8 @@ export default async function StaffLayout({
     ? 'FACILITATOR'
     : pathname.startsWith('/board')
       ? 'BOARD'
+      : pathname.startsWith('/partner')
+        ? 'PARTNER'
       : primaryRole
   const allowedStaffRoles = ['FACILITATOR', 'VOLUNTEER', 'BOARD', 'PARTNER', 'ADMIN', 'PAYROLL', 'HOME_ADMIN']
 

@@ -6,6 +6,12 @@ import { useRouter } from 'next/navigation'
 import { FileText, Edit2, Trash2, Archive, Loader2, X, Users, PenLine, Check, Edit, Eye, User } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { deleteFormTemplate, updateFormTemplateRoles, submitForm } from '@/app/actions/form-templates'
+import { getFormTemplateGroupLinksEditorData } from '@/app/actions/messaging'
+import {
+  FormTemplateGroupLinksPanel,
+  type FormGroupAttachmentRow,
+  type MessageGroupOption,
+} from '@/components/admin/FormTemplateGroupLinksPanel'
 import { VALID_ROLES, ROLE_LABELS } from '@/lib/roles'
 import { FormTemplateView } from '@/components/forms/FormTemplateView'
 import type { FormTemplateField } from '@/lib/form-template-types'
@@ -86,6 +92,11 @@ export function FormTemplateCard({ template, categories, mode = 'admin', fillUrl
   )
   const [isUpdatingRoles, setIsUpdatingRoles] = useState(false)
 
+  const [groupLinksAttachments, setGroupLinksAttachments] = useState<FormGroupAttachmentRow[]>([])
+  const [groupLinksOptions, setGroupLinksOptions] = useState<MessageGroupOption[]>([])
+  const [groupLinksLoading, setGroupLinksLoading] = useState(false)
+  const [groupLinksError, setGroupLinksError] = useState<string | null>(null)
+
   // Fill form state
   const [fillValues, setFillValues] = useState<Record<string, unknown>>({})
   const [fillErrors, setFillErrors] = useState<Record<string, string>>({})
@@ -154,6 +165,33 @@ export function FormTemplateCard({ template, categories, mode = 'admin', fillUrl
     window.addEventListener('keydown', handleEscape)
     return () => window.removeEventListener('keydown', handleEscape)
   }, [])
+
+  useEffect(() => {
+    if (!showRolesModal || !isAdmin) return
+    let cancelled = false
+    ;(async () => {
+      setGroupLinksLoading(true)
+      setGroupLinksError(null)
+      const result = await getFormTemplateGroupLinksEditorData(template.id)
+      if (cancelled) return
+      setGroupLinksLoading(false)
+      if ("error" in result && result.error) {
+        setGroupLinksError(
+          typeof result.error === "string" ? result.error : "Failed to load group links"
+        )
+        setGroupLinksAttachments([])
+        setGroupLinksOptions([])
+        return
+      }
+      if ("success" in result && result.success && result.data) {
+        setGroupLinksAttachments(result.data.attachments)
+        setGroupLinksOptions(result.data.groups)
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [showRolesModal, isAdmin, template.id])
 
   // Initialize fill values when modal opens
   useEffect(() => {
@@ -246,10 +284,10 @@ export function FormTemplateCard({ template, categories, mode = 'admin', fillUrl
           </div>
         )}
 
-        <div className="flex-1">
-          <div className="flex items-start justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <div className="w-10 h-10 rounded-lg bg-primary-100 text-primary-600 flex items-center justify-center">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-start justify-between mb-3 gap-3">
+            <div className="flex items-center gap-2 flex-1 min-w-0">
+              <div className="w-10 h-10 shrink-0 rounded-lg bg-primary-100 text-primary-600 flex items-center justify-center">
                 <FileText className="w-5 h-5" />
               </div>
               <div className="flex-1 min-w-0">
@@ -300,7 +338,7 @@ export function FormTemplateCard({ template, categories, mode = 'admin', fillUrl
                       onClick={() => setShowRolesModal(true)}
                       className="text-xs text-primary-600 hover:text-primary-700"
                     >
-                      Access Control
+                      Access & groups
                     </button>
                   )}
                 </div>
@@ -579,66 +617,96 @@ export function FormTemplateCard({ template, categories, mode = 'admin', fillUrl
             if (e.target === e.currentTarget) setShowRolesModal(false)
           }}
         >
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-3xl max-h-[90vh] flex flex-col">
             {/* Modal Header */}
-            <div className="flex items-center justify-between p-4 border-b border-gray-200">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center">
+            <div className="flex items-center justify-between p-4 border-b border-gray-200 shrink-0">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-10 h-10 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center shrink-0">
                   <Users className="w-5 h-5" />
                 </div>
-                <div>
-                  <h2 className="text-lg font-semibold text-gray-900">Access Control</h2>
-                  <p className="text-xs text-gray-500">Select who can access this form</p>
+                <div className="min-w-0">
+                  <h2 className="text-lg font-semibold text-gray-900">Access and links</h2>
+                  <p className="text-xs text-gray-500">Roles, plus messaging groups linked to this form</p>
                 </div>
               </div>
               <button 
                 onClick={() => setShowRolesModal(false)}
-                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg"
+                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg shrink-0"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             {/* Modal Body */}
-            <div className="p-4">
-              <div className="grid grid-cols-2 gap-2">
-                {VALID_ROLES.map(role => (
-                  <label
-                    key={role}
-                    className={cn(
-                      "flex items-center gap-2 p-3 rounded-lg border cursor-pointer transition-colors",
-                      selectedRoles.includes(role)
-                        ? "border-primary-500 bg-primary-50"
-                        : "border-gray-200 hover:border-gray-300"
-                    )}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={selectedRoles.includes(role)}
-                      onChange={() => toggleRole(role)}
-                      className="sr-only"
-                    />
-                    <div className={cn(
-                      "w-5 h-5 rounded border flex items-center justify-center",
-                      selectedRoles.includes(role)
-                        ? "bg-primary-500 border-primary-500"
-                        : "border-gray-300"
-                    )}>
-                      {selectedRoles.includes(role) && (
-                        <Check className="w-3 h-3 text-white" />
+            <div className="flex-1 min-h-0 overflow-y-auto">
+              <div className="p-4 border-b border-gray-100">
+                <h3 className="text-sm font-semibold text-gray-900 mb-3">Who can access</h3>
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                  {VALID_ROLES.map(role => (
+                    <label
+                      key={role}
+                      className={cn(
+                        "flex items-center gap-2 p-3 rounded-lg border cursor-pointer transition-colors",
+                        selectedRoles.includes(role)
+                          ? "border-primary-500 bg-primary-50"
+                          : "border-gray-200 hover:border-gray-300"
                       )}
-                    </div>
-                    <span className="text-sm text-gray-700">{ROLE_LABELS[role as keyof typeof ROLE_LABELS]}</span>
-                  </label>
-                ))}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedRoles.includes(role)}
+                        onChange={() => toggleRole(role)}
+                        className="sr-only"
+                      />
+                      <div className={cn(
+                        "w-5 h-5 rounded border flex items-center justify-center shrink-0",
+                        selectedRoles.includes(role)
+                          ? "bg-primary-500 border-primary-500"
+                          : "border-gray-300"
+                      )}>
+                        {selectedRoles.includes(role) && (
+                          <Check className="w-3 h-3 text-white" />
+                        )}
+                      </div>
+                      <span className="text-sm text-gray-700">{ROLE_LABELS[role as keyof typeof ROLE_LABELS]}</span>
+                    </label>
+                  ))}
+                </div>
+                <p className="text-xs text-gray-500 mt-4">
+                  If no roles are selected, this private form will be hidden from all non-admin users.
+                </p>
               </div>
-              <p className="text-xs text-gray-500 mt-4">
-                Leave all unchecked to allow all roles to access this form.
-              </p>
+
+              <div className="p-4">
+                <h3 className="text-sm font-semibold text-gray-900 mb-3">Messaging groups</h3>
+                {groupLinksLoading && (
+                  <p className="text-sm text-gray-500 flex items-center gap-2 py-4">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Loading group links…
+                  </p>
+                )}
+                {groupLinksError && !groupLinksLoading && (
+                  <p className="text-sm text-red-600 py-2" role="alert">{groupLinksError}</p>
+                )}
+                {!groupLinksLoading && !groupLinksError && (
+                  <FormTemplateGroupLinksPanel
+                    formTemplateId={template.id}
+                    attachments={groupLinksAttachments}
+                    groupOptions={groupLinksOptions}
+                    onLinksChanged={async () => {
+                      const result = await getFormTemplateGroupLinksEditorData(template.id)
+                      if ("success" in result && result.success && result.data) {
+                        setGroupLinksAttachments(result.data.attachments)
+                        setGroupLinksOptions(result.data.groups)
+                      }
+                    }}
+                  />
+                )}
+              </div>
             </div>
 
             {/* Modal Footer */}
-            <div className="flex items-center gap-2 p-4 border-t border-gray-200">
+            <div className="flex items-center gap-2 p-4 border-t border-gray-200 shrink-0">
               <button
                 onClick={() => setShowRolesModal(false)}
                 className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium"
@@ -656,7 +724,7 @@ export function FormTemplateCard({ template, categories, mode = 'admin', fillUrl
                     Saving...
                   </>
                 ) : (
-                  'Save Changes'
+                  'Save role access'
                 )}
               </button>
             </div>

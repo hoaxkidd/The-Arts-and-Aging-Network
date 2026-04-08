@@ -21,7 +21,7 @@ export default async function VolunteerFormFillPage({
   const roles = Array.isArray(session.user.roles) ? session.user.roles : [session.user.role]
   
   if (roles.includes('VOLUNTEER') && user?.volunteerReviewStatus !== 'APPROVED') {
-    redirect('/volunteers/onboarding')
+    redirect('/volunteer/onboarding')
   }
 
   const { id } = await params
@@ -42,7 +42,7 @@ export default async function VolunteerFormFillPage({
       <div className="p-8 text-center">
         <Lock className="w-12 h-12 text-gray-300 mx-auto mb-4" />
         <p className="text-gray-500">You don't have access to this form.</p>
-        <Link href="/volunteers/forms" className="text-primary-600 hover:text-primary-700 text-sm mt-2 inline-block">
+        <Link href="/volunteer/forms" className="text-primary-600 hover:text-primary-700 text-sm mt-2 inline-block">
           Back to Forms
         </Link>
       </div>
@@ -53,7 +53,7 @@ export default async function VolunteerFormFillPage({
     return (
       <div className="p-8 text-center">
         <p className="text-gray-500">This form is not fillable</p>
-        <Link href={`/volunteers/forms/${id}`} className="text-primary-600 hover:text-primary-700 text-sm mt-2 inline-block">
+        <Link href={`/volunteer/forms/${id}`} className="text-primary-600 hover:text-primary-700 text-sm mt-2 inline-block">
           Back to Form Details
         </Link>
       </div>
@@ -72,6 +72,6 @@ export default async function VolunteerFormFillPage({
   return <StaffFormFill 
     template={template} 
     existingSubmission={existingSubmission} 
-    redirectUrl="/volunteers"
+    redirectUrl="/volunteer"
   />
 }

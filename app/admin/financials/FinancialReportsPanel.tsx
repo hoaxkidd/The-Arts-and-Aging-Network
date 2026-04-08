@@ -7,6 +7,24 @@ import { MonthPicker } from '@/components/ui/MonthPicker'
 import { STYLES } from '@/lib/styles'
 import { cn } from '@/lib/utils'
 
+// #region agent log
+if (typeof window !== 'undefined') {
+  fetch('http://127.0.0.1:7481/ingest/e565b430-778f-46bb-8e20-b2dc3873bccf', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': 'c2c6c5' },
+    body: JSON.stringify({
+      sessionId: 'c2c6c5',
+      runId: 'pre-fix',
+      hypothesisId: 'H_bundle',
+      location: 'app/admin/financials/FinancialReportsPanel.tsx:module',
+      message: 'FinancialReportsPanel module loaded',
+      data: { ts: Date.now() },
+      timestamp: Date.now(),
+    }),
+  }).catch(() => {})
+}
+// #endregion
+
 function downloadCsv(filename: string, content: string) {
   const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' })
   const url = URL.createObjectURL(blob)
@@ -58,6 +76,8 @@ export function FinancialReportsPanel() {
   const disabled = exportingPayroll || exportingReport
   const controlsRef = useRef<HTMLDivElement | null>(null)
   const lastOverflowRef = useRef<boolean | null>(null)
+  const lastWidthBucketRef = useRef<'lt640' | 'gte640' | null>(null)
+  const lastWindowWidthRef = useRef<number | null>(null)
 
   // #region agent log
   useEffect(() => {
@@ -84,8 +104,22 @@ export function FinancialReportsPanel() {
 
     const report = () => {
       const nextOverflow = el.scrollWidth > el.clientWidth
-      if (lastOverflowRef.current === nextOverflow) return
+      const w = typeof window !== 'undefined' ? window.innerWidth : null
+      const nextBucket: 'lt640' | 'gte640' | null = w === null ? null : w < 640 ? 'lt640' : 'gte640'
+
+      const lastW = lastWindowWidthRef.current
+      const significantWidthChange = w !== null && (lastW === null || Math.abs(w - lastW) >= 120)
+
+      const overflowChanged = lastOverflowRef.current !== nextOverflow
+      const bucketChanged = lastWidthBucketRef.current !== nextBucket
+      if (!overflowChanged && !bucketChanged && !significantWidthChange) return
+
       lastOverflowRef.current = nextOverflow
+      lastWidthBucketRef.current = nextBucket
+      if (w !== null) lastWindowWidthRef.current = w
+
+      const docEl = typeof document !== 'undefined' ? document.documentElement : null
+      const bodyEl = typeof document !== 'undefined' ? document.body : null
       fetch('http://127.0.0.1:7481/ingest/e565b430-778f-46bb-8e20-b2dc3873bccf', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': 'c2c6c5' },
@@ -99,7 +133,15 @@ export function FinancialReportsPanel() {
             overflow: nextOverflow,
             clientWidth: el.clientWidth,
             scrollWidth: el.scrollWidth,
-            windowInnerWidth: typeof window !== 'undefined' ? window.innerWidth : null,
+            windowInnerWidth: w,
+            widthBucket: nextBucket,
+            overflowChanged,
+            bucketChanged,
+            significantWidthChange,
+            documentClientWidth: docEl?.clientWidth ?? null,
+            documentScrollWidth: docEl?.scrollWidth ?? null,
+            bodyClientWidth: bodyEl?.clientWidth ?? null,
+            bodyScrollWidth: bodyEl?.scrollWidth ?? null,
           },
           timestamp: Date.now(),
         }),
@@ -119,21 +161,20 @@ export function FinancialReportsPanel() {
 
   return (
     <div className="mb-4 rounded-lg border border-gray-200 bg-white p-3 sm:p-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
-        <div className="min-w-0 sm:max-w-md">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+        <div className="min-w-0 flex-1 sm:max-w-md">
           <p className="text-sm font-semibold text-gray-900">Financial Exports</p>
-          <p className="text-xs text-gray-500">Download payroll CSV and monthly expense reports</p>
+          <p className="text-xs text-gray-500 sm:truncate">
+            Download payroll CSV and monthly expense reports
+          </p>
         </div>
 
-        <div className="w-full sm:w-auto">
+        <div className="shrink-0">
           <div
             ref={controlsRef}
-            className="flex flex-row flex-nowrap items-end justify-end gap-2 min-w-[34rem]"
+            className="flex flex-row flex-nowrap items-end justify-end gap-2"
           >
-            <div className="flex flex-col gap-1 shrink-0">
-              <label htmlFor="financial-export-month" className="text-xs font-medium text-gray-600">
-                Month
-              </label>
+            <div className="shrink-0">
               <MonthPicker
                 id="financial-export-month"
                 value={period}
@@ -142,12 +183,18 @@ export function FinancialReportsPanel() {
               />
             </div>
 
-            <div className="flex min-w-0 flex-row flex-nowrap items-center gap-2">
+            <div className="flex flex-row flex-nowrap items-center gap-2">
               <button
                 type="button"
                 onClick={handlePayrollExport}
                 disabled={disabled}
-                className={cn(STYLES.btn, STYLES.btnPrimary, STYLES.btnToolbar, 'shrink-0')}
+                aria-label="Export Payroll CSV"
+                className={cn(
+                  STYLES.btn,
+                  STYLES.btnPrimary,
+                  STYLES.btnToolbar,
+                  'shrink-0 w-9 px-0 sm:w-auto sm:px-2.5'
+                )}
               >
                 {exportingPayroll ? (
                   <Loader2 className={cn(STYLES.btnToolbarIcon, 'animate-spin')} />
@@ -160,7 +207,13 @@ export function FinancialReportsPanel() {
                 type="button"
                 onClick={handleMonthlyExpenseReport}
                 disabled={disabled}
-                className={cn(STYLES.btn, STYLES.btnSecondary, STYLES.btnToolbar, 'shrink-0')}
+                aria-label="Monthly Expense Report"
+                className={cn(
+                  STYLES.btn,
+                  STYLES.btnSecondary,
+                  STYLES.btnToolbar,
+                  'shrink-0 w-9 px-0 sm:w-auto sm:px-2.5'
+                )}
               >
                 {exportingReport ? (
                   <Loader2 className={cn(STYLES.btnToolbarIcon, 'animate-spin')} />

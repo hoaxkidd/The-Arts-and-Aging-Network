@@ -110,7 +110,7 @@ export function MonthPicker({ value, onChange, disabled = false, className, id }
         onClick={toggle}
         className={cn(
           STYLES.input,
-          'h-9 flex w-full min-w-[9.25rem] max-w-full items-center justify-between gap-2 py-1.5 text-left sm:w-auto sm:min-w-[12rem]',
+          'h-9 flex w-full min-w-[8.25rem] max-w-full items-center justify-between gap-2 py-1.5 text-left sm:w-auto sm:min-w-[12rem]',
           disabled && 'cursor-not-allowed opacity-60'
         )}
       >

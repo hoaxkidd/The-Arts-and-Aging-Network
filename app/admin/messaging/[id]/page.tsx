@@ -6,6 +6,7 @@ import Link from "next/link"
 import { cn } from "@/lib/utils"
 import { GroupMembersList } from "@/components/messaging/GroupMembersList"
 import { GroupSettings } from "@/components/messaging/GroupSettings"
+import { GroupFormAttachmentsPanel } from "@/components/admin/GroupFormAttachmentsPanel"
 
 export default async function ManageGroupPage({
   params
@@ -65,6 +66,23 @@ export default async function ManageGroupPage({
     orderBy: { name: 'asc' }
   })
 
+  const [formAttachments, activeTemplates] = await Promise.all([
+    prisma.messageGroupForm.findMany({
+      where: { groupId: id, isActive: true },
+      include: {
+        formTemplate: {
+          select: { id: true, title: true, category: true, isActive: true },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    }),
+    prisma.formTemplate.findMany({
+      where: { isActive: true },
+      select: { id: true, title: true, category: true },
+      orderBy: { title: 'asc' },
+    }),
+  ])
+
   return (
     <div className="h-full flex flex-col">
       <div className="flex-shrink-0 mb-4">
@@ -104,6 +122,15 @@ export default async function ManageGroupPage({
           groupId={group.id}
           members={group.members}
           availableStaff={availableStaff}
+        />
+
+        <GroupFormAttachmentsPanel
+          groupId={group.id}
+          attachments={formAttachments.map((a) => ({
+            formTemplateId: a.formTemplateId,
+            formTemplate: a.formTemplate,
+          }))}
+          templateOptions={activeTemplates}
         />
 
         {/* Group Settings */}

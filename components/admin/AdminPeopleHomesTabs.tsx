@@ -1,16 +1,13 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
-import { usePathname, useRouter, useSearchParams } from 'next/navigation'
-import { Building2, Mail, UserPlus, Users, UserRound } from 'lucide-react'
-import type { GeriatricHome, User } from '@prisma/client'
+import { Mail, UserPlus, Users, UserRound } from 'lucide-react'
+import type { GeriatricHome, User, UserRoleAssignment } from '@prisma/client'
 import { cn } from '@/lib/utils'
 import { STYLES } from '@/lib/styles'
 import UsersTable from '@/components/admin/UsersTable'
 import HomeAdminsTable from '@/components/admin/HomeAdminsTable'
-import { HomeList } from '@/components/admin/HomeList'
-import { AddHomeButton } from '@/components/admin/AddHomeButton'
 
 type UserWithCounts = User & {
   _count?: {
@@ -18,136 +15,88 @@ type UserWithCounts = User & {
     notifications: number
   }
   geriatricHome?: GeriatricHome | null
+  roleAssignments?: UserRoleAssignment[]
 }
 
-type Home = {
-  id: string
-  name: string
-  address: string
-  residentCount: number
-  maxCapacity: number
-  contactName: string
-  contactPhone: string
-  user: {
-    email: string | null
-    status: string
-  }
-}
-
-type TabKey = 'team' | 'home-admins' | 'homes'
+type TabKey = 'team' | 'home-admins'
 
 export default function AdminPeopleHomesTabs({
   teamUsers,
   homeAdminUsers,
-  homes,
   initialTab,
 }: {
   teamUsers: UserWithCounts[]
   homeAdminUsers: UserWithCounts[]
-  homes: Home[]
   initialTab: TabKey
 }) {
-  const router = useRouter()
-  const pathname = usePathname()
-  const searchParams = useSearchParams()
   const [activeTab, setActiveTab] = useState<TabKey>(initialTab)
-
-  useEffect(() => {
-    setActiveTab(initialTab)
-  }, [initialTab])
-
-  const handleTabChange = (tab: TabKey) => {
-    setActiveTab(tab)
-    const params = new URLSearchParams(searchParams.toString())
-    params.set('tab', tab)
-    router.replace(`${pathname}?${params.toString()}`, { scroll: false })
-  }
 
   return (
     <div className="space-y-4">
       <div className="rounded-lg border border-gray-200 bg-white overflow-hidden">
-        <div className="border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white p-2 sm:p-3 flex gap-2">
-          <button
-            type="button"
-            onClick={() => handleTabChange('team')}
-            className={cn(
-              "inline-flex items-center gap-2 px-3 py-2 text-sm font-semibold rounded-lg transition-colors",
-              activeTab === 'team'
-                ? "bg-primary-100 text-primary-700 border border-primary-200"
-                : "text-gray-600 hover:bg-gray-100"
-            )}
-          >
-            <Users className="w-4 h-4" />
-            Team
-            <span className="text-xs bg-white/80 border border-gray-200 text-gray-600 rounded-full px-1.5 py-0.5">{teamUsers.length}</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => handleTabChange('home-admins')}
-            className={cn(
-              "inline-flex items-center gap-2 px-3 py-2 text-sm font-semibold rounded-lg transition-colors",
-              activeTab === 'home-admins'
-                ? "bg-primary-100 text-primary-700 border border-primary-200"
-                : "text-gray-600 hover:bg-gray-100"
-            )}
-          >
-            <UserRound className="w-4 h-4" />
-            Home Admins
-            <span className="text-xs bg-white/80 border border-gray-200 text-gray-600 rounded-full px-1.5 py-0.5">{homeAdminUsers.length}</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => handleTabChange('homes')}
-            className={cn(
-              "inline-flex items-center gap-2 px-3 py-2 text-sm font-semibold rounded-lg transition-colors",
-              activeTab === 'homes'
-                ? "bg-primary-100 text-primary-700 border border-primary-200"
-                : "text-gray-600 hover:bg-gray-100"
-            )}
-          >
-            <Building2 className="w-4 h-4" />
-            Homes
-            <span className="text-xs bg-white/80 border border-gray-200 text-gray-600 rounded-full px-1.5 py-0.5">{homes.length}</span>
-          </button>
+        <div className="border-b border-gray-200 bg-white px-3 sm:px-5">
+          <div className="flex gap-6 overflow-x-auto">
+            <button
+              type="button"
+              onClick={() => setActiveTab('team')}
+              className={cn(
+                "shrink-0 py-3 text-sm font-semibold border-b-2 flex items-center gap-2 transition-colors whitespace-nowrap",
+                activeTab === 'team'
+                  ? "border-primary-600 text-primary-700"
+                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+              )}
+            >
+              <Users className="w-4 h-4" />
+              Team
+              <span className={cn(STYLES.badge, STYLES.badgeNeutral, "py-0.5 px-2")}>{teamUsers.length}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab('home-admins')}
+              className={cn(
+                "shrink-0 py-3 text-sm font-semibold border-b-2 flex items-center gap-2 transition-colors whitespace-nowrap",
+                activeTab === 'home-admins'
+                  ? "border-primary-600 text-primary-700"
+                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+              )}
+            >
+              <UserRound className="w-4 h-4" />
+              Home Admins
+              <span className={cn(STYLES.badge, STYLES.badgeNeutral, "py-0.5 px-2")}>{homeAdminUsers.length}</span>
+            </button>
+          </div>
         </div>
 
         <div className="p-4 sm:p-5">
-          {activeTab === 'team' ? (
+          {activeTab === 'team' && (
             <div className="space-y-4">
               <div className="flex items-center gap-3 flex-wrap">
-                <Link href="/admin/invitations" className={cn(STYLES.btn, STYLES.btnPrimary)}>
-                  <Mail className="w-4 h-4" />
+                <Link href="/admin/invitations" className={cn(STYLES.btn, STYLES.btnPrimary, STYLES.btnToolbar)}>
+                  <Mail className={STYLES.btnToolbarIcon} />
                   Invite New User
                 </Link>
-                <Link href="/admin/users/new" className={cn(STYLES.btn, STYLES.btnSecondary)}>
-                  <UserPlus className="w-4 h-4" />
+                <Link href="/admin/users/new" className={cn(STYLES.btn, STYLES.btnSecondary, STYLES.btnToolbar)}>
+                  <UserPlus className={STYLES.btnToolbarIcon} />
                   Create Staff Profile
                 </Link>
               </div>
               <UsersTable users={teamUsers} />
             </div>
-          ) : activeTab === 'home-admins' ? (
+          )}
+
+          {activeTab === 'home-admins' && (
             <div className="space-y-4">
               <div className="flex items-center gap-3 flex-wrap">
                 <div className="bg-white px-4 py-2 rounded-lg border border-gray-200 text-sm font-medium text-gray-700">
                   Home Admin Accounts: <span className="text-primary-600 font-bold ml-1">{homeAdminUsers.length}</span>
                 </div>
-                <Link href="/admin/invitations" className={cn(STYLES.btn, STYLES.btnSecondary)}>
-                  <Mail className="w-4 h-4" />
+                <Link href="/admin/invitations" className={cn(STYLES.btn, STYLES.btnSecondary, STYLES.btnToolbar)}>
+                  <Mail className={STYLES.btnToolbarIcon} />
                   Invite Home Admin
                 </Link>
               </div>
               <HomeAdminsTable users={homeAdminUsers} />
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <div className="flex items-center gap-3 flex-wrap">
-                <div className="bg-white px-4 py-2 rounded-lg border border-gray-200 text-sm font-medium text-gray-700">
-                  Total Homes: <span className="text-primary-600 font-bold ml-1">{homes.length}</span>
-                </div>
-                <AddHomeButton />
-              </div>
-              <HomeList initialHomes={homes} />
             </div>
           )}
         </div>

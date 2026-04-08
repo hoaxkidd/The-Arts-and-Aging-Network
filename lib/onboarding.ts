@@ -29,7 +29,7 @@ export function needsOnboarding(user: SessionUser | null | undefined): boolean {
 }
 
 export function getOnboardingPath(_role: string): string {
-  if (_role === 'VOLUNTEER') return '/volunteers/onboarding'
+  if (_role === 'VOLUNTEER') return '/volunteer/onboarding'
   if (_role === 'FACILITATOR') return '/facilitator/onboarding'
   return '/staff/onboarding'
 }

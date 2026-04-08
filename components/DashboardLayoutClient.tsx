@@ -77,13 +77,13 @@ const PAGE_TITLES: Record<string, string> = {
   '/staff/profile': 'My Profile',
   '/staff/settings': 'Settings',
   '/staff/onboarding': 'Complete Profile',
-  '/volunteers': 'Volunteer Dashboard',
-  '/volunteers/my-events': 'My Schedule',
-  '/volunteers/inbox': 'Inbox',
-  '/volunteers/forms': 'Forms',
-  '/volunteers/onboarding': 'Complete Profile',
-  '/volunteers/profile': 'My Profile',
-  '/volunteers/settings': 'Settings',
+  '/volunteer': 'Volunteer Dashboard',
+  '/volunteer/my-events': 'My Schedule',
+  '/volunteer/inbox': 'Inbox',
+  '/volunteer/forms': 'Forms',
+  '/volunteer/onboarding': 'Complete Profile',
+  '/volunteer/profile': 'My Profile',
+  '/volunteer/settings': 'Settings',
   '/events': 'Events Calendar',
   '/notifications': 'Notifications',
 }
@@ -152,13 +152,13 @@ const PAGE_ICONS: Record<string, typeof Calendar> = {
   '/staff/profile': UserCircle,
   '/staff/settings': Settings,
   '/staff/onboarding': UserCircle,
-  '/volunteers': LayoutDashboard,
-  '/volunteers/my-events': Calendar,
-  '/volunteers/inbox': Inbox,
-  '/volunteers/forms': FileText,
-  '/volunteers/onboarding': UserCircle,
-  '/volunteers/profile': UserCircle,
-  '/volunteers/settings': Settings,
+  '/volunteer': LayoutDashboard,
+  '/volunteer/my-events': Calendar,
+  '/volunteer/inbox': Inbox,
+  '/volunteer/forms': FileText,
+  '/volunteer/onboarding': UserCircle,
+  '/volunteer/profile': UserCircle,
+  '/volunteer/settings': Settings,
   '/events': Calendar,
   '/notifications': Bell,
 }
@@ -227,13 +227,13 @@ const PAGE_SUBTITLES: Record<string, string> = {
   '/staff/profile': 'Update your profile',
   '/staff/settings': 'Update your settings',
   '/staff/onboarding': 'Finish setting up your profile',
-  '/volunteers': 'Volunteer portal',
-  '/volunteers/my-events': 'View your schedule',
-  '/volunteers/inbox': 'View your messages',
-  '/volunteers/forms': 'Access forms',
-  '/volunteers/onboarding': 'Finish setting up your profile',
-  '/volunteers/profile': 'Update your profile',
-  '/volunteers/settings': 'Update your settings',
+  '/volunteer': 'Volunteer portal',
+  '/volunteer/my-events': 'View your schedule',
+  '/volunteer/inbox': 'View your messages',
+  '/volunteer/forms': 'Access forms',
+  '/volunteer/onboarding': 'Finish setting up your profile',
+  '/volunteer/profile': 'Update your profile',
+  '/volunteer/settings': 'Update your settings',
   '/events': 'Browse all events',
   '/notifications': 'View your notifications',
 }
@@ -276,7 +276,7 @@ function getPageLayoutType(pathname: string): 'form' | 'table' | 'mixed' {
   if (pathname.startsWith('/admin/form-templates/') && pathname !== '/admin/form-templates' && pathname !== '/admin/form-templates/new') return 'form'
   if (pathname.startsWith('/admin/users/') && pathname !== '/admin/users/new') return 'form'
   if (pathname.startsWith('/admin/events/') && pathname.includes('/edit')) return 'form'
-  if (pathname.startsWith('/staff/forms/') || pathname.startsWith('/dashboard/forms/') || pathname.startsWith('/payroll/forms/') || pathname.startsWith('/volunteers/forms/')) return 'form'
+  if (pathname.startsWith('/staff/forms/') || pathname.startsWith('/dashboard/forms/') || pathname.startsWith('/payroll/forms/') || pathname.startsWith('/volunteer/forms/')) return 'form'
   if (TABLE_PAGES.some(p => pathname.startsWith(p))) return 'table'
   return 'mixed'
 }
@@ -308,8 +308,8 @@ function getPageTitle(pathname: string, homeName?: string) {
   if (pathname.startsWith('/staff/groups/')) return 'Group Messages'
   if (pathname.startsWith('/staff/inbox/') && pathname.split('/').length > 3) return 'Conversation'
   if (pathname.startsWith('/payroll/forms/')) return 'Form Template'
-  if (pathname.startsWith('/volunteers/forms/')) return 'Form Template'
-  if (pathname.startsWith('/volunteers/inbox/') && pathname.split('/').length > 3) return 'Conversation'
+  if (pathname.startsWith('/volunteer/forms/')) return 'Form Template'
+  if (pathname.startsWith('/volunteer/inbox/') && pathname.split('/').length > 3) return 'Conversation'
   if (pathname.startsWith('/dashboard/forms/')) return 'Form Template'
   if (pathname.startsWith('/dashboard/my-events/')) return 'Event Details'
   if (pathname.startsWith('/dashboard/requests/')) return 'Event Request'
@@ -335,8 +335,8 @@ function getPageIcon(pathname: string) {
   if (pathname.startsWith('/staff/groups/')) return MessageSquare
   if (pathname.startsWith('/staff/inbox/')) return Inbox
   if (pathname.startsWith('/payroll/forms/')) return FileText
-  if (pathname.startsWith('/volunteers/forms/')) return FileText
-  if (pathname.startsWith('/volunteers/inbox/')) return Inbox
+  if (pathname.startsWith('/volunteer/forms/')) return FileText
+  if (pathname.startsWith('/volunteer/inbox/')) return Inbox
   if (pathname.startsWith('/dashboard/forms/')) return FileText
   if (pathname.startsWith('/dashboard/my-events/')) return Calendar
   if (pathname.startsWith('/dashboard/requests/')) return ClipboardList
@@ -362,8 +362,8 @@ function getPageSubtitle(pathname: string) {
   if (pathname.startsWith('/staff/groups/')) return 'View messages'
   if (pathname.startsWith('/staff/inbox/')) return 'View conversation'
   if (pathname.startsWith('/payroll/forms/')) return 'View form template'
-  if (pathname.startsWith('/volunteers/forms/')) return 'View form template'
-  if (pathname.startsWith('/volunteers/inbox/')) return 'View conversation'
+  if (pathname.startsWith('/volunteer/forms/')) return 'View form template'
+  if (pathname.startsWith('/volunteer/inbox/')) return 'View conversation'
   if (pathname.startsWith('/dashboard/forms/')) return 'View form template'
   if (pathname.startsWith('/dashboard/my-events/')) return 'View event details'
   if (pathname.startsWith('/dashboard/requests/')) return 'View request details'
@@ -398,7 +398,7 @@ export function DashboardLayoutClient({ children, role, title = "Arts & Aging", 
     .filter((assignedRole: string) => assignedRole !== 'BOARD')
     .map((assignedRole: string) => ({
       role: assignedRole,
-      href: getRoleHomePath(assignedRole),
+      href: `/role/select?role=${encodeURIComponent(assignedRole)}&next=${encodeURIComponent(getRoleHomePath(assignedRole))}`,
       label: ROLE_LABELS[assignedRole as keyof typeof ROLE_LABELS] || assignedRole,
     }))
   const showRoleSwitcher = rolePortalLinks.length > 1
@@ -637,7 +637,7 @@ export function DashboardLayoutClient({ children, role, title = "Arts & Aging", 
         </>
       )}
 
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col min-w-0">
         <header className="bg-secondary-400 border-b-2 border-secondary-500 px-4 md:px-6 py-4 flex items-start shadow-sm">
           <button
             onClick={() => setSidebarOpen(true)}
@@ -679,7 +679,13 @@ export function DashboardLayoutClient({ children, role, title = "Arts & Aging", 
                                  'max-w-7xl'
             
             return (
-              <div className={cn(maxWidthClass, "mx-auto w-full overflow-x-hidden flex-1 flex flex-col")}>
+              <div
+                className={cn(
+                  maxWidthClass,
+                  "mx-auto w-full flex-1 flex flex-col min-w-0",
+                  layoutType === "table" ? "overflow-x-auto" : "overflow-x-hidden"
+                )}
+              >
                 {children}
               </div>
             )

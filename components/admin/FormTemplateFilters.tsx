@@ -3,6 +3,8 @@
 import { Search, Grid, List, ChevronDown } from 'lucide-react'
 import Link from 'next/link'
 import { useState, useRef, useEffect } from 'react'
+import { STYLES } from '@/lib/styles'
+import { cn } from '@/lib/utils'
 
 type Category = {
   value: string
@@ -49,7 +51,7 @@ export function FormTemplateFilters({
           name="search"
           defaultValue={currentSearch}
           placeholder="Search forms..."
-          className="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-1 focus:ring-primary-500 focus:border-primary-500 bg-white"
+          className={cn(STYLES.input, "pl-9 h-10")}
         />
       </form>
 
@@ -59,7 +61,7 @@ export function FormTemplateFilters({
         <select
           value={currentSort}
           onChange={(e) => window.location.href = getLink({ sort: e.target.value })}
-          className="px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white focus:ring-1 focus:ring-primary-500"
+          className={cn(STYLES.input, STYLES.select, "h-10")}
         >
           <option value="title">Title A-Z</option>
           {mode === 'admin' && <option value="date_desc">Newest</option>}
@@ -72,7 +74,7 @@ export function FormTemplateFilters({
         <select
           value={currentCategory}
           onChange={(e) => window.location.href = getLink({ category: e.target.value })}
-          className="px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white focus:ring-1 focus:ring-primary-500"
+          className={cn(STYLES.input, STYLES.select, "h-10")}
         >
           <option value="ALL">All Categories</option>
           {categories.map(cat => (
@@ -84,7 +86,7 @@ export function FormTemplateFilters({
         <select
           value={currentStatus}
           onChange={(e) => window.location.href = getLink({ status: e.target.value })}
-          className="px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white focus:ring-1 focus:ring-primary-500"
+          className={cn(STYLES.input, STYLES.select, "h-10")}
         >
           {mode === 'staff' ? (
             <>
@@ -101,7 +103,7 @@ export function FormTemplateFilters({
         </select>
 
         {/* View Toggle */}
-        <div className="flex items-center bg-gray-100 rounded-lg p-1">
+        <div className="flex items-center bg-gray-100 rounded-lg p-1 h-10">
           <Link
             href={getLink({ view: 'cards' })}
             className={`p-1.5 rounded-md transition-colors ${

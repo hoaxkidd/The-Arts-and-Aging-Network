@@ -181,14 +181,16 @@ function withBasePath(menu: MenuItem[], fromBase: string, toBase: string): MenuI
 
 export const facilitatorMenu = withBasePath(staffMenu, '/staff', '/facilitator')
 
+export const partnerMenu = withBasePath(staffMenu, '/staff', '/partner')
+
 export const volunteerMenu = [
-  { label: "Dashboard", href: "/volunteers", icon: LayoutDashboard },
+  { label: "Dashboard", href: "/volunteer", icon: LayoutDashboard },
   { label: "Browse Events", href: "/events", icon: Calendar },
-  { label: "My Schedule", href: "/volunteers/my-events", icon: CalendarCheck },
-  { label: "Inbox", href: "/volunteers/inbox", icon: Inbox },
-  { label: "Forms", href: "/volunteers/forms", icon: FileText },
-  { label: "My Profile", href: "/volunteers/profile", icon: UserCircle },
-  { label: "Settings", href: "/volunteers/settings", icon: Settings },
+  { label: "My Schedule", href: "/volunteer/my-events", icon: CalendarCheck },
+  { label: "Inbox", href: "/volunteer/inbox", icon: Inbox },
+  { label: "Forms", href: "/volunteer/forms", icon: FileText },
+  { label: "My Profile", href: "/volunteer/profile", icon: UserCircle },
+  { label: "Settings", href: "/volunteer/settings", icon: Settings },
 ]
 
 export const boardMenu = [
@@ -236,5 +238,5 @@ export const MENU_ITEMS: Record<string, MenuItem[]> = {
   FACILITATOR: facilitatorMenu,
   VOLUNTEER: volunteerMenu,
   BOARD: boardMenu,
-  PARTNER: staffMenu,
+  PARTNER: partnerMenu,
 }

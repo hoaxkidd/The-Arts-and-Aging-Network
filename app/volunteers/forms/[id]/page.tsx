@@ -25,7 +25,7 @@ export default async function VolunteerFormTemplateDetailPage({
   const roles = Array.isArray(session.user.roles) ? session.user.roles : [session.user.role]
   
   if (roles.includes('VOLUNTEER') && user?.volunteerReviewStatus !== 'APPROVED') {
-    redirect('/volunteers/onboarding')
+    redirect('/volunteer/onboarding')
   }
 
   const { id } = await params
@@ -53,7 +53,7 @@ export default async function VolunteerFormTemplateDetailPage({
       return (
         <div className="p-8 text-center">
           <p className="text-gray-500">This template is not available</p>
-          <Link href="/volunteers/forms" className="text-primary-600 hover:text-primary-700 text-sm mt-2 inline-block">
+          <Link href="/volunteer/forms" className="text-primary-600 hover:text-primary-700 text-sm mt-2 inline-block">
             Back to Forms
           </Link>
         </div>
@@ -133,7 +133,7 @@ export default async function VolunteerFormTemplateDetailPage({
           <div className="flex flex-col gap-2">
             {template.isFillable && (
               <Link
-                href={`/volunteers/forms/${template.id}/fill`}
+                href={`/volunteer/forms/${template.id}/fill`}
                 className={cn(STYLES.btn, STYLES.btnSecondary, "justify-center")}
               >
                 <Edit className="w-4 h-4" />
@@ -162,7 +162,7 @@ export default async function VolunteerFormTemplateDetailPage({
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-sm font-semibold text-gray-900">Your Recent Submissions</h2>
               <Link
-                href="/volunteers/forms?tab=submissions"
+                href="/volunteer/forms?tab=submissions"
                 className="text-xs text-primary-600 hover:text-primary-700"
               >
                 View All

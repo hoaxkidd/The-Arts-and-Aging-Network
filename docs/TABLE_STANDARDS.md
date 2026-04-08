@@ -27,6 +27,15 @@ Primary references (migrate new work toward these):
 
 Prefer `LinedStatusTabs` + `DataTableShell` when **adding** status-filtered financial tables. For **existing** pages across admin, payroll, staff, and dashboard: ensure `STYLES.tableHeadRow` on header rows; replace one-off status **pill bars** with `LinedStatusTabs` when refactoring that screen (see grep for `STYLES.table` / `table-scroll-wrapper`).
 
+## Admin detail pages
+
+When a “detail page” (e.g. `/admin/users/[id]`) needs a compact, row-based section (roles, quick links, small audit-like summaries), render those sections using the same lined-table standard:
+
+- Card wrapper: `bg-white rounded-lg border border-gray-200 overflow-hidden`
+- Table wrapper: `table-scroll-wrapper` (use an appropriate max-height for the panel)
+- Header band: `STYLES.tableHeadRow` + `STYLES.tableHeader`
+- Body: `divide-y divide-gray-100` + `STYLES.tableRow` + `STYLES.tableCell`
+
 ## Standard Table Structure
 
 ### 1. Card Wrapper

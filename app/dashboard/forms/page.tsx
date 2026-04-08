@@ -9,6 +9,7 @@ import { FormTemplateCard } from "@/components/admin/FormTemplateCard"
 import { FormTemplateFilters } from "@/components/admin/FormTemplateFilters"
 import { StickyTable } from "@/components/ui/StickyTable"
 import { STYLES } from "@/lib/styles"
+import { canAccessTemplate } from "@/lib/form-access"
 
 export default async function HomeAdminFormsPage({
   searchParams
@@ -18,11 +19,7 @@ export default async function HomeAdminFormsPage({
   const session = await auth()
   if (!session?.user?.id) redirect('/login')
 
-  // Home admins should not access staff forms - redirect to dashboard forms
-  const userRole = session.user.role || ''
-  if (userRole === 'HOME_ADMIN') {
-    // Continue with home admin specific logic
-  }
+  // HOME_ADMIN uses dashboard-specific logic below.
 
   const params = await searchParams
   const categoryFilter = params.category || 'ALL'
@@ -35,6 +32,8 @@ export default async function HomeAdminFormsPage({
   // Get active templates - Home Admins only see role-restricted forms (NOT public)
   const isAdmin = session.user.role === 'ADMIN'
   const isHomeAdmin = session.user.role === 'HOME_ADMIN'
+  // Scope access to the currently active role (prevents cross-role leakage).
+  const roles = session.user.role ? [session.user.role] : []
 
   let templates
   const categoryFilterObj = categoryFilter !== 'ALL' ? { category: categoryFilter } : {}
@@ -66,14 +65,12 @@ export default async function HomeAdminFormsPage({
       orderBy: sort === 'title' ? { title: 'asc' } : sort === 'category' ? { category: 'asc' } : { createdAt: 'desc' }
     }) as any
   } else if (isHomeAdmin) {
-    // Home Admin: ONLY show role-restricted forms (NOT public)
+    // Home Admin: fetch and filter strictly in-memory (deny-by-default; avoid CSV `contains` mismatches)
     templates = await prisma.formTemplate.findMany({
       where: {
         ...where,
-        isPublic: false,  // Exclude public forms
-        OR: [
-          { allowedRoles: { contains: userRole } }  // Role-restricted forms only
-        ]
+        isPublic: false,
+        isActive: statusFilter === 'active' ? true : undefined,
       },
       include: {
         _count: {
@@ -83,14 +80,11 @@ export default async function HomeAdminFormsPage({
       orderBy: sort === 'title' ? { title: 'asc' } : sort === 'category' ? { category: 'asc' } : { createdAt: 'desc' }
     }) as any
   } else {
-    // Other roles: show public forms OR role-restricted forms
+    // Other roles: fetch and filter strictly in-memory (deny-by-default; avoid CSV `contains` mismatches)
     templates = await prisma.formTemplate.findMany({
       where: {
         ...where,
-        OR: [
-          { isPublic: true },  // Public forms
-          { allowedRoles: { contains: userRole } }  // Role-restricted forms
-        ]
+        isActive: statusFilter === 'active' ? true : undefined,
       },
       include: {
         _count: {
@@ -99,6 +93,15 @@ export default async function HomeAdminFormsPage({
       },
       orderBy: sort === 'title' ? { title: 'asc' } : sort === 'category' ? { category: 'asc' } : { createdAt: 'desc' }
     }) as any
+  }
+
+  if (!isAdmin) {
+    templates = (templates as any[]).filter((t: any) =>
+      canAccessTemplate(
+        { isActive: Boolean(t.isActive), isPublic: Boolean(t.isPublic), allowedRoles: t.allowedRoles ?? null },
+        { roles, isHomeAdmin }
+      )
+    )
   }
 
   // Get user's submissions with template ID for linking to cards

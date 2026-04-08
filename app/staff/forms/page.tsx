@@ -9,6 +9,7 @@ import { FormTemplateCard } from "@/components/admin/FormTemplateCard"
 import { FormTemplateFilters } from "@/components/admin/FormTemplateFilters"
 import { StickyTable } from "@/components/ui/StickyTable"
 import { STYLES } from "@/lib/styles"
+import { canAccessTemplate } from "@/lib/form-access"
 
 export default async function StaffFormsPage({
   searchParams
@@ -26,8 +27,8 @@ export default async function StaffFormsPage({
   const search = params.search || ''
   const statusFilter = params.status || 'active'
 
-  // Get active templates
-  const userRole = session.user.role || ''
+  // Scope access to the currently active role (prevents cross-role leakage).
+  const roles = session.user.role ? [session.user.role] : []
   const isAdmin = session.user.role === 'ADMIN'
 
   // Build query based on user role
@@ -65,10 +66,8 @@ export default async function StaffFormsPage({
     templates = await prisma.formTemplate.findMany({
       where: {
         ...where,
-        OR: [
-          { isPublic: true },  // Public forms
-          { allowedRoles: { contains: userRole } }  // Role-restricted forms
-        ]
+        // Fetch active templates and filter strictly in-memory to avoid CSV `contains` mismatches.
+        isActive: statusFilter === 'active' ? true : undefined,
       },
       include: {
         _count: {
@@ -77,6 +76,15 @@ export default async function StaffFormsPage({
       },
       orderBy: sort === 'title' ? { title: 'asc' } : sort === 'category' ? { category: 'asc' } : { createdAt: 'desc' }
     })
+  }
+
+  if (!isAdmin) {
+    templates = templates.filter((t: any) =>
+      canAccessTemplate(
+        { isActive: Boolean(t.isActive), isPublic: Boolean(t.isPublic), allowedRoles: t.allowedRoles ?? null },
+        { roles, isHomeAdmin: false }
+      )
+    )
   }
 
   // Get user's submissions with template ID for linking to cards
@@ -220,12 +228,16 @@ export default async function StaffFormsPage({
                   const accessLabel = template.isPublic ? 'All' : (template.allowedRoles ? template.allowedRoles.split(',').map(r => ROLE_LABELS[r as keyof typeof ROLE_LABELS] || r).join(', ') : 'All')
                   return (
                     <tr key={template.id} className={STYLES.tableRow}>
-                      <td className={STYLES.tableCell}>
-                        <Link href={`/staff/forms/${template.id}`} className="block">
-                          <span className="text-sm font-medium text-gray-900 hover:text-primary-600">{template.title}</span>
-                          {template.description && (
-                            <p className="text-xs text-gray-500 line-clamp-1">{template.description}</p>
-                          )}
+                      <td className={cn(STYLES.tableCell, "min-w-0")}>
+                        <Link href={`/staff/forms/${template.id}`} className="block min-w-0">
+                          <div className="min-w-0">
+                            <span className="block truncate text-sm font-medium text-gray-900 hover:text-primary-600">
+                              {template.title}
+                            </span>
+                            {template.description && (
+                              <p className="text-xs text-gray-500 line-clamp-1">{template.description}</p>
+                            )}
+                          </div>
                         </Link>
                       </td>
                       <td className={STYLES.tableCell}>

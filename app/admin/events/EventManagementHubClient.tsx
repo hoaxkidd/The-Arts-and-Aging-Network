@@ -50,14 +50,14 @@ export function EventManagementHubClient({ events, requests }: EventManagementHu
   }, [createdParam, conflictParam, tabParam, router])
 
   const tabs = [
-    { id: 'list', label: 'All Events', icon: List },
     { id: 'calendar', label: 'Calendar', icon: Calendar },
     {
       id: 'requests',
       label: 'Event Requests',
       icon: ClipboardList,
       count: requests.filter((r) => r.status === 'PENDING').length
-    }
+    },
+    { id: 'list', label: 'All Events', icon: List }
   ]
 
   return (

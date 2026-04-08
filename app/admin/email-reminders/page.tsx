@@ -2,7 +2,7 @@ import { prisma } from "@/lib/prisma"
 import { auth } from "@/auth"
 import { redirect } from "next/navigation"
 import { Prisma } from "@prisma/client"
-import { Mail, CheckCircle, XCircle, Clock, AlertCircle, Users, Home } from "lucide-react"
+import { CheckCircle, XCircle, Clock, AlertCircle, Users, Home } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { STYLES } from "@/lib/styles"
 import Link from "next/link"
@@ -78,57 +78,27 @@ export default async function EmailRemindersPage({
   }
 
   return (
-    <div className="h-full flex flex-col">
-      {/* Stats Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mb-6">
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs text-gray-500 uppercase">Total</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
-            </div>
-            <Mail className="w-8 h-8 text-gray-400" />
-          </div>
+    <div className="h-full flex flex-col min-w-0">
+      <div className="flex flex-wrap gap-3 mb-6">
+        <div className={cn(STYLES.statsCard, "flex-1 min-w-[120px]")}>
+          <p className="text-xs text-gray-500 uppercase">Total</p>
+          <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
         </div>
-
-        <div className="bg-white rounded-lg border border-yellow-200 p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs text-yellow-600 uppercase">Pending</p>
-              <p className="text-2xl font-bold text-yellow-600">{stats.pending}</p>
-            </div>
-            <Clock className="w-8 h-8 text-yellow-400" />
-          </div>
+        <div className={cn(STYLES.statsCard, "flex-1 min-w-[120px] border-yellow-200")}>
+          <p className="text-xs text-yellow-600 uppercase">Pending</p>
+          <p className="text-2xl font-bold text-yellow-600">{stats.pending}</p>
         </div>
-
-        <div className="bg-white rounded-lg border border-green-200 p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs text-green-600 uppercase">Sent</p>
-              <p className="text-2xl font-bold text-green-600">{stats.sent}</p>
-            </div>
-            <CheckCircle className="w-8 h-8 text-green-400" />
-          </div>
+        <div className={cn(STYLES.statsCard, "flex-1 min-w-[120px] border-green-200")}>
+          <p className="text-xs text-green-600 uppercase">Sent</p>
+          <p className="text-2xl font-bold text-green-600">{stats.sent}</p>
         </div>
-
-        <div className="bg-white rounded-lg border border-red-200 p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs text-red-600 uppercase">Failed</p>
-              <p className="text-2xl font-bold text-red-600">{stats.failed}</p>
-            </div>
-            <XCircle className="w-8 h-8 text-red-400" />
-          </div>
+        <div className={cn(STYLES.statsCard, "flex-1 min-w-[120px] border-red-200")}>
+          <p className="text-xs text-red-600 uppercase">Failed</p>
+          <p className="text-2xl font-bold text-red-600">{stats.failed}</p>
         </div>
-
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs text-gray-500 uppercase">Cancelled</p>
-              <p className="text-2xl font-bold text-gray-500">{stats.cancelled}</p>
-            </div>
-            <AlertCircle className="w-8 h-8 text-gray-400" />
-          </div>
+        <div className={cn(STYLES.statsCard, "flex-1 min-w-[120px]")}>
+          <p className="text-xs text-gray-500 uppercase">Cancelled</p>
+          <p className="text-2xl font-bold text-gray-500">{stats.cancelled}</p>
         </div>
       </div>
 
@@ -146,8 +116,8 @@ export default async function EmailRemindersPage({
       </div>
 
       {/* Reminders Table */}
-      <div className="flex-1 min-h-0 bg-white rounded-lg border border-gray-200 overflow-hidden">
-        <div className="table-scroll-wrapper max-h-[calc(100vh-320px)]">
+      <div className="flex-1 min-h-0 min-w-0 bg-white rounded-lg border border-gray-200 overflow-hidden">
+        <div className="table-scroll-wrapper max-h-[calc(100vh-320px)] min-w-0">
         <table className={STYLES.table}>
           <thead className="bg-gray-50">
             <tr className={STYLES.tableHeadRow}>

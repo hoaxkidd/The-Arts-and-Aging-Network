@@ -560,7 +560,7 @@ export async function acceptInvitation(token: string, formData: FormData) {
     }
 
     // For volunteers, redirect to onboarding
-    const redirectUrl = invitation.role === 'VOLUNTEER' ? '/volunteers/onboarding?new=true' : null
+    const redirectUrl = invitation.role === 'VOLUNTEER' ? '/volunteer/onboarding?new=true' : null
     
     return { success: true, redirectUrl }
   } catch (error) {

@@ -217,11 +217,11 @@ export async function sendMessage(
     revalidatePath('/staff/inbox')
     revalidatePath('/facilitator/inbox')
     revalidatePath('/board/inbox')
-    revalidatePath('/volunteers/inbox')
+    revalidatePath('/volunteer/inbox')
     revalidatePath(`/staff/inbox/${recipient?.userCode || recipientId}`)
     revalidatePath(`/facilitator/inbox/${recipient?.userCode || recipientId}`)
     revalidatePath(`/board/inbox/${recipient?.userCode || recipientId}`)
-    revalidatePath(`/volunteers/inbox/${recipient?.userCode || recipientId}`)
+    revalidatePath(`/volunteer/inbox/${recipient?.userCode || recipientId}`)
 
     return { success: true, message }
   } catch (error) {

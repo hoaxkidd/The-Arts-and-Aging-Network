@@ -8,12 +8,10 @@ export default async function VolunteersLayout({
   children: React.ReactNode
 }) {
   const session = await auth()
-  const roles = Array.isArray(session?.user?.roles) ? session.user.roles : (session?.user?.role ? [session.user.role] : [])
-  const hasVolunteerRole = roles.includes('VOLUNTEER')
-  
-  if (hasVolunteerRole && session?.user?.volunteerReviewStatus !== 'APPROVED') {
-    redirect("/volunteers/onboarding")
+  if (!session?.user?.id) {
+    redirect('/login')
   }
+  // Volunteer approval + /volunteer/* gating is enforced in middleware to avoid duplicate redirects/loops.
 
   return (
     <DashboardLayout role="VOLUNTEER" title="Volunteer Portal">

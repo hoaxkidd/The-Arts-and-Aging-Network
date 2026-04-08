@@ -53,7 +53,7 @@ export default async function AdminMessagingPage() {
   })
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col min-w-0">
       <div className="flex-shrink-0 mb-6 flex items-center justify-end">
         <Link
           href="/admin/messaging/new"
@@ -65,18 +65,18 @@ export default async function AdminMessagingPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-6">
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
+      <div className="flex flex-wrap gap-3 mb-6 min-w-0">
+        <div className={cn(STYLES.statsCard, "flex-1 min-w-[140px]")}>
           <p className="text-xs text-gray-500 uppercase">Total Groups</p>
           <p className="text-2xl font-bold text-gray-900">{groups.length}</p>
         </div>
-        <div className="bg-white rounded-lg border border-blue-200 p-4">
+        <div className={cn(STYLES.statsCard, "flex-1 min-w-[140px] border-blue-200")}>
           <p className="text-xs text-blue-600 uppercase">Total Members</p>
           <p className="text-2xl font-bold text-blue-600">
             {groups.reduce((sum, g) => sum + g._count.members, 0)}
           </p>
         </div>
-        <div className="bg-white rounded-lg border border-yellow-200 p-4">
+        <div className={cn(STYLES.statsCard, "flex-1 min-w-[140px] border-yellow-200")}>
           <p className="text-xs text-yellow-600 uppercase">Pending Requests</p>
           <p className="text-2xl font-bold text-yellow-600">{pendingRequests.length}</p>
         </div>

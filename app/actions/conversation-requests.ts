@@ -198,7 +198,7 @@ export async function approveConversationRequest(requestId: string) {
     revalidatePath('/staff/inbox')
     revalidatePath('/facilitator/inbox')
     revalidatePath('/board/inbox')
-    revalidatePath('/volunteers/inbox')
+    revalidatePath('/volunteer/inbox')
 
     return { success: true }
   } catch (error) {
