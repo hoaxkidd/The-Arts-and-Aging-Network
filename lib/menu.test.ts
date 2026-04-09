@@ -5,12 +5,11 @@ import {
   adminNavHrefIsActive,
 } from './menu'
 
-const FROZEN_22 = [
+const FROZEN_21 = [
   '/admin',
   '/admin/audit-log',
   '/admin/financials',
   '/admin/events',
-  '/admin/event-requests',
   '/admin/broadcasts',
   '/admin/email-reminders',
   '/admin/communication',
@@ -31,12 +30,12 @@ const FROZEN_22 = [
 ] as const
 
 describe('adminNavGroups', () => {
-  it('has exactly 22 unique child hrefs matching frozen list', () => {
+  it('has exactly 21 unique child hrefs matching frozen list', () => {
     const flat = adminNavGroups.flatMap((g) => g.children.map((c) => c.href))
-    expect(new Set(flat).size).toBe(22)
-    expect(flat.length).toBe(22)
-    expect(new Set(flat)).toEqual(new Set(FROZEN_22))
-    expect([...CANONICAL_ADMIN_NAV_HREFS].sort()).toEqual([...FROZEN_22].sort())
+    expect(new Set(flat).size).toBe(21)
+    expect(flat.length).toBe(21)
+    expect(new Set(flat)).toEqual(new Set(FROZEN_21))
+    expect([...CANONICAL_ADMIN_NAV_HREFS].sort()).toEqual([...FROZEN_21].sort())
   })
 
   it('has 8 groups', () => {

@@ -36,7 +36,7 @@ export type AdminNavChild = {
   icon: LucideIcon
 }
 
-/** Collapsible admin sidebar group with nested links (8 groups, 22 routes). */
+/** Collapsible admin sidebar group with nested links (8 groups, 21 routes). */
 export type AdminNavGroup = {
   id: string
   label: string
@@ -45,7 +45,7 @@ export type AdminNavGroup = {
 }
 
 /**
- * Admin IA: 8 top-level groups, 22 destinations — every href must stay in sync with App Router.
+ * Admin IA: 8 top-level groups, 21 destinations — every href must stay in sync with App Router.
  */
 export const adminNavGroups: AdminNavGroup[] = [
   {
@@ -60,7 +60,6 @@ export const adminNavGroups: AdminNavGroup[] = [
     icon: Calendar,
     children: [
       { label: "Event Management", href: "/admin/events", icon: Calendar },
-      { label: "Event Requests", href: "/admin/event-requests", icon: ClipboardList },
       { label: "Broadcasts", href: "/admin/broadcasts", icon: Mail },
       { label: "Email Reminders", href: "/admin/email-reminders", icon: Mail },
     ],
@@ -126,7 +125,7 @@ export const adminNavGroups: AdminNavGroup[] = [
   },
 ]
 
-/** Frozen list of 22 sidebar hrefs (merge / QA parity). */
+/** Frozen list of 21 sidebar hrefs (merge / QA parity). */
 export const CANONICAL_ADMIN_NAV_HREFS: readonly string[] = adminNavGroups.flatMap((g) =>
   g.children.map((c) => c.href)
 ) as readonly string[]
@@ -152,7 +151,7 @@ export function getAdminNavGroupIdForPath(pathname: string): string | null {
   return null
 }
 
-/** Flat list of all admin links — backward compatible with code expecting 22 rows. */
+/** Flat list of all admin links — backward compatible with grouped nav consumers. */
 export const adminMenu: MenuItem[] = adminNavGroups.flatMap((g) =>
   g.children.map((c) => ({
     label: c.label,

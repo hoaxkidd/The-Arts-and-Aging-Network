@@ -9,7 +9,6 @@ const HREF_TO_APP_PAGE: Record<string, string> = {
   '/admin/audit-log': 'app/admin/audit-log/page.tsx',
   '/admin/financials': 'app/admin/financials/page.tsx',
   '/admin/events': 'app/admin/events/page.tsx',
-  '/admin/event-requests': 'app/admin/event-requests/page.tsx',
   '/admin/broadcasts': 'app/admin/broadcasts/page.tsx',
   '/admin/email-reminders': 'app/admin/email-reminders/page.tsx',
   '/admin/communication': 'app/admin/communication/page.tsx',
@@ -33,7 +32,7 @@ describe('admin nav route files exist', () => {
   const root = process.cwd()
 
   it('maps every canonical href to a page file', () => {
-    expect(Object.keys(HREF_TO_APP_PAGE).length).toBe(22)
+    expect(Object.keys(HREF_TO_APP_PAGE).length).toBe(21)
     expect(new Set(Object.keys(HREF_TO_APP_PAGE))).toEqual(new Set(CANONICAL_ADMIN_NAV_HREFS))
   })
 
