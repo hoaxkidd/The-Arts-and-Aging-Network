@@ -39,15 +39,6 @@ export default authMiddleware((req: NextRequest & { auth: unknown }) => {
     })
   }
 
-  // Canonicalize legacy plural volunteer namespace to singular
-  if (pathname === '/volunteers' || pathname.startsWith('/volunteers/')) {
-    const suffix = pathname.slice('/volunteers'.length)
-    const dest = `/volunteer${suffix || ''}`
-    const url = req.nextUrl.clone()
-    url.pathname = dest
-    return NextResponse.redirect(url)
-  }
-
   // Canonicalize legacy /staff URLs for role-specific namespaces
   if (isLoggedIn && pathname.startsWith('/staff') && (activeRole === 'FACILITATOR' || activeRole === 'BOARD' || activeRole === 'PARTNER')) {
     const roleBase = getStaffBasePathForRole(activeRole)
@@ -301,7 +292,6 @@ export const config = {
     '/board/:path*',
     '/partner/:path*',
     '/volunteer/:path*',
-    '/volunteers/:path*',
     '/events/:path*',
     '/notifications/:path*',
   ],

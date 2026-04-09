@@ -19,6 +19,7 @@ import {
 import { cn } from '@/lib/utils'
 import { STYLES } from '@/lib/styles'
 import { requestExistingEvent } from '@/app/actions/event-requests'
+import { toast } from 'sonner'
 
 interface CalendarEvent {
   id: string
@@ -46,7 +47,6 @@ function DateEventsPopup({
   onCreateEvent: () => void
 }) {
   const isPastDate = date < new Date(new Date().setHours(0, 0, 0, 0))
-  const hasUpcomingEvents = events.some(e => new Date(e.endDateTime) >= new Date())
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -80,41 +80,46 @@ function DateEventsPopup({
                 const eventStart = new Date(event.startDateTime)
                 const eventEnd = new Date(event.endDateTime)
                 const isPastEvent = eventEnd < new Date()
+                const spansMultipleDays = eventStart.toDateString() !== eventEnd.toDateString()
 
                 const getStatusConfig = () => {
                   if (isPastEvent) {
                     return {
-                      color: 'bg-gray-400',
-                      bg: 'bg-gray-50 border-gray-200',
-                      text: 'text-gray-600',
+                      color: 'bg-gray-500',
+                      bg: 'bg-white border-gray-200',
+                      text: 'text-gray-700',
                       label: 'Past Event',
-                      icon: <Clock className="w-3.5 h-3.5" />
+                      dot: 'bg-gray-500',
+                      icon: <Clock className="w-4 h-4" />
                     }
                   }
                   if (event.myRequestStatus === 'APPROVED') {
                     return {
                       color: 'bg-green-500',
-                      bg: 'bg-green-50 border-green-200',
+                      bg: 'bg-white border-green-200',
                       text: 'text-green-700',
                       label: 'Participating',
-                      icon: <CheckCircle className="w-3.5 h-3.5" />
+                      dot: 'bg-green-500',
+                      icon: <CheckCircle className="w-4 h-4" />
                     }
                   }
                   if (event.myRequestStatus === 'PENDING') {
                     return {
                       color: 'bg-yellow-500',
-                      bg: 'bg-yellow-50 border-yellow-200',
+                      bg: 'bg-white border-yellow-200',
                       text: 'text-yellow-700',
-                      label: 'Pending',
-                      icon: <Clock className="w-3.5 h-3.5" />
+                      label: 'Pending Request',
+                      dot: 'bg-yellow-500',
+                      icon: <Clock className="w-4 h-4" />
                     }
                   }
                   return {
                     color: 'bg-blue-500',
-                    bg: 'bg-blue-50 border-blue-200',
+                    bg: 'bg-white border-blue-200',
                     text: 'text-blue-700',
                     label: 'Available',
-                    icon: <Calendar className="w-3.5 h-3.5" />
+                    dot: 'bg-blue-500',
+                    icon: <Calendar className="w-4 h-4" />
                   }
                 }
 
@@ -125,40 +130,54 @@ function DateEventsPopup({
                     key={event.id}
                     onClick={() => onEventClick(event)}
                     className={cn(
-                      "w-full rounded-xl border text-left transition-all hover:shadow-md hover:-translate-y-0.5",
-                      statusConfig.bg
+                      "w-full rounded-xl border-2 text-left transition-all hover:shadow-md hover:-translate-y-0.5",
+                      statusConfig.bg,
+                      "hover:border-primary-300"
                     )}
                   >
-                    {/* Time header strip */}
-                    <div className={cn("px-4 py-2 flex items-center gap-2", statusConfig.color)}>
-                      <Clock className="w-4 h-4 text-white" />
-                      <span className="text-sm font-semibold text-white">
-                        {eventStart.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })} - 
-                        {eventEnd.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
-                      </span>
-                    </div>
+                    {/* Status bar */}
+                    <div className={cn("h-1.5 rounded-t-[10px]", statusConfig.color)} />
                     
-                    {/* Event details */}
+                    {/* Event content */}
                     <div className="p-4">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="min-w-0 flex-1">
-                          <h3 className="font-semibold text-gray-900 truncate">{event.title}</h3>
-                          {event.location && (
-                            <div className="flex items-center gap-1.5 mt-1 text-sm text-gray-500">
-                              <MapPin className="w-3.5 h-3.5" />
-                              <span className="truncate">{event.location.name}</span>
-                            </div>
-                          )}
-                        </div>
-                        <ExternalLink className="w-5 h-5 text-gray-400 flex-shrink-0" />
+                      {/* Status badge */}
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className={cn("w-2 h-2 rounded-full", statusConfig.dot)} />
+                        <span className={cn("text-xs font-semibold", statusConfig.text)}>
+                          {statusConfig.label}
+                        </span>
                       </div>
                       
-                      {/* Status badge */}
-                      <div className="mt-3 flex items-center justify-between">
-                        <span className={cn("inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold", statusConfig.color, "bg-white/80")}>
-                          <span className={statusConfig.text}>{statusConfig.icon}</span>
-                          <span className={statusConfig.text}>{statusConfig.label}</span>
-                        </span>
+                      {/* Start Date + Time */}
+                      <div className="space-y-2 text-xs text-gray-600">
+                        <div className="flex items-start gap-2">
+                          <Calendar className="w-4 h-4 mt-0.5 shrink-0 text-primary-600" />
+                          <span className="break-words min-w-0 font-medium">
+                            {eventStart.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })} at {eventStart.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+                          </span>
+                        </div>
+                        <div className="flex items-start gap-2">
+                          <Clock className="w-4 h-4 mt-0.5 shrink-0 text-gray-500" />
+                          <span className="break-words min-w-0">
+                            Ends: {eventEnd.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })} at {eventEnd.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+                          </span>
+                        </div>
+                        {event.location && (
+                          <div className="flex items-start gap-2">
+                            <MapPin className="w-4 h-4 mt-0.5 shrink-0 text-gray-500" />
+                            <span className="break-words min-w-0">{event.location.name}</span>
+                          </div>
+                        )}
+                        {spansMultipleDays && (
+                          <p className="text-xs text-amber-700 bg-amber-50 border border-amber-100 rounded-lg px-3 py-1.5 font-medium">
+                            ⚡ Multi-day event
+                          </p>
+                        )}
+                      </div>
+                      
+                      {/* Event title */}
+                      <div className="mt-3">
+                        <h3 className="font-semibold text-gray-900">{event.title}</h3>
                       </div>
                     </div>
                   </button>
@@ -169,12 +188,10 @@ function DateEventsPopup({
             /* Empty State */
             <div className="text-center py-8">
               <div className="w-20 h-20 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <svg className="w-10 h-10 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
+                <Calendar className="w-10 h-10 text-gray-400" />
               </div>
-              <h3 className="font-semibold text-gray-900 mb-1">Empty Day</h3>
-              <p className="text-sm text-gray-500 mb-5">No events scheduled for this day.</p>
+              <h3 className="font-semibold text-gray-900 mb-1">No events scheduled</h3>
+              <p className="text-sm text-gray-500 mb-5">There are no events on this day.</p>
               
               {!isPastDate && (
                 <button
@@ -194,7 +211,7 @@ function DateEventsPopup({
           <div className="px-4 py-3 border-t border-gray-100 bg-gray-50">
             <button
               onClick={onCreateEvent}
-              className="w-full px-4 py-3 bg-primary-500 text-white rounded-xl font-medium hover:bg-primary-600 transition-colors flex items-center justify-center gap-2"
+              className="w-full px-4 py-3 bg-primary-500 text-white rounded-xl font-medium hover:bg-primary-600 transition-colors flex items-center justify-center gap-2 shadow-sm"
             >
               <Plus className="w-5 h-5" />
               Request Custom Event
@@ -246,50 +263,53 @@ function RequestEventModal({
         </div>
 
         {/* Event Info */}
-        <div className="p-6 space-y-4">
-          <div className="bg-gray-50 rounded-lg p-4">
-            <h3 className="font-semibold text-gray-900">{event.title}</h3>
-            <div className="flex items-center gap-3 mt-2 text-sm text-gray-500">
-              <span className="flex items-center gap-1">
-                <Calendar className="w-3 h-3" />
+        <div className="p-6 space-y-5">
+          <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="px-2 py-0.5 bg-primary-100 text-primary-700 text-xs font-semibold rounded">Event Details</span>
+            </div>
+            <h3 className="font-semibold text-gray-900 text-base">{event.title}</h3>
+            <div className="flex flex-wrap items-center gap-4 mt-3 text-sm text-gray-600">
+              <span className="flex items-center gap-1.5">
+                <Calendar className="w-4 h-4 text-primary-600" />
                 {eventDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
               </span>
-              <span className="flex items-center gap-1">
-                <Clock className="w-3 h-3" />
+              <span className="flex items-center gap-1.5">
+                <Clock className="w-4 h-4 text-gray-500" />
                 {eventDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
               </span>
             </div>
             {event.location && (
-              <p className="text-sm text-gray-500 mt-1 flex items-center gap-1">
-                <MapPin className="w-3 h-3" />
+              <p className="text-sm text-gray-500 mt-2 flex items-center gap-1.5">
+                <MapPin className="w-4 h-4 text-gray-400" />
                 {event.location.name}
               </p>
             )}
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Expected Attendees
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Expected Attendees <span className="text-gray-400 font-normal">(Optional)</span>
             </label>
             <input
               type="number"
               min="1"
               value={expectedAttendees}
               onChange={(e) => setExpectedAttendees(e.target.value)}
-              className={STYLES.input}
-              placeholder="Number of residents"
+              className={cn(STYLES.input, "w-full")}
+              placeholder="Number of residents expected to attend"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Notes (Optional)
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Notes <span className="text-gray-400 font-normal">(Optional)</span>
             </label>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              className={cn(STYLES.input, "h-20 resize-none")}
-              placeholder="Any special requirements or notes for the administrator..."
+              className={cn(STYLES.input, "h-24 resize-none w-full")}
+              placeholder="Any special requirements, dietary needs, or notes for the administrator..."
             />
           </div>
 
@@ -298,14 +318,14 @@ function RequestEventModal({
             <button
               onClick={onClose}
               disabled={isPending}
-              className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50"
+              className="flex-1 px-4 py-3 border border-gray-300 rounded-xl text-gray-700 font-semibold hover:bg-gray-50 transition-colors"
             >
               Cancel
             </button>
             <button
               onClick={() => onSubmit(notes, expectedAttendees ? parseInt(expectedAttendees) : undefined)}
               disabled={isPending}
-              className={cn(STYLES.btn, STYLES.btnPrimary, "flex-1 flex items-center justify-center gap-2")}
+              className="flex-1 px-4 py-3 bg-primary-500 text-white rounded-xl font-semibold hover:bg-primary-600 transition-colors flex items-center justify-center gap-2 shadow-sm"
             >
               {isPending ? (
                 <>
@@ -365,29 +385,31 @@ export function HomeCalendarView({
   const TOTAL_CELLS = 42
   const ROWS = 6
 
-  // Generate calendar grid with 42 cells total
-  const days: { date: Date | null; key: string; isPadding: boolean }[] = []
+  // Generate calendar grid with 42 real date cells (including adjacent months)
+  const days: { date: Date; key: string; isCurrentMonth: boolean }[] = []
   const currentMonth = currentDate.getMonth()
   const currentYear = currentDate.getFullYear()
-  
-  // Add empty cells before the month starts
+
+  const prevMonthDays = getDaysInMonth(currentYear, currentMonth - 1)
+
+  // Add leading days from previous month
   for (let i = 0; i < firstDay; i++) {
-    days.push({ date: null, key: `empty-start-${i}`, isPadding: true })
+    const dayNum = prevMonthDays - firstDay + i + 1
+    const date = new Date(currentYear, currentMonth - 1, dayNum)
+    days.push({ date, key: `prev-${date.toISOString()}`, isCurrentMonth: false })
   }
   
   // Add days of the month
   for (let i = 1; i <= daysInMonth; i++) {
-    days.push({ 
-      date: new Date(currentYear, currentMonth, i),
-      key: `day-${currentYear}-${currentMonth}-${i}`,
-      isPadding: false
-    })
+    const date = new Date(currentYear, currentMonth, i)
+    days.push({ date, key: `cur-${date.toISOString()}`, isCurrentMonth: true })
   }
   
-  // Add padding cells at the end to complete 42 cells
+  // Add trailing days from next month to complete 42 cells
   const paddingNeeded = TOTAL_CELLS - days.length
   for (let i = 0; i < paddingNeeded; i++) {
-    days.push({ date: null, key: `empty-end-${i}`, isPadding: true })
+    const date = new Date(currentYear, currentMonth + 1, i + 1)
+    days.push({ date, key: `next-${date.toISOString()}`, isCurrentMonth: false })
   }
 
   const handlePrevMonth = () => {
@@ -479,7 +501,7 @@ export function HomeCalendarView({
       })
 
       if (result.error) {
-        alert(result.error)
+        toast.error(result.error)
       } else {
         setSelectedEvent(null)
         router.refresh()
@@ -539,7 +561,7 @@ export function HomeCalendarView({
         {/* Header */}
         <div className="flex-shrink-0 px-4 py-3 border-b border-gray-200 flex items-center justify-between bg-gray-50/50">
           <h2 className="text-base font-semibold text-gray-900">
-            {currentDate.toLocaleDateString('default', { month: 'long', year: 'numeric' })}
+            {currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
           </h2>
           <div className="flex items-center gap-1">
             <button
@@ -568,20 +590,26 @@ export function HomeCalendarView({
 
         {/* Calendar Grid - 6 rows × 7 columns = 42 cells, all equal size */}
         <div className="flex-1 min-h-0 p-3 overflow-hidden">
-          <div 
-            className="h-full grid grid-cols-7 grid-rows-6 gap-2"
+          <div
+            className="h-full min-h-full grid grid-cols-7 gap-2"
+            style={{ gridTemplateRows: 'repeat(6, minmax(0, 1fr))' }}
           >
           {days.map((day) => {
             const date = day.date
-            const dateEvents = date ? getEventsForDate(date) : []
-            const isToday = date?.toDateString() === new Date().toDateString()
-            const isPast = date ? date < new Date(new Date().setHours(0, 0, 0, 0)) : false
-            const isFuture = date ? date >= new Date(new Date().setHours(0, 0, 0, 0)) : false
-            const dateStatus = date ? getDateStatus(date) : null
+            const dateEvents = getEventsForDate(date)
+            const isToday = date.toDateString() === new Date().toDateString()
+            const isPast = date < new Date(new Date().setHours(0, 0, 0, 0))
+            const isFuture = date >= new Date(new Date().setHours(0, 0, 0, 0))
+            const dateStatus = getDateStatus(date)
             const hasEvents = dateEvents.length > 0
 
             const getCellBackground = () => {
-              if (!date) return 'bg-gray-100/30'
+              if (!day.isCurrentMonth) {
+                if (dateStatus === 'approved') return 'bg-green-50/70 hover:bg-green-100/80'
+                if (dateStatus === 'pending') return 'bg-yellow-50/70 hover:bg-yellow-100/80'
+                if (dateStatus === 'available') return 'bg-blue-50/70 hover:bg-blue-100/80'
+                return 'bg-gray-50 hover:bg-gray-100'
+              }
               if (!hasEvents) return isPast ? 'bg-gray-100/50' : 'bg-gray-50 hover:bg-gray-100'
               if (dateStatus === 'approved') return 'bg-green-50 hover:bg-green-100'
               if (dateStatus === 'pending') return 'bg-yellow-50 hover:bg-yellow-100'
@@ -592,21 +620,28 @@ export function HomeCalendarView({
             return (
               <div
                 key={day.key}
-                onClick={() => date && (hasEvents || isFuture) && handleDateClick(date)}
+                onClick={() => (hasEvents || isFuture) && handleDateClick(date)}
                 className={cn(
-                  "min-h-0 rounded-lg transition-all relative flex flex-col overflow-hidden",
-                  day.isPadding ? 'invisible' : getCellBackground(),
-                  date && (hasEvents || isFuture) ? 'cursor-pointer hover:shadow-md' : 'cursor-default'
+                  "h-full min-h-0 rounded-lg transition-all relative flex flex-col overflow-hidden",
+                  getCellBackground(),
+                  (hasEvents || isFuture) ? 'cursor-pointer hover:shadow-md' : 'cursor-default'
                 )}
               >
-                {date && (
-                  <>
+                <>
                     {/* Date number */}
                     <div className="flex items-center justify-between p-2">
                       <div className={cn(
                         "text-sm font-bold flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-full",
                         isToday
                           ? 'bg-primary-600 text-white'
+                          : !day.isCurrentMonth
+                          ? dateStatus === 'approved'
+                            ? 'text-green-600 bg-green-100/80'
+                            : dateStatus === 'pending'
+                            ? 'text-yellow-700 bg-yellow-100/80'
+                            : dateStatus === 'available'
+                            ? 'text-blue-600 bg-blue-100/80'
+                            : 'text-gray-400 bg-gray-100'
                           : dateStatus === 'approved'
                           ? 'text-green-700 bg-green-100'
                           : dateStatus === 'pending'
@@ -663,7 +698,6 @@ export function HomeCalendarView({
                       )}
                     </div>
                   </>
-                )}
               </div>
             )
           })}
@@ -714,11 +748,12 @@ export function HomeCalendarView({
                   const eventStart = new Date(event.startDateTime)
                   const eventEnd = new Date(event.endDateTime)
                   const isPastEvent = eventEnd < new Date()
+                  const spansMultipleDays = eventStart.toDateString() !== eventEnd.toDateString()
 
                   const getStatusConfig = () => {
                     if (isPastEvent) {
                       return {
-                        color: 'bg-gray-400',
+                        color: 'bg-gray-500',
                         bg: 'bg-gray-50 border-gray-200',
                         text: 'text-gray-600',
                         label: 'Past Event',
@@ -762,40 +797,56 @@ export function HomeCalendarView({
                         handleEventFromPopup(event)
                       }}
                       className={cn(
-                        "w-full rounded-xl border text-left transition-all hover:shadow-md hover:-translate-y-0.5",
-                        statusConfig.bg
+                        "w-full rounded-xl border-2 text-left transition-all hover:shadow-md hover:-translate-y-0.5",
+                        isPastEvent
+                          ? "bg-gray-50 border-gray-200"
+                          : statusConfig.bg,
+                        "hover:border-primary-300"
                       )}
                     >
-                      {/* Time header strip */}
-                      <div className={cn("px-4 py-2 flex items-center gap-2", statusConfig.color)}>
-                        <Clock className="w-4 h-4 text-white" />
-                        <span className="text-sm font-semibold text-white">
-                          {eventStart.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })} - 
-                          {eventEnd.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
-                        </span>
-                      </div>
+                      {/* Status bar */}
+                      <div className={cn("h-1.5 rounded-t-[10px]", statusConfig.color)} />
                       
-                      {/* Event details */}
-                      <div className="p-4">
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="min-w-0 flex-1">
-                            <h3 className="font-semibold text-gray-900 truncate">{event.title}</h3>
-                            {event.location && (
-                              <div className="flex items-center gap-1.5 mt-1 text-sm text-gray-500">
-                                <MapPin className="w-3.5 h-3.5" />
-                                <span className="truncate">{event.location.name}</span>
-                              </div>
-                            )}
+                       {/* Event content */}
+                       <div className="p-4">
+                         {/* Status badge */}
+                         <div className="flex items-center gap-2 mb-2">
+                           <span className={cn("w-2 h-2 rounded-full", statusConfig.color.replace('bg-', 'bg-'))} />
+                           <span className={cn("text-xs font-semibold", statusConfig.text)}>
+                             {statusConfig.label}
+                           </span>
+                         </div>
+                        
+                        {/* Start/End Date + Time */}
+                        <div className="space-y-2 text-xs text-gray-600">
+                          <div className="flex items-start gap-2">
+                            <Calendar className="w-4 h-4 mt-0.5 shrink-0 text-primary-600" />
+                            <span className="break-words min-w-0 font-medium">
+                              {eventStart.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })} at {eventStart.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+                            </span>
                           </div>
-                          <ExternalLink className="w-5 h-5 text-gray-400 flex-shrink-0" />
+                          <div className="flex items-start gap-2">
+                            <Clock className="w-4 h-4 mt-0.5 shrink-0 text-gray-500" />
+                            <span className="break-words min-w-0">
+                              Ends: {eventEnd.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })} at {eventEnd.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+                            </span>
+                          </div>
+                          {event.location && (
+                            <div className="flex items-start gap-2">
+                              <MapPin className="w-4 h-4 mt-0.5 shrink-0 text-gray-500" />
+                              <span className="break-words min-w-0">{event.location.name}</span>
+                            </div>
+                          )}
+                          {spansMultipleDays && (
+                            <p className="text-xs text-amber-700 bg-amber-50 border border-amber-100 rounded-lg px-3 py-1.5 font-medium">
+                              ⚡ Multi-day event
+                            </p>
+                          )}
                         </div>
                         
-                        {/* Status badge */}
-                        <div className="mt-3 flex items-center justify-between">
-                          <span className={cn("inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold", statusConfig.color, "bg-white/80")}>
-                            <span className={statusConfig.text}>{statusConfig.icon}</span>
-                            <span className={statusConfig.text}>{statusConfig.label}</span>
-                          </span>
+                        {/* Event title */}
+                        <div className="mt-3">
+                          <h3 className="font-semibold text-gray-900">{event.title}</h3>
                         </div>
                       </div>
                     </button>

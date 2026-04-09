@@ -81,7 +81,7 @@ describe('middleware.ts - Role-Based Redirect Logic', () => {
       case 'ADMIN': return '/admin'
       case 'PAYROLL': return '/payroll'
       case 'HOME_ADMIN': return '/dashboard'
-      case 'VOLUNTEER': return '/volunteers'
+      case 'VOLUNTEER': return '/volunteer'
       case 'FACILITATOR': return '/facilitator'
       case 'BOARD': return '/board'
       case 'PARTNER': return '/staff'
@@ -102,8 +102,8 @@ describe('middleware.ts - Role-Based Redirect Logic', () => {
       expect(getRoleRedirect('HOME_ADMIN')).toBe('/dashboard')
     })
 
-    it('should redirect VOLUNTEER to /volunteers', () => {
-      expect(getRoleRedirect('VOLUNTEER')).toBe('/volunteers')
+    it('should redirect VOLUNTEER to /volunteer', () => {
+      expect(getRoleRedirect('VOLUNTEER')).toBe('/volunteer')
     })
 
     it('should redirect FACILITATOR to /facilitator', () => {

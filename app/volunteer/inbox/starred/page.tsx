@@ -1,2 +1,5 @@
-export { default } from "@/app/volunteers/inbox/starred/page"
+import { redirect } from "next/navigation"
 
+export default function VolunteerInboxStarredRedirectPage() {
+  redirect('/staff/inbox/starred')
+}

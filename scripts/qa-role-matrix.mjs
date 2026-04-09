@@ -7,13 +7,13 @@ const accounts = [
     email: 'facvol@artsandaging.com',
     description: 'primary FACILITATOR, secondary VOLUNTEER',
     expectedLanding: '/facilitator',
-    quickLinks: ['/facilitator', '/volunteers', '/staff/inbox'],
+    quickLinks: ['/facilitator', '/volunteer', '/staff/inbox'],
   },
   {
     email: 'payvol@artsandaging.com',
     description: 'primary PAYROLL, secondary VOLUNTEER',
     expectedLanding: '/payroll',
-    quickLinks: ['/payroll', '/volunteers', '/staff/inbox'],
+    quickLinks: ['/payroll', '/volunteer', '/staff/inbox'],
   },
   {
     email: 'boardonly@artsandaging.com',

@@ -168,7 +168,7 @@ describe('app/admin/volunteers/page.tsx - Email Content Logic', () => {
         <li>Track your hours and activities</li>
         <li>Connect with other volunteers</li>
       </ul>
-      <p>Log in to get started: <a href="/volunteers">Volunteer Portal</a></p>
+      <p>Log in to get started: <a href="/volunteer">Volunteer Portal</a></p>
       <p>Thank you for volunteering with us!</p>
     `
   }
@@ -186,7 +186,7 @@ describe('app/admin/volunteers/page.tsx - Email Content Logic', () => {
         <li>Add emergency contact information</li>
         <li>Verify your availability and skills</li>
       </ul>
-      <p>Update your profile: <a href="/volunteers/onboarding">Onboarding Page</a></p>
+      <p>Update your profile: <a href="/volunteer/onboarding">Onboarding Page</a></p>
       <p>If you have any questions, please contact us.</p>
     `
   }
@@ -204,7 +204,7 @@ describe('app/admin/volunteers/page.tsx - Email Content Logic', () => {
 
     it('should include volunteer portal link', () => {
       const email = generateApprovalEmail('Test')
-      expect(email).toContain('/volunteers')
+      expect(email).toContain('/volunteer')
     })
   })
 
@@ -221,7 +221,7 @@ describe('app/admin/volunteers/page.tsx - Email Content Logic', () => {
 
     it('should include onboarding link', () => {
       const email = generateCorrectionsEmail('Test')
-      expect(email).toContain('/volunteers/onboarding')
+      expect(email).toContain('/volunteer/onboarding')
     })
   })
 })

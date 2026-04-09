@@ -854,7 +854,7 @@ export async function updateVolunteerReviewStatus(userId: string, reviewStatus: 
 
   revalidatePath(`/admin/users/${userId}`)
   revalidatePath('/admin/users')
-  revalidatePath('/volunteers')
+  revalidatePath('/volunteer')
   return { success: true }
 }
 

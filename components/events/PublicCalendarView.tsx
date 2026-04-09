@@ -50,16 +50,15 @@ function DateEventsPopup({
   canCreate: boolean
 }) {
   const isPastDate = date < new Date(new Date().setHours(0, 0, 0, 0))
-  const hasUpcomingEvents = events.some(e => new Date(e.endDateTime) >= new Date())
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
       <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200">
         {/* Header */}
-        <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-blue-50 to-white">
+        <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-gray-50 to-white">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-blue-500 text-white flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl bg-primary-500 text-white flex items-center justify-center">
               <Calendar className="w-5 h-5" />
             </div>
             <div>
@@ -84,48 +83,56 @@ function DateEventsPopup({
                 const eventStart = new Date(event.startDateTime)
                 const eventEnd = new Date(event.endDateTime)
                 const isPastEvent = eventEnd < new Date()
+                const spansMultipleDays = eventStart.toDateString() !== eventEnd.toDateString()
 
                 return (
                   <button
                     key={event.id}
                     onClick={() => onEventClick(event)}
                     className={cn(
-                      "w-full rounded-xl border text-left transition-all hover:shadow-md hover:-translate-y-0.5",
+                      "w-full rounded-xl border-2 text-left transition-all hover:shadow-md hover:-translate-y-0.5",
                       isPastEvent
                         ? "bg-gray-50 border-gray-200"
-                        : "bg-blue-50 border-blue-200 hover:bg-blue-100"
+                        : "bg-white border-gray-200 hover:border-primary-300"
                     )}
                   >
-                    {/* Time header strip */}
-                    <div className={cn("px-4 py-2 flex items-center gap-2", isPastEvent ? "bg-gray-400" : "bg-blue-500")}>
-                      <Clock className="w-4 h-4 text-white" />
-                      <span className="text-sm font-semibold text-white">
-                        {eventStart.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })} - 
-                        {eventEnd.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
-                      </span>
-                    </div>
+                    {/* Status bar */}
+                    <div className={cn("h-1.5 rounded-t-[10px]", isPastEvent ? "bg-gray-400" : "bg-primary-500")} />
                     
-                    {/* Event details */}
+                    {/* Event content */}
                     <div className="p-4">
                       <div className="flex items-start justify-between gap-2">
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className={cn(
-                              "px-2 py-0.5 text-xs font-semibold rounded",
-                              isPastEvent ? "bg-gray-200 text-gray-600" : "bg-blue-100 text-blue-700"
-                            )}>
-                              {isPastEvent ? 'Past Event' : 'Upcoming'}
-                            </span>
-                          </div>
-                          <h3 className="font-semibold text-gray-900">{event.title}</h3>
-                          {event.location && (
-                            <div className="flex items-center gap-1.5 mt-1 text-sm text-gray-500">
-                              <MapPin className="w-3.5 h-3.5" />
-                              <span className="truncate">{event.location.name}</span>
-                            </div>
-                          )}
+                        <h3 className="font-semibold text-gray-900 text-sm leading-5 break-words line-clamp-2 min-w-0">{event.title}</h3>
+                        <span className="text-xs text-gray-500 flex items-center gap-1 shrink-0 bg-gray-100 px-2 py-1 rounded-full">
+                          <Calendar className="w-3 h-3" />
+                          Event
+                        </span>
+                      </div>
+
+                      <div className="mt-3 space-y-2 text-xs text-gray-600">
+                        <div className="flex items-start gap-2">
+                          <Calendar className="w-4 h-4 mt-0.5 shrink-0 text-primary-600" />
+                          <span className="break-words min-w-0 font-medium">
+                            {eventStart.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })} at {eventStart.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+                          </span>
                         </div>
-                        <ExternalLink className="w-5 h-5 text-gray-400 flex-shrink-0" />
+                        <div className="flex items-start gap-2">
+                          <Clock className="w-4 h-4 mt-0.5 shrink-0 text-gray-500" />
+                          <span className="break-words min-w-0">
+                            Ends: {eventEnd.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })} at {eventEnd.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+                          </span>
+                        </div>
+                        {event.location && (
+                          <div className="flex items-start gap-2">
+                            <MapPin className="w-4 h-4 mt-0.5 shrink-0 text-gray-500" />
+                            <span className="break-words min-w-0">{event.location.name}</span>
+                          </div>
+                        )}
+                        {spansMultipleDays && (
+                          <p className="text-xs text-amber-700 bg-amber-50 border border-amber-100 rounded-lg px-3 py-1.5 font-medium">
+                            ⚡ Multi-day event
+                          </p>
+                        )}
                       </div>
                     </div>
                   </button>
@@ -136,12 +143,10 @@ function DateEventsPopup({
             /* Empty State */
             <div className="text-center py-8">
               <div className="w-20 h-20 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <svg className="w-10 h-10 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
+                <Calendar className="w-10 h-10 text-gray-400" />
               </div>
-              <h3 className="font-semibold text-gray-900 mb-1">Empty Day</h3>
-              <p className="text-sm text-gray-500 mb-5">No events scheduled for this day.</p>
+              <h3 className="font-semibold text-gray-900 mb-1">No events scheduled</h3>
+              <p className="text-sm text-gray-500 mb-5">There are no events on this day.</p>
               
               {!isPastDate && canCreate && (
                 <button
@@ -161,10 +166,10 @@ function DateEventsPopup({
           <div className="px-4 py-3 border-t border-gray-100 bg-gray-50">
             <button
               onClick={onCreateEvent}
-              className="w-full px-4 py-3 bg-blue-500 text-white rounded-xl font-medium hover:bg-blue-600 transition-colors flex items-center justify-center gap-2"
+              className="w-full px-4 py-3 bg-primary-500 text-white rounded-xl font-medium hover:bg-primary-600 transition-colors flex items-center justify-center gap-2 shadow-sm"
             >
               <Plus className="w-5 h-5" />
-              Create Event for this Date
+              Create Event for This Date
             </button>
           </div>
         )}
@@ -184,8 +189,8 @@ export function PublicCalendarView({
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [moreEventsDate, setMoreEventsDate] = useState<Date | null>(null)
 
-  // Roles that can create events
-  const createEventRoles = ['ADMIN', 'HOME_ADMIN', 'FACILITATOR']
+  // Roles that can create events (ADMIN and HOME_ADMIN only)
+  const createEventRoles = ['ADMIN', 'HOME_ADMIN']
   const showCreateButton = canCreateEvents || createEventRoles.includes(userRole)
 
   // Filter events by search
@@ -211,29 +216,35 @@ export function PublicCalendarView({
   // Always use 6 rows × 7 columns = 42 cells for consistent sizing across all months
   const TOTAL_CELLS = 42
 
-  // Generate calendar grid with 42 cells total
-  const days: { date: Date | null; key: string; isPadding: boolean }[] = []
+  // Generate calendar grid with 42 real date cells (including adjacent months)
+  const days: { date: Date; key: string; isCurrentMonth: boolean }[] = []
   const currentMonth = currentDate.getMonth()
   const currentYear = currentDate.getFullYear()
-  
-  // Add empty cells before the month starts
+
+  const prevMonthDays = getDaysInMonth(currentYear, currentMonth - 1)
+
+  // Add leading days from previous month
   for (let i = 0; i < firstDay; i++) {
-    days.push({ date: null, key: `empty-start-${i}`, isPadding: true })
+    const dayNum = prevMonthDays - firstDay + i + 1
+    const date = new Date(currentYear, currentMonth - 1, dayNum)
+    days.push({ date, key: `prev-${date.toISOString()}`, isCurrentMonth: false })
   }
-  
+
   // Add days of the month
   for (let i = 1; i <= daysInMonth; i++) {
-    days.push({ 
-      date: new Date(currentYear, currentMonth, i),
-      key: `day-${currentYear}-${currentMonth}-${i}`,
-      isPadding: false
+    const date = new Date(currentYear, currentMonth, i)
+    days.push({
+      date,
+      key: `cur-${date.toISOString()}`,
+      isCurrentMonth: true
     })
   }
-  
-  // Add padding cells at the end to complete 42 cells
+
+  // Add trailing days from next month to complete 42 cells
   const paddingNeeded = TOTAL_CELLS - days.length
   for (let i = 0; i < paddingNeeded; i++) {
-    days.push({ date: null, key: `empty-end-${i}`, isPadding: true })
+    const date = new Date(currentYear, currentMonth + 1, i + 1)
+    days.push({ date, key: `next-${date.toISOString()}`, isCurrentMonth: false })
   }
 
   const handlePrevMonth = () => {
@@ -269,14 +280,20 @@ export function PublicCalendarView({
   const getCreateEventUrl = () => {
     if (userRole === 'ADMIN') return '/admin/events'
     if (userRole === 'HOME_ADMIN') return '/dashboard/requests/new'
-    if (userRole === 'FACILITATOR') return '/staff/events'
     return '/events'
   }
 
   const handleCreateEventFromPopup = () => {
     if (!selectedDate) return
+    const dateStr = selectedDate.toISOString().split('T')[0]
     setSelectedDate(null)
-    router.push(getCreateEventUrl())
+    if (userRole === 'ADMIN') {
+      router.push(`/admin/events/new?date=${dateStr}`)
+    } else if (userRole === 'HOME_ADMIN') {
+      router.push(`/dashboard/requests/new?date=${dateStr}`)
+    } else {
+      router.push(getCreateEventUrl())
+    }
   }
 
   return (
@@ -327,7 +344,7 @@ export function PublicCalendarView({
         {/* Header */}
         <div className="flex-shrink-0 px-4 py-3 border-b border-gray-200 flex items-center justify-between bg-gray-50/50">
           <h2 className="text-base font-semibold text-gray-900">
-            {currentDate.toLocaleDateString('default', { month: 'long', year: 'numeric' })}
+            {currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
           </h2>
           <div className="flex items-center gap-1">
             <button
@@ -356,20 +373,21 @@ export function PublicCalendarView({
 
         {/* Calendar Grid - 6 rows × 7 columns = 42 cells, all equal size */}
         <div className="flex-1 min-h-0 p-3 overflow-hidden">
-          <div 
-            className="h-full grid grid-cols-7 grid-rows-6 gap-2"
+          <div
+            className="h-full min-h-full grid grid-cols-7 gap-2"
+            style={{ gridTemplateRows: 'repeat(6, minmax(0, 1fr))' }}
           >
           {days.map((day) => {
             const date = day.date
-            const dateEvents = date ? getEventsForDate(date) : []
-            const isToday = date?.toDateString() === new Date().toDateString()
-            const isPast = date ? date < new Date(new Date().setHours(0, 0, 0, 0)) : false
-            const isFuture = date ? date >= new Date(new Date().setHours(0, 0, 0, 0)) : false
+            const dateEvents = getEventsForDate(date)
+            const isToday = date.toDateString() === new Date().toDateString()
+            const isPast = date < new Date(new Date().setHours(0, 0, 0, 0))
+            const isFuture = date >= new Date(new Date().setHours(0, 0, 0, 0))
             const hasEvents = dateEvents.length > 0
             const hasUpcoming = dateEvents.some(e => new Date(e.endDateTime) >= new Date())
 
             const getCellBackground = () => {
-              if (!date) return 'bg-gray-100/30'
+              if (!day.isCurrentMonth) return hasEvents ? 'bg-blue-50/70 hover:bg-blue-100/80' : 'bg-gray-50 hover:bg-gray-100'
               if (!hasEvents) return isPast ? 'bg-gray-100/50' : 'bg-gray-50 hover:bg-gray-100'
               if (hasUpcoming) return 'bg-blue-50 hover:bg-blue-100'
               return 'bg-gray-100 hover:bg-gray-200'
@@ -377,6 +395,7 @@ export function PublicCalendarView({
 
             const getDateStyle = () => {
               if (isToday) return 'bg-primary-600 text-white'
+              if (!day.isCurrentMonth) return hasEvents ? 'text-blue-600 bg-blue-100/80' : 'text-gray-400 bg-gray-100'
               if (hasUpcoming) return 'text-blue-700 bg-blue-100'
               if (isPast && !hasEvents) return 'text-gray-400'
               if (hasEvents) return 'text-gray-600 bg-gray-100'
@@ -386,15 +405,14 @@ export function PublicCalendarView({
             return (
               <div
                 key={day.key}
-                onClick={() => date && (hasEvents || (isFuture && showCreateButton)) && handleDateClick(date)}
+                onClick={() => (hasEvents || (isFuture && showCreateButton)) && handleDateClick(date)}
                 className={cn(
-                  "min-h-0 rounded-lg transition-all relative flex flex-col overflow-hidden",
-                  day.isPadding ? 'invisible' : getCellBackground(),
-                  date && (hasEvents || (isFuture && showCreateButton)) ? 'cursor-pointer hover:shadow-md' : 'cursor-default'
+                  "h-full min-h-0 rounded-lg transition-all relative flex flex-col overflow-hidden",
+                  getCellBackground(),
+                  (hasEvents || (isFuture && showCreateButton)) ? 'cursor-pointer hover:shadow-md' : 'cursor-default'
                 )}
               >
-                {date && (
-                  <>
+                <>
                     {/* Date number */}
                     <div className="flex items-center justify-between p-2">
                       <div className={cn(
@@ -440,7 +458,6 @@ export function PublicCalendarView({
                       )}
                     </div>
                   </>
-                )}
               </div>
             )
           })}
@@ -492,6 +509,7 @@ export function PublicCalendarView({
                   const eventStart = new Date(event.startDateTime)
                   const eventEnd = new Date(event.endDateTime)
                   const isPastEvent = eventEnd < new Date()
+                  const spansMultipleDays = eventStart.toDateString() !== eventEnd.toDateString()
 
                   return (
                     <button
@@ -534,6 +552,9 @@ export function PublicCalendarView({
                                 <MapPin className="w-3.5 h-3.5" />
                                 <span className="truncate">{event.location.name}</span>
                               </div>
+                            )}
+                            {spansMultipleDays && (
+                              <p className="text-xs text-gray-500 mt-1">Ends {eventEnd.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
                             )}
                           </div>
                           <ExternalLink className="w-5 h-5 text-gray-400 flex-shrink-0" />

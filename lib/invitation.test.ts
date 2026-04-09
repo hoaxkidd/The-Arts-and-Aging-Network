@@ -155,7 +155,7 @@ describe('Role-Based Redirect Logic', () => {
   const getRedirectUrl = (role: string): string | null => {
     switch (role) {
       case 'VOLUNTEER':
-        return '/volunteers/onboarding?new=true'
+        return '/volunteer/onboarding?new=true'
       case 'FACILITATOR':
         return '/facilitator'
       case 'BOARD':
@@ -174,7 +174,7 @@ describe('Role-Based Redirect Logic', () => {
   }
 
     it('should return onboarding URL for VOLUNTEER role', () => {
-      expect(getRedirectUrl('VOLUNTEER')).toBe('/volunteers/onboarding?new=true')
+      expect(getRedirectUrl('VOLUNTEER')).toBe('/volunteer/onboarding?new=true')
     })
 
     it('should return /facilitator URL for FACILITATOR role', () => {

@@ -126,8 +126,8 @@ describe('lib/onboarding.ts', () => {
   })
 
   describe('getOnboardingPath', () => {
-    it('should return /volunteers/onboarding for VOLUNTEER', () => {
-      expect(getOnboardingPath('VOLUNTEER')).toBe('/volunteers/onboarding')
+    it('should return /volunteer/onboarding for VOLUNTEER', () => {
+      expect(getOnboardingPath('VOLUNTEER')).toBe('/volunteer/onboarding')
     })
 
     it('should return /facilitator/onboarding for FACILITATOR', () => {

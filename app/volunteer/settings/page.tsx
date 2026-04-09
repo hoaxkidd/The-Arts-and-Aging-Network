@@ -1,2 +1,5 @@
-export { default } from "@/app/volunteers/settings/page"
+import { redirect } from "next/navigation"
 
+export default function VolunteerSettingsRedirectPage() {
+  redirect('/staff/settings')
+}

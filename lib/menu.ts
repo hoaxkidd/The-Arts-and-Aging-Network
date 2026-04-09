@@ -56,7 +56,7 @@ export const adminNavGroups: AdminNavGroup[] = [
   },
   {
     id: "events",
-    label: "Events & outreach",
+    label: "Events & Outreach",
     icon: Calendar,
     children: [
       { label: "Event Management", href: "/admin/events", icon: Calendar },
@@ -67,7 +67,7 @@ export const adminNavGroups: AdminNavGroup[] = [
   },
   {
     id: "finance",
-    label: "Finance & payroll",
+    label: "Finance & Payroll",
     icon: Receipt,
     children: [
       { label: "Financial Management", href: "/admin/financials", icon: Receipt },
@@ -77,7 +77,7 @@ export const adminNavGroups: AdminNavGroup[] = [
   },
   {
     id: "people",
-    label: "People & homes",
+    label: "People & Homes",
     icon: Users,
     children: [
       { label: "Homes", href: "/admin/homes", icon: Building },
@@ -96,7 +96,7 @@ export const adminNavGroups: AdminNavGroup[] = [
   },
   {
     id: "forms",
-    label: "Forms & content",
+    label: "Forms & Content",
     icon: FileText,
     children: [
       { label: "Testimonials", href: "/admin/testimonials", icon: Quote },
@@ -107,7 +107,7 @@ export const adminNavGroups: AdminNavGroup[] = [
   },
   {
     id: "inventory",
-    label: "Inventory & donors",
+    label: "Inventory & Donors",
     icon: Package,
     children: [
       { label: "Inventory", href: "/admin/inventory", icon: Package },
@@ -116,7 +116,7 @@ export const adminNavGroups: AdminNavGroup[] = [
   },
   {
     id: "system",
-    label: "System & account",
+    label: "System & Account",
     icon: Settings,
     children: [
       { label: "Audit Log", href: "/admin/audit-log", icon: FileSearch },

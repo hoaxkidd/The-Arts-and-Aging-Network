@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 
 // Test volunteer layout access control logic
-describe('app/volunteers/layout.tsx - Access Control Logic', () => {
+describe('app/volunteer/layout.tsx - Access Control Logic', () => {
   // Simulate the access check logic
   type SessionUser = {
     role?: string | null
@@ -71,7 +71,7 @@ describe('app/volunteers/layout.tsx - Access Control Logic', () => {
 })
 
 // Test volunteer page access control logic
-describe('app/volunteers/page.tsx - Access Control Logic', () => {
+describe('app/volunteer/page.tsx - Access Control Logic', () => {
   type UserData = {
     role?: string | null
     volunteerReviewStatus?: string | null
@@ -108,7 +108,7 @@ describe('app/volunteers/page.tsx - Access Control Logic', () => {
 })
 
 // Test volunteer forms page access control logic
-describe('app/volunteers/forms/page.tsx - Access Control Logic', () => {
+describe('app/volunteer/forms/page.tsx - Access Control Logic', () => {
   const shouldRedirectToOnboarding = (user: { role?: string; volunteerReviewStatus?: string } | null): boolean => {
     if (!user) return false
     if (user.role !== 'VOLUNTEER') return false
@@ -129,7 +129,7 @@ describe('app/volunteers/forms/page.tsx - Access Control Logic', () => {
 })
 
 // Test volunteer form fill access control logic
-describe('app/volunteers/forms/[id]/fill/page.tsx - Access Control Logic', () => {
+describe('app/volunteer/forms/[id]/fill/page.tsx - Access Control Logic', () => {
   const shouldRedirectToOnboarding = (user: { role?: string; volunteerReviewStatus?: string } | null): boolean => {
     if (!user) return false
     if (user.role !== 'VOLUNTEER') return false

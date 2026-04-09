@@ -15,6 +15,7 @@ import {
   CheckCircle,
   ExternalLink,
   Edit,
+  Eye,
   Users,
   AlertCircle
 } from 'lucide-react'
@@ -36,108 +37,160 @@ interface CalendarEvent {
 function DateEventsPopup({
   date,
   events,
+  userRole,
   onClose,
-  onEventClick,
+  onEditEvent,
+  onViewDetails,
   onCreateEvent
 }: {
   date: Date
   events: CalendarEvent[]
+  userRole: string
   onClose: () => void
-  onEventClick: (event: CalendarEvent) => void
+  onEditEvent: (event: CalendarEvent) => void
+  onViewDetails: (event: CalendarEvent) => void
   onCreateEvent: () => void
 }) {
   const isPastDate = date < new Date(new Date().setHours(0, 0, 0, 0))
+  const canCreateEvent = userRole === 'ADMIN'
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-white rounded-lg shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200">
         {/* Header */}
-        <div className="bg-gray-50 px-4 py-3 border-b border-gray-200 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Calendar className="w-4 h-4 text-primary-600" />
-            <h2 className="font-semibold text-gray-900">
-              {date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
-            </h2>
+        <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-gray-50 to-white">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-primary-500 text-white flex items-center justify-center">
+              <Calendar className="w-5 h-5" />
+            </div>
+            <div>
+              <h2 className="font-bold text-gray-900">
+                {date.toLocaleDateString('en-US', { weekday: 'long' })}
+              </h2>
+              <p className="text-sm text-gray-500">
+                {date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+              </p>
+            </div>
           </div>
-          <button onClick={onClose} className="p-1 hover:bg-gray-200 rounded">
-            <X className="w-4 h-4 text-gray-500" />
+          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-xl transition-colors">
+            <X className="w-5 h-5 text-gray-500" />
           </button>
         </div>
 
         {/* Events List */}
         <div className="p-4 max-h-[400px] overflow-auto">
           {events.length > 0 ? (
-            <div className="space-y-2">
+            <div className="space-y-3">
               {events.map(event => {
                 const eventStart = new Date(event.startDateTime)
                 const eventEnd = new Date(event.endDateTime)
                 const isPastEvent = eventEnd < new Date()
+                const spansMultipleDays = eventStart.toDateString() !== eventEnd.toDateString()
                 const attendeeCount = event.attendances.filter(a => a.status === 'YES').length
 
                 return (
-                  <button
+                  <div
                     key={event.id}
-                    onClick={() => onEventClick(event)}
                     className={cn(
-                      "w-full p-3 rounded-lg border text-left transition-all hover:shadow-sm group",
+                      "w-full rounded-xl border-2 text-left transition-all hover:shadow-md",
                       isPastEvent
-                        ? "bg-gray-50 border-gray-200 hover:bg-gray-100"
-                        : "bg-white border-gray-200 hover:border-primary-300 hover:bg-primary-50"
+                        ? "bg-gray-50 border-gray-200"
+                        : "bg-white border-gray-200 hover:border-primary-300 hover:-translate-y-0.5"
                     )}
                   >
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0">
-                        <h3 className="font-medium text-gray-900 text-sm truncate group-hover:text-primary-700">{event.title}</h3>
-                        <div className="flex items-center gap-3 mt-1 text-xs text-gray-500">
-                          <span className="flex items-center gap-1">
-                            <Clock className="w-3 h-3" />
-                            {eventStart.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
-                          </span>
-                          {event.location && (
-                            <span className="flex items-center gap-1 truncate">
-                              <MapPin className="w-3 h-3" />
-                              {event.location.name}
-                            </span>
-                          )}
-                           <span className="flex items-center gap-1 truncate">
-                              <Users className="w-3 h-3" />
-                              {attendeeCount}
-                            </span>
-                        </div>
+                    {/* Status indicator bar */}
+                    <div className={cn(
+                      "h-1.5 rounded-t-[10px]",
+                      isPastEvent ? "bg-gray-400" : "bg-primary-500"
+                    )} />
+                    
+                    {/* Event content */}
+                    <div className="p-4">
+                      <div className="flex items-start justify-between gap-2">
+                        <h3 className="font-semibold text-gray-900 text-sm leading-5 break-words line-clamp-2 min-w-0">{event.title}</h3>
+                        <span className="text-xs text-gray-500 flex items-center gap-1 shrink-0 bg-gray-100 px-2 py-1 rounded-full">
+                          <Users className="w-3 h-3" />
+                          {attendeeCount}
+                        </span>
                       </div>
-                      <Edit className="w-4 h-4 text-gray-400 group-hover:text-primary-600 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
+
+                      <div className="mt-3 space-y-2 text-xs text-gray-600">
+                        <div className="flex items-start gap-2">
+                          <Calendar className="w-4 h-4 mt-0.5 shrink-0 text-primary-600" />
+                          <span className="break-words min-w-0 font-medium">
+                            {eventStart.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })} at {eventStart.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+                          </span>
+                        </div>
+                        <div className="flex items-start gap-2">
+                          <Clock className="w-4 h-4 mt-0.5 shrink-0 text-gray-500" />
+                          <span className="break-words min-w-0">
+                            Ends: {eventEnd.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })} at {eventEnd.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+                          </span>
+                        </div>
+                        {event.location && (
+                          <div className="flex items-start gap-2">
+                            <MapPin className="w-4 h-4 mt-0.5 shrink-0 text-gray-500" />
+                            <span className="break-words min-w-0">{event.location.name}</span>
+                          </div>
+                        )}
+                        {spansMultipleDays && (
+                          <p className="text-xs text-amber-700 bg-amber-50 border border-amber-100 rounded-lg px-3 py-1.5 font-medium">
+                            ⚡ Multi-day event
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="mt-4 flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => onViewDetails(event)}
+                          className="flex-1 px-3 py-2 text-sm font-semibold rounded-lg border border-blue-200 text-blue-700 bg-blue-50 hover:bg-blue-100 inline-flex items-center justify-center gap-1.5 transition-colors"
+                        >
+                          <Eye className="w-4 h-4" /> View Details
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => onEditEvent(event)}
+                          className="flex-1 px-3 py-2 text-sm font-semibold rounded-lg border border-gray-300 text-gray-700 bg-white hover:bg-gray-50 inline-flex items-center justify-center gap-1.5 transition-colors"
+                        >
+                          <Edit className="w-4 h-4" /> Edit Event
+                        </button>
+                      </div>
                     </div>
-                  </button>
+                  </div>
                 )
               })}
             </div>
           ) : (
-            <div className="text-center py-6">
-              <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                <Calendar className="w-6 h-6 text-gray-400" />
+            <div className="text-center py-8">
+              <div className="w-20 h-20 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <Calendar className="w-10 h-10 text-gray-400" />
               </div>
-              <p className="text-sm text-gray-500 mb-3">No events on this day</p>
-              <button
-                onClick={onCreateEvent}
-                className={cn(STYLES.btn, STYLES.btnPrimary, "text-sm")}
-              >
-                <Plus className="w-4 h-4" />
-                Create Event
-              </button>
+              <h3 className="font-semibold text-gray-900 mb-1">No events scheduled</h3>
+              <p className="text-sm text-gray-500 mb-5">There are no events on this day.</p>
+              {!isPastDate && canCreateEvent && (
+                <button
+                  onClick={onCreateEvent}
+                  className={cn(STYLES.btn, STYLES.btnPrimary, "w-full py-3")}
+                >
+                  <Plus className="w-5 h-5" />
+                  Create Event for This Date
+                </button>
+              )}
             </div>
           )}
         </div>
 
-        {/* Footer - Create Event for future dates */}
-        {events.length > 0 && (
-          <div className="px-4 py-3 border-t border-gray-200 bg-gray-50">
+        {/* Footer - Create Event for future dates only */}
+        {events.length > 0 && !isPastDate && canCreateEvent && (
+          <div className="px-4 py-3 border-t border-gray-100 bg-gray-50">
             <button
               onClick={onCreateEvent}
-              className="w-full px-3 py-2 text-sm text-primary-600 hover:bg-primary-50 rounded-lg transition-colors flex items-center justify-center gap-2"
+              className="w-full px-4 py-3 bg-primary-500 text-white rounded-xl font-medium hover:bg-primary-600 transition-colors flex items-center justify-center gap-2 shadow-sm"
             >
-              <Plus className="w-4 h-4" />
-              Create Another Event
+              <Plus className="w-5 h-5" />
+              Create Event for This Date
             </button>
           </div>
         )}
@@ -147,9 +200,11 @@ function DateEventsPopup({
 }
 
 export function AdminCalendarView({
-  events
+  events,
+  userRole = 'ADMIN'
 }: {
   events: CalendarEvent[]
+  userRole?: string
 }) {
   const router = useRouter()
   const [currentDate, setCurrentDate] = useState(new Date())
@@ -180,29 +235,31 @@ export function AdminCalendarView({
   // Always use 6 rows × 7 columns = 42 cells for consistent sizing across all months
   const TOTAL_CELLS = 42
 
-  // Generate calendar grid with 42 cells total
-  const days: { date: Date | null; key: string; isPadding: boolean }[] = []
+  // Generate calendar grid with 42 real date cells (including adjacent months)
+  const days: { date: Date; key: string; isCurrentMonth: boolean }[] = []
   const currentMonth = currentDate.getMonth()
   const currentYear = currentDate.getFullYear()
-  
-  // Add empty cells before the month starts
+
+  const prevMonthDays = getDaysInMonth(currentYear, currentMonth - 1)
+
+  // Add leading days from previous month
   for (let i = 0; i < firstDay; i++) {
-    days.push({ date: null, key: `empty-start-${i}`, isPadding: true })
+    const dayNum = prevMonthDays - firstDay + i + 1
+    const date = new Date(currentYear, currentMonth - 1, dayNum)
+    days.push({ date, key: `prev-${date.toISOString()}`, isCurrentMonth: false })
   }
   
   // Add days of the month
   for (let i = 1; i <= daysInMonth; i++) {
-    days.push({ 
-      date: new Date(currentYear, currentMonth, i),
-      key: `day-${currentYear}-${currentMonth}-${i}`,
-      isPadding: false
-    })
+    const date = new Date(currentYear, currentMonth, i)
+    days.push({ date, key: `cur-${date.toISOString()}`, isCurrentMonth: true })
   }
   
-  // Add padding cells at the end to complete 42 cells
+  // Add trailing days from next month to complete 42 cells
   const paddingNeeded = TOTAL_CELLS - days.length
   for (let i = 0; i < paddingNeeded; i++) {
-    days.push({ date: null, key: `empty-end-${i}`, isPadding: true })
+    const date = new Date(currentYear, currentMonth + 1, i + 1)
+    days.push({ date, key: `next-${date.toISOString()}`, isCurrentMonth: false })
   }
 
   const handlePrevMonth = () => {
@@ -230,9 +287,12 @@ export function AdminCalendarView({
     setSelectedDate(date)
   }
 
-  const handleEventFromPopup = (event: CalendarEvent) => {
-    // Admin action: Edit Event
+  const handleEditEventFromPopup = (event: CalendarEvent) => {
     router.push(`/admin/events/${event.id}/edit`)
+  }
+
+  const handleViewEventFromPopup = (event: CalendarEvent) => {
+    router.push(`/events/${event.id}?tab=overview`)
   }
 
   const handleCreateEventFromPopup = () => {
@@ -283,7 +343,7 @@ export function AdminCalendarView({
         {/* Header */}
         <div className="flex-shrink-0 px-4 py-3 border-b border-gray-200 flex items-center justify-between bg-gray-50/50">
           <h2 className="text-base font-semibold text-gray-900">
-            {currentDate.toLocaleDateString('default', { month: 'long', year: 'numeric' })}
+            {currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
           </h2>
           <div className="flex items-center gap-1">
             <button
@@ -312,24 +372,26 @@ export function AdminCalendarView({
 
         {/* Calendar Grid - 6 rows × 7 columns = 42 cells, all equal size */}
         <div className="flex-1 min-h-0 p-3 overflow-hidden">
-          <div 
-            className="h-full grid grid-cols-7 grid-rows-6 gap-2"
+          <div
+            className="h-full min-h-full grid grid-cols-7 gap-2"
+            style={{ gridTemplateRows: 'repeat(6, minmax(0, 1fr))' }}
           >
           {days.map((day) => {
             const date = day.date
-            const dateEvents = date ? getEventsForDate(date) : []
-            const isToday = date?.toDateString() === new Date().toDateString()
-            const isPast = date ? date < new Date(new Date().setHours(0, 0, 0, 0)) : false
+            const dateEvents = getEventsForDate(date)
+            const isToday = date.toDateString() === new Date().toDateString()
+            const isPast = date < new Date(new Date().setHours(0, 0, 0, 0))
             const hasEvents = dateEvents.length > 0
 
             const getCellBackground = () => {
-              if (!date) return 'bg-gray-100/30'
+              if (!day.isCurrentMonth) return hasEvents ? 'bg-blue-50/70 hover:bg-blue-100/80' : 'bg-gray-50 hover:bg-gray-100'
               if (!hasEvents) return isPast ? 'bg-gray-100/50' : 'bg-gray-50 hover:bg-gray-100'
               return 'bg-blue-50 hover:bg-blue-100'
             }
 
             const getDateStyle = () => {
               if (isToday) return 'bg-primary-600 text-white'
+              if (!day.isCurrentMonth) return hasEvents ? 'text-blue-600 bg-blue-100/80' : 'text-gray-400 bg-gray-100'
               if (isPast && !hasEvents) return 'text-gray-400'
               if (hasEvents) return 'text-blue-700 bg-blue-100'
               return 'text-gray-700'
@@ -346,14 +408,13 @@ export function AdminCalendarView({
             return (
               <div
                 key={day.key}
-                onClick={() => date && handleDateClick(date)}
+                onClick={() => handleDateClick(date)}
                 className={cn(
-                  "min-h-0 rounded-lg transition-all relative flex flex-col overflow-hidden cursor-pointer hover:shadow-md",
-                  day.isPadding ? 'invisible' : getCellBackground()
+                  "h-full min-h-0 rounded-lg transition-all relative flex flex-col overflow-hidden cursor-pointer hover:shadow-md",
+                  getCellBackground()
                 )}
               >
-                {date && (
-                  <>
+                <>
                     {/* Date number */}
                     <div className="flex items-center justify-between p-2">
                       <div className={cn(
@@ -402,7 +463,6 @@ export function AdminCalendarView({
                       )}
                     </div>
                   </>
-                )}
               </div>
             )
           })}
@@ -415,8 +475,10 @@ export function AdminCalendarView({
         <DateEventsPopup
           date={selectedDate}
           events={getEventsForDate(selectedDate)}
+          userRole={userRole}
           onClose={() => setSelectedDate(null)}
-          onEventClick={handleEventFromPopup}
+          onEditEvent={handleEditEventFromPopup}
+          onViewDetails={handleViewEventFromPopup}
           onCreateEvent={handleCreateEventFromPopup}
         />
       )}
@@ -427,9 +489,9 @@ export function AdminCalendarView({
           <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setMoreEventsDate(null)} />
           <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200">
             {/* Header */}
-            <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-purple-50 to-white">
+            <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-gray-50 to-white">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-purple-500 text-white flex items-center justify-center">
+                <div className="w-10 h-10 rounded-xl bg-primary-500 text-white flex items-center justify-center">
                   <Calendar className="w-5 h-5" />
                 </div>
                 <div>
@@ -453,6 +515,7 @@ export function AdminCalendarView({
                   const eventStart = new Date(event.startDateTime)
                   const eventEnd = new Date(event.endDateTime)
                   const isPastEvent = eventEnd < new Date()
+                  const spansMultipleDays = eventStart.toDateString() !== eventEnd.toDateString()
                   const attendeeCount = event.attendances.filter(a => a.status === 'YES').length
 
                   const getStatusConfig = () => {
@@ -461,87 +524,106 @@ export function AdminCalendarView({
                     
                     if (isPastEvent) {
                       return {
-                        color: 'bg-gray-400',
-                        bg: 'bg-gray-50 border-gray-200',
-                        text: 'text-gray-600',
+                        color: 'bg-gray-500',
                         label: 'Past Event',
-                        icon: <Clock className="w-3.5 h-3.5" />
+                        text: 'text-gray-600'
                       }
                     }
                     if (yesCount > 0) {
                       return {
                         color: 'bg-green-500',
-                        bg: 'bg-green-50 border-green-200',
-                        text: 'text-green-700',
                         label: `${attendeeCount} Attending`,
-                        icon: <CheckCircle className="w-3.5 h-3.5" />
+                        text: 'text-green-700'
                       }
                     }
                     if (maybeCount > 0) {
                       return {
                         color: 'bg-yellow-500',
-                        bg: 'bg-yellow-50 border-yellow-200',
-                        text: 'text-yellow-700',
                         label: 'Pending RSVPs',
-                        icon: <AlertCircle className="w-3.5 h-3.5" />
+                        text: 'text-yellow-700'
                       }
                     }
                     return {
                       color: 'bg-blue-500',
-                      bg: 'bg-blue-50 border-blue-200',
-                      text: 'text-blue-700',
                       label: 'No RSVPs Yet',
-                      icon: <Calendar className="w-3.5 h-3.5" />
+                      text: 'text-blue-700'
                     }
                   }
 
                   const statusConfig = getStatusConfig()
 
                   return (
-                    <button
+                    <div
                       key={event.id}
-                      onClick={() => {
-                        setMoreEventsDate(null)
-                        router.push(`/admin/events/${event.id}/edit`)
-                      }}
                       className={cn(
-                        "w-full rounded-xl border text-left transition-all hover:shadow-md hover:-translate-y-0.5",
-                        statusConfig.bg
+                        "w-full rounded-xl border-2 text-left transition-all hover:shadow-md",
+                        isPastEvent
+                          ? "bg-gray-50 border-gray-200"
+                          : "bg-white border-gray-200 hover:border-primary-300 hover:-translate-y-0.5"
                       )}
                     >
-                      {/* Time header strip */}
-                      <div className={cn("px-4 py-2 flex items-center gap-2", statusConfig.color)}>
-                        <Clock className="w-4 h-4 text-white" />
-                        <span className="text-sm font-semibold text-white">
+                      {/* Status bar */}
+                      <div className={cn("h-1.5 rounded-t-[10px]", statusConfig.color)} />
+                      
+                      {/* Event content */}
+                      <div className="p-4">
+                        {/* Status badge */}
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className={cn("text-xs font-semibold", statusConfig.text)}>
+                            {statusConfig.label}
+                          </span>
+                        </div>
+                        
+                        {/* Time */}
+                        <div className="flex items-center gap-2 text-sm font-medium text-gray-900 mb-2">
+                          <Clock className="w-4 h-4 text-gray-500" />
                           {eventStart.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })} - 
                           {eventEnd.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
-                        </span>
-                      </div>
-                      
-                      {/* Event details */}
-                      <div className="p-4">
+                        </div>
+                        
+                        {/* Event details */}
                         <div className="flex items-start justify-between gap-2">
                           <div className="min-w-0 flex-1">
                             <h3 className="font-semibold text-gray-900 truncate">{event.title}</h3>
                             {event.location && (
-                              <div className="flex items-center gap-1.5 mt-1 text-sm text-gray-500">
-                                <MapPin className="w-3.5 h-3.5" />
+                              <div className="flex items-center gap-1.5 mt-1.5 text-sm text-gray-500">
+                                <MapPin className="w-4 h-4 text-gray-400" />
                                 <span className="truncate">{event.location.name}</span>
                               </div>
+                            )}
+                            {spansMultipleDays && (
+                              <p className="text-xs text-amber-700 bg-amber-50 border border-amber-100 rounded-lg px-2 py-1 mt-2 inline-flex items-center gap-1">
+                                ⚡ Ends {eventEnd.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}
+                              </p>
                             )}
                           </div>
                           <Edit className="w-5 h-5 text-gray-400 flex-shrink-0" />
                         </div>
-                        
-                        {/* Status badge */}
-                        <div className="mt-3 flex items-center justify-between">
-                          <span className={cn("inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold", statusConfig.color, "bg-white/80")}>
-                            <span className={statusConfig.text}>{statusConfig.icon}</span>
-                            <span className={statusConfig.text}>{statusConfig.label}</span>
-                          </span>
+
+                        <div className="mt-4 flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setMoreEventsDate(null)
+                              router.push(`/events/${event.id}?tab=overview`)
+                            }}
+                            className="flex-1 px-3 py-2 text-sm font-semibold rounded-lg border border-blue-200 text-blue-700 bg-blue-50 hover:bg-blue-100 inline-flex items-center justify-center gap-1.5 transition-colors"
+                          >
+                            <Eye className="w-4 h-4" /> View Details
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setMoreEventsDate(null)
+                              router.push(`/admin/events/${event.id}/edit`)
+                            }}
+                            className="flex-1 px-3 py-2 text-sm font-semibold rounded-lg border border-gray-300 text-gray-700 bg-white hover:bg-gray-50 inline-flex items-center justify-center gap-1.5 transition-colors"
+                          >
+                            <Edit className="w-4 h-4" /> Edit Event
+                          </button>
                         </div>
                       </div>
-                    </button>
+                    </div>
                   )
                 })}
               </div>
