@@ -29,6 +29,8 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
+.debug-logs/
+.cursor/
 
 # env files (can opt-in for committing if needed)
 .env*
@@ -52,3 +54,26 @@ next-env.d.ts
 *.db
 *.db-journal
 .env*.local
+
+# local-only scripts (untracked)
+seed-via-api.js
+set-passwords.js
+run-migration.js
+
+# local-only docs/checklists (untracked)
+TESTING_CHECKLIST.md
+backups/
+docs/CHANGELOG.md
+docs/CODEBASE_ANALYSIS.md
+docs/CODEBASE_AUDIT_REPORT.md
+docs/FIXES_APPLIED.md
+docs/FIXES_COMPLETE.md
+docs/MASTER_IMPLEMENTATION_ANALYSIS_AND_PLAN.md
+docs/MESSAGING_FEATURES.md
+docs/PAYROLL_USER_GUIDE.md
+docs/PENDING_TASKS_CHECKLIST.md
+docs/RECENT_UPDATES.md
+docs/ROLE_MATRIX_QA.md
+docs/SCHEMA_FIXES_COMPLETE.md
+docs/VERCEL_POSTGRES_MIGRATION.md
+docs/page-layout-template.md

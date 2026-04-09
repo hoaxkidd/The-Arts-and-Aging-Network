@@ -69,7 +69,7 @@ NEXTAUTH_URL="http://localhost:3000"
 | `FACILITATOR` | `/staff/*` (+ shared `/events`) | Staff inbox, events, directory, forms, profile |
 | `BOARD` | `/staff/*` (+ shared `/events`) | Board member staff shell |
 | `PARTNER` | `/staff/*` (+ shared `/events`) | Partner staff shell |
-| `VOLUNTEER` | `/volunteers/*` (+ `/staff/inbox`, `/staff/groups`, `/events`) | Volunteer portal; messaging subsets per middleware |
+| `VOLUNTEER` | `/volunteer/*` (+ `/staff/inbox`, `/staff/groups`, `/events`) | Volunteer portal; messaging subsets per middleware |
 
 See [lib/roles.ts](lib/roles.ts) and [middleware.ts](middleware.ts) for the source of truth.
 
@@ -86,7 +86,7 @@ See [lib/roles.ts](lib/roles.ts) and [middleware.ts](middleware.ts) for the sour
   /events              # Event pages (all authenticated users)
   /invite/[token]      # Invitation acceptance
   /register/home       # Geriatric home self-registration
-  /volunteers          # Volunteer portal (VOLUNTEER role)
+  /volunteer           # Volunteer portal (VOLUNTEER role)
   /notifications       # Notification center (authenticated)
   /actions             # Server actions ('use server' modules)
   /api                 # API routes
