@@ -3,6 +3,7 @@ import { redirect } from "next/navigation"
 import { getPendingConversationRequests } from "@/app/actions/conversation-requests"
 import { ConversationRequestsList } from "@/components/admin/ConversationRequestsList"
 import { ConversationRequestsAuditTable, type ConversationRequestAuditRow } from "@/components/admin/ConversationRequestsAuditTable"
+import { InlineStatStrip } from "@/components/ui/InlineStatStrip"
 import { prisma } from "@/lib/prisma"
 import { STYLES } from "@/lib/styles"
 import { cn, safeJsonParse } from "@/lib/utils"
@@ -99,20 +100,21 @@ export default async function ConversationRequestsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="grid gap-3 sm:grid-cols-3">
-        <div className={cn(STYLES.statsCard, 'p-4')}>
-          <p className="text-sm text-gray-500">Pending</p>
-          <p className="text-2xl font-bold text-gray-900">{result.requests.length}</p>
-        </div>
-        <div className={cn(STYLES.statsCard, 'p-4')}>
-          <p className="text-sm text-gray-500">Approved (All-time)</p>
-          <p className="text-2xl font-bold text-green-700">{approvedCount}</p>
-        </div>
-        <div className={cn(STYLES.statsCard, 'p-4')}>
-          <p className="text-sm text-gray-500">Denied (All-time)</p>
-          <p className="text-2xl font-bold text-red-700">{deniedCount}</p>
-        </div>
+      <div className={cn(STYLES.card, 'p-5 sm:p-6 bg-gradient-to-r from-white to-gray-50')}>
+        <h1 className="text-xl font-semibold text-gray-900">Conversation Request Management</h1>
+        <p className="text-sm text-gray-600 mt-1">
+          Review current pending requests and audit previous approvals or denials in one place.
+        </p>
       </div>
+
+      <InlineStatStrip
+        size="tall"
+        items={[
+          { label: 'Pending', value: result.requests.length, tone: 'warning' },
+          { label: 'Approved', value: approvedCount, tone: 'success', hint: 'all-time' },
+          { label: 'Denied', value: deniedCount, tone: 'danger', hint: 'all-time' },
+        ]}
+      />
 
       <ConversationRequestsList requests={result.requests} />
       <ConversationRequestsAuditTable rows={historyRows} />

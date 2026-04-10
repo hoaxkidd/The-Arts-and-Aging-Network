@@ -367,6 +367,93 @@ export async function denyConversationRequest(requestId: string, note?: string) 
   }
 }
 
+// Delete a pending conversation request
+export async function deleteConversationRequest(requestId: string) {
+  const session = await auth()
+  if (!session?.user?.id || session.user.role !== 'ADMIN') {
+    return { error: 'Unauthorized' }
+  }
+
+  try {
+    const existing = await prisma.directMessageRequest.findUnique({
+      where: { id: requestId },
+      include: {
+        requester: {
+          select: {
+            id: true,
+            role: true,
+            email: true,
+            name: true,
+            preferredName: true,
+          }
+        },
+        requested: {
+          select: {
+            id: true,
+            name: true,
+            preferredName: true,
+          }
+        }
+      }
+    })
+
+    if (!existing) {
+      return { error: 'Request not found' }
+    }
+
+    if (existing.status !== 'PENDING') {
+      return { error: 'Only pending requests can be deleted' }
+    }
+
+    await prisma.directMessageRequest.delete({ where: { id: requestId } })
+
+    await prisma.notification.create({
+      data: {
+        userId: existing.requesterId,
+        type: 'CONVERSATION_DENIED',
+        title: 'Conversation Request Removed',
+        message: `Your request to message ${existing.requested.preferredName || existing.requested.name || 'this user'} was removed by admin`,
+        link: `${getInboxBasePathForRole(existing.requester.role)}/inbox`,
+        read: false
+      }
+    })
+
+    if (existing.requester.email) {
+      await sendEmailWithRetry({
+        to: existing.requester.email,
+        templateType: 'GROUP_ACCESS_DENIED',
+        variables: {
+          name: existing.requester.preferredName || existing.requester.name || 'User',
+          groupName: 'this conversation',
+          message: 'Your conversation request was removed by admin.'
+        }
+      }, { userId: existing.requesterId })
+    }
+
+    await prisma.auditLog.create({
+      data: {
+        action: 'CONVERSATION_REQUEST_DELETED',
+        details: JSON.stringify({
+          requestId,
+          requesterId: existing.requesterId,
+          requestedId: existing.requestedId,
+          reviewedById: session.user.id
+        }),
+        userId: session.user.id
+      }
+    })
+
+    revalidatePath('/admin/conversation-requests')
+    revalidatePath('/admin')
+    revalidatePath('/notifications')
+
+    return { success: true }
+  } catch (error) {
+    logger.serverAction('Delete request error', error)
+    return { error: 'Failed to delete request' }
+  }
+}
+
 // Check if user can message another user
 export async function canMessageUser(userId: string) {
   const session = await auth()
