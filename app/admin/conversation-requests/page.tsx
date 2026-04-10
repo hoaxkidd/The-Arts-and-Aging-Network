@@ -80,23 +80,21 @@ export default async function ConversationRequestsPage() {
     users.map((user) => [user.id, user.preferredName || user.name || user.userCode || 'Unknown user'])
   )
 
-  const historyRows: ConversationRequestAuditRow[] = auditLogs
-    .map((log) => {
-      const status = actionToStatus(log.action)
-      if (!status) return null
+  const historyRows: ConversationRequestAuditRow[] = auditLogs.flatMap((log) => {
+    const status = actionToStatus(log.action)
+    if (!status) return []
 
-      const details = safeJsonParse<AuditDetails>(log.details, {})
-      return {
-        id: log.id,
-        status,
-        requesterName: details.requesterId ? userMap.get(details.requesterId) || 'Unknown user' : 'Unknown user',
-        requestedName: details.requestedId ? userMap.get(details.requestedId) || 'Unknown user' : 'Unknown user',
-        actorName: log.user?.preferredName || log.user?.name || 'System',
-        note: details.note || null,
-        createdAt: log.createdAt
-      }
-    })
-    .filter((row): row is ConversationRequestAuditRow => row !== null)
+    const details = safeJsonParse<AuditDetails>(log.details, {})
+    return [{
+      id: log.id,
+      status,
+      requesterName: details.requesterId ? userMap.get(details.requesterId) || 'Unknown user' : 'Unknown user',
+      requestedName: details.requestedId ? userMap.get(details.requestedId) || 'Unknown user' : 'Unknown user',
+      actorName: log.user?.preferredName || log.user?.name || 'System',
+      note: details.note || null,
+      createdAt: log.createdAt
+    }]
+  })
 
   return (
     <div className="space-y-6">
