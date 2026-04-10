@@ -20,11 +20,12 @@ import {
 
 type ReminderPolicyPanelProps = {
   config: ReminderPolicyConfig
+  canEditCron?: boolean
 }
 
 type ModalType = 'home' | 'staff' | 'endpoint' | 'frequency' | null
 
-export function ReminderPolicyPanel({ config }: ReminderPolicyPanelProps) {
+export function ReminderPolicyPanel({ config, canEditCron = true }: ReminderPolicyPanelProps) {
   const router = useRouter()
   const [openModal, setOpenModal] = useState<ModalType>(null)
   const [isPending, startTransition] = useTransition()
@@ -118,25 +119,38 @@ export function ReminderPolicyPanel({ config }: ReminderPolicyPanelProps) {
                 Reminders are processed automatically by the cron job at:{' '}
                 <code className="bg-blue-100 px-1 rounded">{config.cronEndpoint}</code>
               </span>
-              <button
-                type="button"
-                className="inline-flex items-center gap-1 rounded border border-blue-200 bg-white px-2 py-1 text-[11px] font-medium text-blue-700 hover:bg-blue-100"
-                onClick={() => setOpenModal('endpoint')}
-              >
-                <Edit3 className="h-3 w-3" /> Edit
-              </button>
+              {canEditCron ? (
+                <button
+                  type="button"
+                  className="inline-flex items-center gap-1 rounded border border-blue-200 bg-white px-2 py-1 text-[11px] font-medium text-blue-700 hover:bg-blue-100"
+                  onClick={() => setOpenModal('endpoint')}
+                >
+                  <Edit3 className="h-3 w-3" /> Edit
+                </button>
+              ) : (
+                <span className="text-[11px] font-medium text-blue-700">Managed in production</span>
+              )}
             </li>
             <li className="flex items-center justify-between gap-2">
               <span>Configure the cron job to run {config.cronFrequency.toLowerCase()} for optimal delivery</span>
-              <button
-                type="button"
-                className="inline-flex items-center gap-1 rounded border border-blue-200 bg-white px-2 py-1 text-[11px] font-medium text-blue-700 hover:bg-blue-100"
-                onClick={() => setOpenModal('frequency')}
-              >
-                <Edit3 className="h-3 w-3" /> Edit
-              </button>
+              {canEditCron ? (
+                <button
+                  type="button"
+                  className="inline-flex items-center gap-1 rounded border border-blue-200 bg-white px-2 py-1 text-[11px] font-medium text-blue-700 hover:bg-blue-100"
+                  onClick={() => setOpenModal('frequency')}
+                >
+                  <Edit3 className="h-3 w-3" /> Edit
+                </button>
+              ) : (
+                <span className="text-[11px] font-medium text-blue-700">Managed in production</span>
+              )}
             </li>
           </ul>
+          {!canEditCron ? (
+            <p className="mt-2 text-[11px] text-blue-700">
+              Cron schedule is controlled by infrastructure configuration in production.
+            </p>
+          ) : null}
         </div>
       </div>
 
@@ -210,7 +224,11 @@ export function ReminderPolicyPanel({ config }: ReminderPolicyPanelProps) {
                   <select
                     value={cronEndpoint}
                     onChange={(event) => setCronEndpoint(event.target.value)}
-                    className={cn(STYLES.select, 'h-10 w-full rounded-md border border-gray-300 bg-white text-sm')}
+                    className={cn(
+                      STYLES.input,
+                      STYLES.select,
+                      'h-10 w-full rounded-md border border-gray-300 py-0 pr-10 text-sm leading-normal'
+                    )}
                   >
                     {ALLOWED_CRON_ENDPOINTS.map((endpoint) => (
                       <option key={endpoint} value={endpoint}>{endpoint}</option>
@@ -239,7 +257,11 @@ export function ReminderPolicyPanel({ config }: ReminderPolicyPanelProps) {
                   <select
                     value={cronFrequency}
                     onChange={(event) => setCronFrequency(event.target.value)}
-                    className={cn(STYLES.select, 'h-10 w-full rounded-md border border-gray-300 bg-white text-sm')}
+                    className={cn(
+                      STYLES.input,
+                      STYLES.select,
+                      'h-10 w-full rounded-md border border-gray-300 py-0 pr-10 text-sm leading-normal'
+                    )}
                   >
                     {ALLOWED_CRON_FREQUENCIES.map((frequency) => (
                       <option key={frequency} value={frequency}>{frequency}</option>

@@ -301,6 +301,10 @@ export async function updateReminderCronEndpoint(endpoint: string) {
     return { error: 'Unauthorized' }
   }
 
+  if (process.env.NODE_ENV === 'production') {
+    return { error: 'Cron endpoint is managed by infrastructure in production' }
+  }
+
   const nextEndpoint = endpoint.trim()
   if (!ALLOWED_CRON_ENDPOINTS.includes(nextEndpoint as (typeof ALLOWED_CRON_ENDPOINTS)[number])) {
     return { error: 'Unsupported cron endpoint' }
@@ -352,6 +356,10 @@ export async function updateReminderCronFrequency(frequency: string) {
   const session = await auth()
   if (session?.user?.role !== 'ADMIN' || !session.user.id) {
     return { error: 'Unauthorized' }
+  }
+
+  if (process.env.NODE_ENV === 'production') {
+    return { error: 'Cron frequency is managed by infrastructure in production' }
   }
 
   const nextFrequency = frequency.trim()

@@ -293,7 +293,10 @@ export default async function EmailRemindersPage({
         </div>
       </div>
 
-      <ReminderPolicyPanel config={reminderPolicyConfig} />
+      <ReminderPolicyPanel
+        config={reminderPolicyConfig}
+        canEditCron={process.env.NODE_ENV !== 'production'}
+      />
     </div>
   )
 }
