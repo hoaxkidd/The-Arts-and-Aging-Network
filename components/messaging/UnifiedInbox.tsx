@@ -9,6 +9,7 @@ import { NewMessageModal } from './NewMessageModal'
 import { requestGroupAccess } from '@/app/actions/messaging'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { getInboxBasePathForRole } from '@/lib/role-routes'
 
 type Conversation = {
   partnerId: string
@@ -69,6 +70,7 @@ export function UnifiedInbox({ conversations, groupMemberships, currentUserId, c
   const [showNewMessageModal, setShowNewMessageModal] = useState(false)
   const [joiningGroupId, setJoiningGroupId] = useState<string | null>(null)
   const router = useRouter()
+  const inboxBasePath = getInboxBasePathForRole(currentUserRole)
 
   const totalUnread = conversations.reduce((sum, conv) => sum + conv.unreadCount, 0)
 
@@ -144,28 +146,28 @@ export function UnifiedInbox({ conversations, groupMemberships, currentUserId, c
         {/* Quick Actions */}
         <div className="flex items-center gap-1 mt-2 pt-2 border-t border-gray-100">
           <Link
-            href="/staff/inbox/search"
+            href={`${inboxBasePath}/inbox/search`}
             className="flex-1 min-h-[36px] flex items-center justify-center gap-1 text-xs text-gray-600 hover:bg-gray-100 active:bg-gray-200 rounded-lg transition-colors"
           >
             <Search className="w-3.5 h-3.5" />
             Search
           </Link>
           <Link
-            href="/staff/inbox/starred"
+            href={`${inboxBasePath}/inbox/starred`}
             className="flex-1 min-h-[36px] flex items-center justify-center gap-1 text-xs text-gray-600 hover:bg-gray-100 active:bg-gray-200 rounded-lg transition-colors"
           >
             <Star className="w-3.5 h-3.5" />
             Starred
           </Link>
           <Link
-            href="/staff/inbox/reminders"
+            href={`${inboxBasePath}/inbox/reminders`}
             className="flex-1 min-h-[36px] flex items-center justify-center gap-1 text-xs text-gray-600 hover:bg-gray-100 active:bg-gray-200 rounded-lg transition-colors"
           >
             <Bell className="w-3.5 h-3.5" />
             Reminders
           </Link>
           <Link
-            href="/staff/inbox/templates"
+            href={`${inboxBasePath}/inbox/templates`}
             className="flex-1 min-h-[36px] flex items-center justify-center gap-1 text-xs text-gray-600 hover:bg-gray-100 active:bg-gray-200 rounded-lg transition-colors"
           >
             <FileText className="w-3.5 h-3.5" />

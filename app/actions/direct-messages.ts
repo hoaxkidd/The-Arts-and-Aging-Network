@@ -14,22 +14,32 @@ export async function searchUsers(query: string) {
   }
 
   try {
+    const normalizedQuery = query.trim()
+    if (normalizedQuery.length < 2) {
+      return { success: true, data: [] }
+    }
+
     const andConditions: object[] = [
       { id: { not: session.user.id } },
       { status: 'ACTIVE' },
       { email: { not: null } },
       {
         OR: [
-          { name: { contains: query } },
-          { preferredName: { contains: query } },
-          { email: { contains: query } }
+          { name: { contains: normalizedQuery, mode: 'insensitive' } },
+          { preferredName: { contains: normalizedQuery, mode: 'insensitive' } },
+          { email: { contains: normalizedQuery, mode: 'insensitive' } },
+          { userCode: { contains: normalizedQuery, mode: 'insensitive' } }
         ]
       }
     ]
-    // HOME_ADMIN can message admins directly, or request facilitators/staff (admin approval)
+    // Role visibility guardrails
     if (session.user.role === 'HOME_ADMIN') {
       andConditions.push({
-        role: { in: ['ADMIN', 'FACILITATOR', 'PAYROLL'] }
+        role: 'ADMIN'
+      })
+    } else if (session.user.role !== 'ADMIN') {
+      andConditions.push({
+        role: { not: 'BOARD' }
       })
     }
 

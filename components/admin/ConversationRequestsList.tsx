@@ -7,6 +7,7 @@ import { approveConversationRequest, denyConversationRequest } from '@/app/actio
 import { useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { STYLES } from '@/lib/styles'
+import { notify } from '@/lib/notify'
 
 type ConversationRequest = {
   id: string
@@ -42,8 +43,9 @@ export function ConversationRequestsList({ requests }: Props) {
     setProcessing(requestId)
     const result = await approveConversationRequest(requestId)
     if ('error' in result) {
-      alert(result.error)
+      notify.error({ title: 'Approval failed', description: result.error })
     } else {
+      notify.success({ title: 'Request approved', description: 'The requester can now message this user.' })
       router.refresh()
     }
     setProcessing(null)
@@ -53,10 +55,11 @@ export function ConversationRequestsList({ requests }: Props) {
     setProcessing(requestId)
     const result = await denyConversationRequest(requestId, denyNote)
     if ('error' in result) {
-      alert(result.error)
+      notify.error({ title: 'Deny failed', description: result.error })
     } else {
       setDenyingId(null)
       setDenyNote('')
+      notify.success({ title: 'Request denied' })
       router.refresh()
     }
     setProcessing(null)

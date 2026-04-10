@@ -23,7 +23,7 @@ export default async function EventFeedPage() {
   const userRole = session?.user?.role || 'VOLUNTEER'
 
   // Roles that can create events
-  const canCreateEvents = ['ADMIN', 'HOME_ADMIN', 'FACILITATOR'].includes(userRole)
+  const canCreateEvents = ['ADMIN', 'HOME_ADMIN'].includes(userRole)
 
   // Format events for calendar
   const formattedEvents = events.map(e => ({

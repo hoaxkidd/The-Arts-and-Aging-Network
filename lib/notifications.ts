@@ -834,7 +834,7 @@ export async function notifyAdminsAboutRSVP(params: {
   })
 
   const statusText = params.rsvpStatus === 'YES' ? 'confirmed attendance' :
-                     params.rsvpStatus === 'NO' ? 'declined' : 'is considering'
+                     params.rsvpStatus === 'NO' ? 'declined' : 'is unsure'
 
   const notifications = []
   for (const admin of admins) {

@@ -60,7 +60,7 @@ export default async function StaffEventsPage() {
   })
 
   const userRole = session?.user?.role || 'FACILITATOR'
-  const canCreateEvents = ['ADMIN', 'HOME_ADMIN', 'FACILITATOR'].includes(userRole)
+  const canCreateEvents = ['ADMIN', 'HOME_ADMIN'].includes(userRole)
   const pendingFacilitatorRequests = pendingRsvpsResult.success ? pendingRsvpsResult.data : []
 
   return (

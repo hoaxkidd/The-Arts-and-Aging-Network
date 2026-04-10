@@ -3,11 +3,11 @@
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
-import { createNotification } from './notifications'
 import { sendEmailWithRetry } from '@/lib/email/service'
 import { logger } from '@/lib/logger'
 import { getDmDecision } from '@/lib/dm-permissions'
 import { getInboxBasePathForRole } from '@/lib/role-routes'
+import { getActiveAdminRecipientIds } from '@/lib/notification-recipients'
 
 // Request to start a conversation with someone
 export async function requestConversation(requestedId: string, message?: string) {
@@ -24,6 +24,9 @@ export async function requestConversation(requestedId: string, message?: string)
     const eligibility = await canMessageUser(requestedId)
     if (eligibility.canMessage) {
       return { error: 'You can already message this user directly' }
+    }
+    if (eligibility.requestStatus === 'PENDING') {
+      return { error: eligibility.reason || 'A request is already pending admin approval' }
     }
 
     // Check if request already exists
@@ -68,23 +71,37 @@ export async function requestConversation(requestedId: string, message?: string)
     })
 
     // Notify admins
-    const admins = await prisma.user.findMany({
-      where: { role: 'ADMIN', status: 'ACTIVE' },
-      select: { id: true }
-    })
+    const adminIds = await getActiveAdminRecipientIds()
 
-    for (const admin of admins) {
-      await createNotification({
-        userId: admin.id,
-        type: 'CONVERSATION_REQUEST',
-        title: 'New Conversation Request',
-        message: `${request.requester.preferredName || request.requester.name} wants to start a conversation`,
-        actionUrl: '/admin/conversation-requests',
-        metadata: JSON.stringify({ requestId: request.id })
+    if (adminIds.length > 0) {
+      await prisma.notification.createMany({
+        data: adminIds.map((adminId) => ({
+          userId: adminId,
+          type: 'CONVERSATION_REQUEST',
+          title: 'New Conversation Request',
+          message: `${request.requester.preferredName || request.requester.name} wants to start a conversation`,
+          link: '/admin/conversation-requests',
+          read: false
+        }))
       })
     }
 
+    await prisma.auditLog.create({
+      data: {
+        action: 'CONVERSATION_REQUEST_CREATED',
+        details: JSON.stringify({
+          requestId: request.id,
+          requesterId: session.user.id,
+          requestedId,
+          hasMessage: Boolean(request.message?.trim())
+        }),
+        userId: session.user.id
+      }
+    })
+
     revalidatePath('/admin/conversation-requests')
+    revalidatePath('/admin')
+    revalidatePath('/notifications')
 
     return { success: true, request }
   } catch (error) {
@@ -151,6 +168,7 @@ export async function approveConversationRequest(requestId: string) {
         requester: {
           select: {
             id: true,
+            userCode: true,
             role: true,
             name: true,
             preferredName: true
@@ -160,6 +178,7 @@ export async function approveConversationRequest(requestId: string) {
           select: {
             id: true,
             userCode: true,
+            role: true,
             name: true,
             preferredName: true
           }
@@ -167,14 +186,57 @@ export async function approveConversationRequest(requestId: string) {
       }
     })
 
+    let materializedMessageId: string | null = null
+    const initialMessage = request.message?.trim()
+    if (initialMessage) {
+      const existingMessages = await prisma.directMessage.findFirst({
+        where: {
+          OR: [
+            { senderId: request.requesterId, recipientId: request.requestedId },
+            { senderId: request.requestedId, recipientId: request.requesterId }
+          ]
+        },
+        select: { id: true }
+      })
+
+      if (!existingMessages) {
+        const seededMessage = await prisma.directMessage.create({
+          data: {
+            senderId: request.requesterId,
+            recipientId: request.requestedId,
+            subject: 'Direct Message',
+            content: initialMessage,
+            read: false
+          }
+        })
+        materializedMessageId = seededMessage.id
+
+        const requesterName = request.requester.preferredName || request.requester.name || 'Someone'
+        const preview = initialMessage.length > 80 ? `${initialMessage.slice(0, 80)}...` : initialMessage
+        const requestedInboxBase = getInboxBasePathForRole(request.requested.role)
+        await prisma.notification.create({
+          data: {
+            userId: request.requestedId,
+            type: 'DIRECT_MESSAGE',
+            title: `Message from ${requesterName}`,
+            message: preview,
+            link: `${requestedInboxBase}/inbox/${request.requester.userCode || request.requester.id}`,
+            read: false
+          }
+        })
+      }
+    }
+
     // Notify requester
-    await createNotification({
-      userId: request.requesterId,
-      type: 'CONVERSATION_APPROVED',
-      title: 'Conversation Request Approved',
-      message: `You can now message ${request.requested.preferredName || request.requested.name}`,
-      actionUrl: `${getInboxBasePathForRole(request.requester.role)}/inbox/${request.requested.userCode || request.requested.id}`,
-      metadata: JSON.stringify({ requestId: request.id })
+    await prisma.notification.create({
+      data: {
+        userId: request.requesterId,
+        type: 'CONVERSATION_APPROVED',
+        title: 'Conversation Request Approved',
+        message: `You can now message ${request.requested.preferredName || request.requested.name}`,
+        link: `${getInboxBasePathForRole(request.requester.role)}/inbox/${request.requested.userCode || request.requested.id}`,
+        read: false
+      }
     })
 
     // Send approval email
@@ -194,11 +256,29 @@ export async function approveConversationRequest(requestId: string) {
       }, { userId: request.requesterId })
     }
 
+    await prisma.auditLog.create({
+      data: {
+        action: 'CONVERSATION_REQUEST_APPROVED',
+        details: JSON.stringify({
+          requestId,
+          requesterId: request.requesterId,
+          requestedId: request.requestedId,
+          reviewedById: session.user.id,
+          initialMessageMaterialized: Boolean(materializedMessageId),
+          materializedMessageId
+        }),
+        userId: session.user.id
+      }
+    })
+
     revalidatePath('/admin/conversation-requests')
+    revalidatePath('/admin')
+    revalidatePath('/notifications')
     revalidatePath('/staff/inbox')
     revalidatePath('/facilitator/inbox')
     revalidatePath('/board/inbox')
     revalidatePath('/volunteer/inbox')
+    revalidatePath('/partner/inbox')
 
     return { success: true }
   } catch (error) {
@@ -233,13 +313,15 @@ export async function denyConversationRequest(requestId: string, note?: string) 
     })
 
     // Notify requester
-    await createNotification({
-      userId: request.requesterId,
-      type: 'CONVERSATION_DENIED',
-      title: 'Conversation Request Denied',
-      message: note || 'Your conversation request was not approved',
-      actionUrl: `${getInboxBasePathForRole(request.requester.role)}/inbox`,
-      metadata: JSON.stringify({ requestId: request.id })
+    await prisma.notification.create({
+      data: {
+        userId: request.requesterId,
+        type: 'CONVERSATION_DENIED',
+        title: 'Conversation Request Denied',
+        message: note || 'Your conversation request was not approved',
+        link: `${getInboxBasePathForRole(request.requester.role)}/inbox`,
+        read: false
+      }
     })
 
     // Send denial email
@@ -260,7 +342,23 @@ export async function denyConversationRequest(requestId: string, note?: string) 
       }, { userId: request.requesterId })
     }
 
+    await prisma.auditLog.create({
+      data: {
+        action: 'CONVERSATION_REQUEST_DENIED',
+        details: JSON.stringify({
+          requestId,
+          requesterId: request.requesterId,
+          requestedId: request.requestedId,
+          reviewedById: session.user.id,
+          note: note?.trim() || null
+        }),
+        userId: session.user.id
+      }
+    })
+
     revalidatePath('/admin/conversation-requests')
+    revalidatePath('/admin')
+    revalidatePath('/notifications')
 
     return { success: true }
   } catch (error) {
@@ -273,7 +371,7 @@ export async function denyConversationRequest(requestId: string, note?: string) 
 export async function canMessageUser(userId: string) {
   const session = await auth()
   if (!session?.user?.id) {
-    return { canMessage: false, reason: 'Not authenticated' }
+    return { canMessage: false, reason: 'Not authenticated', requestStatus: 'NONE' as const }
   }
 
   const target = await prisma.user.findUnique({
@@ -281,15 +379,15 @@ export async function canMessageUser(userId: string) {
     select: { role: true, status: true }
   })
   if (!target) {
-    return { canMessage: false, reason: 'User not found' }
+    return { canMessage: false, reason: 'User not found', requestStatus: 'NONE' as const }
   }
 
   if (target.status !== 'ACTIVE') {
-    return { canMessage: false, reason: 'User is not active' }
+    return { canMessage: false, reason: 'User is not active', requestStatus: 'NONE' as const }
   }
 
   if (userId === session.user.id) {
-    return { canMessage: false, reason: 'You cannot message yourself' }
+    return { canMessage: false, reason: 'You cannot message yourself', requestStatus: 'NONE' as const }
   }
 
   const myRole = session.user.role as string
@@ -298,21 +396,28 @@ export async function canMessageUser(userId: string) {
   const decision = getDmDecision(myRole, targetRole)
 
   if (decision === 'allowed') {
-    return { canMessage: true }
+    return { canMessage: true, requestStatus: 'NONE' as const }
   }
 
-  // Check if there's an approved request
-  const approvedRequest = await prisma.directMessageRequest.findFirst({
+  const requests = await prisma.directMessageRequest.findMany({
     where: {
       OR: [
-        { requesterId: session.user.id, requestedId: userId, status: 'APPROVED' },
-        { requesterId: userId, requestedId: session.user.id, status: 'APPROVED' }
+        { requesterId: session.user.id, requestedId: userId },
+        { requesterId: userId, requestedId: session.user.id }
       ]
-    }
+    },
+    select: {
+      id: true,
+      requesterId: true,
+      status: true,
+      reviewNote: true,
+      updatedAt: true
+    },
+    orderBy: { updatedAt: 'desc' }
   })
 
-  if (approvedRequest) {
-    return { canMessage: true }
+  if (requests.some((request) => request.status === 'APPROVED')) {
+    return { canMessage: true, requestStatus: 'APPROVED' as const }
   }
 
   // Check if there's already a conversation (messages exist)
@@ -326,8 +431,30 @@ export async function canMessageUser(userId: string) {
   })
 
   if (existingMessages) {
-    return { canMessage: true }
+    return { canMessage: true, requestStatus: 'APPROVED' as const }
   }
 
-  return { canMessage: false, reason: 'Admin approval required before you can start this conversation' }
+  const pendingRequest = requests.find((request) => request.status === 'PENDING')
+  if (pendingRequest) {
+    const pendingReason =
+      pendingRequest.requesterId === session.user.id
+        ? 'Your request is pending admin approval'
+        : 'A request is already pending admin approval'
+    return { canMessage: false, reason: pendingReason, requestStatus: 'PENDING' as const }
+  }
+
+  const deniedRequest = requests.find((request) => request.status === 'DENIED' && request.requesterId === session.user.id)
+  if (deniedRequest) {
+    return {
+      canMessage: false,
+      reason: deniedRequest.reviewNote || 'A previous request was denied. You can submit a new request.',
+      requestStatus: 'DENIED' as const
+    }
+  }
+
+  return {
+    canMessage: false,
+    reason: 'Admin approval required before you can start this conversation',
+    requestStatus: 'NONE' as const
+  }
 }

@@ -2,12 +2,13 @@
 
 import { useState, useEffect } from 'react'
 import { X, Users, MessageCircle, Search, Loader2, Send } from 'lucide-react'
-import { searchUsers, searchFacilitatorsWithSharedEvents } from '@/app/actions/direct-messages'
+import { searchUsers } from '@/app/actions/direct-messages'
 import { requestConversation, canMessageUser } from '@/app/actions/conversation-requests'
 import { sendMessage } from '@/app/actions/conversations'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { getInboxBasePathForRole } from '@/lib/role-routes'
+import { notify } from '@/lib/notify'
 
 type User = {
   id: string
@@ -25,6 +26,16 @@ type Props = {
   currentUserRole: string
 }
 
+type PermissionCheck = {
+  canMessage: boolean
+  reason?: string
+  requestStatus?: 'NONE' | 'PENDING' | 'APPROVED' | 'DENIED'
+}
+
+function formatRoleLabel(role: string): string {
+  return role.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, (c: string) => c.toUpperCase())
+}
+
 export function NewMessageModal({ isOpen, onClose, currentUserRole }: Props) {
   const [view, setView] = useState<'menu' | 'browse' | 'message'>('menu')
   const [searchQuery, setSearchQuery] = useState('')
@@ -34,27 +45,25 @@ export function NewMessageModal({ isOpen, onClose, currentUserRole }: Props) {
   const [isSearching, setIsSearching] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [facilitatorsFromEvents, setFacilitatorsFromEvents] = useState<User[]>([])
+  const [permission, setPermission] = useState<PermissionCheck | null>(null)
   const router = useRouter()
   const inboxBasePath = getInboxBasePathForRole(currentUserRole)
 
   const isAdmin = currentUserRole === 'ADMIN'
   const isHomeAdmin = currentUserRole === 'HOME_ADMIN'
-
-  // Load facilitators from shared events for HOME_ADMIN
-  useEffect(() => {
-    if (isHomeAdmin && view === 'browse') {
-      searchFacilitatorsWithSharedEvents().then((result) => {
-        if ('data' in result && result.data) {
-          setFacilitatorsFromEvents(result.data as User[])
-        } else {
-          setFacilitatorsFromEvents([])
-        }
-      })
-    } else {
-      setFacilitatorsFromEvents([])
-    }
-  }, [isHomeAdmin, view])
+  const selectedUserName = selectedUser?.preferredName || selectedUser?.name || 'user'
+  const requestStatus = permission?.requestStatus || 'NONE'
+  const canSendDirect = isAdmin || permission?.canMessage === true
+  const isPending = !isAdmin && requestStatus === 'PENDING'
+  const actionLabel = isAdmin
+    ? 'Send'
+    : canSendDirect
+      ? 'Send'
+      : isPending
+        ? 'Pending Approval'
+        : requestStatus === 'DENIED'
+          ? 'Request Again'
+          : 'Request Approval'
 
   // Debounced search with useEffect
   useEffect(() => {
@@ -81,13 +90,12 @@ export function NewMessageModal({ isOpen, onClose, currentUserRole }: Props) {
   async function handleSelectUser(user: User) {
     setSelectedUser(user)
     setView('message')
+    setError(null)
 
-    // Check if user can message this person
-    if (!isAdmin) {
-      const check = await canMessageUser(user.id)
-      if (!check.canMessage) {
-        setError('You need admin approval to message this user. Send a request?')
-      }
+    const check = await canMessageUser(user.id)
+    setPermission(check)
+    if (!check.canMessage) {
+      setError(check.reason || 'You need admin approval to message this user. Send a request?')
     }
   }
 
@@ -103,6 +111,10 @@ export function NewMessageModal({ isOpen, onClose, currentUserRole }: Props) {
       if ('error' in result) {
         setError(result.error || null)
       } else {
+        notify.success({
+          title: 'Message sent',
+          description: `Your message to ${selectedUser.preferredName || selectedUser.name || 'user'} was delivered.`
+        })
         onClose()
         router.push(`${inboxBasePath}/inbox/${selectedUser.userCode || selectedUser.id}`)
         router.refresh()
@@ -110,24 +122,39 @@ export function NewMessageModal({ isOpen, onClose, currentUserRole }: Props) {
     } else {
       // Check if can message
       const check = await canMessageUser(selectedUser.id)
+      setPermission(check)
       if (check.canMessage) {
         // Send message directly
         const result = await sendMessage(selectedUser.id, message.trim() || 'Hi!')
         if ('error' in result) {
           setError(result.error || null)
         } else {
+          notify.success({
+            title: 'Message sent',
+            description: `Your message to ${selectedUser.preferredName || selectedUser.name || 'user'} was delivered.`
+          })
           onClose()
           router.push(`${inboxBasePath}/inbox/${selectedUser.userCode || selectedUser.id}`)
           router.refresh()
         }
       } else {
+        if (check.requestStatus === 'PENDING') {
+          setError(check.reason || 'Your request is still pending admin approval')
+          setIsLoading(false)
+          return
+        }
+
         // Request to message
         const result = await requestConversation(selectedUser.id, message.trim())
         if ('error' in result) {
           setError(result.error || null)
         } else {
-          alert('Request sent! An admin will review your request.')
-          onClose()
+          setPermission({ canMessage: false, requestStatus: 'PENDING', reason: 'Your request is pending admin approval' })
+          notify.success({
+            title: 'Request sent',
+            description: 'An admin will review your request. Status: Pending approval.'
+          })
+          setError('Your request is pending admin approval')
         }
       }
     }
@@ -142,6 +169,7 @@ export function NewMessageModal({ isOpen, onClose, currentUserRole }: Props) {
     setSearchResults([])
     setMessage('')
     setError(null)
+    setPermission(null)
     onClose()
   }
 
@@ -199,7 +227,7 @@ export function NewMessageModal({ isOpen, onClose, currentUserRole }: Props) {
                 <div className="flex-1 text-left">
                   <h3 className="font-semibold text-gray-900">Message Someone</h3>
                   <p className="text-sm text-gray-500">
-                    {isAdmin ? 'Send a direct message' : 'Request to start a conversation'}
+                    {isAdmin ? 'Send a direct message' : 'Message admin directly or request approval for others'}
                   </p>
                 </div>
               </button>
@@ -217,50 +245,18 @@ export function NewMessageModal({ isOpen, onClose, currentUserRole }: Props) {
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search by name or email..."
-                  aria-label="Search users by name or email"
+                  placeholder="Search by name, email, or user code..."
+                  aria-label="Search users by name, email, or user code"
                   className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                   autoFocus
                 />
               </div>
 
-              {/* Facilitators from your events (HOME_ADMIN only) */}
-              {isHomeAdmin && facilitatorsFromEvents.length > 0 && searchQuery.length < 2 && (
-                <div className="space-y-2">
-                  <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-                    Facilitators from your events
-                  </p>
-                  {facilitatorsFromEvents.map((user) => (
-                    <button
-                      key={user.id}
-                      onClick={() => handleSelectUser(user)}
-                      className="w-full flex items-center gap-3 p-3 bg-white border border-gray-200 rounded-lg hover:border-primary-500 hover:bg-primary-50 transition-all"
-                    >
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 text-white flex items-center justify-center font-semibold">
-                        {(user.preferredName || user.name)?.[0]?.toUpperCase() || 'U'}
-                      </div>
-                      <div className="flex-1 text-left">
-                        <p className="font-medium text-gray-900">
-                          {user.preferredName || user.name}
-                        </p>
-                        <p className="text-xs text-gray-500">{user.role}</p>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
-
               {/* Results */}
               {searchQuery.length < 2 ? (
-                !isHomeAdmin || facilitatorsFromEvents.length === 0 ? (
-                  <div className="text-center py-8 text-sm text-gray-500">
-                    Type at least 2 characters to search
-                  </div>
-                ) : (
-                  <div className="text-center py-4 text-sm text-gray-500">
-                    Or type at least 2 characters to search for more
-                  </div>
-                )
+                <div className="text-center py-8 text-sm text-gray-500">
+                  Type at least 2 characters to search by name, email, or user code
+                </div>
               ) : isSearching ? (
                 <div className="text-center py-8">
                   <Loader2 className="w-6 h-6 animate-spin mx-auto text-primary-600 mb-2" />
@@ -268,7 +264,7 @@ export function NewMessageModal({ isOpen, onClose, currentUserRole }: Props) {
                 </div>
               ) : searchResults.length === 0 ? (
                 <div className="text-center py-8 text-sm text-gray-500">
-                  No users found
+                  No users found. Try a name, email, or user code.
                 </div>
               ) : (
                 <div className="space-y-2">
@@ -285,7 +281,11 @@ export function NewMessageModal({ isOpen, onClose, currentUserRole }: Props) {
                         <p className="font-medium text-gray-900">
                           {user.preferredName || user.name}
                         </p>
-                        <p className="text-xs text-gray-500">{user.role}</p>
+                        <p className="text-xs text-gray-500">
+                          {formatRoleLabel(user.role)}
+                          {user.userCode ? ` | ${user.userCode}` : ''}
+                          {user.email ? ` | ${user.email}` : ''}
+                        </p>
                       </div>
                     </button>
                   ))}
@@ -304,9 +304,15 @@ export function NewMessageModal({ isOpen, onClose, currentUserRole }: Props) {
                   <p className="font-medium text-gray-900">
                     {selectedUser.preferredName || selectedUser.name}
                   </p>
-                  <p className="text-xs text-gray-500">{selectedUser.role}</p>
+                  <p className="text-xs text-gray-500">{formatRoleLabel(selectedUser.role)}</p>
                 </div>
               </div>
+
+              {!isAdmin && requestStatus !== 'NONE' && (
+                <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-700">
+                  Status: {requestStatus === 'PENDING' ? 'Pending approval' : requestStatus === 'APPROVED' ? 'Approved' : 'Denied'}
+                </div>
+              )}
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -331,8 +337,10 @@ export function NewMessageModal({ isOpen, onClose, currentUserRole }: Props) {
                 {isAdmin
                   ? 'As an admin, you can message anyone directly.'
                   : currentUserRole === 'HOME_ADMIN'
-                    ? 'Message an admin directly, or request to connect with facilitators from your events.'
-                    : 'Your request will be sent to an admin for approval.'}
+                    ? 'You can message admins directly.'
+                    : canSendDirect
+                      ? `You can message ${selectedUserName} directly.`
+                      : 'This conversation needs admin approval before direct messaging is enabled.'}
               </p>
             </div>
           )}
@@ -347,6 +355,7 @@ export function NewMessageModal({ isOpen, onClose, currentUserRole }: Props) {
                 setSelectedUser(null)
                 setMessage('')
                 setError(null)
+                setPermission(null)
               }}
               className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
             >
@@ -354,7 +363,7 @@ export function NewMessageModal({ isOpen, onClose, currentUserRole }: Props) {
             </button>
             <button
               onClick={handleSendOrRequest}
-              disabled={isLoading || (!isAdmin && !message.trim())}
+              disabled={isLoading || (!isAdmin && !message.trim()) || isPending}
               className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {isLoading ? (
@@ -362,7 +371,7 @@ export function NewMessageModal({ isOpen, onClose, currentUserRole }: Props) {
               ) : (
                 <Send className="w-4 h-4" />
               )}
-              {isAdmin ? 'Send' : 'Request'}
+              {actionLabel}
             </button>
           </div>
         )}
