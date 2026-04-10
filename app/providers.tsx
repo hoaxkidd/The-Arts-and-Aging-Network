@@ -7,7 +7,12 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <GoogleMapsProvider>
       {children}
-      <Toaster position="top-right" richColors />
+      <Toaster
+        position="top-right"
+        richColors
+        closeButton
+        duration={10000}
+      />
     </GoogleMapsProvider>
   )
 }

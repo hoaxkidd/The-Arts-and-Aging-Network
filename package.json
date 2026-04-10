@@ -14,6 +14,7 @@
     "test:coverage": "vitest --coverage",
     "db:push": "node scripts/with-env.mjs .env.local -- npx prisma db push",
     "db:seed": "npx prisma db seed",
+    "db:seed:sample-reminders": "npx tsx scripts/seed-sample-reminders-broadcasts.ts",
     "qa:role-matrix": "node scripts/qa-role-matrix.mjs",
     "qa:seed-role-matrix": "npx tsx scripts/qa-seed-role-matrix.ts",
     "import-staff": "npx tsx scripts/import-staff-profiles.ts"

@@ -434,7 +434,7 @@ export function DashboardLayoutClient({ children, role, title = "Arts & Aging", 
 
   return (
     <div className="flex h-screen bg-background">
-      <aside className="hidden md:flex w-64 flex-col bg-primary-800 text-white shadow-xl">
+      <aside className="hidden md:flex w-64 flex-col bg-primary-500 text-white shadow-xl">
         <div className="p-6 border-b border-white/10">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg overflow-hidden flex items-center justify-center">
@@ -539,7 +539,7 @@ export function DashboardLayoutClient({ children, role, title = "Arts & Aging", 
             style={{ touchAction: 'none' }}
             aria-label="Close menu"
           />
-          <aside className="md:hidden fixed inset-y-0 left-0 z-50 w-64 flex flex-col bg-primary-800 text-white shadow-xl">
+          <aside className="md:hidden fixed inset-y-0 left-0 z-50 w-64 flex flex-col bg-primary-500 text-white shadow-xl">
             <div className="flex items-center justify-between p-4 border-b border-white/10">
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-lg overflow-hidden flex items-center justify-center">
@@ -638,10 +638,10 @@ export function DashboardLayoutClient({ children, role, title = "Arts & Aging", 
       )}
 
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="bg-secondary-400 border-b-2 border-secondary-500 px-4 md:px-6 py-4 flex items-start shadow-sm">
+        <header className="bg-secondary-400 px-4 md:px-6 py-4 flex items-start shadow-sm">
           <button
             onClick={() => setSidebarOpen(true)}
-            className="md:hidden p-2 text-gray-800 hover:text-gray-900 hover:bg-secondary-300 rounded-lg transition-colors shrink-0 mt-0.5"
+            className="md:hidden p-2 text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors shrink-0 mt-0.5"
             aria-label="Open menu"
           >
             <Menu className="w-6 h-6" />

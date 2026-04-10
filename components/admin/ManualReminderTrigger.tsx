@@ -1,12 +1,15 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Send, Loader2, CheckCircle, XCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { STYLES } from '@/lib/styles'
 import { processPendingReminders } from '@/app/actions/email-reminders'
+import { notify } from '@/lib/notify'
 
-export function ManualReminderTrigger() {
+export function ManualReminderTrigger({ compact = false }: { compact?: boolean }) {
+  const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<{
     success: boolean
@@ -24,18 +27,31 @@ export function ManualReminderTrigger() {
       const data = await processPendingReminders()
 
       if (!data.error) {
+        notify.success({
+          title: 'Reminder processing complete',
+          description: `${data.results?.sent ?? 0} sent, ${data.results?.failed ?? 0} failed`,
+        })
         setResult({
           success: true,
           message: 'Reminders processed successfully',
           results: data.results
         })
+        router.refresh()
       } else {
+        notify.error({
+          title: 'Reminder processing failed',
+          description: data.error,
+        })
         setResult({
           success: false,
           message: data.error
         })
       }
-    } catch (error) {
+    } catch {
+      notify.error({
+        title: 'Network error',
+        description: 'Unable to process reminders right now',
+      })
       setResult({
         success: false,
         message: 'Network error occurred'
@@ -45,6 +61,35 @@ export function ManualReminderTrigger() {
     }
   }
 
+  const triggerButton = (
+    <button
+      onClick={triggerReminders}
+      disabled={loading}
+      className={cn(
+        STYLES.btn,
+        STYLES.btnPrimary,
+        compact ? 'h-9 px-3 text-xs' : 'text-xs',
+        loading && 'opacity-50 cursor-not-allowed'
+      )}
+    >
+      {loading ? (
+        <>
+          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+          Processing...
+        </>
+      ) : (
+        <>
+          <Send className="w-3.5 h-3.5" />
+          Process Now
+        </>
+      )}
+    </button>
+  )
+
+  if (compact) {
+    return triggerButton
+  }
+
   return (
     <div className="bg-white rounded-lg border border-gray-200 p-4">
       <div className="flex items-center justify-between mb-3">
@@ -52,28 +97,7 @@ export function ManualReminderTrigger() {
           <h3 className="text-sm font-semibold text-gray-900">Manual Trigger</h3>
           <p className="text-xs text-gray-500">Process pending reminders now</p>
         </div>
-        <button
-          onClick={triggerReminders}
-          disabled={loading}
-          className={cn(
-            STYLES.btn,
-            STYLES.btnPrimary,
-            "text-xs",
-            loading && "opacity-50 cursor-not-allowed"
-          )}
-        >
-          {loading ? (
-            <>
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              Processing...
-            </>
-          ) : (
-            <>
-              <Send className="w-3.5 h-3.5" />
-              Process Now
-            </>
-          )}
-        </button>
+        {triggerButton}
       </div>
 
       {result && (

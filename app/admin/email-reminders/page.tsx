@@ -8,8 +8,56 @@ import { STYLES } from "@/lib/styles"
 import Link from "next/link"
 import { ManualReminderTrigger } from "@/components/admin/ManualReminderTrigger"
 import { EmailReminderFilters } from "@/components/admin/EmailReminderFilters"
+import { InlineStatStrip } from '@/components/ui/InlineStatStrip'
+import { EmailReminderRowActions } from '@/components/admin/EmailReminderRowActions'
+import { EmailReminderBulkActions } from '@/components/admin/EmailReminderBulkActions'
+import { parseReminderPolicyConfig, REMINDER_POLICY_TEMPLATE_TYPE } from '@/lib/reminder-policy'
+import { ReminderPolicyPanel } from '@/components/admin/ReminderPolicyPanel'
 
 export const dynamic = 'force-dynamic'
+
+function formatReminderTiming(reminderType: string) {
+  const base = reminderType
+    .replace(/^SAMPLE_/, '')
+    .replace(/^HOME_ADMIN_REMINDER_/, 'HOME_ADMIN_')
+    .replace(/^STAFF_REMINDER_/, 'STAFF_')
+
+  const daysMatch = base.match(/_(\d+)D$/)
+  const days = daysMatch ? Number(daysMatch[1]) : null
+
+  if (base.startsWith('HOME_ADMIN')) {
+    if (days !== null) return `Home Admin • ${days} day${days === 1 ? '' : 's'} before`
+    return 'Home Admin reminder'
+  }
+
+  if (base.startsWith('STAFF')) {
+    if (days !== null) return `Staff • ${days} day${days === 1 ? '' : 's'} before`
+    return 'Staff reminder'
+  }
+
+  return reminderType
+    .replaceAll('_', ' ')
+    .toLowerCase()
+    .replace(/\b\w/g, (ch) => ch.toUpperCase())
+}
+
+function formatCompactDateTime(value: Date | null) {
+  if (!value) return '-'
+  return value.toLocaleString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  })
+}
+
+function formatReminderStatus(status: string) {
+  if (status === 'PENDING') return 'Pending'
+  if (status === 'SENT') return 'Sent'
+  if (status === 'FAILED') return 'Failed'
+  if (status === 'CANCELLED') return 'Cancelled'
+  return status
+}
 
 export default async function EmailRemindersPage({
   searchParams
@@ -51,22 +99,29 @@ export default async function EmailRemindersPage({
     take: 100
   })
 
+  const policyTemplate = await prisma.emailTemplate.findUnique({
+    where: { type: REMINDER_POLICY_TEMPLATE_TYPE },
+    select: { content: true },
+  })
+  const reminderPolicyConfig = parseReminderPolicyConfig(policyTemplate?.content)
+
   // Get recipient details for each reminder
-  const remindersWithRecipients = await Promise.all(
-    reminders.map(async (reminder) => {
-      let recipientName = 'Unknown'
-      if (reminder.recipientId) {
-        const user = await prisma.user.findUnique({
-          where: { id: reminder.recipientId },
-          select: { name: true, preferredName: true }
-        })
-        if (user) {
-          recipientName = user.preferredName || user.name || 'Unknown'
-        }
-      }
-      return { ...reminder, recipientName }
-    })
-  )
+  const recipientIds = Array.from(new Set(reminders.map((reminder) => reminder.recipientId).filter((id): id is string => !!id)))
+  const recipients = recipientIds.length > 0
+    ? await prisma.user.findMany({
+        where: { id: { in: recipientIds } },
+        select: { id: true, name: true, preferredName: true },
+      })
+    : []
+  const recipientMap = new Map(recipients.map((recipient) => [recipient.id, recipient]))
+
+  const remindersWithRecipients = reminders.map((reminder) => {
+    const recipient = reminder.recipientId ? recipientMap.get(reminder.recipientId) : null
+    return {
+      ...reminder,
+      recipientName: recipient?.preferredName || recipient?.name || 'Unknown',
+    }
+  })
 
   // Calculate stats
   const stats = {
@@ -77,63 +132,59 @@ export default async function EmailRemindersPage({
     cancelled: reminders.filter(r => r.status === 'CANCELLED').length
   }
 
+  const pendingReminderIds = remindersWithRecipients
+    .filter((reminder) => reminder.status === 'PENDING')
+    .map((reminder) => reminder.id)
+
+  const failedReminderIds = remindersWithRecipients
+    .filter((reminder) => reminder.status === 'FAILED')
+    .map((reminder) => reminder.id)
+
   return (
-    <div className="h-full flex flex-col min-w-0">
-      <div className="flex flex-wrap gap-3 mb-6">
-        <div className={cn(STYLES.statsCard, "flex-1 min-w-[120px]")}>
-          <p className="text-xs text-gray-500 uppercase">Total</p>
-          <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
-        </div>
-        <div className={cn(STYLES.statsCard, "flex-1 min-w-[120px] border-yellow-200")}>
-          <p className="text-xs text-yellow-600 uppercase">Pending</p>
-          <p className="text-2xl font-bold text-yellow-600">{stats.pending}</p>
-        </div>
-        <div className={cn(STYLES.statsCard, "flex-1 min-w-[120px] border-green-200")}>
-          <p className="text-xs text-green-600 uppercase">Sent</p>
-          <p className="text-2xl font-bold text-green-600">{stats.sent}</p>
-        </div>
-        <div className={cn(STYLES.statsCard, "flex-1 min-w-[120px] border-red-200")}>
-          <p className="text-xs text-red-600 uppercase">Failed</p>
-          <p className="text-2xl font-bold text-red-600">{stats.failed}</p>
-        </div>
-        <div className={cn(STYLES.statsCard, "flex-1 min-w-[120px]")}>
-          <p className="text-xs text-gray-500 uppercase">Cancelled</p>
-          <p className="text-2xl font-bold text-gray-500">{stats.cancelled}</p>
-        </div>
-      </div>
+      <div className="h-full flex flex-col min-w-0">
+      <InlineStatStrip
+        className="mb-4"
+        items={[
+          { label: 'Total', value: stats.total },
+          { label: 'Pending', value: stats.pending, tone: 'warning' },
+          { label: 'Sent', value: stats.sent, tone: 'success' },
+          { label: 'Failed', value: stats.failed, tone: 'danger' },
+          { label: 'Cancelled', value: stats.cancelled },
+        ]}
+      />
 
-      {/* Manual Trigger */}
-      <div className="flex-shrink-0 mb-4">
-        <ManualReminderTrigger />
-      </div>
-
-      {/* Filters */}
-      <div className="flex-shrink-0 mb-4">
-        <EmailReminderFilters
-          currentStatus={statusFilter}
-          currentType={typeFilter}
-        />
+      <div className="mb-4 rounded-lg border border-gray-200 bg-white p-3">
+        <div className="flex flex-wrap md:flex-nowrap items-center gap-2">
+          <EmailReminderFilters
+            currentStatus={statusFilter}
+            currentType={typeFilter}
+            compact
+          />
+          <ManualReminderTrigger compact />
+          <EmailReminderBulkActions pendingIds={pendingReminderIds} failedIds={failedReminderIds} />
+        </div>
       </div>
 
       {/* Reminders Table */}
       <div className="flex-1 min-h-0 min-w-0 bg-white rounded-lg border border-gray-200 overflow-hidden">
         <div className="table-scroll-wrapper max-h-[calc(100vh-320px)] min-w-0">
-        <table className={STYLES.table}>
+        <table className={cn(STYLES.table, 'table-fixed min-w-[1240px]')}>
           <thead className="bg-gray-50">
             <tr className={STYLES.tableHeadRow}>
-              <th className={STYLES.tableHeader}>Event</th>
-              <th className={STYLES.tableHeader}>Recipient</th>
-              <th className={STYLES.tableHeader}>Type</th>
-              <th className={STYLES.tableHeader}>Timing</th>
-              <th className={STYLES.tableHeader}>Scheduled For</th>
-              <th className={STYLES.tableHeader}>Status</th>
-              <th className={STYLES.tableHeader}>Sent At</th>
+              <th className={cn(STYLES.tableHeader, 'w-[260px]')}>Event</th>
+              <th className={cn(STYLES.tableHeader, 'w-[200px]')}>Recipient</th>
+              <th className={cn(STYLES.tableHeader, 'w-[130px]')}>Type</th>
+              <th className={cn(STYLES.tableHeader, 'w-[230px]')}>Timing</th>
+              <th className={cn(STYLES.tableHeader, 'w-[150px]')}>Scheduled</th>
+              <th className={cn(STYLES.tableHeader, 'w-[130px]')}>Status</th>
+              <th className={cn(STYLES.tableHeader, 'w-[150px]')}>Sent</th>
+              <th className={cn(STYLES.tableHeader, 'w-[90px]')}>Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
             {remindersWithRecipients.length === 0 ? (
               <tr>
-                <td colSpan={7} className={cn(STYLES.tableCell, "text-center py-12")}>
+                <td colSpan={8} className={cn(STYLES.tableCell, "text-center py-12")}>
                   No reminders found
                 </td>
               </tr>
@@ -143,7 +194,8 @@ export default async function EmailRemindersPage({
                   <td className={STYLES.tableCell}>
                     <Link
                       href={`/events/${reminder.event.id}`}
-                      className="text-sm font-medium text-primary-600 hover:text-primary-700"
+                      className="block max-w-[230px] truncate text-sm font-medium text-primary-600 hover:text-primary-700"
+                      title={reminder.event.title}
                     >
                       {reminder.event.title}
                     </Link>
@@ -153,12 +205,8 @@ export default async function EmailRemindersPage({
                         {reminder.event.geriatricHome.name}
                       </p>
                     )}
-                    <p className="text-xs text-gray-400">
-                      {reminder.event.startDateTime.toLocaleDateString('en-US', {
-                        month: 'long',
-                        day: 'numeric',
-                        year: 'numeric'
-                      })}
+                    <p className="text-xs text-gray-400" title={formatCompactDateTime(reminder.event.startDateTime)}>
+                      {formatCompactDateTime(reminder.event.startDateTime)}
                     </p>
                   </td>
                   <td className={STYLES.tableCell}>
@@ -166,7 +214,7 @@ export default async function EmailRemindersPage({
                       <div className="w-6 h-6 rounded-full bg-primary-100 text-primary-600 flex items-center justify-center text-xs font-medium">
                         {reminder.recipientName[0] || '?'}
                       </div>
-                      <span className="text-sm text-gray-900">{reminder.recipientName}</span>
+                      <span className="max-w-[150px] truncate text-sm text-gray-900" title={reminder.recipientName}>{reminder.recipientName}</span>
                     </div>
                   </td>
                   <td className={STYLES.tableCell}>
@@ -184,27 +232,21 @@ export default async function EmailRemindersPage({
                     </span>
                   </td>
                   <td className={STYLES.tableCell}>
-                    <span className="text-sm text-gray-600">
-                      {reminder.reminderType.replace('_', ' ')}
+                    <span
+                      className="inline-flex max-w-[220px] items-center rounded bg-indigo-50 px-2 py-1 text-xs font-medium text-indigo-700 whitespace-nowrap truncate"
+                      title={formatReminderTiming(reminder.reminderType)}
+                    >
+                      {formatReminderTiming(reminder.reminderType)}
                     </span>
                   </td>
-                  <td className={STYLES.tableCell}>
-                    <span className="text-sm text-gray-900">
-                      {reminder.scheduledFor.toLocaleDateString('en-US', {
-                        month: 'long',
-                        day: 'numeric'
-                      })}
-                    </span>
-                    <span className="text-xs text-gray-500 block">
-                      {reminder.scheduledFor.toLocaleTimeString('en-US', {
-                        hour: 'numeric',
-                        minute: '2-digit'
-                      })}
+                  <td className={cn(STYLES.tableCell, 'whitespace-nowrap')}>
+                    <span className="text-sm text-gray-900" title={formatCompactDateTime(reminder.scheduledFor)}>
+                      {formatCompactDateTime(reminder.scheduledFor)}
                     </span>
                   </td>
                   <td className={STYLES.tableCell}>
                     <span className={cn(
-                      "inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium",
+                      "inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium whitespace-nowrap",
                       reminder.status === 'SENT' && "bg-green-100 text-green-700",
                       reminder.status === 'PENDING' && "bg-yellow-100 text-yellow-700",
                       reminder.status === 'FAILED' && "bg-red-100 text-red-700",
@@ -214,7 +256,7 @@ export default async function EmailRemindersPage({
                       {reminder.status === 'PENDING' && <Clock className="w-3 h-3" />}
                       {reminder.status === 'FAILED' && <XCircle className="w-3 h-3" />}
                       {reminder.status === 'CANCELLED' && <AlertCircle className="w-3 h-3" />}
-                      {reminder.status}
+                      {formatReminderStatus(reminder.status)}
                     </span>
                     {reminder.error && (
                       <p className="text-xs text-red-500 mt-1 max-w-xs truncate" title={reminder.error}>
@@ -222,25 +264,26 @@ export default async function EmailRemindersPage({
                       </p>
                     )}
                   </td>
-                  <td className={STYLES.tableCell}>
+                  <td className={cn(STYLES.tableCell, 'whitespace-nowrap')}>
                     {reminder.sentAt ? (
-                      <>
-                        <span className="text-sm text-gray-900">
-                          {reminder.sentAt.toLocaleDateString('en-US', {
-                            month: 'long',
-                            day: 'numeric'
-                          })}
-                        </span>
-                        <span className="text-xs text-gray-500 block">
-                          {reminder.sentAt.toLocaleTimeString('en-US', {
-                            hour: 'numeric',
-                            minute: '2-digit'
-                          })}
-                        </span>
-                      </>
+                      <span className="text-sm text-gray-900" title={formatCompactDateTime(reminder.sentAt)}>
+                        {formatCompactDateTime(reminder.sentAt)}
+                      </span>
                     ) : (
                       <span className="text-sm text-gray-400">-</span>
                     )}
+                  </td>
+                  <td className={STYLES.tableCell}>
+                    <EmailReminderRowActions
+                      reminderId={reminder.id}
+                      status={reminder.status}
+                      eventTitle={reminder.event.title}
+                      recipientName={reminder.recipientName}
+                      reminderType={formatReminderTiming(reminder.reminderType)}
+                      scheduledFor={reminder.scheduledFor.toISOString()}
+                      sentAt={reminder.sentAt?.toISOString() || null}
+                      error={reminder.error || null}
+                    />
                   </td>
                 </tr>
               ))
@@ -250,21 +293,7 @@ export default async function EmailRemindersPage({
         </div>
       </div>
 
-      {/* Instructions */}
-      <div className="flex-shrink-0 mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-        <div className="flex items-start gap-3">
-          <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-          <div className="text-sm text-blue-900">
-            <p className="font-medium mb-1">Automatic Email Reminders</p>
-            <ul className="text-xs text-blue-700 space-y-1 list-disc list-inside">
-              <li>Home admins receive reminders 7 and 5 days before events</li>
-              <li>Staff members receive reminders 3 and 1 day before events</li>
-              <li>Reminders are processed automatically by the cron job at: <code className="bg-blue-100 px-1 rounded">/api/cron/reminders</code></li>
-              <li>Configure the cron job to run every hour for optimal delivery</li>
-            </ul>
-          </div>
-        </div>
-      </div>
+      <ReminderPolicyPanel config={reminderPolicyConfig} />
     </div>
   )
 }

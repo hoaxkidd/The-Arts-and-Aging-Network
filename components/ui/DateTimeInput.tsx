@@ -35,10 +35,12 @@ export function DateTimeInput({
   const [dateValue, setDateValue] = useState('')
   const [timeValue, setTimeValue] = useState('')
   const [showPicker, setShowPicker] = useState(false)
+  const [pickerPosition, setPickerPosition] = useState<{ top: number; left: number } | null>(null)
   const [viewMonth, setViewMonth] = useState(new Date().getMonth())
   const [viewYear, setViewYear] = useState(new Date().getFullYear())
   const [error, setError] = useState('')
   const containerRef = useRef<HTMLDivElement>(null)
+  const dateFieldRef = useRef<HTMLDivElement>(null)
 
   // Initialize from value
   useEffect(() => {
@@ -88,6 +90,37 @@ export function DateTimeInput({
     if (showPicker) {
       document.addEventListener('mousedown', handleClickOutside)
       return () => document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [showPicker])
+
+  useEffect(() => {
+    if (!showPicker) return
+
+    const updatePickerPosition = () => {
+      const anchor = dateFieldRef.current
+      if (!anchor) return
+
+      const rect = anchor.getBoundingClientRect()
+      const pickerWidth = 288
+      const pickerHeight = 360
+
+      const left = Math.max(8, Math.min(rect.left, window.innerWidth - pickerWidth - 8))
+      const openAbove = rect.bottom + pickerHeight + 8 > window.innerHeight
+      const top = openAbove
+        ? Math.max(8, rect.top - pickerHeight - 8)
+        : Math.max(8, rect.bottom + 4)
+
+      setPickerPosition({ top, left })
+    }
+
+    updatePickerPosition()
+
+    window.addEventListener('resize', updatePickerPosition)
+    window.addEventListener('scroll', updatePickerPosition, true)
+
+    return () => {
+      window.removeEventListener('resize', updatePickerPosition)
+      window.removeEventListener('scroll', updatePickerPosition, true)
     }
   }, [showPicker])
 
@@ -277,7 +310,7 @@ export function DateTimeInput({
       <div className="flex gap-2">
         <input type="hidden" name={name} value={getCombinedValue(dateValue, timeValue)} />
         {/* Date input */}
-        <div className="relative flex-1">
+        <div className="relative flex-1" ref={dateFieldRef}>
           <input
             type="text"
             name={`${name}_date`}
@@ -331,7 +364,13 @@ export function DateTimeInput({
 
       {/* Custom Calendar Dropdown */}
       {showPicker && !disabled && (
-        <div className="absolute z-50 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg p-3 w-72 left-0">
+        <div
+          className="fixed z-50 bg-white border border-gray-200 rounded-lg shadow-lg p-3 w-72"
+          style={{
+            top: pickerPosition?.top ?? 0,
+            left: pickerPosition?.left ?? 0,
+          }}
+        >
           {/* Month/Year Header */}
           <div className="flex items-center justify-between mb-3">
             <button

@@ -13,7 +13,7 @@ import { LocationEditModal } from "@/components/admin/LocationEditModal"
 import { DateTimeInput } from "@/components/ui/DateTimeInput"
 import { toInputDateTime } from "@/lib/date-utils"
 import { useRouter } from 'next/navigation'
-import { toast } from 'sonner'
+import { notify } from '@/lib/notify'
 
 interface CurrentUser {
   name: string
@@ -128,7 +128,7 @@ export function EventForm({
     }
 
     if (initialData?.id) {
-      toast.success('Event updated successfully')
+      notify.success({ title: 'Event updated successfully' })
     }
 
     setIsSubmitting(false)

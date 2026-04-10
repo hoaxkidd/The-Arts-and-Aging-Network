@@ -2,14 +2,33 @@
 
 import { prisma } from "@/lib/prisma"
 import { auth } from "@/auth"
+import { revalidatePath } from 'next/cache'
 import { formatEventTime, formatEventDateRange, generateCalendarLinks, getCalendarSectionHtml } from "@/lib/email/calendar"
 import { logger } from "@/lib/logger"
 import { resolveHomeNotificationRecipient } from "@/lib/home-notification-recipient"
+import {
+  ALLOWED_CRON_ENDPOINTS,
+  ALLOWED_CRON_FREQUENCIES,
+  DEFAULT_REMINDER_POLICY_CONFIG,
+  normalizeOffsets,
+  parseReminderPolicyConfig,
+  REMINDER_POLICY_TEMPLATE_TYPE,
+  type ReminderPolicyConfig,
+} from '@/lib/reminder-policy'
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://artsandaging.com'
 const FROM_EMAIL = process.env.MAILCHIMP_FROM_EMAIL || 'noreply@artsandaging.com'
 const FROM_NAME = process.env.MAILCHIMP_FROM_NAME || 'Arts and Aging'
 const SUPPORT_EMAIL = process.env.SUPPORT_EMAIL || 'info@artsandaging.com'
+
+async function readReminderPolicyConfigFromDb() {
+  const template = await prisma.emailTemplate.findUnique({
+    where: { type: REMINDER_POLICY_TEMPLATE_TYPE },
+    select: { content: true },
+  })
+
+  return parseReminderPolicyConfig(template?.content)
+}
 
 // Send email via Mandrill Transactional
 async function sendEmail(to: string, subject: string, html: string) {
@@ -72,62 +91,73 @@ export async function scheduleEventReminders(eventId: string) {
     const eventDate = new Date(event.startDateTime)
     const now = new Date()
 
-    // Get reminder days from event, default to 5 for home admin and 3 for staff
-    const homeAdminReminderDays = event.homeAdminReminderDays || 5
-    const staffReminderDays = event.staffReminderDays || 3
+    const config = await readReminderPolicyConfigFromDb()
 
-    // Calculate reminder dates
-    const homeAdminReminderDate = new Date(eventDate)
-    homeAdminReminderDate.setDate(homeAdminReminderDate.getDate() - homeAdminReminderDays)
+    const homeAdminReminderDays = event.homeAdminReminderDays
+      ? [event.homeAdminReminderDays]
+      : config.homeAdminOffsets
 
-    const staffReminderDate = new Date(eventDate)
-    staffReminderDate.setDate(staffReminderDate.getDate() - staffReminderDays)
+    const staffReminderDays = event.staffReminderDays
+      ? [event.staffReminderDays]
+      : config.staffOffsets
 
-    // Schedule reminder for HOME_ADMIN
-    if (event.geriatricHome && homeAdminReminderDate > now) {
-      await prisma.emailReminder.upsert({
-        where: {
-          eventId_recipientType_recipientId_reminderType: {
+    // Schedule reminders for HOME_ADMIN
+    if (event.geriatricHome) {
+      for (const days of homeAdminReminderDays) {
+        const reminderDate = new Date(eventDate)
+        reminderDate.setDate(reminderDate.getDate() - days)
+
+        if (reminderDate <= now) continue
+
+        await prisma.emailReminder.upsert({
+          where: {
+            eventId_recipientType_recipientId_reminderType: {
+              eventId: event.id,
+              recipientType: 'HOME_ADMIN',
+              recipientId: event.geriatricHome.userId,
+              reminderType: `HOME_ADMIN_REMINDER_${days}D`,
+            },
+          },
+          update: {
+            scheduledFor: reminderDate,
+            status: 'PENDING',
+            error: null,
+          },
+          create: {
             eventId: event.id,
             recipientType: 'HOME_ADMIN',
             recipientId: event.geriatricHome.userId,
-            reminderType: 'HOME_ADMIN_REMINDER',
-          },
-        },
-        update: {
-          scheduledFor: homeAdminReminderDate,
-          status: 'PENDING',
-          error: null,
-        },
-        create: {
-          eventId: event.id,
-          recipientType: 'HOME_ADMIN',
-          recipientId: event.geriatricHome.userId,
-          reminderType: 'HOME_ADMIN_REMINDER',
-          scheduledFor: homeAdminReminderDate,
-          status: 'PENDING',
-        }
-      })
+            reminderType: `HOME_ADMIN_REMINDER_${days}D`,
+            scheduledFor: reminderDate,
+            status: 'PENDING',
+          }
+        })
+      }
     }
 
-    // Schedule reminder for STAFF (using dynamic days from event)
+    // Schedule reminders for STAFF (using dynamic days from event)
     const confirmedStaff = event.attendances.filter(a =>
       a.user.role && ['FACILITATOR'].includes(a.user.role)
     )
 
     for (const attendance of confirmedStaff) {
-      if (staffReminderDate > now) {
+      for (const days of staffReminderDays) {
+        const reminderDate = new Date(eventDate)
+        reminderDate.setDate(reminderDate.getDate() - days)
+
+        if (reminderDate <= now) continue
+
         await prisma.emailReminder.upsert({
           where: {
             eventId_recipientType_recipientId_reminderType: {
               eventId: event.id,
               recipientType: 'STAFF',
               recipientId: attendance.userId,
-              reminderType: 'STAFF_REMINDER',
+              reminderType: `STAFF_REMINDER_${days}D`,
             },
           },
           update: {
-            scheduledFor: staffReminderDate,
+            scheduledFor: reminderDate,
             status: 'PENDING',
             error: null,
           },
@@ -135,8 +165,8 @@ export async function scheduleEventReminders(eventId: string) {
             eventId: event.id,
             recipientType: 'STAFF',
             recipientId: attendance.userId,
-            reminderType: 'STAFF_REMINDER',
-            scheduledFor: staffReminderDate,
+            reminderType: `STAFF_REMINDER_${days}D`,
+            scheduledFor: reminderDate,
             status: 'PENDING',
           }
         })
@@ -147,6 +177,227 @@ export async function scheduleEventReminders(eventId: string) {
   } catch (error) {
     logger.error('Schedule reminders error:', error)
     return { error: "Failed to schedule reminders" }
+  }
+}
+
+export async function getReminderPolicyConfig() {
+  const session = await auth()
+  if (session?.user?.role !== 'ADMIN') {
+    return { error: 'Unauthorized' }
+  }
+
+  try {
+    const config = await readReminderPolicyConfigFromDb()
+    return { success: true, data: config }
+  } catch (error) {
+    logger.error('Get reminder policy config error:', error)
+    return { error: 'Failed to load reminder policy config' }
+  }
+}
+
+export async function updateHomeAdminReminderOffsets(offsets: number[]) {
+  const session = await auth()
+  if (session?.user?.role !== 'ADMIN' || !session.user.id) {
+    return { error: 'Unauthorized' }
+  }
+
+  const normalized = normalizeOffsets(offsets, DEFAULT_REMINDER_POLICY_CONFIG.homeAdminOffsets).slice(0, 2)
+
+  try {
+    const current = await readReminderPolicyConfigFromDb()
+    const nextConfig: ReminderPolicyConfig = {
+      ...current,
+      homeAdminOffsets: normalized,
+    }
+
+    await prisma.$transaction(async (tx) => {
+      await tx.emailTemplate.upsert({
+        where: { type: REMINDER_POLICY_TEMPLATE_TYPE },
+        update: {
+          name: 'Email Reminder Policy Config',
+          subject: 'internal-config',
+          content: JSON.stringify(nextConfig),
+          isActive: true,
+        },
+        create: {
+          type: REMINDER_POLICY_TEMPLATE_TYPE,
+          name: 'Email Reminder Policy Config',
+          subject: 'internal-config',
+          content: JSON.stringify(nextConfig),
+          isActive: true,
+        },
+      })
+
+      await tx.auditLog.create({
+        data: {
+          action: 'EMAIL_REMINDER_POLICY_HOME_ADMIN_UPDATED',
+          userId: session.user.id,
+          details: JSON.stringify({ homeAdminOffsets: normalized }),
+        },
+      })
+    })
+
+    revalidatePath('/admin/email-reminders')
+    return { success: true, data: nextConfig }
+  } catch (error) {
+    logger.error('Update home admin reminder offsets error:', error)
+    return { error: 'Failed to update home admin reminder policy' }
+  }
+}
+
+export async function updateStaffReminderOffsets(offsets: number[]) {
+  const session = await auth()
+  if (session?.user?.role !== 'ADMIN' || !session.user.id) {
+    return { error: 'Unauthorized' }
+  }
+
+  const normalized = normalizeOffsets(offsets, DEFAULT_REMINDER_POLICY_CONFIG.staffOffsets).slice(0, 2)
+
+  try {
+    const current = await readReminderPolicyConfigFromDb()
+    const nextConfig: ReminderPolicyConfig = {
+      ...current,
+      staffOffsets: normalized,
+    }
+
+    await prisma.$transaction(async (tx) => {
+      await tx.emailTemplate.upsert({
+        where: { type: REMINDER_POLICY_TEMPLATE_TYPE },
+        update: {
+          name: 'Email Reminder Policy Config',
+          subject: 'internal-config',
+          content: JSON.stringify(nextConfig),
+          isActive: true,
+        },
+        create: {
+          type: REMINDER_POLICY_TEMPLATE_TYPE,
+          name: 'Email Reminder Policy Config',
+          subject: 'internal-config',
+          content: JSON.stringify(nextConfig),
+          isActive: true,
+        },
+      })
+
+      await tx.auditLog.create({
+        data: {
+          action: 'EMAIL_REMINDER_POLICY_STAFF_UPDATED',
+          userId: session.user.id,
+          details: JSON.stringify({ staffOffsets: normalized }),
+        },
+      })
+    })
+
+    revalidatePath('/admin/email-reminders')
+    return { success: true, data: nextConfig }
+  } catch (error) {
+    logger.error('Update staff reminder offsets error:', error)
+    return { error: 'Failed to update staff reminder policy' }
+  }
+}
+
+export async function updateReminderCronEndpoint(endpoint: string) {
+  const session = await auth()
+  if (session?.user?.role !== 'ADMIN' || !session.user.id) {
+    return { error: 'Unauthorized' }
+  }
+
+  const nextEndpoint = endpoint.trim()
+  if (!ALLOWED_CRON_ENDPOINTS.includes(nextEndpoint as (typeof ALLOWED_CRON_ENDPOINTS)[number])) {
+    return { error: 'Unsupported cron endpoint' }
+  }
+
+  try {
+    const current = await readReminderPolicyConfigFromDb()
+    const nextConfig: ReminderPolicyConfig = {
+      ...current,
+      cronEndpoint: nextEndpoint,
+    }
+
+    await prisma.$transaction(async (tx) => {
+      await tx.emailTemplate.upsert({
+        where: { type: REMINDER_POLICY_TEMPLATE_TYPE },
+        update: {
+          name: 'Email Reminder Policy Config',
+          subject: 'internal-config',
+          content: JSON.stringify(nextConfig),
+          isActive: true,
+        },
+        create: {
+          type: REMINDER_POLICY_TEMPLATE_TYPE,
+          name: 'Email Reminder Policy Config',
+          subject: 'internal-config',
+          content: JSON.stringify(nextConfig),
+          isActive: true,
+        },
+      })
+
+      await tx.auditLog.create({
+        data: {
+          action: 'EMAIL_REMINDER_POLICY_CRON_ENDPOINT_UPDATED',
+          userId: session.user.id,
+          details: JSON.stringify({ cronEndpoint: nextEndpoint }),
+        },
+      })
+    })
+
+    revalidatePath('/admin/email-reminders')
+    return { success: true, data: nextConfig }
+  } catch (error) {
+    logger.error('Update reminder cron endpoint error:', error)
+    return { error: 'Failed to update reminder cron endpoint' }
+  }
+}
+
+export async function updateReminderCronFrequency(frequency: string) {
+  const session = await auth()
+  if (session?.user?.role !== 'ADMIN' || !session.user.id) {
+    return { error: 'Unauthorized' }
+  }
+
+  const nextFrequency = frequency.trim()
+  if (!ALLOWED_CRON_FREQUENCIES.includes(nextFrequency as (typeof ALLOWED_CRON_FREQUENCIES)[number])) {
+    return { error: 'Unsupported cron frequency' }
+  }
+
+  try {
+    const current = await readReminderPolicyConfigFromDb()
+    const nextConfig: ReminderPolicyConfig = {
+      ...current,
+      cronFrequency: nextFrequency,
+    }
+
+    await prisma.$transaction(async (tx) => {
+      await tx.emailTemplate.upsert({
+        where: { type: REMINDER_POLICY_TEMPLATE_TYPE },
+        update: {
+          name: 'Email Reminder Policy Config',
+          subject: 'internal-config',
+          content: JSON.stringify(nextConfig),
+          isActive: true,
+        },
+        create: {
+          type: REMINDER_POLICY_TEMPLATE_TYPE,
+          name: 'Email Reminder Policy Config',
+          subject: 'internal-config',
+          content: JSON.stringify(nextConfig),
+          isActive: true,
+        },
+      })
+
+      await tx.auditLog.create({
+        data: {
+          action: 'EMAIL_REMINDER_POLICY_CRON_FREQUENCY_UPDATED',
+          userId: session.user.id,
+          details: JSON.stringify({ cronFrequency: nextFrequency }),
+        },
+      })
+    })
+
+    revalidatePath('/admin/email-reminders')
+    return { success: true, data: nextConfig }
+  } catch (error) {
+    logger.error('Update reminder cron frequency error:', error)
+    return { error: 'Failed to update reminder cron frequency' }
   }
 }
 
@@ -286,6 +537,16 @@ export async function processPendingReminders(options?: { trustedCron?: boolean 
       }
     }
 
+    if (session?.user?.id && !options?.trustedCron) {
+      await prisma.auditLog.create({
+        data: {
+          action: 'EMAIL_REMINDERS_PROCESSED_MANUAL',
+          userId: session.user.id,
+          details: JSON.stringify(results),
+        },
+      })
+    }
+
     return {
       success: true,
       results
@@ -293,6 +554,220 @@ export async function processPendingReminders(options?: { trustedCron?: boolean 
   } catch (error) {
     logger.error('Process reminders error:', error)
     return { error: "Failed to process reminders" }
+  }
+}
+
+export async function retryEmailReminder(reminderId: string) {
+  const session = await auth()
+  if (session?.user?.role !== 'ADMIN' || !session.user.id) {
+    return { error: 'Unauthorized' }
+  }
+
+  try {
+    const reminder = await prisma.emailReminder.findUnique({
+      where: { id: reminderId },
+      select: { id: true, status: true, eventId: true },
+    })
+
+    if (!reminder) return { error: 'Reminder not found' }
+    if (reminder.status !== 'FAILED') return { error: 'Only failed reminders can be retried' }
+
+    await prisma.$transaction(async (tx) => {
+      await tx.emailReminder.update({
+        where: { id: reminderId },
+        data: {
+          status: 'PENDING',
+          error: null,
+          sentAt: null,
+          scheduledFor: new Date(),
+        },
+      })
+
+      await tx.auditLog.create({
+        data: {
+          action: 'EMAIL_REMINDER_RETRIED',
+          userId: session.user.id,
+          details: JSON.stringify({ reminderId, eventId: reminder.eventId }),
+        },
+      })
+    })
+
+    revalidatePath('/admin/email-reminders')
+    return { success: true }
+  } catch (error) {
+    logger.error('Retry reminder error:', error)
+    return { error: 'Failed to retry reminder' }
+  }
+}
+
+export async function cancelEmailReminder(reminderId: string) {
+  const session = await auth()
+  if (session?.user?.role !== 'ADMIN' || !session.user.id) {
+    return { error: 'Unauthorized' }
+  }
+
+  try {
+    const reminder = await prisma.emailReminder.findUnique({
+      where: { id: reminderId },
+      select: { id: true, status: true, eventId: true },
+    })
+
+    if (!reminder) return { error: 'Reminder not found' }
+    if (reminder.status !== 'PENDING') return { error: 'Only pending reminders can be cancelled' }
+
+    await prisma.$transaction(async (tx) => {
+      await tx.emailReminder.update({
+        where: { id: reminderId },
+        data: { status: 'CANCELLED' },
+      })
+
+      await tx.auditLog.create({
+        data: {
+          action: 'EMAIL_REMINDER_CANCELLED',
+          userId: session.user.id,
+          details: JSON.stringify({ reminderId, eventId: reminder.eventId }),
+        },
+      })
+    })
+
+    revalidatePath('/admin/email-reminders')
+    return { success: true }
+  } catch (error) {
+    logger.error('Cancel reminder error:', error)
+    return { error: 'Failed to cancel reminder' }
+  }
+}
+
+export async function rescheduleEmailReminder(reminderId: string, scheduledForIso: string) {
+  const session = await auth()
+  if (session?.user?.role !== 'ADMIN' || !session.user.id) {
+    return { error: 'Unauthorized' }
+  }
+
+  const scheduledFor = new Date(scheduledForIso)
+  if (Number.isNaN(scheduledFor.getTime())) {
+    return { error: 'Invalid scheduled date' }
+  }
+
+  try {
+    const reminder = await prisma.emailReminder.findUnique({
+      where: { id: reminderId },
+      select: { id: true, status: true, eventId: true },
+    })
+
+    if (!reminder) return { error: 'Reminder not found' }
+    if (!['PENDING', 'FAILED'].includes(reminder.status)) {
+      return { error: 'Only pending or failed reminders can be rescheduled' }
+    }
+
+    await prisma.$transaction(async (tx) => {
+      await tx.emailReminder.update({
+        where: { id: reminderId },
+        data: {
+          status: 'PENDING',
+          scheduledFor,
+          error: null,
+          sentAt: null,
+        },
+      })
+
+      await tx.auditLog.create({
+        data: {
+          action: 'EMAIL_REMINDER_RESCHEDULED',
+          userId: session.user.id,
+          details: JSON.stringify({ reminderId, eventId: reminder.eventId, scheduledFor: scheduledFor.toISOString() }),
+        },
+      })
+    })
+
+    revalidatePath('/admin/email-reminders')
+    return { success: true }
+  } catch (error) {
+    logger.error('Reschedule reminder error:', error)
+    return { error: 'Failed to reschedule reminder' }
+  }
+}
+
+export async function bulkCancelEmailReminders(reminderIds: string[]) {
+  const session = await auth()
+  if (session?.user?.role !== 'ADMIN' || !session.user.id) {
+    return { error: 'Unauthorized' }
+  }
+
+  const ids = Array.from(new Set(reminderIds.filter(Boolean))).slice(0, 500)
+  if (ids.length === 0) return { error: 'No reminders selected' }
+
+  try {
+    const result = await prisma.$transaction(async (tx) => {
+      const update = await tx.emailReminder.updateMany({
+        where: { id: { in: ids }, status: 'PENDING' },
+        data: { status: 'CANCELLED' },
+      })
+
+      await tx.auditLog.create({
+        data: {
+          action: 'EMAIL_REMINDER_BULK_CANCELLED',
+          userId: session.user.id,
+          details: JSON.stringify({
+            selectedCount: ids.length,
+            cancelledCount: update.count,
+            reminderIds: ids,
+          }),
+        },
+      })
+
+      return update.count
+    })
+
+    revalidatePath('/admin/email-reminders')
+    return { success: true, cancelledCount: result, selectedCount: ids.length }
+  } catch (error) {
+    logger.error('Bulk cancel reminders error:', error)
+    return { error: 'Failed to cancel selected reminders' }
+  }
+}
+
+export async function bulkRetryEmailReminders(reminderIds: string[]) {
+  const session = await auth()
+  if (session?.user?.role !== 'ADMIN' || !session.user.id) {
+    return { error: 'Unauthorized' }
+  }
+
+  const ids = Array.from(new Set(reminderIds.filter(Boolean))).slice(0, 500)
+  if (ids.length === 0) return { error: 'No reminders selected' }
+
+  try {
+    const result = await prisma.$transaction(async (tx) => {
+      const update = await tx.emailReminder.updateMany({
+        where: { id: { in: ids }, status: 'FAILED' },
+        data: {
+          status: 'PENDING',
+          error: null,
+          sentAt: null,
+          scheduledFor: new Date(),
+        },
+      })
+
+      await tx.auditLog.create({
+        data: {
+          action: 'EMAIL_REMINDER_BULK_RETRIED',
+          userId: session.user.id,
+          details: JSON.stringify({
+            selectedCount: ids.length,
+            retriedCount: update.count,
+            reminderIds: ids,
+          }),
+        },
+      })
+
+      return update.count
+    })
+
+    revalidatePath('/admin/email-reminders')
+    return { success: true, retriedCount: result, selectedCount: ids.length }
+  } catch (error) {
+    logger.error('Bulk retry reminders error:', error)
+    return { error: 'Failed to retry selected reminders' }
   }
 }
 

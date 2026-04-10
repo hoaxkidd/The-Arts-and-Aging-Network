@@ -10,7 +10,7 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { STYLES } from '@/lib/styles'
-import { toast } from 'sonner'
+import { notify } from '@/lib/notify'
 import {
   updateHomeDetails,
   addPersonnel,
@@ -319,7 +319,7 @@ export function HomeDetailsClient({ home }: { home: HomeData }) {
       if (result.success) {
         router.push('/admin/users?tab=homes')
       } else {
-        toast.error(result.error || 'Failed to delete home')
+        notify.error({ title: 'Delete failed', description: result.error || 'Failed to delete home' })
       }
     })
   }
@@ -331,7 +331,7 @@ export function HomeDetailsClient({ home }: { home: HomeData }) {
         setShowPersonnelModal(false)
         router.refresh()
       } else {
-        toast.error(result.error || 'Failed to add personnel')
+        notify.error({ title: 'Add failed', description: result.error || 'Failed to add personnel' })
       }
     })
   }
@@ -345,7 +345,7 @@ export function HomeDetailsClient({ home }: { home: HomeData }) {
         setShowPersonnelModal(false)
         router.refresh()
       } else {
-        toast.error(result.error || 'Failed to update personnel')
+        notify.error({ title: 'Update failed', description: result.error || 'Failed to update personnel' })
       }
     })
   }
@@ -356,7 +356,7 @@ export function HomeDetailsClient({ home }: { home: HomeData }) {
       const result = await removePersonnel(home.id, personnelId)
       setPersonnelToDelete(null)
       if (result.success) router.refresh()
-      else toast.error(result.error || 'Failed to remove personnel')
+      else notify.error({ title: 'Remove failed', description: result.error || 'Failed to remove personnel' })
     })
   }
 

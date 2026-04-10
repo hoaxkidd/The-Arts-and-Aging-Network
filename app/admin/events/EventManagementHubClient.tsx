@@ -9,9 +9,9 @@ import { AdminRequestList } from "@/components/event-requests/AdminRequestList"
 import Link from "next/link"
 import { STYLES } from "@/lib/styles"
 import { cn } from "@/lib/utils"
-import { toast } from 'sonner'
+import { notify } from '@/lib/notify'
 
-import { AdminCalendarView } from "@/components/admin/events/AdminCalendarView"
+import { PublicCalendarView } from '@/components/events/PublicCalendarView'
 
 type EventManagementHubClientProps = {
   events: Record<string, unknown>[]
@@ -36,11 +36,14 @@ export function EventManagementHubClient({ events, requests }: EventManagementHu
     if (createdParam !== '1') return
 
     hasNotifiedRef.current = true
-    toast.success('Event created successfully')
+    notify.success({ title: 'Event created successfully' })
 
     const conflictCount = Number.parseInt(conflictParam || '0', 10)
     if (Number.isFinite(conflictCount) && conflictCount > 0) {
-      toast.warning(`Potential schedule conflict: ${conflictCount} event(s) start within 1 hour.`)
+      notify.warning({
+        title: 'Potential schedule conflict',
+        description: `${conflictCount} event(s) start within 1 hour.`,
+      })
     }
 
     const keepTab = tabParam && ['list', 'calendar', 'requests'].includes(tabParam)
@@ -79,7 +82,13 @@ export function EventManagementHubClient({ events, requests }: EventManagementHu
 
       <div className="flex-1 min-h-0 overflow-hidden pb-2">
         {activeTab === 'list' && <EventListTable events={events as never[]} />}
-        {activeTab === 'calendar' && <AdminCalendarView events={events as never[]} />}
+        {activeTab === 'calendar' && (
+          <PublicCalendarView
+            events={events as never[]}
+            userRole="ADMIN"
+            canCreateEvents
+          />
+        )}
         {activeTab === 'requests' && <AdminRequestList requests={requests as never[]} />}
       </div>
     </div>

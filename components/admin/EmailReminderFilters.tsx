@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils'
 type EmailReminderFiltersProps = {
   currentStatus?: string
   currentType?: string
+  compact?: boolean
 }
 
 type StatusTabId = 'ALL' | 'PENDING' | 'SENT' | 'FAILED' | 'CANCELLED'
@@ -23,6 +24,7 @@ const STATUS_TABS: LinedStatusTab<StatusTabId>[] = [
 export function EmailReminderFilters({
   currentStatus = 'ALL',
   currentType = 'ALL',
+  compact = false,
 }: EmailReminderFiltersProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -42,6 +44,44 @@ export function EmailReminderFilters({
   const statusId: StatusTabId = STATUS_TABS.some((t) => t.id === currentStatus)
     ? (currentStatus as StatusTabId)
     : 'ALL'
+
+  if (compact) {
+    return (
+      <div className="flex flex-wrap md:flex-nowrap items-center gap-2">
+        <label htmlFor="email-reminder-status" className="sr-only">Status</label>
+        <select
+          id="email-reminder-status"
+          value={statusId}
+          onChange={(e) => handleStatusChange(e.target.value as StatusTabId)}
+          className={cn(
+            STYLES.input,
+            STYLES.select,
+            'h-9 w-[160px] min-w-[160px] rounded-md border border-gray-300 py-0 pr-10 text-sm leading-normal'
+          )}
+        >
+          {STATUS_TABS.map((tab) => (
+            <option key={tab.id} value={tab.id}>{tab.label}</option>
+          ))}
+        </select>
+
+        <label htmlFor="email-reminder-type" className="sr-only">Recipient type</label>
+        <select
+          id="email-reminder-type"
+          value={currentType}
+          onChange={(e) => handleTypeChange(e.target.value)}
+          className={cn(
+            STYLES.input,
+            STYLES.select,
+            'h-9 w-[200px] min-w-[200px] rounded-md border border-gray-300 py-0 pr-10 text-sm leading-normal'
+          )}
+        >
+          <option value="ALL">All recipients</option>
+          <option value="HOME_ADMIN">Home admins</option>
+          <option value="STAFF">Staff</option>
+        </select>
+      </div>
+    )
+  }
 
   return (
     <div className="bg-white rounded-lg border border-gray-200 overflow-hidden min-w-0">

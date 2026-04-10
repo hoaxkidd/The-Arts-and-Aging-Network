@@ -134,7 +134,7 @@ export function UserDetailModal({ user, initialTab, isOpen, onClose, onUserUpdat
     if (!isOpen || !user) return
     const nextTab = initialTab && tabs.some((t) => t.id === initialTab) ? initialTab : 'overview'
     setActiveTab(nextTab)
-  }, [initialTab, isOpen, tabs])
+  }, [initialTab, isOpen, tabs, user])
 
   useEffect(() => {
     if (!isOpen || !user) return

@@ -9,7 +9,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { DateInput } from '@/components/ui/DateInput'
 import { toInputDate } from '@/lib/date-utils'
 import { safeJsonParse } from '@/lib/utils'
-import { toast } from 'sonner'
+import { notify } from '@/lib/notify'
 import { logger } from '@/lib/logger'
 
 type UserData = {
@@ -189,7 +189,10 @@ export function ProfileForm({ user, documents, isAdmin = false, visibleTabs, emb
         if (pathname.startsWith('/admin/users/') && result?.userIdentifier) {
           const currentIdentifier = pathname.split('/').filter(Boolean).at(-1)
           if (currentIdentifier && currentIdentifier !== result.userIdentifier) {
-            toast.success(`User ID updated to ${result.userIdentifier}`)
+            notify.success({
+              title: 'User ID updated',
+              description: `New identifier: ${result.userIdentifier}`,
+            })
           }
           router.replace(`/admin/users/${result.userIdentifier}`)
         }

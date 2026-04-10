@@ -19,7 +19,7 @@ import {
 import { cn } from '@/lib/utils'
 import { STYLES } from '@/lib/styles'
 import { requestExistingEvent } from '@/app/actions/event-requests'
-import { toast } from 'sonner'
+import { notify } from '@/lib/notify'
 
 interface CalendarEvent {
   id: string
@@ -501,7 +501,7 @@ export function HomeCalendarView({
       })
 
       if (result.error) {
-        toast.error(result.error)
+        notify.error({ title: 'Request failed', description: result.error })
       } else {
         setSelectedEvent(null)
         router.refresh()
