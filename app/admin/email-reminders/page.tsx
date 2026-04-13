@@ -26,8 +26,8 @@ function formatReminderTiming(reminderType: string) {
   const days = daysMatch ? Number(daysMatch[1]) : null
 
   if (base.startsWith('HOME_ADMIN')) {
-    if (days !== null) return `Home Admin • ${days} day${days === 1 ? '' : 's'} before`
-    return 'Home Admin reminder'
+    if (days !== null) return `Program Coordinator • ${days} day${days === 1 ? '' : 's'} before`
+    return 'Program Coordinator reminder'
   }
 
   if (base.startsWith('STAFF')) {
@@ -225,7 +225,7 @@ export default async function EmailRemindersPage({
                         : "bg-purple-100 text-purple-700"
                     )}>
                       {reminder.recipientType === 'HOME_ADMIN' ? (
-                        <><Home className="w-3 h-3" /> Home Admin</>
+                        <><Home className="w-3 h-3" /> Program Coordinator</>
                       ) : (
                         <><Users className="w-3 h-3" /> Staff</>
                       )}

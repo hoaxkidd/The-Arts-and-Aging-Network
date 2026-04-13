@@ -6,6 +6,8 @@ import { revalidatePath } from "next/cache"
 import type { PrismaClient } from "@prisma/client"
 import { createUserWithGeneratedCode } from "@/lib/user-code"
 import { logger } from "@/lib/logger"
+import { normalizePhone as normalizePhoneValue } from "@/lib/phone"
+import { normalizeMultilineText, normalizeText } from "@/lib/input-normalize"
 
 // Type-safe prisma client reference
 const db = prisma as PrismaClient & Record<string, unknown>
@@ -29,11 +31,11 @@ export async function createFacilityProfile(formData: FormData) {
   }
 
   const userId = formData.get("userId") as string
-  const name = formData.get("name") as string
-  const address = formData.get("address") as string
-  const contactName = formData.get("contactName") as string
-  const contactEmail = formData.get("contactEmail") as string
-  const contactPhone = formData.get("contactPhone") as string
+  const name = normalizeText(formData.get("name"))
+  const address = normalizeText(formData.get("address"))
+  const contactName = normalizeText(formData.get("contactName"))
+  const contactEmail = normalizeText(formData.get("contactEmail"))
+  const contactPhone = normalizePhoneValue(formData.get("contactPhone"))
   const maxCapacity = parseInt(formData.get("maxCapacity") as string) || 10
 
   if (!userId || !name || !address || !contactName || !contactEmail || !contactPhone) {
@@ -156,47 +158,68 @@ export async function updateHomeDetails(formData: FormData) {
   }
 
   const id = formData.get("id") as string
-  const name = formData.get("name") as string
-  const address = formData.get("address") as string
+  const name = normalizeText(formData.get("name"))
+  const address = normalizeText(formData.get("address"))
   const residentCount = parseInt(formData.get("residentCount") as string) || 0
   const maxCapacity = parseInt(formData.get("maxCapacity") as string) || 0
-  const contactName = formData.get("contactName") as string
-  const contactEmail = formData.get("contactEmail") as string
-  const contactPhone = formData.get("contactPhone") as string
-  const contactPosition = formData.get("contactPosition") as string
+  const contactName = normalizeText(formData.get("contactName"))
+  const contactEmail = normalizeText(formData.get("contactEmail"))
+  const contactPhone = normalizePhoneValue(formData.get("contactPhone"))
+  const contactPosition = normalizeText(formData.get("contactPosition"))
+  const additionalContactsRaw = formData.get("additionalContacts") as string | null
   const useCustomNotificationEmail = formData.get('useCustomNotificationEmail') === 'on'
   const notificationEmailRaw = (formData.get('notificationEmail') as string | null)?.trim() || ''
   const notificationEmail = notificationEmailRaw ? normalizeEmail(notificationEmailRaw) : null
 
   // Organization Settings
-  const type = formData.get("type") as string
-  const region = formData.get("region") as string
+  const type = normalizeText(formData.get("type"))
+  const region = normalizeText(formData.get("region"))
   const isPartner = formData.get("isPartner") === 'on'
   const newsletterSub = formData.get("newsletterSub") === 'on'
 
   // Important Info fields
-  const triggerWarnings = formData.get("triggerWarnings") as string || null
-  const specialNeeds = formData.get("specialNeeds") as string || null
-  const accommodations = formData.get("accommodations") as string || null
-  const emergencyProtocol = formData.get("emergencyProtocol") as string || null
-  const feedbackFormUrl = formData.get("feedbackFormUrl") as string || null
+  const triggerWarnings = normalizeMultilineText(formData.get("triggerWarnings")) || null
+  const specialNeeds = normalizeMultilineText(formData.get("specialNeeds")) || null
+  const accommodations = normalizeMultilineText(formData.get("accommodations")) || null
+  const emergencyProtocol = normalizeMultilineText(formData.get("emergencyProtocol")) || null
+  const feedbackFormUrl = normalizeText(formData.get("feedbackFormUrl")) || null
 
   // Accessibility Info (JSON)
   const accessibilityInfo = JSON.stringify({
     wheelchair: formData.get("acc_wheelchair") === 'on',
     hearingLoop: formData.get("acc_hearingLoop") === 'on',
     elevator: formData.get("acc_elevator") === 'on',
-    notes: formData.get("acc_notes") as string || ''
+    notes: normalizeMultilineText(formData.get("acc_notes")) || ''
   })
 
   // Photo Permissions: plain text (admin form) or JSON (profile form)
-  const photoPermissionsPlain = (formData.get("photoPermissions") as string)?.trim()
+  const photoPermissionsPlain = normalizeText(formData.get("photoPermissions"))
   const photoPermissions = photoPermissionsPlain
     ? photoPermissionsPlain
     : JSON.stringify({
         formReceived: formData.get("photo_formReceived") === 'on',
-        restrictions: (formData.get("photo_restrictions") as string) || ''
+        restrictions: normalizeMultilineText(formData.get("photo_restrictions")) || ''
       })
+
+  let additionalContacts: string | null = null
+  if (additionalContactsRaw) {
+    try {
+      const parsed = JSON.parse(additionalContactsRaw)
+      if (Array.isArray(parsed)) {
+        const normalized = parsed
+          .map((contact) => ({
+            name: normalizeText(contact?.name) || '',
+            position: normalizeText(contact?.position) || '',
+            email: normalizeEmail(contact?.email) || '',
+            phone: normalizePhoneValue(contact?.phone) || '',
+          }))
+          .filter((contact) => contact.name || contact.position || contact.email || contact.phone)
+        additionalContacts = normalized.length > 0 ? JSON.stringify(normalized) : null
+      }
+    } catch {
+      additionalContacts = null
+    }
+  }
 
   if (!id || !name) {
     return { error: "Missing required fields" }
@@ -215,32 +238,62 @@ export async function updateHomeDetails(formData: FormData) {
         if (existing?.userId !== session.user.id) return { error: "Unauthorized" }
     }
 
+    const requestedUpdates = {
+      name,
+      address,
+      residentCount,
+      maxCapacity,
+      contactName,
+      contactEmail,
+      contactPhone,
+      contactPosition,
+      additionalContacts,
+      useCustomNotificationEmail,
+      notificationEmail: useCustomNotificationEmail ? notificationEmail : null,
+      type,
+      region,
+      isPartner,
+      newsletterSub,
+      accessibilityInfo,
+      triggerWarnings,
+      specialNeeds,
+      accommodations,
+      emergencyProtocol,
+      photoPermissions,
+      feedbackFormUrl,
+    }
+
+    if (session.user.role === 'HOME_ADMIN') {
+      const admins = await prisma.user.findMany({ where: { role: 'ADMIN' }, select: { id: true } })
+
+      await prisma.auditLog.create({
+        data: {
+          action: 'HOME_CHANGE_REQUESTED',
+          details: JSON.stringify({ homeId: id, requestedUpdates }),
+          userId: session.user.id,
+        },
+      })
+
+      if (admins.length > 0) {
+        await prisma.notification.createMany({
+          data: admins.map((admin) => ({
+            userId: admin.id,
+            type: 'HOME_UPDATE',
+            title: 'Home Profile Change Request',
+            message: 'A Program Coordinator submitted home profile changes that require admin approval.',
+            link: `/admin/homes/${id}`,
+          })),
+        })
+      }
+
+      revalidatePath('/admin/homes')
+      revalidatePath('/dashboard/profile')
+      return { success: true, pendingApproval: true, message: 'Changes submitted for admin approval.' }
+    }
+
     await prismaClient.geriatricHome.update({
       where: { id },
-      data: {
-        name,
-        address,
-        residentCount,
-        maxCapacity,
-        contactName,
-        contactEmail,
-        contactPhone,
-        contactPosition,
-        useCustomNotificationEmail,
-        notificationEmail: useCustomNotificationEmail ? notificationEmail : null,
-        type,
-        region,
-        isPartner,
-        newsletterSub,
-        // Important Info fields
-        accessibilityInfo,
-        triggerWarnings,
-        specialNeeds,
-        accommodations,
-        emergencyProtocol,
-        photoPermissions,
-        feedbackFormUrl
-      }
+      data: requestedUpdates
     })
 
     await prisma.auditLog.create({
@@ -405,6 +458,10 @@ export async function updateHomeField(
         parsedValue = normalized
       }
 
+      if (field === 'contactPhone') {
+        parsedValue = normalizePhoneValue(String(value)) || ''
+      }
+
       await db.geriatricHome.update({
         where: { id: homeId },
         data: { [field]: parsedValue }
@@ -412,9 +469,13 @@ export async function updateHomeField(
     } else if (allowedUserFields.includes(field)) {
       // Map field names (remove 'user' prefix and lowercase first char)
       const userField = field.replace('user', '').toLowerCase()
+      const normalizedUserValue = field === 'userPhone'
+        ? (normalizePhoneValue(String(value)) || '')
+        : value
+
       await prisma.user.update({
         where: { id: home.userId },
-        data: { [userField]: value }
+        data: { [userField]: normalizedUserValue }
       })
     } else {
       return { error: "Invalid field" }
@@ -476,10 +537,10 @@ export async function updatePrimaryContact(
     await db.geriatricHome.update({
       where: { id: homeId },
       data: {
-        contactName: data.name,
-        contactEmail: data.email,
-        contactPhone: data.phone,
-        contactPosition: data.position,
+        contactName: normalizeText(data.name) || '',
+        contactEmail: normalizeEmail(data.email) || '',
+        contactPhone: normalizePhoneValue(data.phone) || '',
+        contactPosition: normalizeText(data.position) || '',
         useCustomNotificationEmail: Boolean(data.useCustomNotificationEmail),
         notificationEmail: data.useCustomNotificationEmail ? notificationEmail : null,
       }
@@ -517,12 +578,6 @@ function normalizeEmail(value: string | null | undefined): string | null {
   return normalized.includes('@') ? normalized : null
 }
 
-function normalizePhone(value: string | null | undefined): string | null {
-  if (!value) return null
-  const normalized = value.trim()
-  return normalized.length > 0 ? normalized : null
-}
-
 export async function createAdminHome(formData: FormData) {
   const session = await auth()
   if (session?.user?.role !== 'ADMIN') {
@@ -533,7 +588,7 @@ export async function createAdminHome(formData: FormData) {
   const contactName = (formData.get('contactName') as string | null)?.trim() || ''
   const contactPosition = (formData.get('contactPosition') as string | null)?.trim() || null
   const contactEmail = normalizeEmail(formData.get('contactEmail') as string | null) || ''
-  const contactPhone = normalizePhone(formData.get('contactPhone') as string | null) || ''
+  const contactPhone = normalizePhoneValue(formData.get('contactPhone') as string | null) || ''
   const address = (formData.get('address') as string | null)?.trim() || ''
   const cityProvince = (formData.get('cityProvince') as string | null)?.trim() || ''
   const postalCode = (formData.get('postalCode') as string | null)?.trim() || ''
@@ -551,7 +606,7 @@ export async function createAdminHome(formData: FormData) {
   const fullAddress = fullAddressParts.join(', ')
 
   const secondaryEmail = normalizeEmail(secondEmailPhone)
-  const secondaryPhone = normalizePhone(secondEmailPhone)
+  const secondaryPhone = normalizePhoneValue(secondEmailPhone)
   const additionalContacts = secondContact
     ? [{
         id: `contact_${Date.now()}`,
@@ -567,7 +622,7 @@ export async function createAdminHome(formData: FormData) {
 
   try {
     const user = await createUserWithGeneratedCode(prisma, {
-      name: `${name} Home Admin`,
+      name: `${name} Program Coordinator`,
       email: null,
       password: null,
       role: 'HOME_ADMIN',

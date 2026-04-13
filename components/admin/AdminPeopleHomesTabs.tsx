@@ -62,7 +62,7 @@ export default function AdminPeopleHomesTabs({
               )}
             >
               <UserRound className="w-4 h-4" />
-              Home Admins
+              Program Coordinators
               <span className={cn(STYLES.badge, STYLES.badgeNeutral, "py-0.5 px-2")}>{homeAdminUsers.length}</span>
             </button>
           </div>
@@ -89,11 +89,11 @@ export default function AdminPeopleHomesTabs({
             <div className="space-y-4">
               <div className="flex items-center gap-3 flex-wrap">
                 <div className="bg-white px-4 py-2 rounded-lg border border-gray-200 text-sm font-medium text-gray-700">
-                  Home Admin Accounts: <span className="text-primary-600 font-bold ml-1">{homeAdminUsers.length}</span>
+                  Program Coordinator Accounts: <span className="text-primary-600 font-bold ml-1">{homeAdminUsers.length}</span>
                 </div>
                 <Link href="/admin/invitations" className={cn(STYLES.btn, STYLES.btnSecondary, STYLES.btnToolbar)}>
                   <Mail className={STYLES.btnToolbarIcon} />
-                  Invite Home Admin
+                  Invite Program Coordinator
                 </Link>
               </div>
               <HomeAdminsTable users={homeAdminUsers} />

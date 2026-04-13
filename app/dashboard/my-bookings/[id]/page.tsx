@@ -61,6 +61,21 @@ export default async function HomeEventDetailPage({
 
   if (!event) notFound()
 
+  const linkedRequest = await prisma.eventRequest.findFirst({
+    where: {
+      geriatricHomeId: home.id,
+      status: 'APPROVED',
+      OR: [
+        { existingEventId: event.id },
+        { approvedEventId: event.id },
+      ],
+    },
+    select: { id: true },
+  })
+
+  const isHomeLinkedEvent = event.geriatricHomeId === home.id || Boolean(linkedRequest)
+  if (!isHomeLinkedEvent) notFound()
+
   // Calculate stats
   const confirmedStaff = event.attendances.filter(
     (a: any) => a.status === 'YES' && ['FACILITATOR'].includes(a.user.role)
@@ -267,15 +282,6 @@ export default async function HomeEventDetailPage({
           </div>
         )}
 
-        {/* View Full Booking Link */}
-        <div className="text-center py-2">
-          <Link
-            href={`/bookings/${event.id}`}
-            className="inline-flex items-center gap-1.5 text-sm text-primary-600 hover:text-primary-700 font-medium"
-          >
-            View Full Booking Page <ExternalLink className="w-3.5 h-3.5" />
-          </Link>
-        </div>
       </div>
     </div>
   )

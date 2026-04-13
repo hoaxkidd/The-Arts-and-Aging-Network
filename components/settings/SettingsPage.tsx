@@ -25,6 +25,7 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import { NotificationPreferences } from '@/components/notifications/NotificationPreferences'
+import { PhoneInput } from '@/components/ui/PhoneInput'
 import { cn } from '@/lib/utils'
 import { STYLES } from '@/lib/styles'
 import { updateStaffProfile } from '@/app/actions/staff'
@@ -313,7 +314,7 @@ export function SettingsPage({
                       className="text-sm border border-gray-300 rounded-md px-2 py-1.5"
                     >
                       <option value="ALL">All Types</option>
-                      <option value="HOME_ADMIN">Home Admin</option>
+                      <option value="HOME_ADMIN">Program Coordinator</option>
                       <option value="STAFF">Staff</option>
                     </select>
                   </div>
@@ -356,7 +357,7 @@ export function SettingsPage({
                                 "inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium",
                                 row.recipientType === 'HOME_ADMIN' ? "bg-blue-100 text-blue-700" : "bg-purple-100 text-purple-700"
                               )}>
-                                {row.recipientType === 'HOME_ADMIN' ? <><Home className="w-3 h-3" />Home Admin</> : <><Users className="w-3 h-3" />Staff</>}
+                                {row.recipientType === 'HOME_ADMIN' ? <><Home className="w-3 h-3" />Program Coordinator</> : <><Users className="w-3 h-3" />Staff</>}
                               </span>
                             </td>
                             <td className={STYLES.tableCell}>
@@ -463,13 +464,12 @@ export function SettingsPage({
                 <label htmlFor="profile-phone" className="block text-sm font-medium text-gray-700 mb-1">
                   Phone
                 </label>
-                <input
+                <PhoneInput
                   id="profile-phone"
                   name="phone"
-                  type="tel"
                   defaultValue={initialPhone ?? ''}
-                  placeholder="+1 (555) 000-0000"
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  placeholder="555-000-0000"
+                  className="border px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                 />
               </div>
 

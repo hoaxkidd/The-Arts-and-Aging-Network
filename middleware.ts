@@ -199,6 +199,9 @@ export default authMiddleware((req: NextRequest & { auth: unknown }) => {
   // Protect events routes - all authenticated users can view
   if (pathname.startsWith('/bookings')) {
     if (!isLoggedIn) return NextResponse.redirect(new URL('/login', req.nextUrl))
+    if (activeRole === 'HOME_ADMIN') {
+      return NextResponse.redirect(new URL('/dashboard/my-bookings', req.nextUrl))
+    }
     return NextResponse.next({
       request: {
         headers: requestHeaders

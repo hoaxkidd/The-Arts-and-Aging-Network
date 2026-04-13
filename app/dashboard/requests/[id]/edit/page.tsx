@@ -10,7 +10,7 @@ export default async function EditHomeRequestPage({
 }) {
   const session = await auth()
   if (!session?.user?.id) redirect('/login')
-  if (session.user.role !== 'HOME_ADMIN') redirect('/dashboard/requests')
+  if (session.user.role !== 'HOME_ADMIN') redirect('/dashboard/my-bookings?section=requests')
 
   const { id } = await params
   const result = await getEventRequestDetail(id)

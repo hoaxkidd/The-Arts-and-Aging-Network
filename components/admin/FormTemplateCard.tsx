@@ -3,9 +3,9 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { FileText, Edit2, Trash2, Archive, Loader2, X, Users, PenLine, Check, Edit, Eye, User } from 'lucide-react'
+import { FileText, Edit2, Trash2, Archive, Loader2, X, Users, PenLine, Check, Edit, Eye, User, Download } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { deleteFormTemplate, updateFormTemplateRoles, submitForm } from '@/app/actions/form-templates'
+import { deleteFormTemplate, updateFormTemplateRoles, submitForm, getAdminFormTemplateSubmissions } from '@/app/actions/form-templates'
 import { getFormTemplateGroupLinksEditorData } from '@/app/actions/messaging'
 import {
   FormTemplateGroupLinksPanel,
@@ -56,6 +56,7 @@ type Submission = {
   submitter: {
     name: string | null
     email: string | null
+    role?: string | null
   }
 }
 
@@ -78,6 +79,8 @@ interface FormTemplateCardProps {
   submissions?: Submission[]
 }
 
+type FillModalMode = 'preview' | 'fill' | 'view'
+
 export function FormTemplateCard({ template, categories, mode = 'admin', fillUrlPrefix = '/staff/forms', existingSubmission, submissions = [] }: FormTemplateCardProps) {
   const router = useRouter()
   const isAdmin = mode === 'admin'
@@ -86,6 +89,7 @@ export function FormTemplateCard({ template, categories, mode = 'admin', fillUrl
   const [showViewModal, setShowViewModal] = useState(false)
   const [showRolesModal, setShowRolesModal] = useState(false)
   const [showFillModal, setShowFillModal] = useState(false)
+  const [fillModalMode, setFillModalMode] = useState<FillModalMode>('preview')
   const [deleteError, setDeleteError] = useState<string | null>(null)
   const [selectedRoles, setSelectedRoles] = useState<string[]>(
     template.allowedRoles ? template.allowedRoles.split(',') : []
@@ -106,6 +110,7 @@ export function FormTemplateCard({ template, categories, mode = 'admin', fillUrl
   
   // Admin submission viewing
   const [viewingSubmission, setViewingSubmission] = useState<Submission | null>(null)
+  const [adminSubmissions, setAdminSubmissions] = useState<Submission[]>(submissions)
 
   const category = categories.find(c => c.value === template.category)
   
@@ -115,6 +120,8 @@ export function FormTemplateCard({ template, categories, mode = 'admin', fillUrl
   const parsedFields: FormTemplateField[] = template.formFields ? parseFormFields(template.formFields) : []
 
   const hasSubmission = !!existingSubmission
+  const allowsMultipleSubmissions = template.category === 'EVENT_SIGNUP' && fillUrlPrefix.startsWith('/dashboard/forms')
+  const isSingleSubmitTemplate = !allowsMultipleSubmissions
 
   const handleDelete = async () => {
     if (!confirm('Are you sure you want to delete this template? This action cannot be undone.')) {
@@ -193,10 +200,53 @@ export function FormTemplateCard({ template, categories, mode = 'admin', fillUrl
     }
   }, [showRolesModal, isAdmin, template.id])
 
+  useEffect(() => {
+    if (!showViewModal || !isAdmin) return
+    let cancelled = false
+    ;(async () => {
+      const result = await getAdminFormTemplateSubmissions(template.id)
+      if (cancelled) return
+      if ('success' in result && result.success && result.data) {
+        setAdminSubmissions(result.data as unknown as Submission[])
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [showViewModal, isAdmin, template.id])
+
+  const exportAdminSubmissionsCsv = () => {
+    if (!adminSubmissions.length) return
+    const rows = [
+      ['Form Title', 'Submission ID', 'Submitter Name', 'Submitter Email', 'Role', 'Status', 'Submitted At'],
+      ...adminSubmissions.map((submission) => [
+        template.title,
+        submission.id,
+        submission.submitter?.name || '',
+        submission.submitter?.email || '',
+        submission.submitter?.role || '',
+        submission.status,
+        new Date(submission.createdAt).toISOString(),
+      ]),
+    ]
+    const csv = rows
+      .map((row) => row.map((value) => `"${String(value).replace(/"/g, '""')}"`).join(','))
+      .join('\n')
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `${template.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_submitters.csv`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+  }
+
   // Initialize fill values when modal opens
   useEffect(() => {
     if (showFillModal) {
-      if (existingSubmission) {
+      if (fillModalMode === 'view' && existingSubmission) {
         try {
           setFillValues(JSON.parse(existingSubmission.formData))
         } catch {
@@ -209,7 +259,7 @@ export function FormTemplateCard({ template, categories, mode = 'admin', fillUrl
       setSubmitError(null)
       setSubmitSuccess(false)
     }
-  }, [showFillModal, existingSubmission])
+  }, [showFillModal, existingSubmission, fillModalMode])
 
   const handleFillFieldChange = (fieldId: string, value: unknown) => {
     setFillValues((prev) => ({ ...prev, [fieldId]: value }))
@@ -318,44 +368,48 @@ export function FormTemplateCard({ template, categories, mode = 'admin', fillUrl
             )}
           </div>
 
-          <div className="flex items-center gap-4 text-xs text-gray-500 mb-3">
-            <div className="flex items-center gap-1">
-              <FileText className="w-3 h-3" />
-              {template._count.submissions} submitted
+          {isAdmin && (
+            <div className="flex items-center gap-4 text-xs text-gray-500 mb-3">
+              <div className="flex items-center gap-1">
+                <FileText className="w-3 h-3" />
+                {template._count.submissions} submitted
+              </div>
             </div>
-          </div>
+          )}
 
-                {/* Role Access */}
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-1">
-                    <Users className="w-3 h-3 text-gray-400" />
-                    <span className="text-xs text-gray-500">
-                      {currentRoles.length === 0 ? 'All roles' : currentRoles.length === 1 ? currentRoles[0] : `${currentRoles.length} roles`}
-                    </span>
-                  </div>
-                  {isAdmin && (
-                    <button
-                      onClick={() => setShowRolesModal(true)}
-                      className="text-xs text-primary-600 hover:text-primary-700"
-                    >
-                      Access & groups
-                    </button>
-                  )}
-                </div>
-                <div className="flex flex-wrap gap-1 mb-3 min-h-[1.5rem]">
-                  {currentRoles.length === 0 ? (
-                    <span className="text-[10px] px-2 py-0.5 bg-green-100 text-green-700 rounded-full">All roles</span>
-                  ) : currentRoles.slice(0, 3).map(role => (
-                    <span key={role} className="text-[10px] px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full">
-                      {role}
-                    </span>
-                  ))}
-                  {currentRoles.length > 3 && (
-                    <span className="text-[10px] px-2 py-0.5 bg-gray-100 text-gray-500 rounded-full">
-                      +{currentRoles.length - 3}
-                    </span>
-                  )}
-                </div>
+                {isAdmin && (
+                  <>
+                    {/* Role Access */}
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-1">
+                        <Users className="w-3 h-3 text-gray-400" />
+                        <span className="text-xs text-gray-500">
+                          {currentRoles.length === 0 ? 'All roles' : currentRoles.length === 1 ? currentRoles[0] : `${currentRoles.length} roles`}
+                        </span>
+                      </div>
+                      <button
+                        onClick={() => setShowRolesModal(true)}
+                        className="text-xs text-primary-600 hover:text-primary-700"
+                      >
+                        Access & groups
+                      </button>
+                    </div>
+                    <div className="flex flex-wrap gap-1 mb-3 min-h-[1.5rem]">
+                      {currentRoles.length === 0 ? (
+                        <span className="text-[10px] px-2 py-0.5 bg-green-100 text-green-700 rounded-full">All roles</span>
+                      ) : currentRoles.slice(0, 3).map(role => (
+                        <span key={role} className="text-[10px] px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full">
+                          {role}
+                        </span>
+                      ))}
+                      {currentRoles.length > 3 && (
+                        <span className="text-[10px] px-2 py-0.5 bg-gray-100 text-gray-500 rounded-full">
+                          +{currentRoles.length - 3}
+                        </span>
+                      )}
+                    </div>
+                  </>
+                )}
         </div>
 
         <div className="flex items-center gap-2 pt-3 border-t border-gray-100 shrink-0">
@@ -365,8 +419,8 @@ export function FormTemplateCard({ template, categories, mode = 'admin', fillUrl
                 onClick={() => setShowViewModal(true)}
                 className="flex-1 text-center px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-50 rounded hover:bg-gray-100"
               >
-                <Eye className="w-3 h-3 inline mr-1" />
-                Preview
+                <User className="w-3 h-3 inline mr-1" />
+                Submitters
               </button>
               <Link
                 href={`/admin/forms/${template.id}/edit`}
@@ -391,21 +445,65 @@ export function FormTemplateCard({ template, categories, mode = 'admin', fillUrl
           ) : (
             template.isFillable && (
               <div className="flex items-center gap-2 w-full">
-                <button
-                  onClick={() => setShowFillModal(true)}
-                  className="flex-1 text-center px-3 py-1.5 text-xs font-medium text-primary-600 bg-primary-50 rounded hover:bg-primary-100"
-                >
-                  <Eye className="w-3 h-3 inline mr-1" />
-                  View
-                </button>
-                {existingSubmission && (
-                  <button
-                    onClick={() => setShowFillModal(true)}
-                    className="flex-1 text-center px-3 py-1.5 text-xs font-medium text-white bg-primary-600 rounded hover:bg-primary-700"
-                  >
-                    <PenLine className="w-3 h-3 inline mr-1" />
-                    Edit
-                  </button>
+                {isSingleSubmitTemplate ? (
+                  hasSubmission ? (
+                    <button
+                      onClick={() => {
+                        setFillModalMode('view')
+                        setShowFillModal(true)
+                      }}
+                      className="flex-1 text-center px-3 py-1.5 text-xs font-medium text-primary-700 bg-primary-50 rounded hover:bg-primary-100"
+                    >
+                      <Eye className="w-3 h-3 inline mr-1" />
+                      View
+                    </button>
+                  ) : (
+                    <>
+                      <button
+                        onClick={() => {
+                          setFillModalMode('preview')
+                          setShowFillModal(true)
+                        }}
+                        className="flex-1 text-center px-3 py-1.5 text-xs font-medium text-primary-700 bg-primary-50 rounded hover:bg-primary-100"
+                      >
+                        <Eye className="w-3 h-3 inline mr-1" />
+                        Preview
+                      </button>
+                      <button
+                        onClick={() => {
+                          setFillModalMode('fill')
+                          setShowFillModal(true)
+                        }}
+                        className="flex-1 text-center px-3 py-1.5 text-xs font-medium text-white bg-primary-600 rounded hover:bg-primary-700"
+                      >
+                        <PenLine className="w-3 h-3 inline mr-1" />
+                        Fill
+                      </button>
+                    </>
+                  )
+                ) : (
+                  <>
+                    <button
+                      onClick={() => {
+                        setFillModalMode('preview')
+                        setShowFillModal(true)
+                      }}
+                      className="flex-1 text-center px-3 py-1.5 text-xs font-medium text-primary-700 bg-primary-50 rounded hover:bg-primary-100"
+                    >
+                      <Eye className="w-3 h-3 inline mr-1" />
+                      Preview
+                    </button>
+                    <button
+                      onClick={() => {
+                        setFillModalMode('fill')
+                        setShowFillModal(true)
+                      }}
+                      className="flex-1 text-center px-3 py-1.5 text-xs font-medium text-white bg-primary-600 rounded hover:bg-primary-700"
+                    >
+                      <PenLine className="w-3 h-3 inline mr-1" />
+                      Fill
+                    </button>
+                  </>
                 )}
               </div>
             )
@@ -508,29 +606,46 @@ export function FormTemplateCard({ template, categories, mode = 'admin', fillUrl
                   )}
 
                   {/* Admin-only: Submissions List */}
-                  {isAdmin && submissions.length > 0 && (
+                  {isAdmin && adminSubmissions.length > 0 && (
                     <div className="border border-gray-200 rounded-lg overflow-hidden">
-                      <div className="bg-gray-50 px-4 py-2 border-b border-gray-200">
-                        <h3 className="text-sm font-medium text-gray-900">Submissions ({submissions.length})</h3>
+                      <div className="bg-gray-50 px-4 py-2 border-b border-gray-200 flex items-center justify-between">
+                        <h3 className="text-sm font-medium text-gray-900">Submitters ({adminSubmissions.length})</h3>
+                        <button
+                          onClick={exportAdminSubmissionsCsv}
+                          className="inline-flex items-center gap-1 text-xs text-primary-700 hover:text-primary-800"
+                        >
+                          <Download className="w-3.5 h-3.5" />
+                          Export CSV
+                        </button>
                       </div>
                       <div className="divide-y divide-gray-100 max-h-60 overflow-auto">
-                        {submissions.map((sub) => (
-                          <button
+                        {adminSubmissions.map((sub) => (
+                          <div
                             key={sub.id}
-                            onClick={() => setViewingSubmission(sub)}
-                            className="w-full text-left px-4 py-3 hover:bg-gray-50 flex items-center justify-between"
+                            className="px-4 py-3 hover:bg-gray-50 flex items-center justify-between"
                           >
                             <div className="flex items-center gap-3">
                               <User className="w-4 h-4 text-gray-400" />
                               <div>
                                 <p className="text-sm text-gray-900">{sub.submitter?.name || 'Unknown'}</p>
                                 <p className="text-xs text-gray-500">{sub.submitter?.email}</p>
+                                {sub.submitter?.role && (
+                                  <p className="text-[11px] text-gray-400">{sub.submitter.role}</p>
+                                )}
                               </div>
                             </div>
-                            <span className="text-xs text-gray-500">
-                              {new Date(sub.createdAt).toLocaleDateString()}
-                            </span>
-                          </button>
+                            <div className="flex items-center gap-3">
+                              <span className="text-xs text-gray-500">
+                                {new Date(sub.createdAt).toLocaleDateString()}
+                              </span>
+                              <button
+                                onClick={() => setViewingSubmission(sub)}
+                                className="text-xs px-2 py-1 rounded bg-primary-50 text-primary-700 hover:bg-primary-100"
+                              >
+                                View
+                              </button>
+                            </div>
+                          </div>
                         ))}
                       </div>
                     </div>
@@ -556,50 +671,11 @@ export function FormTemplateCard({ template, categories, mode = 'admin', fillUrl
 
             {/* Modal Footer */}
             <div className="flex items-center gap-3 p-4 border-t border-gray-200 shrink-0">
-              {!isAdmin && template.isFillable && (
-                <>
-                  {existingSubmission ? (
-                    <>
-                      <button
-                        onClick={() => {
-                          setShowViewModal(false)
-                          setShowFillModal(true)
-                        }}
-                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 text-sm font-medium"
-                      >
-                        <Eye className="w-4 h-4" />
-                        View Submission
-                      </button>
-                      <button
-                        onClick={() => {
-                          setShowViewModal(false)
-                          setShowFillModal(true)
-                        }}
-                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-primary-600 text-white rounded-lg hover:bg-primary-700 text-sm font-medium"
-                      >
-                        <PenLine className="w-4 h-4" />
-                        Edit
-                      </button>
-                    </>
-                  ) : (
-                    <button
-                      onClick={() => {
-                        setShowViewModal(false)
-                        setShowFillModal(true)
-                      }}
-                      className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-primary-600 text-white rounded-lg hover:bg-primary-700 text-sm font-medium"
-                    >
-                      <PenLine className="w-4 h-4" />
-                      Fill Form
-                    </button>
-                  )}
-                </>
-              )}
               <button
                 onClick={() => setShowViewModal(false)}
                 className={cn(
                   "px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 text-sm font-medium",
-                  !template.isFillable || !isAdmin ? "w-full" : "w-auto"
+                  "w-full"
                 )}
               >
                 Close
@@ -749,7 +825,7 @@ export function FormTemplateCard({ template, categories, mode = 'admin', fillUrl
                 </div>
                 <div>
                   <h2 className="text-lg font-semibold text-gray-900">
-                    {hasSubmission ? 'Your Submission' : 'Fill Form'}
+                    {fillModalMode === 'fill' ? 'Fill Form' : fillModalMode === 'preview' ? 'Form Preview' : 'Submitted Form'}
                   </h2>
                   <p className="text-xs text-gray-500">{template.title}</p>
                 </div>
@@ -763,7 +839,7 @@ export function FormTemplateCard({ template, categories, mode = 'admin', fillUrl
             </div>
 
             {/* Submission Status Banner */}
-            {hasSubmission && !submitSuccess && (
+            {fillModalMode === 'view' && hasSubmission && !submitSuccess && (
               <div className="px-4 py-3 border-b border-gray-200 bg-gray-50">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -807,16 +883,16 @@ export function FormTemplateCard({ template, categories, mode = 'admin', fillUrl
             {/* Modal Body - Form */}
             <div className="flex-1 overflow-auto p-6">
               <FormTemplateView
-                title={template.title}
+                title={fillModalMode === 'view' ? `${template.title} (Submitted)` : template.title}
                 description={template.description}
                 descriptionHtml={template.descriptionHtml}
                 fields={parsedFields}
-                preview={false}
+                preview={fillModalMode !== 'fill'}
                 values={fillValues}
-                onFieldChange={handleFillFieldChange}
+                onFieldChange={fillModalMode === 'fill' ? handleFillFieldChange : undefined}
                 errors={fillErrors}
-                submitLabel={hasSubmission ? "Save Changes" : "Submit Form"}
-                onSubmit={handleFillSubmit}
+                submitLabel={fillModalMode === 'fill' ? "Submit Form" : undefined}
+                onSubmit={fillModalMode === 'fill' ? handleFillSubmit : undefined}
                 submitting={submitting}
               />
             </div>

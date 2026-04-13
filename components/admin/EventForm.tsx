@@ -376,7 +376,7 @@ export function EventForm({
             onChange={(e) => setSelectedTemplateId(e.target.value)}
             className={cn(STYLES.input, STYLES.select)}
           >
-            <option value="">None – home admins request without a form</option>
+            <option value="">None – Program Coordinators request without a form</option>
             {templates.map((t) => (
               <option key={t.id} value={t.id}>
                 {t.title}
@@ -384,7 +384,7 @@ export function EventForm({
             ))}
           </select>
           <p className="text-xs text-gray-500">
-            If set, home admins must fill this form when requesting to participate. Create a new template or choose from existing ones.
+            If set, Program Coordinators must fill this form when requesting to participate. Create a new template or choose from existing ones.
           </p>
         </div>
 
@@ -470,7 +470,7 @@ export function EventForm({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-medium text-gray-500 mb-1">
-                Days before to remind Home Admin
+                Days before to remind Program Coordinator
               </label>
               <input
                 type="number"

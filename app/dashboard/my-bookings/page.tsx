@@ -1,40 +1,35 @@
 import { auth } from "@/auth"
 import { redirect } from "next/navigation"
-import { getHomeEventHistory } from "@/app/actions/booking-requests"
-import { MyEventsClient } from "./MyEventsClient"
+import { getHomeEventHistory, getHomeEventRequests } from "@/app/actions/booking-requests"
+import { MyBookingsClient } from "./MyBookingsClient"
 
-export default async function HomeMyEventsPage() {
+export default async function HomeMyBookingsPage() {
   const session = await auth()
   if (!session?.user?.id) redirect('/login')
 
-  const result = await getHomeEventHistory()
+  const [historyResult, requestsResult] = await Promise.all([
+    getHomeEventHistory(),
+    getHomeEventRequests(),
+  ])
 
-  if (result.error) {
+  if (historyResult.error) {
     return (
       <div className="p-8 text-center">
-        <p className="text-red-600">{result.error}</p>
+        <p className="text-red-600">{historyResult.error}</p>
       </div>
     )
   }
 
-  const events = result.data || []
+  if (requestsResult.error) {
+    return (
+      <div className="p-8 text-center">
+        <p className="text-red-600">{requestsResult.error}</p>
+      </div>
+    )
+  }
 
-  // Stats
-  const now = new Date()
-  const upcoming = events.filter((e: any) => new Date(e.startDateTime) > now).length
-  const completed = events.filter((e: any) => new Date(e.endDateTime) < now).length
+  const events = historyResult.data || []
+  const requests = requestsResult.data || []
 
-  const tabs = [
-    { id: 'all', label: 'All Bookings', count: events.length },
-    { id: 'UPCOMING', label: 'Upcoming', count: upcoming },
-    { id: 'PAST', label: 'Past', count: completed },
-  ]
-
-  return (
-    <MyEventsClient 
-      events={events as any} 
-      tabs={tabs} 
-      initialTab="all"
-    />
-  )
+  return <MyBookingsClient events={events as any[]} requests={requests as any[]} />
 }

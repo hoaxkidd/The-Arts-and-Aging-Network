@@ -76,7 +76,7 @@ export function EmailReminderFilters({
           )}
         >
           <option value="ALL">All recipients</option>
-          <option value="HOME_ADMIN">Home admins</option>
+          <option value="HOME_ADMIN">Program Coordinators</option>
           <option value="STAFF">Staff</option>
         </select>
       </div>
@@ -104,7 +104,7 @@ export function EmailReminderFilters({
           className={cn(STYLES.select, 'text-sm max-w-xs')}
         >
           <option value="ALL">All</option>
-          <option value="HOME_ADMIN">Home admins</option>
+          <option value="HOME_ADMIN">Program Coordinators</option>
           <option value="STAFF">Staff</option>
         </select>
       </div>

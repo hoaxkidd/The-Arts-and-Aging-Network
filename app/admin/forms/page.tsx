@@ -9,13 +9,14 @@ import { FormTemplateCard } from "@/components/admin/FormTemplateCard"
 import { FormTemplateFilters } from "@/components/admin/FormTemplateFilters"
 import { AdminFormSubmissionsList } from "@/components/admin/AdminFormSubmissionsList"
 import { CreateTemplateButton } from "@/components/admin/CreateTemplateButton"
+import { ROLE_LABELS } from "@/lib/roles"
 
 export const dynamic = 'force-dynamic'
 
 export default async function AdminFormsPage({
   searchParams
 }: {
-  searchParams: Promise<{ tab?: string; category?: string; status?: string; view?: string; sort?: string; search?: string; page?: string }>
+  searchParams: Promise<{ tab?: string; category?: string; status?: string; view?: string; sort?: string; search?: string; page?: string; subStatus?: string; subCategory?: string; subForm?: string; subUser?: string; subRole?: string; subSort?: string; subOrder?: string }>
 }) {
   const session = await auth()
   if (session?.user?.role !== 'ADMIN') redirect('/dashboard')
@@ -29,6 +30,13 @@ export default async function AdminFormsPage({
   const search = params.search || ''
   const page = parseInt(params.page || '1')
   const perPage = 20
+  const submissionStatus = params.subStatus || 'all'
+  const submissionCategory = params.subCategory || 'all'
+  const submissionForm = params.subForm || 'all'
+  const submissionUser = params.subUser || 'all'
+  const submissionRole = params.subRole || 'all'
+  const submissionSort = params.subSort || 'createdAt'
+  const submissionOrder: 'asc' | 'desc' = params.subOrder === 'asc' ? 'asc' : 'desc'
 
   // Categories
   const categories = [
@@ -63,14 +71,7 @@ export default async function AdminFormsPage({
     where: templateWhere,
     include: {
       uploader: { select: { name: true, image: true } },
-      _count: { select: { submissions: true } },
-      submissions: {
-        take: 10,
-        orderBy: { createdAt: 'desc' },
-        include: {
-          submitter: { select: { name: true, email: true } }
-        }
-      }
+      _count: { select: { submissions: true } }
     },
     orderBy: templateOrderBy
   })
@@ -84,9 +85,28 @@ export default async function AdminFormsPage({
 
   // SUBMISSIONS DATA
   const submissionWhere: Prisma.FormSubmissionWhereInput = {}
-  if (statusFilter !== 'ALL' && statusFilter !== 'all') {
-    submissionWhere.status = statusFilter as any
+  if (submissionStatus !== 'all') {
+    submissionWhere.status = submissionStatus as any
   }
+  if (submissionCategory !== 'all') {
+    submissionWhere.template = { category: submissionCategory }
+  }
+  if (submissionForm !== 'all') {
+    submissionWhere.templateId = submissionForm
+  }
+  if (submissionUser !== 'all') {
+    submissionWhere.submittedBy = submissionUser
+  }
+  if (submissionRole !== 'all') {
+    submissionWhere.submitter = { role: submissionRole }
+  }
+
+  let submissionOrderBy: Prisma.FormSubmissionOrderByWithRelationInput = { createdAt: 'desc' }
+  if (submissionSort === 'status') submissionOrderBy = { status: submissionOrder }
+  else if (submissionSort === 'user') submissionOrderBy = { submitter: { name: submissionOrder } }
+  else if (submissionSort === 'role') submissionOrderBy = { submitter: { role: submissionOrder } }
+  else if (submissionSort === 'form') submissionOrderBy = { template: { title: submissionOrder } }
+  else submissionOrderBy = { createdAt: submissionOrder }
 
   const totalSubmissions = await prisma.formSubmission.count({ where: submissionWhere })
   const totalPages = Math.ceil(totalSubmissions / perPage)
@@ -97,10 +117,10 @@ export default async function AdminFormsPage({
     where: submissionWhere,
     include: {
       template: { select: { id: true, title: true, category: true } },
-      submitter: { select: { id: true, name: true, email: true } },
+      submitter: { select: { id: true, name: true, email: true, role: true } },
       event: { select: { id: true, title: true } }
     },
-    orderBy: { createdAt: 'desc' },
+    orderBy: submissionOrderBy,
     skip: (page - 1) * perPage,
     take: perPage
   })
@@ -114,9 +134,14 @@ export default async function AdminFormsPage({
     where: {
       id: { in: await prisma.formSubmission.findMany({ select: { submittedBy: true }, distinct: ['submittedBy'] }).then(s => s.map(x => x.submittedBy)) }
     },
-    select: { id: true, name: true, email: true },
+    select: { id: true, name: true, email: true, role: true },
     orderBy: { name: 'asc' }
   })
+
+  const roleOptions = [...new Set(allUsers.map((u) => u.role).filter(Boolean))].map((role) => ({
+    value: role!,
+    label: ROLE_LABELS[role as keyof typeof ROLE_LABELS] || role!,
+  }))
 
   const allCategories = [...new Set(allTemplates.map(t => t.category))]
 
@@ -164,9 +189,17 @@ export default async function AdminFormsPage({
             templates={allTemplates}
             categories={allCategories}
             users={allUsers}
+            roles={roleOptions}
             currentPage={page}
             totalPages={totalPages}
             totalCount={totalSubmissions}
+            currentStatus={submissionStatus}
+            currentCategory={submissionCategory}
+            currentForm={submissionForm}
+            currentUser={submissionUser}
+            currentRole={submissionRole}
+            currentSort={submissionSort}
+            currentOrder={submissionOrder}
           />
         )}
       </div>
@@ -231,10 +264,6 @@ function TemplatesTab({
             }}
             categories={categories.map(c => ({ value: c.value, label: c.label }))}
             mode="admin"
-            submissions={template.submissions.map((s: any) => ({
-              ...s,
-              createdAt: new Date(s.createdAt)
-            }))}
           />
         ))}
       </div>
@@ -258,15 +287,31 @@ function SubmissionsTab({
   templates,
   categories,
   users,
+  roles,
   currentPage,
   totalPages,
-  totalCount
+  totalCount,
+  currentSort,
+  currentOrder,
+  currentStatus,
+  currentCategory,
+  currentForm,
+  currentUser,
+  currentRole,
 }: { 
   submissions: any[]
   editRequestCount: number
   templates: { id: string; title: string; category: string }[]
   categories: string[]
-  users: { id: string; name: string | null; email: string | null }[]
+  users: { id: string; name: string | null; email: string | null; role: string | null }[]
+  roles: { value: string; label: string }[]
+  currentSort: string
+  currentOrder: string
+  currentStatus: string
+  currentCategory: string
+  currentForm: string
+  currentUser: string
+  currentRole: string
   currentPage: number
   totalPages: number
   totalCount: number
@@ -278,12 +323,14 @@ function SubmissionsTab({
       templates={templates}
       categories={categories}
       users={users}
-      currentSort="createdAt"
-      currentOrder="desc"
-      currentStatus="all"
-      currentCategory="all"
-      currentForm="all"
-      currentUser="all"
+      roles={roles}
+      currentSort={currentSort}
+      currentOrder={currentOrder}
+      currentStatus={currentStatus}
+      currentCategory={currentCategory}
+      currentForm={currentForm}
+      currentUser={currentUser}
+      currentRole={currentRole}
       currentPage={currentPage}
       totalPages={totalPages}
       totalCount={totalCount}

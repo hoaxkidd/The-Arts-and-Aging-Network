@@ -38,6 +38,7 @@ export function CustomEventRequestForm() {
   const [isLoadingForms, setIsLoadingForms] = useState(true)
 
   const selectedDate = searchParams.get('date')
+  const selectedTemplateFromUrl = searchParams.get('formTemplateId')
   const hasCalendarDate = !!selectedDate && /^\d{4}-\d{2}-\d{2}$/.test(selectedDate)
   const defaultStart = hasCalendarDate ? `${selectedDate}T09:00` : ''
   const defaultEnd = hasCalendarDate ? `${selectedDate}T10:00` : ''
@@ -116,7 +117,11 @@ export function CustomEventRequestForm() {
       try {
         const result = await getEventSignupForms()
         if (result.success && result.data) {
-          setFormTemplates(result.data as FormTemplate[])
+          const loadedTemplates = result.data as FormTemplate[]
+          setFormTemplates(loadedTemplates)
+          if (selectedTemplateFromUrl && loadedTemplates.some((template) => template.id === selectedTemplateFromUrl)) {
+            setSelectedFormId(selectedTemplateFromUrl)
+          }
         }
       } catch (error) {
         logger.serverAction('Error fetching forms:', error)
@@ -125,9 +130,10 @@ export function CustomEventRequestForm() {
       }
     }
     fetchForms()
-  }, [])
+  }, [selectedTemplateFromUrl])
 
   const selectedForm = formTemplates.find(f => f.id === selectedFormId)
+  const isTemplateLocked = Boolean(selectedTemplateFromUrl && selectedFormId === selectedTemplateFromUrl)
   
   const getFormFields = (): FormTemplateField[] => {
     if (!selectedForm?.formFields) return []
@@ -228,7 +234,7 @@ export function CustomEventRequestForm() {
       } else {
         setSuccess(true)
         setTimeout(() => {
-          router.push('/dashboard/requests')
+          router.push('/dashboard/my-bookings?section=requests')
         }, 2000)
       }
     })
@@ -251,7 +257,7 @@ export function CustomEventRequestForm() {
 
   return (
     <div className="space-y-6">
-      <Link href="/dashboard/requests" className="inline-flex items-center gap-1 text-sm text-gray-600 hover:text-gray-900">
+      <Link href="/dashboard/my-bookings?section=requests" className="inline-flex items-center gap-1 text-sm text-gray-600 hover:text-gray-900">
         <ArrowLeft className="w-4 h-4" /> Back to Requests
       </Link>
       {/* Error Banner */}
@@ -382,6 +388,7 @@ export function CustomEventRequestForm() {
               <select
                 value={selectedFormId}
                 onChange={(e) => handleFormSelection(e.target.value)}
+                disabled={isTemplateLocked}
                 className={cn(STYLES.input, errors.formTemplate && "border-red-300")}
               >
                 <option value="">-- Select a booking form --</option>
@@ -394,6 +401,9 @@ export function CustomEventRequestForm() {
             )}
             {errors.formTemplate && (
               <p className="mt-1 text-xs text-red-500">{errors.formTemplate}</p>
+            )}
+            {isTemplateLocked && (
+              <p className="mt-1 text-xs text-gray-500">Program selected from dashboard.</p>
             )}
             {!isLoadingForms && formTemplates.length === 0 && (
               <p className="mt-1 text-xs text-amber-600">
@@ -423,10 +433,10 @@ export function CustomEventRequestForm() {
         {/* Actions */}
         {selectedForm && (
           <div className="p-6 bg-gray-50 border-t border-gray-100 flex items-center justify-end gap-3">
-            <Link
-              href="/dashboard/requests"
-              className={cn(STYLES.btn, "bg-white border border-gray-200 text-gray-700 hover:bg-gray-50")}
-            >
+              <Link
+                href="/dashboard/my-bookings?section=requests"
+                className={cn(STYLES.btn, "bg-white border border-gray-200 text-gray-700 hover:bg-gray-50")}
+              >
               Cancel
             </Link>
             <button

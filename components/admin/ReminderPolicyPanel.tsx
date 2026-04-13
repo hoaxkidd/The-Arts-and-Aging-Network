@@ -95,7 +95,7 @@ export function ReminderPolicyPanel({ config, canEditCron = true }: ReminderPoli
           <p className="font-medium mb-2">Automatic Email Reminders</p>
           <ul className="text-xs text-blue-700 space-y-1 list-disc list-inside">
             <li className="flex items-center justify-between gap-2">
-              <span>Home admins receive reminders {config.homeAdminOffsets.join(' and ')} days before events</span>
+              <span>Program Coordinators receive reminders {config.homeAdminOffsets.join(' and ')} days before events</span>
               <button
                 type="button"
                 className="inline-flex items-center gap-1 rounded border border-blue-200 bg-white px-2 py-1 text-[11px] font-medium text-blue-700 hover:bg-blue-100"
@@ -160,7 +160,7 @@ export function ReminderPolicyPanel({ config, canEditCron = true }: ReminderPoli
           <div className="relative w-full max-w-md rounded-lg border border-gray-200 bg-white p-4 shadow-xl">
             <div className="mb-3 flex items-center justify-between">
               <h3 className="text-sm font-semibold text-gray-900">
-                {openModal === 'home' && 'Edit home admin reminder days'}
+                {openModal === 'home' && 'Edit Program Coordinator reminder days'}
                 {openModal === 'staff' && 'Edit staff reminder days'}
                 {openModal === 'endpoint' && 'Edit cron endpoint'}
                 {openModal === 'frequency' && 'Edit cron frequency'}

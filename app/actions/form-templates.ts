@@ -135,7 +135,7 @@ export async function getFormTemplates(filters?: {
   }
 }
 
-// Get EVENT_SIGNUP form templates for home admin requests
+// Get EVENT_SIGNUP form templates for Program Coordinator booking requests
 export async function getEventSignupForms() {
   const session = await auth()
   if (!session?.user?.id) {
@@ -143,15 +143,26 @@ export async function getEventSignupForms() {
   }
 
   try {
+    const roles = Array.isArray(session.user.roles) ? session.user.roles : (session.user.role ? [session.user.role] : [])
+    const isHomeAdmin = session.user.role === 'HOME_ADMIN'
     const templates = await prisma.formTemplate.findMany({
       where: {
         category: 'EVENT_SIGNUP',
-        isActive: true
+        isActive: true,
+        isFillable: true,
       },
       orderBy: { title: 'asc' }
     })
 
-    return { success: true, data: templates }
+    const visibleTemplates = templates.filter((template) =>
+      hasTemplateAccess(
+        { isActive: Boolean(template.isActive), isPublic: Boolean(template.isPublic), allowedRoles: template.allowedRoles ?? null },
+        roles,
+        { isHomeAdmin }
+      )
+    )
+
+    return { success: true, data: visibleTemplates }
   } catch (error) {
     logger.serverAction("Failed to fetch booking sign-up forms:", error)
     return { error: "Failed to load booking sign-up forms" }
@@ -435,6 +446,24 @@ export async function submitForm(data: {
       return { error: "Template not accessible" }
     }
 
+    const allowsMultipleSubmissions = template.category === 'EVENT_SIGNUP' && session.user.role === 'HOME_ADMIN'
+    if (!allowsMultipleSubmissions) {
+      const existingSubmission = await prisma.formSubmission.findFirst({
+        where: {
+          templateId: data.templateId,
+          submittedBy: session.user.id,
+        },
+        select: { id: true },
+      })
+
+      if (existingSubmission) {
+        return {
+          error: 'This form can only be submitted once. Your previous submission is available for preview.',
+          existingSubmissionId: existingSubmission.id,
+        }
+      }
+    }
+
     const submission = await prisma.formSubmission.create({
       data: {
         templateId: data.templateId,
@@ -485,6 +514,9 @@ export async function requestEditAccess(submissionId: string) {
   const session = await auth()
   if (!session?.user?.id) {
     return { error: "Unauthorized" }
+  }
+  if (session.user.role !== 'ADMIN') {
+    return { error: "Only administrators can manage form submission edits" }
   }
 
   try {
@@ -633,7 +665,7 @@ export async function updateFormSubmission(
   attachments?: string[]
 ) {
   const session = await auth()
-  if (!session?.user?.id) {
+  if (!session?.user?.id || session.user.role !== 'ADMIN') {
     return { error: "Unauthorized" }
   }
 
@@ -644,15 +676,6 @@ export async function updateFormSubmission(
 
     if (!submission) {
       return { error: "Submission not found" }
-    }
-
-    // Only the submitter can update
-    if (submission.submittedBy !== session.user.id) {
-      return { error: "You can only edit your own submissions" }
-    }
-
-    if (!submission.editApproved) {
-      return { error: "Edit access has not been approved" }
     }
 
     // Update submission
@@ -891,5 +914,35 @@ export async function updateFormTemplateRoles(templateId: string, allowedRoles: 
   } catch (error) {
     logger.serverAction("Failed to update form template roles:", error)
     return { error: "Failed to update roles" }
+  }
+}
+
+export async function getAdminFormTemplateSubmissions(templateId: string) {
+  const session = await auth()
+  if (session?.user?.role !== 'ADMIN') {
+    return { error: 'Unauthorized' }
+  }
+
+  try {
+    const submissions = await prisma.formSubmission.findMany({
+      where: { templateId },
+      include: {
+        submitter: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 1000,
+    })
+
+    return { success: true, data: submissions }
+  } catch (error) {
+    logger.serverAction('Failed to load template submissions:', error)
+    return { error: 'Failed to load template submissions' }
   }
 }

@@ -5,6 +5,8 @@ import { auth } from "@/auth"
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
 import { logger } from "@/lib/logger"
+import { normalizePhone } from "@/lib/phone"
+import { normalizeMultilineText, normalizeText } from "@/lib/input-normalize"
 import { reassignUserCodeForName, shouldReassignUserCode } from "@/lib/user-code"
 
 function parseFormBool(value: FormDataEntryValue | null): boolean {
@@ -119,17 +121,17 @@ export async function updateStaffProfile(formData: FormData) {
 
   // Handle pronouns: if "Other" is selected, use the custom value
   const pronounsSelect = formData.get("pronouns") as string | null
-  const pronounsOther = formData.get("pronouns_other") as string | null
-  const pronouns = pronounsSelect === 'Other' && pronounsOther ? pronounsOther : (pronounsSelect || undefined)
+  const pronounsOther = normalizeText(formData.get("pronouns_other"))
+  const pronouns = pronounsSelect === 'Other' && pronounsOther ? pronounsOther : (normalizeText(pronounsSelect) || undefined)
 
   const rawData = {
     pronouns,
-    preferredName: formData.get("preferredName") || undefined,
-    phone: formData.get("phone") || undefined,
-    address: formData.get("address") || undefined,
-    bio: formData.get("bio") || undefined,
+    preferredName: normalizeText(formData.get("preferredName")),
+    phone: normalizePhone(formData.get("phone")),
+    address: normalizeText(formData.get("address")),
+    bio: normalizeMultilineText(formData.get("bio")),
     birthDate: formData.get("birthDate") || undefined,
-    region: formData.get("region") || undefined,
+    region: normalizeText(formData.get("region")),
     emergencyContact,
     healthInfo: formData.get("healthInfo") || undefined,
     alternateEmail: formData.get("alternateEmail") || undefined,
@@ -334,6 +336,42 @@ export async function updateStaffProfile(formData: FormData) {
         if (signatureDate && typeof signatureDate === 'string' && isValidDateFormat(signatureDate)) {
             updateData.signatureDate = toValidDate(signatureDate)
         }
+    }
+
+    if (session.user.role === 'HOME_ADMIN' && targetUserId === session.user.id) {
+      const admins = await prisma.user.findMany({ where: { role: 'ADMIN' }, select: { id: true } })
+
+      await prisma.auditLog.create({
+        data: {
+          action: 'PROGRAM_COORDINATOR_PROFILE_CHANGE_REQUESTED',
+          details: JSON.stringify({
+            userId: targetUserId,
+            requestedUpdates: updateData,
+          }),
+          userId: session.user.id,
+        },
+      })
+
+      if (admins.length > 0) {
+        await prisma.notification.createMany({
+          data: admins.map((admin) => ({
+            userId: admin.id,
+            type: 'PROFILE_UPDATE',
+            title: 'Program Coordinator Profile Change Request',
+            message: 'A Program Coordinator submitted profile updates that require admin approval.',
+            link: `/admin/users/${targetUserId}`,
+          })),
+        })
+      }
+
+      revalidatePath('/admin/users')
+      revalidatePath(`/admin/users/${targetUserId}`)
+      revalidatePath('/dashboard/profile')
+      return {
+        success: true,
+        pendingApproval: true,
+        message: 'Profile changes submitted for admin approval.',
+      }
     }
 
     const nextName = typeof updateData.name === 'string' ? updateData.name : existingUser?.name

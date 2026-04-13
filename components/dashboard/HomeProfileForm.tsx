@@ -5,8 +5,17 @@ import { useRouter } from 'next/navigation'
 import { updateHomeDetails } from "@/app/actions/home-management"
 import { STYLES } from "@/lib/styles"
 import { cn, safeJsonParse } from "@/lib/utils"
-import { Building2, Save, MapPin, Users, AlertTriangle, Camera, Settings, Info, Check, User } from "lucide-react"
+import { Building2, Save, MapPin, Users, AlertTriangle, Camera, Settings, Info, Check, User, ChevronDown, ChevronUp } from "lucide-react"
 import { AddressAutocomplete } from "@/components/ui/AddressAutocomplete"
+import { PhoneInput } from "@/components/ui/PhoneInput"
+import { formatPhoneDashed } from "@/lib/phone"
+
+type SecondaryContact = {
+  name: string
+  position: string
+  email: string
+  phone: string
+}
 
 type HomeData = {
   id: string
@@ -30,6 +39,7 @@ type HomeData = {
   contactPhone?: string
   contactEmail?: string
   contactPosition?: string | null
+  additionalContacts?: string | null
   useCustomNotificationEmail?: boolean
   notificationEmail?: string | null
 }
@@ -37,8 +47,18 @@ type HomeData = {
 export function HomeProfileForm({ home }: { home: HomeData }) {
   const [address, setAddress] = useState(home.address || '')
   const [useCustomNotificationEmail, setUseCustomNotificationEmail] = useState(Boolean(home.useCustomNotificationEmail))
+  const [secondaryContacts, setSecondaryContacts] = useState<SecondaryContact[]>(
+    safeJsonParse<SecondaryContact[]>(home.additionalContacts, []).map((contact) => ({
+      name: contact?.name || '',
+      position: contact?.position || '',
+      email: contact?.email || '',
+      phone: formatPhoneDashed(contact?.phone || ''),
+    }))
+  )
   const [isPending, startTransition] = useTransition()
+  const [contactsExpanded, setContactsExpanded] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [infoMessage, setInfoMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const router = useRouter()
 
@@ -60,15 +80,49 @@ export function HomeProfileForm({ home }: { home: HomeData }) {
       const result = await updateHomeDetails(formData)
       if (result?.error) {
         setError(result.error)
+        setInfoMessage(null)
         setSaved(false)
       } else {
         setError(null)
-        setSaved(true)
+        setInfoMessage((result as any)?.message || null)
+        setSaved(!(result as any)?.pendingApproval)
         router.refresh()
         setTimeout(() => setSaved(false), 3000)
       }
     })
   }
+
+  const updateSecondaryContact = (index: number, field: keyof SecondaryContact, value: string) => {
+    setSecondaryContacts((prev) =>
+      prev.map((contact, i) => {
+        if (i !== index) return contact
+        if (field === 'phone') {
+          return { ...contact, phone: formatPhoneDashed(value) }
+        }
+        return { ...contact, [field]: value }
+      })
+    )
+  }
+
+  const addSecondaryContact = () => {
+    setContactsExpanded(true)
+    setSecondaryContacts((prev) => [...prev, { name: '', position: '', email: '', phone: '' }])
+  }
+
+  const removeSecondaryContact = (index: number) => {
+    setSecondaryContacts((prev) => prev.filter((_, i) => i !== index))
+  }
+
+  const serializedSecondaryContacts = JSON.stringify(
+    secondaryContacts
+      .map((contact) => ({
+        name: contact.name.trim(),
+        position: contact.position.trim(),
+        email: contact.email.trim(),
+        phone: contact.phone.trim(),
+      }))
+      .filter((contact) => contact.name || contact.position || contact.email || contact.phone)
+  )
 
   return (
     <form
@@ -76,6 +130,7 @@ export function HomeProfileForm({ home }: { home: HomeData }) {
         className="p-5 space-y-5"
     >
         <input type="hidden" name="id" value={home.id} />
+        <input type="hidden" name="additionalContacts" value={serializedSecondaryContacts} />
 
         {/* Section 1: Facility Details */}
         <div className="space-y-3">
@@ -185,12 +240,10 @@ export function HomeProfileForm({ home }: { home: HomeData }) {
                 </div>
                 <div>
                     <label className="block text-xs font-medium text-gray-600 mb-1">Contact Phone</label>
-                    <input
+                    <PhoneInput
                         name="contactPhone"
-                        type="tel"
                         defaultValue={(home as any).contactPhone || ''}
                         className={STYLES.input}
-                        placeholder="Phone number"
                     />
                 </div>
                 <div>
@@ -226,6 +279,83 @@ export function HomeProfileForm({ home }: { home: HomeData }) {
                                 className={STYLES.input}
                                 placeholder="notifications@organization.com"
                             />
+                        </div>
+                    )}
+                </div>
+
+                <div className="md:col-span-2 rounded-lg border border-gray-200 bg-white p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <p className="text-sm font-semibold text-gray-900">Secondary Contacts</p>
+                            <p className="text-xs text-gray-500">Add backup contacts for booking communication and urgent updates.</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <button
+                                type="button"
+                                onClick={() => setContactsExpanded((prev) => !prev)}
+                                className={cn(STYLES.btn, STYLES.btnSecondary, "text-xs")}
+                            >
+                                {contactsExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                                {contactsExpanded ? 'Minimize' : 'Expand'}
+                            </button>
+                            <button
+                                type="button"
+                                onClick={addSecondaryContact}
+                                className={cn(STYLES.btn, STYLES.btnSecondary, "text-xs")}
+                            >
+                                Add Contact
+                            </button>
+                        </div>
+                    </div>
+
+                    {!contactsExpanded ? (
+                        <p className="text-xs text-gray-500">Secondary contacts are minimized. Click Expand or Add Contact.</p>
+                    ) : secondaryContacts.length === 0 ? (
+                        <p className="text-xs text-gray-500">No secondary contacts added yet.</p>
+                    ) : (
+                        <div className="space-y-3">
+                            {secondaryContacts.map((contact, index) => (
+                                <div key={index} className="border border-gray-100 rounded-lg p-3 bg-gray-50/40 space-y-3">
+                                    <div className="flex items-center justify-between">
+                                        <p className="text-xs font-medium text-gray-700">Contact #{index + 1}</p>
+                                        <button
+                                            type="button"
+                                            onClick={() => removeSecondaryContact(index)}
+                                            className="text-xs text-red-600 hover:text-red-700"
+                                        >
+                                            Remove
+                                        </button>
+                                    </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                        <input
+                                            value={contact.name}
+                                            onChange={(e) => updateSecondaryContact(index, 'name', e.target.value)}
+                                            className={STYLES.input}
+                                            placeholder="Contact name"
+                                        />
+                                        <input
+                                            value={contact.position}
+                                            onChange={(e) => updateSecondaryContact(index, 'position', e.target.value)}
+                                            className={STYLES.input}
+                                            placeholder="Position"
+                                        />
+                                        <input
+                                            type="email"
+                                            value={contact.email}
+                                            onChange={(e) => updateSecondaryContact(index, 'email', e.target.value)}
+                                            className={STYLES.input}
+                                            placeholder="Email"
+                                        />
+                                        <input
+                                            type="tel"
+                                            value={contact.phone}
+                                            onChange={(e) => updateSecondaryContact(index, 'phone', e.target.value)}
+                                            className={STYLES.input}
+                                            placeholder="555-123-4567"
+                                        />
+                                    </div>
+                                </div>
+                            ))}
                         </div>
                     )}
                 </div>
@@ -379,6 +509,10 @@ export function HomeProfileForm({ home }: { home: HomeData }) {
             {error ? (
                 <span className="text-sm text-red-600 flex items-center gap-1.5">
                     {error}
+                </span>
+            ) : infoMessage ? (
+                <span className="text-sm text-blue-700 flex items-center gap-1.5">
+                    {infoMessage}
                 </span>
             ) : saved ? (
                 <span className="text-sm text-green-600 flex items-center gap-1.5">

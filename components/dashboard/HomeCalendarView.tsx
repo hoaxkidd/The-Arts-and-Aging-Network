@@ -460,19 +460,19 @@ export function HomeCalendarView({
 
     // For approved bookings, navigate to full booking page (messages, photos, comments)
     if (event.myRequestStatus === 'APPROVED') {
-      router.push(`/bookings/${event.id}`)
+      router.push(`/dashboard/my-bookings/${event.id}`)
       return
     }
 
     // For pending events, navigate to requests page
     if (event.myRequestStatus === 'PENDING') {
-      router.push('/dashboard/requests')
+      router.push('/dashboard/my-bookings?section=requests')
       return
     }
 
     // For past bookings (no status), navigate to public booking page (view only)
     if (isPastEvent) {
-      router.push(`/bookings/${event.id}`)
+      router.push(`/dashboard/my-bookings/${event.id}`)
       return
     }
 

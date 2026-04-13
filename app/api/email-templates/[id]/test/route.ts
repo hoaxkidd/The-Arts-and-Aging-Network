@@ -22,7 +22,7 @@ export async function POST(
 
     const { id } = await params
     const body = await request.json()
-    const { testEmail } = body
+    const { testEmail, variables: overrideVariables } = body
 
     if (!testEmail || !testEmail.includes('@')) {
       return NextResponse.json({ error: 'Valid test email required' }, { status: 400 })
@@ -42,24 +42,37 @@ export async function POST(
       return NextResponse.json({ error: 'Template not found' }, { status: 404 })
     }
 
+    const defaultVariables = {
+      name: 'Test User',
+      appUrl: process.env.NEXTAUTH_URL || 'https://artsandaging.com',
+      supportEmail: 'info@artsandaging.com',
+      message: 'This is a test email to verify your template is working correctly.',
+      role: 'Staff',
+      eventTitle: 'Test Booking',
+      eventDate: 'January 15, 2024',
+      eventTime: '2:00 PM',
+      eventLocation: 'Test Care Home',
+      eventLink: 'https://artsandaging.com/bookings/123',
+      expenseAmount: '$50.00',
+      timesheetWeek: 'Week of Jan 15, 2024',
+      groupName: 'Test Group',
+      inviteUrl: 'https://artsandaging.com/invite/test123'
+    }
+
+    const safeOverrides = typeof overrideVariables === 'object' && overrideVariables !== null
+      ? Object.fromEntries(
+          Object.entries(overrideVariables as Record<string, unknown>)
+            .filter(([key, value]) => typeof key === 'string' && typeof value === 'string' && value.trim().length > 0)
+            .map(([key, value]) => [key.trim(), String(value)])
+        )
+      : {}
+
     const result = await sendEmail({
       to: testEmail,
       templateType: template.type as EmailTemplateType,
       variables: {
-        name: 'Test User',
-        appUrl: process.env.NEXTAUTH_URL || 'https://artsandaging.com',
-        supportEmail: 'info@artsandaging.com',
-        message: 'This is a test email to verify your template is working correctly.',
-        role: 'Staff',
-        eventTitle: 'Test Booking',
-        eventDate: 'January 15, 2024',
-        eventTime: '2:00 PM',
-        eventLocation: 'Test Care Home',
-        eventLink: 'https://artsandaging.com/bookings/123',
-        expenseAmount: '$50.00',
-        timesheetWeek: 'Week of Jan 15, 2024',
-        groupName: 'Test Group',
-        inviteUrl: 'https://artsandaging.com/invite/test123'
+        ...defaultVariables,
+        ...safeOverrides,
       }
     })
 

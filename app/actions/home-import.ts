@@ -163,7 +163,7 @@ async function importHomesRowsInternal(rows: HomesImportRow[], userId: string): 
         updated++
       } else {
         const user = await createUserWithGeneratedCode(prisma, {
-          name: `${name} Home Admin`,
+          name: `${name} Program Coordinator`,
           email: null,
           password: null,
           role: 'HOME_ADMIN',

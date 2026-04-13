@@ -37,22 +37,22 @@ export function HomeEventsClient({ events }: { events: CalendarEvent[] }) {
     const isPastEvent = eventEnd < new Date()
 
     if (event.myRequestStatus === 'APPROVED') {
-      router.push(`/bookings/${event.id}`)
+      router.push(`/dashboard/my-bookings/${event.id}`)
       return
     }
     if (event.myRequestStatus === 'PENDING') {
-      router.push('/dashboard/requests')
+      router.push('/dashboard/my-bookings?section=requests')
       return
     }
     if (isPastEvent) {
-      router.push(`/bookings/${event.id}`)
+      router.push(`/dashboard/my-bookings/${event.id}`)
       return
     }
     if (event.requiredFormTemplateId) {
       router.push(`/dashboard/bookings/${event.id}/sign-up`)
       return
     }
-    router.push(`/bookings/${event.id}`)
+    router.push('/dashboard/my-bookings?section=requests')
   }
 
   return (

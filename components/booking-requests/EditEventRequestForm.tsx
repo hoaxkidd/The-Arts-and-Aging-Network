@@ -189,7 +189,7 @@ export function EditEventRequestForm({ request }: { request: EditRequest }) {
         return
       }
 
-      router.push('/dashboard/requests')
+      router.push('/dashboard/my-bookings?section=requests')
       router.refresh()
     })
   }
@@ -201,7 +201,7 @@ export function EditEventRequestForm({ request }: { request: EditRequest }) {
         <p className="text-sm text-gray-600">
           This request can only be edited while pending or after admin grants edit access on a rejected request.
         </p>
-        <Link href="/dashboard/requests" className={cn(STYLES.btn, STYLES.btnSecondary)}>
+        <Link href="/dashboard/my-bookings?section=requests" className={cn(STYLES.btn, STYLES.btnSecondary)}>
           Back to Requests
         </Link>
       </div>
@@ -211,7 +211,7 @@ export function EditEventRequestForm({ request }: { request: EditRequest }) {
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2">
-        <Link href="/dashboard/requests" className="text-sm text-gray-600 hover:text-gray-900 inline-flex items-center gap-1">
+        <Link href="/dashboard/my-bookings?section=requests" className="text-sm text-gray-600 hover:text-gray-900 inline-flex items-center gap-1">
           <ArrowLeft className="w-4 h-4" /> Back to requests
         </Link>
       </div>
@@ -348,7 +348,7 @@ export function EditEventRequestForm({ request }: { request: EditRequest }) {
       )}
 
       <div className="flex items-center justify-end gap-3">
-        <Link href="/dashboard/requests" className={cn(STYLES.btn, STYLES.btnSecondary)}>
+        <Link href="/dashboard/my-bookings?section=requests" className={cn(STYLES.btn, STYLES.btnSecondary)}>
           Cancel
         </Link>
         <button onClick={handleSubmit} disabled={isPending} className={cn(STYLES.btn, STYLES.btnPrimary, 'inline-flex items-center gap-2')}>

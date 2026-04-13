@@ -162,7 +162,7 @@ export function UserDetailModal({ user, initialTab, isOpen, onClose, onUserUpdat
   const isHomeAdmin = user.role === 'HOME_ADMIN'
   const home = user.geriatricHome
 
-  // Parse additional contacts for Home Admin
+  // Parse additional contacts for Program Coordinator
   const additionalContacts = isHomeAdmin && home?.additionalContacts
     ? safeJsonParse<any[]>(home.additionalContacts, [])
     : []
@@ -418,7 +418,7 @@ export function UserDetailModal({ user, initialTab, isOpen, onClose, onUserUpdat
             </div>
           </div>
 
-          {/* Home Admin Overview */}
+          {/* Program Coordinator Overview */}
           {activeTab === 'overview' && isHomeAdmin && (
             <div className="space-y-6">
               {home ? (
@@ -541,13 +541,13 @@ export function UserDetailModal({ user, initialTab, isOpen, onClose, onUserUpdat
               ) : (
                 <div className="text-center py-8">
                   <Building2 className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                  <p className="text-gray-500">No facility linked to this Home Admin.</p>
+                  <p className="text-gray-500">No facility linked to this Program Coordinator.</p>
                 </div>
               )}
             </div>
           )}
 
-          {/* Home Admin Contacts Tab */}
+          {/* Program Coordinator Contacts Tab */}
           {activeTab === 'contacts' && isHomeAdmin && (
             <div className="space-y-6">
               {home ? (

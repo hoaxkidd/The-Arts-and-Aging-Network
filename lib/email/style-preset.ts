@@ -101,7 +101,6 @@ export function renderStyledEmailContent(content: string, style: EmailStylePrese
   const blockBase = [
     `font-family:${style.fontFamily}`,
     `color:${style.textColor}`,
-    `background:${style.surfaceBackground}`,
   ].join(';')
 
   const banner = style.showBanner

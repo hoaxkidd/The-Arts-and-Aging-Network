@@ -43,7 +43,7 @@ export default async function EventSignUpPage({
       status: { in: ['PENDING', 'APPROVED'] }
     }
   })
-  if (existingRequest) redirect('/dashboard/requests')
+  if (existingRequest) redirect('/dashboard/my-bookings?section=requests')
 
   const template = {
     title: event.requiredFormTemplate.title,

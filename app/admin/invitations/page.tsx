@@ -57,7 +57,7 @@ export default async function InvitationsPage() {
               <option value="BOARD">Board Member</option>
               <option value="PAYROLL">Payroll Staff</option>
               <option value="VOLUNTEER">Volunteer</option>
-              <option value="HOME_ADMIN">Geriatric Home</option>
+              <option value="HOME_ADMIN">Program Coordinator</option>
               <option value="FACILITATOR">Facilitator</option>
               <option value="PARTNER">Community Partner</option>
             </select>

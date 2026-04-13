@@ -375,7 +375,7 @@ export async function createEvent(formData: FormData) {
         revalidatePath('/admin/bookings')
         revalidatePath('/bookings')
         revalidatePath('/dashboard/bookings')
-        revalidatePath('/dashboard/calendar')
+        revalidatePath('/dashboard/my-bookings')
         revalidatePath('/staff/bookings')
 
         return { success: true, eventId: event.id, conflictCount: proximity.conflictCount }
@@ -384,7 +384,7 @@ export async function createEvent(formData: FormData) {
     revalidatePath('/admin/bookings')
     revalidatePath('/bookings')
     revalidatePath('/dashboard/bookings')
-    revalidatePath('/dashboard/calendar')
+    revalidatePath('/dashboard/my-bookings')
     revalidatePath('/staff/bookings')
     return { success: true, eventId: id }
   } catch (e) {
@@ -500,7 +500,7 @@ export async function deleteEvent(eventId: string) {
     revalidatePath('/bookings')
     revalidatePath('/payroll')
     revalidatePath('/dashboard/bookings')
-    revalidatePath('/dashboard/calendar')
+    revalidatePath('/dashboard/my-bookings')
     revalidatePath('/staff/bookings')
     return { success: true }
   } catch (e) {

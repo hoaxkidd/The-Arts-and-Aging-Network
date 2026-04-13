@@ -362,7 +362,7 @@ async function autoFinalizeEventRequest(requestId: string, reviewerUserId: strin
 
   revalidatePath('/admin/booking-requests')
   revalidatePath('/staff/bookings')
-  revalidatePath('/dashboard/requests')
+  revalidatePath('/dashboard/my-bookings')
   revalidatePath('/dashboard/my-bookings')
 
   return { success: true, approvedEventId }
@@ -448,7 +448,7 @@ export async function requestExistingEvent(
       }
     })
 
-    revalidatePath('/dashboard/requests')
+    revalidatePath('/dashboard/my-bookings')
     revalidatePath('/dashboard/bookings')
     revalidatePath('/admin/booking-requests')
 
@@ -468,7 +468,7 @@ export async function submitEventSignUpForm(
 ) {
   const session = await auth()
   if (!session?.user?.id) return { error: "Unauthorized" }
-  if (session.user.role !== 'HOME_ADMIN') return { error: "Only home admins can use this form" }
+  if (session.user.role !== 'HOME_ADMIN') return { error: "Only Program Coordinators can use this form" }
 
   try {
     const home = await db.geriatricHome.findUnique({
@@ -556,7 +556,7 @@ export async function submitEventSignUpForm(
       }
     })
 
-    revalidatePath('/dashboard/requests')
+    revalidatePath('/dashboard/my-bookings')
     revalidatePath('/dashboard/bookings')
     revalidatePath('/admin/booking-requests')
 
@@ -728,7 +728,7 @@ export async function createCustomEventRequest(data: {
         }
       })
 
-      revalidatePath('/dashboard/requests')
+      revalidatePath('/dashboard/my-bookings')
       revalidatePath('/admin/booking-requests')
 
       return { success: true, data: request }
@@ -821,7 +821,7 @@ export async function createCustomEventRequest(data: {
       }
     })
 
-    revalidatePath('/dashboard/requests')
+    revalidatePath('/dashboard/my-bookings')
     revalidatePath('/dashboard/bookings')
     revalidatePath('/admin/booking-requests')
     revalidatePath('/staff/bookings')
@@ -867,7 +867,7 @@ export async function cancelEventRequest(requestId: string) {
       }
     })
 
-    revalidatePath('/dashboard/requests')
+    revalidatePath('/dashboard/my-bookings')
     revalidatePath('/admin/booking-requests')
 
     return { success: true }
@@ -1001,7 +1001,7 @@ export async function updateHomeEventRequest(
       }
     })
 
-    revalidatePath('/dashboard/requests')
+    revalidatePath('/dashboard/my-bookings')
     revalidatePath(`/dashboard/requests/${requestId}/edit`)
     revalidatePath('/admin/booking-requests')
     revalidatePath(`/admin/booking-requests/${requestId}`)
@@ -1057,7 +1057,7 @@ export async function grantEventRequestEditAccess(requestId: string, note?: stri
 
     revalidatePath('/admin/booking-requests')
     revalidatePath(`/admin/booking-requests/${requestId}`)
-    revalidatePath('/dashboard/requests')
+    revalidatePath('/dashboard/my-bookings')
 
     return { success: true }
   } catch (error) {
@@ -1074,10 +1074,18 @@ export async function getHomeEventRequests(homeId?: string) {
   try {
     let targetHomeId = homeId
 
-    // If no homeId provided, get home for current user
+    if (session.user.role !== 'ADMIN') {
+      const ownHome = await db.geriatricHome.findUnique({
+        where: { userId: session.user.id },
+        select: { id: true },
+      })
+      if (!ownHome) return { error: "No home found" }
+      targetHomeId = ownHome.id
+    }
+
     if (!targetHomeId) {
       const home = await db.geriatricHome.findUnique({
-        where: { userId: session.user.id }
+        where: { userId: session.user.id },
       })
       if (!home) return { error: "No home found" }
       targetHomeId = home.id
@@ -1407,7 +1415,7 @@ export async function approveEventRequest(
         : request.customEndDateTime
 
       if (!eventTitle || !eventStartDateTime || !eventEndDateTime) {
-        return { error: "Request is missing title or schedule. Ask the home admin to update and resubmit." }
+        return { error: "Request is missing title or schedule. Ask the Program Coordinator to update and resubmit." }
       }
 
       const parsedPreferredDates = (() => {
@@ -1600,7 +1608,7 @@ export async function approveEventRequest(
 
     revalidatePath('/admin/booking-requests')
     revalidatePath('/admin/bookings')
-    revalidatePath('/dashboard/requests')
+    revalidatePath('/dashboard/my-bookings')
     revalidatePath('/dashboard/my-bookings')
     revalidatePath('/staff/bookings')
 
@@ -1722,7 +1730,7 @@ export async function rejectEventRequest(requestId: string, reason: string) {
     })
 
     revalidatePath('/admin/booking-requests')
-    revalidatePath('/dashboard/requests')
+    revalidatePath('/dashboard/my-bookings')
 
     return { success: true }
   } catch (error) {
@@ -1918,6 +1926,15 @@ export async function getHomeEventHistory(homeId?: string) {
 
   try {
     let targetHomeId = homeId
+
+    if (session.user.role !== 'ADMIN') {
+      const ownHome = await db.geriatricHome.findUnique({
+        where: { userId: session.user.id },
+        select: { id: true },
+      })
+      if (!ownHome) return { error: "No home found" }
+      targetHomeId = ownHome.id
+    }
 
     // If no homeId provided, get home for current user
     if (!targetHomeId) {
@@ -2378,7 +2395,7 @@ export async function approveRequestWithSelectedDate(data: {
 
     revalidatePath('/admin/booking-requests')
     revalidatePath('/staff/bookings')
-    revalidatePath('/dashboard/requests')
+    revalidatePath('/dashboard/my-bookings')
     revalidatePath(`/bookings/${event.id}`)
 
     return { success: true, eventId: event.id }

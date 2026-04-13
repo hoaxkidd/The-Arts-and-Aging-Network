@@ -240,8 +240,8 @@ export async function updateHomeAdminReminderOffsets(offsets: number[]) {
     revalidatePath('/admin/email-reminders')
     return { success: true, data: nextConfig }
   } catch (error) {
-    logger.error('Update home admin reminder offsets error:', error)
-    return { error: 'Failed to update home admin reminder policy' }
+    logger.error('Update Program Coordinator reminder offsets error:', error)
+    return { error: 'Failed to update Program Coordinator reminder policy' }
   }
 }
 

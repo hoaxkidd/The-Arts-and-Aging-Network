@@ -1,213 +1,110 @@
-import { auth } from "@/auth"
-import { prisma } from "@/lib/prisma"
-import { Calendar, Clock, ArrowUpRight, ArrowUp, ArrowDown, MapPin, Plus, Users, FileText, Settings, CheckCircle } from "lucide-react"
-import { cn } from "@/lib/utils"
 import Link from "next/link"
-import { logger } from "@/lib/logger"
-import { STYLES } from "@/lib/styles"
+import { CalendarDays, ClipboardList, Clock, ArrowRight } from "lucide-react"
+import { getEventSignupForms } from "@/app/actions/form-templates"
+import { getHomeEventRequests, getHomeEventHistory } from "@/app/actions/booking-requests"
 
-const quickActions = [
-  { label: "New Request", icon: Plus, href: "/dashboard/requests/new", color: "bg-primary-500", hover: "hover:bg-primary-600" },
-  { label: "Browse Bookings", icon: Calendar, href: "/dashboard/bookings", color: "bg-blue-500", hover: "hover:bg-blue-600" },
-  { label: "My Bookings", icon: CheckCircle, href: "/dashboard/my-bookings", color: "bg-green-500", hover: "hover:bg-green-600" },
-  { label: "Contacts", icon: Users, href: "/dashboard/contacts", color: "bg-purple-500", hover: "hover:bg-purple-600" },
-  { label: "Forms", icon: FileText, href: "/dashboard/forms", color: "bg-amber-500", hover: "hover:bg-amber-600" },
-  { label: "Profile", icon: Settings, href: "/dashboard/profile", color: "bg-gray-500", hover: "hover:bg-gray-600" },
-]
-
-export default async function HomeAdminDashboard() {
-  const session = await auth()
-
-  const home = await prisma.geriatricHome.findUnique({
-    where: { userId: session?.user?.id },
-    select: { id: true, name: true }
-  })
-
-  let events: any[] = []
-
+function parseTags(tags: string | null): string[] {
+  if (!tags) return []
   try {
-    events = await prisma.event.findMany({
-      where: {
-        OR: [
-          { geriatricHomeId: home?.id },
-          { attendances: { some: { userId: session?.user?.id } } }
-        ]
-      },
-      include: {
-        location: true,
-        attendances: {
-          where: { userId: session?.user?.id }
-        }
-      },
-      orderBy: { startDateTime: 'asc' }
-    })
-  } catch (e) {
-    logger.serverAction("Failed to fetch dashboard events:", e)
+    const parsed = JSON.parse(tags)
+    if (Array.isArray(parsed)) {
+      return parsed.filter((tag): tag is string => typeof tag === "string" && tag.trim().length > 0)
+    }
+  } catch {
+    return tags
+      .split(",")
+      .map((tag) => tag.trim())
+      .filter(Boolean)
   }
+  return []
+}
 
+export default async function ProgramCoordinatorDashboard() {
+  const [formsResult, requestsResult, historyResult] = await Promise.all([
+    getEventSignupForms(),
+    getHomeEventRequests(),
+    getHomeEventHistory(),
+  ])
+
+  const forms = formsResult.success && formsResult.data ? formsResult.data : []
+  const requests = requestsResult.data || []
+  const events = historyResult.data || []
+
+  const pendingRequests = requests.filter((request: any) => request.status === "PENDING").length
   const now = new Date()
-  const upcoming = events.filter(e => new Date(e.startDateTime) > now)
-  const past = events.filter(e => new Date(e.startDateTime) <= now)
-  const pendingCount = upcoming.filter(e => e.attendances?.[0]?.status === 'MAYBE').length
+  const upcomingBookings = events.filter((event: any) => new Date(event.startDateTime) > now).length
 
   return (
-    <div className="h-full flex flex-col">
-      <div className="flex-1 min-h-0 overflow-auto pt-4">
-        <div className="space-y-4">
-          {/* Inline Stats */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
-            <div className={STYLES.statsCard}>
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center shrink-0">
-                  <Calendar className="w-4 h-4" />
-                </div>
-                <div>
-                  <p className="text-xl font-bold text-gray-900">{events.length}</p>
-                  <p className="text-xs text-gray-500">Total</p>
-                </div>
-              </div>
-            </div>
-            <div className={STYLES.statsCard}>
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-green-100 text-green-600 flex items-center justify-center shrink-0">
-                  <ArrowUp className="w-4 h-4" />
-                </div>
-                <div>
-                  <p className="text-xl font-bold text-gray-900">{upcoming.length}</p>
-                  <p className="text-xs text-gray-500">Upcoming</p>
-                </div>
-              </div>
-            </div>
-            <div className={STYLES.statsCard}>
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-yellow-100 text-yellow-600 flex items-center justify-center shrink-0">
-                  <Clock className="w-4 h-4" />
-                </div>
-                <div>
-                  <p className="text-xl font-bold text-gray-900">{pendingCount}</p>
-                  <p className="text-xs text-gray-500">Pending</p>
-                </div>
-              </div>
-            </div>
-            <div className={STYLES.statsCard}>
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-gray-100 text-gray-600 flex items-center justify-center shrink-0">
-                  <ArrowDown className="w-4 h-4" />
-                </div>
-                <div>
-                  <p className="text-xl font-bold text-gray-900">{past.length}</p>
-                  <p className="text-xs text-gray-500">Past</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Quick Actions */}
-          <div className="bg-white rounded-lg border border-gray-200 p-3">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {quickActions.map((action) => (
-                <Link
-                  key={action.label}
-                  href={action.href}
-                  className={cn(
-                    "flex items-center gap-2 p-2 rounded-lg text-white transition-all duration-200 shadow-sm",
-                    action.color,
-                    action.hover
-                  )}
-                >
-                  <action.icon className="w-4 h-4 shrink-0" />
-                  <span className="text-sm font-medium">{action.label}</span>
-                </Link>
-              ))}
-            </div>
-          </div>
-
-          {/* Full Width: Upcoming Schedule */}
-          <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-            <div className="px-4 py-3 border-b border-gray-100 bg-gray-50/50 flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
-                <Calendar className="w-4 h-4 text-primary-500" />
-                Upcoming Schedule
-              </h3>
-              <Link
-                href="/dashboard/bookings"
-                className="text-xs font-medium text-primary-600 hover:text-primary-700 flex items-center gap-1"
-              >
-                View all <ArrowUpRight className="w-3 h-3" />
-              </Link>
+    <div className="space-y-4">
+      <section className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <Link href="/dashboard/my-bookings?section=requests" className="bg-white border border-gray-200 rounded-xl p-4 hover:border-primary-300">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center">
+              <ClipboardList className="w-4 h-4" />
             </div>
             <div>
-              {upcoming.length > 0 ? (
-                <div className="divide-y divide-gray-100">
-                  {upcoming.slice(0, 6).map((event, index) => (
-                    <Link
-                      key={event.id}
-                      href={`/bookings/${event.id}`}
-                      className={cn(
-                        "flex items-center gap-3 p-3 hover:bg-gray-50/50 transition-colors",
-                        index === 0 && "bg-primary-50/30"
-                      )}
-                    >
-                      <div className={cn(
-                        "w-12 h-12 rounded-lg flex flex-col items-center justify-center shrink-0",
-                        index === 0 ? "bg-primary-500 text-white" : "bg-primary-50 text-primary-700"
-                      )}>
-                        <span className="text-[9px] font-semibold uppercase">
-                          {new Date(event.startDateTime).toLocaleDateString('en-US', { month: 'long' })}
-                        </span>
-                        <span className="text-lg font-bold leading-none">
-                          {new Date(event.startDateTime).getDate()}
-                        </span>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h4 className="text-sm font-semibold text-gray-900 truncate">{event.title}</h4>
-                        <div className="flex items-center gap-3 mt-0.5">
-                          <span className="text-xs text-gray-500 flex items-center gap-1">
-                            <Clock className="w-3 h-3" />
-                            {new Date(event.startDateTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                          </span>
-                          {event.location && (
-                            <span className="text-xs text-gray-500 flex items-center gap-1 truncate">
-                              <MapPin className="w-3 h-3 shrink-0" />
-                              {event.location.name}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      <span className={cn(
-                        "px-2 py-1 rounded-lg text-xs font-semibold shrink-0",
-                        event.attendances?.[0]?.status === 'YES' ? "bg-green-100 text-green-700" :
-                        event.attendances?.[0]?.status === 'NO' ? "bg-red-100 text-red-700" :
-                        event.attendances?.[0]?.status === 'MAYBE' ? "bg-yellow-100 text-yellow-700" :
-                        "bg-blue-100 text-blue-700"
-                      )}>
-                        {event.attendances?.[0]?.status === 'YES' ? 'Going' :
-                         event.attendances?.[0]?.status === 'NO' ? 'Not Going' :
-                         event.attendances?.[0]?.status === 'MAYBE' ? 'Maybe' :
-                         'Available'}
-                      </span>
-                    </Link>
-                  ))}
-                </div>
-              ) : (
-                <div className="p-8 text-center">
-                  <div className="w-14 h-14 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                    <Calendar className="w-7 h-7 text-gray-400" />
-                  </div>
-                  <p className="text-sm font-medium text-gray-900">No upcoming bookings</p>
-                  <p className="text-xs text-gray-500 mt-1 mb-4">Browse bookings to find opportunities for your residents.</p>
-                  <Link
-                    href="/dashboard/bookings"
-                    className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-medium bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
-                  >
-                    Browse Bookings
-                  </Link>
-                </div>
-              )}
+              <p className="text-lg font-semibold text-gray-900">{pendingRequests}</p>
+              <p className="text-xs text-gray-500">Pending Requests</p>
             </div>
           </div>
-        </div>
-      </div>
+        </Link>
+
+        <Link href="/dashboard/my-bookings?section=upcoming" className="bg-white border border-gray-200 rounded-xl p-4 hover:border-primary-300">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-green-100 text-green-700 flex items-center justify-center">
+              <CalendarDays className="w-4 h-4" />
+            </div>
+            <div>
+              <p className="text-lg font-semibold text-gray-900">{upcomingBookings}</p>
+              <p className="text-xs text-gray-500">Upcoming Bookings</p>
+            </div>
+          </div>
+        </Link>
+      </section>
+
+      <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {forms.length > 0 ? (
+          forms.map((form: any) => {
+            const tags = parseTags(form.tags ?? null).slice(0, 3)
+            return (
+              <article key={form.id} className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+                <h3 className="text-base font-semibold text-gray-900">{form.title}</h3>
+                <p className="text-sm text-gray-600 mt-2 line-clamp-3">
+                  {form.description?.trim() || "Fill this booking form and select your preferred dates."}
+                </p>
+
+                {tags.length > 0 && (
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {tags.map((tag) => (
+                      <span key={tag} className="px-2 py-1 rounded-md bg-gray-100 text-gray-700 text-xs">
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                <Link
+                  href={`/dashboard/requests/new?formTemplateId=${form.id}`}
+                  className="mt-5 inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary-600 text-white text-sm font-medium hover:bg-primary-700"
+                >
+                  Book This Program
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+              </article>
+            )
+          })
+        ) : (
+          <div className="md:col-span-2 bg-white border border-dashed border-gray-300 rounded-xl p-8 text-center">
+            <p className="text-sm font-medium text-gray-900">No booking programs are available right now.</p>
+            <p className="text-xs text-gray-500 mt-1">Please contact the office if you expected booking forms to appear.</p>
+          </div>
+        )}
+      </section>
+
+      <Link href="/dashboard/my-bookings?view=calendar" className="inline-flex items-center gap-2 text-sm font-medium text-primary-700 hover:text-primary-800">
+        <Clock className="w-4 h-4" />
+        Open My Bookings (Calendar or List)
+      </Link>
     </div>
   )
 }

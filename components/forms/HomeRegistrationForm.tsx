@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { registerGeriatricHome } from '@/app/actions/home-registration'
 import { Building2, User, Phone, ShieldAlert, CheckCircle, ArrowRight, ArrowLeft, Mail, Lock, MapPin } from 'lucide-react'
 import { AddressAutocomplete } from '@/components/ui/AddressAutocomplete'
+import { PhoneInput } from '@/components/ui/PhoneInput'
 import { STYLES } from '@/lib/styles'
 import { cn } from '@/lib/utils'
 
@@ -210,7 +211,7 @@ export function HomeRegistrationForm({ embedded }: { embedded?: boolean }) {
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-600 mb-1">Phone</label>
-                  <input name="contactPhone" required className={STYLES.input} placeholder="(555) 123-4567" />
+                  <PhoneInput name="contactPhone" required className={STYLES.input} />
                 </div>
               </div>
             </div>

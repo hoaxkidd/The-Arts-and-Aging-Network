@@ -11,6 +11,7 @@ import {
   Edit3,
   Send,
   X,
+  Eye,
   Loader2,
   Bold,
   Italic,
@@ -75,23 +76,80 @@ type UniversalPresetResponse = {
   style: EmailStylePreset
 }
 
+function variableKeyFromToken(token: string): string {
+  return token.replace(/^{{\s*/, '').replace(/\s*}}$/, '').trim()
+}
+
+function extractTemplateVariableKeys(input: string): string[] {
+  const matches = input.match(/{{\s*([a-zA-Z0-9_]+)\s*}}/g) || []
+  const keys = matches.map(variableKeyFromToken)
+  return Array.from(new Set(keys))
+}
+
+const EMAIL_VARIABLE_EXAMPLES: Record<string, string> = EMAIL_VARIABLES.reduce((acc, variable) => {
+  acc[variableKeyFromToken(variable.key)] = variable.example
+  return acc
+}, {} as Record<string, string>)
+
+function applyVariableOverrides(content: string, overrides: Record<string, string>) {
+  let result = content
+  for (const [key, value] of Object.entries(overrides)) {
+    const safeValue = value ?? ''
+    result = result.replace(new RegExp(`{{\\s*${key}\\s*}}`, 'g'), safeValue)
+  }
+  return result
+}
+
 const TEMPLATE_RECT_BADGE = 'rounded-md px-2 py-1 text-[11px] font-semibold'
+
+type PreviewArea = 'Header' | 'Body' | 'Buttons' | 'Footer' | 'Layout'
+
+function AreaTag({ area, hint }: { area: PreviewArea; hint: string }) {
+  const tones: Record<PreviewArea, string> = {
+    Header: 'bg-blue-50 text-blue-700 border-blue-200',
+    Body: 'bg-slate-50 text-slate-700 border-slate-200',
+    Buttons: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    Footer: 'bg-amber-50 text-amber-700 border-amber-200',
+    Layout: 'bg-violet-50 text-violet-700 border-violet-200',
+  }
+
+  return (
+    <span
+      className={cn('inline-flex items-center rounded-md border px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide', tones[area])}
+      title={hint}
+    >
+      {area}
+    </span>
+  )
+}
+
+function ControlTitle({ label, area, hint }: { label: string; area: PreviewArea; hint: string }) {
+  return (
+    <span className="mb-1 flex items-center justify-between gap-2">
+      <span>{label}</span>
+      <AreaTag area={area} hint={hint} />
+    </span>
+  )
+}
 
 function StyledTemplateEditor({
   content,
   onChange,
   variables,
   style,
+  readOnly = false,
 }: {
   content: string
   onChange: (html: string) => void
   variables: EmailVariable[]
   style: EmailStylePreset
+  readOnly?: boolean
 }) {
   const [showVariableMenu, setShowVariableMenu] = useState(false)
 
   const editor = useEditor({
     immediatelyRender: false,
+    editable: !readOnly,
     extensions: [
       StarterKit,
       Underline,
@@ -116,6 +174,11 @@ function StyledTemplateEditor({
     }
   }, [content, editor])
 
+  useEffect(() => {
+    if (!editor) return
+    editor.setEditable(!readOnly)
+  }, [editor, readOnly])
+
   if (!editor) return null
 
   const setEditorLink = () => {
@@ -134,6 +197,7 @@ function StyledTemplateEditor({
 
   return (
     <div className="h-full min-h-0 flex flex-col rounded-lg border border-gray-200 p-3" style={{ backgroundColor: style.bodyBackground }}>
+      {!readOnly && (
       <div className="sticky top-0 z-10 flex items-center gap-1 p-2 bg-white border border-gray-200 rounded-t-lg border-b-0 flex-wrap">
         <button
           type="button"
@@ -248,6 +312,7 @@ function StyledTemplateEditor({
           )}
         </div>
       </div>
+      )}
 
       <div className="flex-1 min-h-0 overflow-hidden rounded-b-lg border border-gray-200 p-4" style={{ backgroundColor: style.bodyBackground }}>
         <div
@@ -395,45 +460,49 @@ function StyleControls({
         <Paintbrush className="h-4 w-4 text-primary-600" />
         Style Controls
       </h4>
-      <p className="text-xs text-gray-500">Update the brand look, typography, buttons, and structure. Changes appear instantly on the left.</p>
+      <p className="text-xs text-gray-500">Update header/banner, layout, typography, buttons, and footer. Changes appear instantly on the left.</p>
 
       <div className="rounded-md border border-gray-200 bg-white p-3 space-y-3">
-        <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">Brand & Surface</p>
+        <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">Header + Banner</p>
         <div className="flex items-center gap-4">
           <label className="inline-flex items-center gap-2 text-xs text-gray-700">
             <input type="checkbox" checked={value.showBanner} onChange={(e) => update('showBanner', e.target.checked)} className="rounded border-gray-300" />
             Show banner
+            <AreaTag area="Header" hint="Affects the preview banner section" />
           </label>
         </div>
         <div className="grid grid-cols-2 gap-3">
-          <label className="text-xs text-gray-700">Title<input type="text" value={value.bannerTitle} onChange={(e) => update('bannerTitle', e.target.value)} className={cn(STYLES.input, 'mt-1 h-8 text-xs')} /></label>
-          <label className="text-xs text-gray-700">Subtitle<input type="text" value={value.bannerSubtitle} onChange={(e) => update('bannerSubtitle', e.target.value)} className={cn(STYLES.input, 'mt-1 h-8 text-xs')} /></label>
-          <label className="text-xs text-gray-700">Gradient start<input type="color" value={value.bannerBackgroundStart} onChange={(e) => update('bannerBackgroundStart', e.target.value)} className="mt-1 h-8 w-full rounded border border-gray-300" /></label>
-          <label className="text-xs text-gray-700">Gradient end<input type="color" value={value.bannerBackgroundEnd} onChange={(e) => update('bannerBackgroundEnd', e.target.value)} className="mt-1 h-8 w-full rounded border border-gray-300" /></label>
-          <label className="text-xs text-gray-700">Text color<input type="color" value={value.bannerTextColor} onChange={(e) => update('bannerTextColor', e.target.value)} className="mt-1 h-8 w-full rounded border border-gray-300" /></label>
-          <label className="text-xs text-gray-700">Alignment
+          <label className="text-xs text-gray-700"><ControlTitle label="Title" area="Header" hint="Affects the preview banner heading" /><input type="text" value={value.bannerTitle} onChange={(e) => update('bannerTitle', e.target.value)} className={cn(STYLES.input, 'h-8 text-xs')} /></label>
+          <label className="text-xs text-gray-700"><ControlTitle label="Subtitle" area="Header" hint="Affects the preview banner subtitle" /><input type="text" value={value.bannerSubtitle} onChange={(e) => update('bannerSubtitle', e.target.value)} className={cn(STYLES.input, 'h-8 text-xs')} /></label>
+          <label className="text-xs text-gray-700"><ControlTitle label="Gradient start" area="Header" hint="Affects banner background gradient" /><input type="color" value={value.bannerBackgroundStart} onChange={(e) => update('bannerBackgroundStart', e.target.value)} className="h-8 w-full rounded border border-gray-300" /></label>
+          <label className="text-xs text-gray-700"><ControlTitle label="Gradient end" area="Header" hint="Affects banner background gradient" /><input type="color" value={value.bannerBackgroundEnd} onChange={(e) => update('bannerBackgroundEnd', e.target.value)} className="h-8 w-full rounded border border-gray-300" /></label>
+          <label className="text-xs text-gray-700"><ControlTitle label="Text color" area="Header" hint="Affects banner text color" /><input type="color" value={value.bannerTextColor} onChange={(e) => update('bannerTextColor', e.target.value)} className="h-8 w-full rounded border border-gray-300" /></label>
+          <label className="text-xs text-gray-700">
+            <ControlTitle label="Alignment" area="Header" hint="Affects banner text alignment" />
             <select value={value.bannerAlign} onChange={(e) => update('bannerAlign', e.target.value as EmailStylePreset['bannerAlign'])} className={cn(STYLES.input, STYLES.select, 'mt-1 h-8 text-xs')}>
               <option value="center">Center</option>
               <option value="left">Left</option>
             </select>
           </label>
-          <label className="text-xs text-gray-700">Page background<input type="color" value={value.bodyBackground} onChange={(e) => update('bodyBackground', e.target.value)} className="mt-1 h-8 w-full rounded border border-gray-300" /></label>
-          <label className="text-xs text-gray-700">Card surface<input type="color" value={value.surfaceBackground} onChange={(e) => update('surfaceBackground', e.target.value)} className="mt-1 h-8 w-full rounded border border-gray-300" /></label>
-          <label className="text-xs text-gray-700">Content width ({value.contentMaxWidth}px)<input type="range" min={480} max={900} step={10} value={value.contentMaxWidth} onChange={(e) => update('contentMaxWidth', Number(e.target.value))} className="mt-1 w-full" /></label>
-          <label className="text-xs text-gray-700">Section padding ({value.sectionPadding}px)<input type="range" min={12} max={48} value={value.sectionPadding} onChange={(e) => update('sectionPadding', Number(e.target.value))} className="mt-1 w-full" /></label>
+          <p className="col-span-2 mt-1 text-[11px] font-semibold uppercase tracking-wide text-gray-500">Layout</p>
+          <label className="text-xs text-gray-700"><ControlTitle label="Page background" area="Layout" hint="Affects full preview canvas background" /><input type="color" value={value.bodyBackground} onChange={(e) => update('bodyBackground', e.target.value)} className="h-8 w-full rounded border border-gray-300" /></label>
+          <label className="text-xs text-gray-700"><ControlTitle label="Card surface" area="Layout" hint="Affects email card background" /><input type="color" value={value.surfaceBackground} onChange={(e) => update('surfaceBackground', e.target.value)} className="h-8 w-full rounded border border-gray-300" /></label>
+          <label className="text-xs text-gray-700"><ControlTitle label={`Content width (${value.contentMaxWidth}px)`} area="Layout" hint="Affects email card width" /><input type="range" min={480} max={900} step={10} value={value.contentMaxWidth} onChange={(e) => update('contentMaxWidth', Number(e.target.value))} className="w-full" /></label>
+          <label className="text-xs text-gray-700"><ControlTitle label={`Section padding (${value.sectionPadding}px)`} area="Layout" hint="Affects internal spacing" /><input type="range" min={12} max={48} value={value.sectionPadding} onChange={(e) => update('sectionPadding', Number(e.target.value))} className="w-full" /></label>
         </div>
       </div>
 
       <div className="rounded-md border border-gray-200 bg-white p-3 space-y-3">
         <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">Typography</p>
         <div className="grid grid-cols-2 gap-3">
-          <label className="text-xs text-gray-700">Header title<input type="text" value={value.headerTitle} onChange={(e) => update('headerTitle', e.target.value)} className={cn(STYLES.input, 'mt-1 h-8 text-xs')} /></label>
-          <label className="text-xs text-gray-700">Header background<input type="color" value={value.headerBackgroundColor} onChange={(e) => update('headerBackgroundColor', e.target.value)} className="mt-1 h-8 w-full rounded border border-gray-300" /></label>
-          <label className="text-xs text-gray-700">Header text color<input type="color" value={value.headerTextColor} onChange={(e) => update('headerTextColor', e.target.value)} className="mt-1 h-8 w-full rounded border border-gray-300" /></label>
-          <label className="text-xs text-gray-700">Body heading color<input type="color" value={value.headingColor} onChange={(e) => update('headingColor', e.target.value)} className="mt-1 h-8 w-full rounded border border-gray-300" /></label>
-          <label className="text-xs text-gray-700">Text color<input type="color" value={value.textColor} onChange={(e) => update('textColor', e.target.value)} className="mt-1 h-8 w-full rounded border border-gray-300" /></label>
-          <label className="text-xs text-gray-700">Link color<input type="color" value={value.linkColor} onChange={(e) => update('linkColor', e.target.value)} className="mt-1 h-8 w-full rounded border border-gray-300" /></label>
-          <label className="text-xs text-gray-700">Header align
+          <label className="text-xs text-gray-700"><ControlTitle label="Header title" area="Header" hint="Affects header title text" /><input type="text" value={value.headerTitle} onChange={(e) => update('headerTitle', e.target.value)} className={cn(STYLES.input, 'h-8 text-xs')} /></label>
+          <label className="text-xs text-gray-700"><ControlTitle label="Header background" area="Header" hint="Affects header container background" /><input type="color" value={value.headerBackgroundColor} onChange={(e) => update('headerBackgroundColor', e.target.value)} className="h-8 w-full rounded border border-gray-300" /></label>
+          <label className="text-xs text-gray-700"><ControlTitle label="Header text color" area="Header" hint="Affects header title color" /><input type="color" value={value.headerTextColor} onChange={(e) => update('headerTextColor', e.target.value)} className="h-8 w-full rounded border border-gray-300" /></label>
+          <label className="text-xs text-gray-700"><ControlTitle label="Body heading color" area="Body" hint="Affects headings inside body content" /><input type="color" value={value.headingColor} onChange={(e) => update('headingColor', e.target.value)} className="h-8 w-full rounded border border-gray-300" /></label>
+          <label className="text-xs text-gray-700"><ControlTitle label="Text color" area="Body" hint="Affects body text color" /><input type="color" value={value.textColor} onChange={(e) => update('textColor', e.target.value)} className="h-8 w-full rounded border border-gray-300" /></label>
+          <label className="text-xs text-gray-700"><ControlTitle label="Link color" area="Body" hint="Affects link colors in body" /><input type="color" value={value.linkColor} onChange={(e) => update('linkColor', e.target.value)} className="h-8 w-full rounded border border-gray-300" /></label>
+          <label className="text-xs text-gray-700">
+            <ControlTitle label="Header align" area="Header" hint="Affects header text alignment" />
             <select value={value.headerAlign} onChange={(e) => update('headerAlign', e.target.value as EmailStylePreset['headerAlign'])} className={cn(STYLES.input, STYLES.select, 'mt-1 h-8 text-xs')}>
               <option value="center">Center</option>
               <option value="left">Left</option>
@@ -442,43 +511,43 @@ function StyleControls({
         </div>
         <p className="text-[11px] text-gray-500">Header text color does not affect body headings.</p>
         <div className="grid grid-cols-2 gap-3">
-          <label className="text-xs text-gray-700">Header size ({value.headerTitleSize}px)<input type="range" min={14} max={36} value={value.headerTitleSize} onChange={(e) => update('headerTitleSize', Number(e.target.value))} className="mt-1 w-full" /></label>
-          <label className="text-xs text-gray-700">Body size ({value.bodyFontSize}px)<input type="range" min={12} max={20} value={value.bodyFontSize} onChange={(e) => update('bodyFontSize', Number(e.target.value))} className="mt-1 w-full" /></label>
-          <label className="text-xs text-gray-700">Line height ({value.bodyLineHeight.toFixed(1)})<input type="range" min={1.2} max={2} step={0.1} value={value.bodyLineHeight} onChange={(e) => update('bodyLineHeight', Number(e.target.value))} className="mt-1 w-full" /></label>
-          <label className="text-xs text-gray-700">Paragraph spacing ({value.paragraphSpacing}px)<input type="range" min={6} max={30} value={value.paragraphSpacing} onChange={(e) => update('paragraphSpacing', Number(e.target.value))} className="mt-1 w-full" /></label>
+          <label className="text-xs text-gray-700"><ControlTitle label={`Header size (${value.headerTitleSize}px)`} area="Header" hint="Affects header title size" /><input type="range" min={14} max={36} value={value.headerTitleSize} onChange={(e) => update('headerTitleSize', Number(e.target.value))} className="w-full" /></label>
+          <label className="text-xs text-gray-700"><ControlTitle label={`Body size (${value.bodyFontSize}px)`} area="Body" hint="Affects body text size" /><input type="range" min={12} max={20} value={value.bodyFontSize} onChange={(e) => update('bodyFontSize', Number(e.target.value))} className="w-full" /></label>
+          <label className="text-xs text-gray-700"><ControlTitle label={`Line height (${value.bodyLineHeight.toFixed(1)})`} area="Body" hint="Affects body line spacing" /><input type="range" min={1.2} max={2} step={0.1} value={value.bodyLineHeight} onChange={(e) => update('bodyLineHeight', Number(e.target.value))} className="w-full" /></label>
+          <label className="text-xs text-gray-700"><ControlTitle label={`Paragraph spacing (${value.paragraphSpacing}px)`} area="Body" hint="Affects paragraph spacing" /><input type="range" min={6} max={30} value={value.paragraphSpacing} onChange={(e) => update('paragraphSpacing', Number(e.target.value))} className="w-full" /></label>
         </div>
       </div>
 
       <div className="rounded-md border border-gray-200 bg-white p-3 space-y-3">
         <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">Buttons</p>
         <div className="grid grid-cols-2 gap-3">
-          <label className="text-xs text-gray-700">Button color<input type="color" value={value.buttonColor} onChange={(e) => update('buttonColor', e.target.value)} className="mt-1 h-8 w-full rounded border border-gray-300" /></label>
-          <label className="text-xs text-gray-700">Button text<input type="color" value={value.buttonTextColor} onChange={(e) => update('buttonTextColor', e.target.value)} className="mt-1 h-8 w-full rounded border border-gray-300" /></label>
-          <label className="text-xs text-gray-700">Button border<input type="color" value={value.buttonBorderColor} onChange={(e) => update('buttonBorderColor', e.target.value)} className="mt-1 h-8 w-full rounded border border-gray-300" /></label>
-          <label className="text-xs text-gray-700">Border width ({value.buttonBorderWidth}px)<input type="range" min={0} max={3} step={1} value={value.buttonBorderWidth} onChange={(e) => update('buttonBorderWidth', Number(e.target.value))} className="mt-1 w-full" /></label>
+          <label className="text-xs text-gray-700"><ControlTitle label="Button color" area="Buttons" hint="Affects CTA background" /><input type="color" value={value.buttonColor} onChange={(e) => update('buttonColor', e.target.value)} className="h-8 w-full rounded border border-gray-300" /></label>
+          <label className="text-xs text-gray-700"><ControlTitle label="Button text" area="Buttons" hint="Affects CTA text color" /><input type="color" value={value.buttonTextColor} onChange={(e) => update('buttonTextColor', e.target.value)} className="h-8 w-full rounded border border-gray-300" /></label>
+          <label className="text-xs text-gray-700"><ControlTitle label="Button border" area="Buttons" hint="Affects CTA border color" /><input type="color" value={value.buttonBorderColor} onChange={(e) => update('buttonBorderColor', e.target.value)} className="h-8 w-full rounded border border-gray-300" /></label>
+          <label className="text-xs text-gray-700"><ControlTitle label={`Border width (${value.buttonBorderWidth}px)`} area="Buttons" hint="Affects CTA border thickness" /><input type="range" min={0} max={3} step={1} value={value.buttonBorderWidth} onChange={(e) => update('buttonBorderWidth', Number(e.target.value))} className="w-full" /></label>
         </div>
         <div className="grid grid-cols-2 gap-3">
-          <label className="text-xs text-gray-700">Button radius ({value.buttonRadius}px)<input type="range" min={0} max={20} value={value.buttonRadius} onChange={(e) => update('buttonRadius', Number(e.target.value))} className="mt-1 w-full" /></label>
+          <label className="text-xs text-gray-700"><ControlTitle label={`Button radius (${value.buttonRadius}px)`} area="Buttons" hint="Affects CTA corner roundness" /><input type="range" min={0} max={20} value={value.buttonRadius} onChange={(e) => update('buttonRadius', Number(e.target.value))} className="w-full" /></label>
           <div />
-          <label className="text-xs text-gray-700">Button pad X ({value.buttonPaddingX}px)<input type="range" min={12} max={40} step={1} value={value.buttonPaddingX} onChange={(e) => update('buttonPaddingX', Number(e.target.value))} className="mt-1 w-full" /></label>
-          <label className="text-xs text-gray-700">Button pad Y ({value.buttonPaddingY}px)<input type="range" min={8} max={20} step={1} value={value.buttonPaddingY} onChange={(e) => update('buttonPaddingY', Number(e.target.value))} className="mt-1 w-full" /></label>
+          <label className="text-xs text-gray-700"><ControlTitle label={`Button pad X (${value.buttonPaddingX}px)`} area="Buttons" hint="Affects CTA horizontal padding" /><input type="range" min={12} max={40} step={1} value={value.buttonPaddingX} onChange={(e) => update('buttonPaddingX', Number(e.target.value))} className="w-full" /></label>
+          <label className="text-xs text-gray-700"><ControlTitle label={`Button pad Y (${value.buttonPaddingY}px)`} area="Buttons" hint="Affects CTA vertical padding" /><input type="range" min={8} max={20} step={1} value={value.buttonPaddingY} onChange={(e) => update('buttonPaddingY', Number(e.target.value))} className="w-full" /></label>
         </div>
       </div>
 
       <div className="rounded-md border border-gray-200 bg-white p-3 space-y-3">
-        <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">Structure</p>
+        <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">Footer + Structure</p>
         <div className="grid grid-cols-2 gap-3">
-          <label className="text-xs text-gray-700">Footer text<input type="text" value={value.footerText} onChange={(e) => update('footerText', e.target.value)} className={cn(STYLES.input, 'mt-1 h-8 text-xs')} /></label>
-          <label className="text-xs text-gray-700">Footer background<input type="color" value={value.footerBackgroundColor} onChange={(e) => update('footerBackgroundColor', e.target.value)} className="mt-1 h-8 w-full rounded border border-gray-300" /></label>
-          <label className="text-xs text-gray-700">Footer text color<input type="color" value={value.footerTextColor} onChange={(e) => update('footerTextColor', e.target.value)} className="mt-1 h-8 w-full rounded border border-gray-300" /></label>
-          <label className="text-xs text-gray-700">Card radius ({value.borderRadius}px)<input type="range" min={0} max={28} value={value.borderRadius} onChange={(e) => update('borderRadius', Number(e.target.value))} className="mt-1 w-full" /></label>
-          <label className="inline-flex items-center gap-2 text-xs text-gray-700 mt-5"><input type="checkbox" checked={value.showSectionDividers} onChange={(e) => update('showSectionDividers', e.target.checked)} className="rounded border-gray-300" />Section dividers</label>
+          <label className="text-xs text-gray-700"><ControlTitle label="Footer text" area="Footer" hint="Affects footer content" /><input type="text" value={value.footerText} onChange={(e) => update('footerText', e.target.value)} className={cn(STYLES.input, 'h-8 text-xs')} /></label>
+          <label className="text-xs text-gray-700"><ControlTitle label="Footer background" area="Footer" hint="Affects footer background color" /><input type="color" value={value.footerBackgroundColor} onChange={(e) => update('footerBackgroundColor', e.target.value)} className="h-8 w-full rounded border border-gray-300" /></label>
+          <label className="text-xs text-gray-700"><ControlTitle label="Footer text color" area="Footer" hint="Affects footer text color" /><input type="color" value={value.footerTextColor} onChange={(e) => update('footerTextColor', e.target.value)} className="h-8 w-full rounded border border-gray-300" /></label>
+          <label className="text-xs text-gray-700"><ControlTitle label={`Card radius (${value.borderRadius}px)`} area="Layout" hint="Affects overall email card corner radius" /><input type="range" min={0} max={28} value={value.borderRadius} onChange={(e) => update('borderRadius', Number(e.target.value))} className="w-full" /></label>
+          <label className="inline-flex items-center gap-2 text-xs text-gray-700 mt-5"><input type="checkbox" checked={value.showSectionDividers} onChange={(e) => update('showSectionDividers', e.target.checked)} className="rounded border-gray-300" />Section dividers <AreaTag area="Body" hint="Affects body content separators" /></label>
         </div>
         <div className="grid grid-cols-2 gap-2">
-          <label className="inline-flex items-center gap-2 text-xs text-gray-700"><input type="checkbox" checked={value.showHeader} onChange={(e) => update('showHeader', e.target.checked)} className="rounded border-gray-300" />Show header</label>
-          <label className="inline-flex items-center gap-2 text-xs text-gray-700"><input type="checkbox" checked={value.showFooter} onChange={(e) => update('showFooter', e.target.checked)} className="rounded border-gray-300" />Show footer</label>
-          <label className="inline-flex items-center gap-2 text-xs text-gray-700"><input type="checkbox" checked={value.showHeaderDivider} onChange={(e) => update('showHeaderDivider', e.target.checked)} className="rounded border-gray-300" />Header divider</label>
-          <label className="inline-flex items-center gap-2 text-xs text-gray-700"><input type="checkbox" checked={value.footerDivider} onChange={(e) => update('footerDivider', e.target.checked)} className="rounded border-gray-300" />Footer divider</label>
+          <label className="inline-flex items-center gap-2 text-xs text-gray-700"><input type="checkbox" checked={value.showHeader} onChange={(e) => update('showHeader', e.target.checked)} className="rounded border-gray-300" />Show header <AreaTag area="Header" hint="Toggles header visibility" /></label>
+          <label className="inline-flex items-center gap-2 text-xs text-gray-700"><input type="checkbox" checked={value.showFooter} onChange={(e) => update('showFooter', e.target.checked)} className="rounded border-gray-300" />Show footer <AreaTag area="Footer" hint="Toggles footer visibility" /></label>
+          <label className="inline-flex items-center gap-2 text-xs text-gray-700"><input type="checkbox" checked={value.showHeaderDivider} onChange={(e) => update('showHeaderDivider', e.target.checked)} className="rounded border-gray-300" />Header divider <AreaTag area="Header" hint="Toggles divider below header" /></label>
+          <label className="inline-flex items-center gap-2 text-xs text-gray-700"><input type="checkbox" checked={value.footerDivider} onChange={(e) => update('footerDivider', e.target.checked)} className="rounded border-gray-300" />Footer divider <AreaTag area="Footer" hint="Toggles divider above footer" /></label>
         </div>
       </div>
     </div>
@@ -493,6 +562,8 @@ export function EmailTemplatesTab() {
   const [sendingTest, setSendingTest] = useState(false)
   const [testEmail, setTestEmail] = useState('')
   const [showTestModal, setShowTestModal] = useState(false)
+  const [modalView, setModalView] = useState<'edit' | 'preview'>('edit')
+  const [manualVariables, setManualVariables] = useState<Record<string, string>>({})
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
   const [universalPreset, setUniversalPreset] = useState<EmailStylePreset>(DEFAULT_EMAIL_STYLE_PRESET)
   const [customStyleDraft, setCustomStyleDraft] = useState<EmailStylePreset>(DEFAULT_EMAIL_STYLE_PRESET)
@@ -510,6 +581,33 @@ export function EmailTemplatesTab() {
     }
     setCustomStyleDraft(universalPreset)
   }, [editingTemplate, universalPreset])
+
+  const activeTemplateVariables = useMemo(() => {
+    if (!editingTemplate) return []
+    return Array.from(new Set([
+      ...extractTemplateVariableKeys(editingTemplate.subject),
+      ...extractTemplateVariableKeys(editingTemplate.content),
+    ]))
+  }, [editingTemplate])
+
+  useEffect(() => {
+    if (!editingTemplate) {
+      setManualVariables({})
+      return
+    }
+
+    const next: Record<string, string> = {}
+    const keys = Array.from(new Set([
+      ...extractTemplateVariableKeys(editingTemplate.subject),
+      ...extractTemplateVariableKeys(editingTemplate.content),
+    ]))
+
+    for (const key of keys) {
+      next[key] = manualVariables[key] ?? EMAIL_VARIABLE_EXAMPLES[key] ?? ''
+    }
+    setManualVariables(next)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editingTemplate?.id])
 
   async function fetchTemplates() {
     try {
@@ -595,7 +693,6 @@ export function EmailTemplatesTab() {
   async function handleSetMode(template: EmailTemplate, mode: EmailStyleMode) {
     try {
       const payload: Record<string, unknown> = { styleMode: mode }
-      if (mode === 'UNIVERSAL') payload.resetCustomStyle = true
 
       const res = await fetch(`/api/email-templates/${template.id}`, {
         method: 'PUT',
@@ -610,6 +707,9 @@ export function EmailTemplatesTab() {
       }
 
       setMessage({ type: 'success', text: `${template.name} now uses ${mode === 'UNIVERSAL' ? 'universal' : 'custom'} styling.` })
+      if (editingTemplate?.id === template.id) {
+        setEditingTemplate({ ...editingTemplate, styleMode: mode })
+      }
       await fetchTemplates()
     } catch (error) {
       logger.serverAction('Failed to update style mode:', error)
@@ -647,10 +747,18 @@ export function EmailTemplatesTab() {
     setSendingTest(true)
     setMessage(null)
     try {
+      const overridePayload = activeTemplateVariables.reduce((acc, key) => {
+        const value = manualVariables[key]
+        if (typeof value === 'string' && value.trim().length > 0) {
+          acc[key] = value
+        }
+        return acc
+      }, {} as Record<string, string>)
+
       const res = await fetch(`/api/email-templates/${editingTemplate.id}/test`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ testEmail }),
+        body: JSON.stringify({ testEmail, variables: overridePayload }),
       })
 
       if (!res.ok) {
@@ -688,6 +796,12 @@ export function EmailTemplatesTab() {
     ? sanitizeEmailStylePreset(customStyleDraft)
     : sanitizeEmailStylePreset(universalPreset)
 
+  const editorContent = editingTemplate
+    ? (modalView === 'preview'
+      ? applyVariableOverrides(editingTemplate.content, manualVariables)
+      : editingTemplate.content)
+    : ''
+
   if (loading) {
     return (
       <div className={cn(STYLES.card, 'py-16 flex items-center justify-center')}>
@@ -724,7 +838,13 @@ export function EmailTemplatesTab() {
         <div key={category} className={cn(STYLES.card, 'p-4 sm:p-5')}>
           <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">{category}</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-            {categoryTemplates.map((template) => (
+            {categoryTemplates.map((template) => {
+              const templateVariableKeys = Array.from(new Set([
+                ...extractTemplateVariableKeys(template.subject),
+                ...extractTemplateVariableKeys(template.content),
+              ]))
+
+              return (
               <div
                 key={template.id}
                 className={cn(
@@ -770,10 +890,34 @@ export function EmailTemplatesTab() {
 
                 <p className="text-sm text-gray-600 mb-4 line-clamp-2">{template.subject}</p>
 
+                {templateVariableKeys.length > 0 && (
+                  <div className="mb-3 rounded-md border border-amber-200 bg-amber-50 p-2.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-[11px] font-semibold text-amber-800 uppercase tracking-wide">
+                        Variables ({templateVariableKeys.length})
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingTemplate(template)
+                          setModalView('edit')
+                        }}
+                        className={cn(STYLES.btn, STYLES.btnSecondary, 'h-7 px-2 py-0 text-[11px]')}
+                      >
+                        Edit Variables
+                      </button>
+                    </div>
+                    <p className="mt-1 text-[11px] text-amber-700">
+                      Manual overrides are for preview and test only.
+                    </p>
+                  </div>
+                )}
+
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     onClick={() => {
                       setEditingTemplate(template)
+                      setModalView('edit')
                     }}
                     className={cn(STYLES.btn, STYLES.btnSecondary, 'h-9 px-3 py-0 text-xs')}
                   >
@@ -782,9 +926,19 @@ export function EmailTemplatesTab() {
                   <button
                     onClick={() => {
                       setEditingTemplate(template)
+                      setModalView('preview')
+                    }}
+                    className={cn(STYLES.btn, STYLES.btnSecondary, 'h-9 px-3 py-0 text-xs')}
+                  >
+                    <Eye className="w-3.5 h-3.5" /> Preview
+                  </button>
+                  <button
+                    onClick={() => {
+                      setEditingTemplate(template)
+                      setModalView('edit')
                       setShowTestModal(true)
                     }}
-                    className={cn(STYLES.btn, STYLES.btnPrimary, 'h-9 px-3 py-0 text-xs')}
+                    className={cn(STYLES.btn, STYLES.btnPrimary, 'h-9 px-3 py-0 text-xs col-span-2')}
                   >
                     <Send className="w-3.5 h-3.5" /> Test
                   </button>
@@ -819,7 +973,8 @@ export function EmailTemplatesTab() {
                   </button>
                 </div>
               </div>
-            ))}
+              )
+            })}
           </div>
         </div>
       ))}
@@ -835,6 +990,7 @@ export function EmailTemplatesTab() {
               <button
                 onClick={() => {
                   setEditingTemplate(null)
+                  setModalView('edit')
                 }}
                 className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-200"
               >
@@ -846,14 +1002,42 @@ export function EmailTemplatesTab() {
               <div className="h-full min-h-0 grid grid-rows-1 gap-4 lg:grid-cols-[minmax(0,1.6fr)_minmax(340px,1fr)]">
                 <div className="min-h-0 overflow-hidden">
                   <StyledTemplateEditor
-                    content={editingTemplate.content}
+                    content={editorContent}
                     onChange={(html) => setEditingTemplate({ ...editingTemplate, content: html })}
                     variables={EMAIL_VARIABLES}
                     style={resolvedEditorStyle}
+                    readOnly={modalView === 'preview'}
                   />
                 </div>
 
                 <div className="min-h-0 overflow-hidden rounded-lg border border-gray-200 bg-gray-50 p-3 flex flex-col gap-3">
+                  {modalView === 'preview' ? (
+                    <div className="rounded-lg border border-gray-200 bg-white p-4 space-y-3">
+                      <h3 className="text-sm font-semibold text-gray-900">Preview Mode</h3>
+                      <p className="text-xs text-gray-600">This is a read-only preview. Switch to edit to modify content or styles.</p>
+                      <div className="flex flex-wrap gap-2">
+                        <span className={cn(STYLES.badge, TEMPLATE_RECT_BADGE, editingTemplate.styleMode === 'CUSTOM' ? STYLES.badgeInfo : STYLES.badgeWarning)}>
+                          {editingTemplate.styleMode === 'CUSTOM' ? 'Custom style' : 'Universal style'}
+                        </span>
+                        <span className={cn(STYLES.badge, TEMPLATE_RECT_BADGE, editingTemplate.isActive ? STYLES.badgeSuccess : STYLES.badgeNeutral)}>
+                          {editingTemplate.isActive ? 'Active' : 'Inactive'}
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setModalView('edit')}
+                        className={cn(STYLES.btn, STYLES.btnPrimary, 'h-9 px-3 py-0 text-xs')}
+                      >
+                        <Edit3 className="w-3.5 h-3.5" /> Switch to Edit
+                      </button>
+                      {activeTemplateVariables.length > 0 && (
+                        <p className="text-xs text-amber-700 rounded-md border border-amber-200 bg-amber-50 p-2">
+                          This template contains variables. Use Edit mode to manually override variable values for preview/test.
+                        </p>
+                      )}
+                    </div>
+                  ) : (
+                  <>
                   <div className="rounded-lg border border-gray-200 p-3 bg-white">
                     <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Subject Line</label>
                     <input
@@ -870,7 +1054,7 @@ export function EmailTemplatesTab() {
                     <div className="grid grid-cols-2 gap-2">
                       <button
                         type="button"
-                        onClick={() => setEditingTemplate({ ...editingTemplate, styleMode: 'UNIVERSAL' })}
+                        onClick={() => handleSetMode(editingTemplate, 'UNIVERSAL')}
                         className={cn(
                           STYLES.btn,
                           editingTemplate.styleMode === 'UNIVERSAL' ? STYLES.btnPrimary : STYLES.btnSecondary,
@@ -881,7 +1065,7 @@ export function EmailTemplatesTab() {
                       </button>
                       <button
                         type="button"
-                        onClick={() => setEditingTemplate({ ...editingTemplate, styleMode: 'CUSTOM' })}
+                        onClick={() => handleSetMode(editingTemplate, 'CUSTOM')}
                         className={cn(
                           STYLES.btn,
                           editingTemplate.styleMode === 'CUSTOM' ? STYLES.btnPrimary : STYLES.btnSecondary,
@@ -892,7 +1076,7 @@ export function EmailTemplatesTab() {
                       </button>
                     </div>
                     <p className="mt-2 text-xs text-gray-500">
-                      Universal mode inherits global styling. Custom mode stores per-template style.
+                      Universal mode inherits global styling. Custom mode stores per-template style. Mode changes save immediately.
                     </p>
                   </div>
 
@@ -913,10 +1097,38 @@ export function EmailTemplatesTab() {
                       <ul className="text-xs text-blue-700 space-y-1">
                         <li>Use placeholders like {'{{name}}'} and {'{{eventTitle}}'} for dynamic content.</li>
                         <li>Changes in style controls are reflected on the left editor instantly.</li>
-                        <li>Universal overwrite updates styling only and preserves subject/body copy.</li>
+                        <li>Switching between Universal and Custom is non-destructive; custom values are preserved.</li>
                       </ul>
                     </div>
+
+                    {activeTemplateVariables.length > 0 && (
+                      <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 space-y-3">
+                        <div>
+                          <p className="text-sm font-semibold text-amber-900">Variable Overrides</p>
+                          <p className="text-xs text-amber-800">Manual values are for preview and test emails only. Production sends still use runtime variables.</p>
+                        </div>
+                        <div className="grid grid-cols-1 gap-2">
+                          {activeTemplateVariables.map((key) => (
+                            <label key={key} className="text-xs text-amber-900">
+                              <span className="mb-1 flex items-center justify-between gap-2">
+                                <span className="font-mono">{`{{${key}}}`}</span>
+                                <span className="text-[10px] text-amber-700">{EMAIL_VARIABLE_EXAMPLES[key] ? 'Suggested value available' : 'Custom value'}</span>
+                              </span>
+                              <input
+                                type="text"
+                                value={manualVariables[key] ?? ''}
+                                onChange={(e) => setManualVariables((prev) => ({ ...prev, [key]: e.target.value }))}
+                                className={cn(STYLES.input, 'h-8 text-xs bg-white border-amber-300 focus:border-amber-400')}
+                                placeholder={EMAIL_VARIABLE_EXAMPLES[key] || 'Enter override value'}
+                              />
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
+                  </>
+                  )}
                 </div>
               </div>
             </div>
@@ -936,11 +1148,13 @@ export function EmailTemplatesTab() {
                 <button
                   onClick={() => {
                     setEditingTemplate(null)
+                    setModalView('edit')
                   }}
                   className={cn(STYLES.btn, STYLES.btnSecondary, 'h-10 px-4 py-0')}
                 >
                   Cancel
                 </button>
+                {modalView !== 'preview' && (
                 <button
                   onClick={() => setShowTestModal(true)}
                   disabled={saving}
@@ -948,6 +1162,8 @@ export function EmailTemplatesTab() {
                 >
                   <Send className="h-4 w-4" /> Send Test
                 </button>
+                )}
+                {modalView !== 'preview' && (
                 <button
                   onClick={handleSaveTemplate}
                   disabled={saving}
@@ -956,6 +1172,7 @@ export function EmailTemplatesTab() {
                   {saving && <Loader2 className="w-4 h-4 animate-spin" />}
                   Save Template
                 </button>
+                )}
               </div>
             </div>
           </div>

@@ -44,7 +44,7 @@ const roleLabels: Record<string, string> = {
   ADMIN: 'Administrator',
   BOARD: 'Board Member',
   PAYROLL: 'Payroll Staff',
-  HOME_ADMIN: 'Home Administrator',
+  HOME_ADMIN: 'Program Coordinator',
   FACILITATOR: 'Facilitator',
   VOLUNTEER: 'Volunteer',
   PARTNER: 'Community Partner'

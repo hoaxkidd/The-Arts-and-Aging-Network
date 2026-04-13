@@ -27,6 +27,7 @@ type Submission = {
     id: string
     name: string | null
     email: string | null
+    role?: string | null
   }
   event?: {
     id: string
@@ -44,6 +45,12 @@ type User = {
   id: string
   name: string | null
   email: string | null
+  role?: string | null
+}
+
+type RoleOption = {
+  value: string
+  label: string
 }
 
 type Props = {
@@ -52,12 +59,14 @@ type Props = {
   templates?: Template[]
   categories?: string[]
   users?: User[]
+  roles?: RoleOption[]
   currentSort?: string
   currentOrder?: string
   currentStatus?: string
   currentCategory?: string
   currentForm?: string
   currentUser?: string
+  currentRole?: string
   currentPage?: number
   totalPages?: number
   totalCount?: number
@@ -69,12 +78,14 @@ export function AdminFormSubmissionsList({
   templates = [],
   categories = [],
   users = [],
+  roles = [],
   currentSort = 'createdAt',
   currentOrder = 'desc',
   currentStatus = 'all',
   currentCategory = 'all',
   currentForm = 'all',
   currentUser = 'all',
+  currentRole = 'all',
   currentPage = 1,
   totalPages = 1,
   totalCount = 0
@@ -130,31 +141,35 @@ export function AdminFormSubmissionsList({
     }
   }
 
+  const toRoute = (params: URLSearchParams) => `/admin/forms?tab=submissions&${params.toString()}`
+
   const handleSort = (field: string) => {
     const params = new URLSearchParams()
-    params.set('sort', field)
+    params.set('subSort', field)
     if (currentSort === field) {
-      params.set('order', currentOrder === 'asc' ? 'desc' : 'asc')
+      params.set('subOrder', currentOrder === 'asc' ? 'desc' : 'asc')
     } else {
-      params.set('order', 'desc')
+      params.set('subOrder', 'desc')
     }
-    if (currentStatus !== 'all') params.set('status', currentStatus)
-    if (currentCategory !== 'all') params.set('category', currentCategory)
-    if (currentForm !== 'all') params.set('form', currentForm)
-    if (currentUser !== 'all') params.set('user', currentUser)
-    router.push(`/admin/form-submissions?${params.toString()}`)
+    if (currentStatus !== 'all') params.set('subStatus', currentStatus)
+    if (currentCategory !== 'all') params.set('subCategory', currentCategory)
+    if (currentForm !== 'all') params.set('subForm', currentForm)
+    if (currentUser !== 'all') params.set('subUser', currentUser)
+    if (currentRole !== 'all') params.set('subRole', currentRole)
+    router.push(toRoute(params))
   }
 
   const handleFilterChange = (key: string, value: string) => {
     const params = new URLSearchParams()
-    params.set('sort', currentSort)
-    params.set('order', currentOrder)
-    if (key !== 'status') params.set('status', currentStatus)
-    if (key !== 'category') params.set('category', currentCategory)
-    if (key !== 'form') params.set('form', currentForm)
-    if (key !== 'user') params.set('user', currentUser)
+    params.set('subSort', currentSort)
+    params.set('subOrder', currentOrder)
+    if (key !== 'subStatus') params.set('subStatus', currentStatus)
+    if (key !== 'subCategory') params.set('subCategory', currentCategory)
+    if (key !== 'subForm') params.set('subForm', currentForm)
+    if (key !== 'subUser') params.set('subUser', currentUser)
+    if (key !== 'subRole') params.set('subRole', currentRole)
     params.set(key, value)
-    router.push(`/admin/form-submissions?${params.toString()}`)
+    router.push(toRoute(params))
   }
 
   const handleReview = async () => {
@@ -223,7 +238,7 @@ export function AdminFormSubmissionsList({
       <div className="flex flex-wrap gap-2">
         <select
           value={currentStatus}
-          onChange={(e) => handleFilterChange('status', e.target.value)}
+          onChange={(e) => handleFilterChange('subStatus', e.target.value)}
           className="rounded-lg border border-gray-300 px-3 py-1.5 text-xs focus:ring-2 focus:ring-primary-500"
         >
           <option value="all">All Status</option>
@@ -235,7 +250,7 @@ export function AdminFormSubmissionsList({
 
         <select
           value={currentCategory}
-          onChange={(e) => handleFilterChange('category', e.target.value)}
+          onChange={(e) => handleFilterChange('subCategory', e.target.value)}
           className="rounded-lg border border-gray-300 px-3 py-1.5 text-xs focus:ring-2 focus:ring-primary-500"
         >
           <option value="all">All Categories</option>
@@ -246,7 +261,7 @@ export function AdminFormSubmissionsList({
 
         <select
           value={currentForm}
-          onChange={(e) => handleFilterChange('form', e.target.value)}
+          onChange={(e) => handleFilterChange('subForm', e.target.value)}
           className="rounded-lg border border-gray-300 px-3 py-1.5 text-xs focus:ring-2 focus:ring-primary-500 min-w-[150px]"
         >
           <option value="all">All Forms</option>
@@ -257,12 +272,23 @@ export function AdminFormSubmissionsList({
 
         <select
           value={currentUser}
-          onChange={(e) => handleFilterChange('user', e.target.value)}
+          onChange={(e) => handleFilterChange('subUser', e.target.value)}
           className="rounded-lg border border-gray-300 px-3 py-1.5 text-xs focus:ring-2 focus:ring-primary-500 min-w-[150px]"
         >
           <option value="all">All Users</option>
           {users.map(u => (
             <option key={u.id} value={u.id}>{u.name || u.email}</option>
+          ))}
+        </select>
+
+        <select
+          value={currentRole}
+          onChange={(e) => handleFilterChange('subRole', e.target.value)}
+          className="rounded-lg border border-gray-300 px-3 py-1.5 text-xs focus:ring-2 focus:ring-primary-500 min-w-[130px]"
+        >
+          <option value="all">All Roles</option>
+          {roles.map((role) => (
+            <option key={role.value} value={role.value}>{role.label}</option>
           ))}
         </select>
       </div>
@@ -353,6 +379,9 @@ export function AdminFormSubmissionsList({
                     <td className={STYLES.tableCell}>
                       <p className="text-sm text-gray-900">{submission.submitter.name || 'Unknown'}</p>
                       <p className="text-xs text-gray-500">{submission.submitter.email}</p>
+                      {submission.submitter.role && (
+                        <p className="text-[11px] text-gray-400">{submission.submitter.role}</p>
+                      )}
                     </td>
                     <td className={STYLES.tableCell}>
                       {submission.event ? (
@@ -453,14 +482,15 @@ export function AdminFormSubmissionsList({
             <button
               onClick={() => {
                 const params = new URLSearchParams()
-                params.set('sort', currentSort)
-                params.set('order', currentOrder)
-                if (currentStatus !== 'all') params.set('status', currentStatus)
-                if (currentCategory !== 'all') params.set('category', currentCategory)
-                if (currentForm !== 'all') params.set('form', currentForm)
-                if (currentUser !== 'all') params.set('user', currentUser)
+                params.set('subSort', currentSort)
+                params.set('subOrder', currentOrder)
+                if (currentStatus !== 'all') params.set('subStatus', currentStatus)
+                if (currentCategory !== 'all') params.set('subCategory', currentCategory)
+                if (currentForm !== 'all') params.set('subForm', currentForm)
+                if (currentUser !== 'all') params.set('subUser', currentUser)
+                if (currentRole !== 'all') params.set('subRole', currentRole)
                 params.set('page', String(currentPage - 1))
-                router.push(`/admin/form-submissions?${params.toString()}`)
+                router.push(toRoute(params))
               }}
               disabled={currentPage <= 1}
               className="p-1 rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -470,14 +500,15 @@ export function AdminFormSubmissionsList({
             <button
               onClick={() => {
                 const params = new URLSearchParams()
-                params.set('sort', currentSort)
-                params.set('order', currentOrder)
-                if (currentStatus !== 'all') params.set('status', currentStatus)
-                if (currentCategory !== 'all') params.set('category', currentCategory)
-                if (currentForm !== 'all') params.set('form', currentForm)
-                if (currentUser !== 'all') params.set('user', currentUser)
+                params.set('subSort', currentSort)
+                params.set('subOrder', currentOrder)
+                if (currentStatus !== 'all') params.set('subStatus', currentStatus)
+                if (currentCategory !== 'all') params.set('subCategory', currentCategory)
+                if (currentForm !== 'all') params.set('subForm', currentForm)
+                if (currentUser !== 'all') params.set('subUser', currentUser)
+                if (currentRole !== 'all') params.set('subRole', currentRole)
                 params.set('page', String(currentPage + 1))
-                router.push(`/admin/form-submissions?${params.toString()}`)
+                router.push(toRoute(params))
               }}
               disabled={currentPage >= totalPages}
               className="p-1 rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"

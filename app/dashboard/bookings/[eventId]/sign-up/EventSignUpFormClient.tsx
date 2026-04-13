@@ -22,7 +22,7 @@ export function EventSignUpFormClient({ eventId, eventTitle, template }: Props) 
       alert(result.error)
       return
     }
-    router.push('/dashboard/requests')
+    router.push('/dashboard/my-bookings?section=requests')
     router.refresh()
   }
 

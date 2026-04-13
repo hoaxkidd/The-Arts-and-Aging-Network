@@ -203,17 +203,9 @@ export const boardMenu = [
 
 export const homeAdminMenu = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { label: "Calendar", href: "/dashboard/calendar", icon: Calendar },
-  { label: "Bookings", href: "/dashboard/bookings", icon: Calendar },
-  { label: "Engagement", href: "/dashboard/engagement", icon: MessageSquare },
-  { label: "Inbox", href: "/staff/inbox", icon: Inbox },
-  { label: "My Requests", href: "/dashboard/requests", icon: ClipboardList },
-  { label: "Forms", href: "/dashboard/forms", icon: FileText },
   { label: "My Bookings", href: "/dashboard/my-bookings", icon: CheckCircle },
-  { label: "History", href: "/dashboard/history", icon: Clock },
-  { label: "Contacts", href: "/dashboard/contacts", icon: Users },
-  { label: "My Profile", href: "/dashboard/profile", icon: UserCircle },
-  { label: "Settings", href: "/dashboard/settings", icon: Settings },
+  { label: "Inbox", href: "/staff/inbox", icon: Inbox },
+  { label: "Profile", href: "/dashboard/profile", icon: UserCircle },
 ]
 
 export const MENU_ITEMS: Record<string, MenuItem[]> = {
