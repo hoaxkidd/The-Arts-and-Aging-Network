@@ -65,7 +65,7 @@ NEXTAUTH_URL="http://localhost:3000"
 |------|----------------|-------------|
 | `ADMIN` | `/admin/*` | Full system access, user management, approvals |
 | `PAYROLL` | `/payroll/*` | Time tracking, mileage, forms, requests |
-| `HOME_ADMIN` | `/dashboard/*` | Geriatric home management, booking requests, forms |
+| `HOME_ADMIN` | `/dashboard/*` | Program Coordinator portal for booking requests and home profile management |
 | `FACILITATOR` | `/staff/*` (+ shared `/bookings`) | Staff inbox, bookings, directory, forms, profile |
 | `BOARD` | `/staff/*` (+ shared `/bookings`) | Board member staff shell |
 | `PARTNER` | `/staff/*` (+ shared `/bookings`) | Partner staff shell |
@@ -82,7 +82,7 @@ See [lib/roles.ts](lib/roles.ts) and [middleware.ts](middleware.ts) for the sour
   /(auth)/login        # Authentication pages
   /admin               # Admin portal (ADMIN only)
   /payroll             # Payroll portal (PAYROLL only)
-  /dashboard           # Home admin portal (HOME_ADMIN only)
+  /dashboard           # Program Coordinator portal (HOME_ADMIN only)
   /bookings              # Booking pages (all authenticated users)
   /invite/[token]      # Invitation acceptance
   /register/home       # Geriatric home self-registration
@@ -93,7 +93,7 @@ See [lib/roles.ts](lib/roles.ts) and [middleware.ts](middleware.ts) for the sour
 
 /components
   /admin               # Admin-specific components
-  /dashboard           # Home admin components
+  /dashboard           # Program Coordinator components
   /bookings              # Booking-related components
   /notifications       # Notification UI
   /payroll             # Payroll components
