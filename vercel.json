@@ -1,4 +1,5 @@
 {
+  "installCommand": "node scripts/repair-lockfile.mjs && npm install",
   "crons": [
     {
       "path": "/api/cron/reminders",
