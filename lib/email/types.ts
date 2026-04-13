@@ -61,6 +61,7 @@ export type EmailStylePreset = {
   surfaceBackground: string
   textColor: string
   headingColor: string
+  headerTextColor: string
   headerBackgroundColor: string
   buttonColor: string
   buttonTextColor: string
@@ -104,6 +105,7 @@ export const DEFAULT_EMAIL_STYLE_PRESET: EmailStylePreset = {
   surfaceBackground: '#ffffff',
   textColor: '#374151',
   headingColor: '#111827',
+  headerTextColor: '#111827',
   headerBackgroundColor: '#ffffff',
   buttonColor: '#2563eb',
   buttonTextColor: '#ffffff',

@@ -34,6 +34,7 @@ export function sanitizeEmailStylePreset(input: unknown): EmailStylePreset {
     surfaceBackground: normalizeColor(raw.surfaceBackground, DEFAULT_EMAIL_STYLE_PRESET.surfaceBackground),
     textColor: normalizeColor(raw.textColor, DEFAULT_EMAIL_STYLE_PRESET.textColor),
     headingColor: normalizeColor(raw.headingColor, DEFAULT_EMAIL_STYLE_PRESET.headingColor),
+    headerTextColor: normalizeColor(raw.headerTextColor, DEFAULT_EMAIL_STYLE_PRESET.headerTextColor),
     headerBackgroundColor: normalizeColor(raw.headerBackgroundColor, DEFAULT_EMAIL_STYLE_PRESET.headerBackgroundColor),
     buttonColor: normalizeColor(raw.buttonColor, DEFAULT_EMAIL_STYLE_PRESET.buttonColor),
     buttonTextColor: normalizeColor(raw.buttonTextColor, DEFAULT_EMAIL_STYLE_PRESET.buttonTextColor),
@@ -112,7 +113,7 @@ export function renderStyledEmailContent(content: string, style: EmailStylePrese
 
   const header = style.showHeader
     ? `<div style="padding:${padding};text-align:${style.headerAlign};background:${style.headerBackgroundColor};${style.showHeaderDivider ? 'border-bottom:1px solid #e5e7eb;' : ''}">
-        <div style="font-size:${style.headerTitleSize}px;color:${style.headingColor};font-weight:${style.headerWeight};">
+        <div style="font-size:${style.headerTitleSize}px;color:${style.headerTextColor};font-weight:${style.headerWeight};">
           ${style.headerTitle}
         </div>
       </div>`

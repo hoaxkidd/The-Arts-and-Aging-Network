@@ -285,7 +285,7 @@ function StyledTemplateEditor({
             >
               <div
                 style={{
-                  color: style.headingColor,
+                  color: style.headerTextColor,
                   fontSize: `${style.headerTitleSize}px`,
                   fontWeight: style.headerWeight,
                 }}
@@ -429,7 +429,8 @@ function StyleControls({
         <div className="grid grid-cols-2 gap-3">
           <label className="text-xs text-gray-700">Header title<input type="text" value={value.headerTitle} onChange={(e) => update('headerTitle', e.target.value)} className={cn(STYLES.input, 'mt-1 h-8 text-xs')} /></label>
           <label className="text-xs text-gray-700">Header background<input type="color" value={value.headerBackgroundColor} onChange={(e) => update('headerBackgroundColor', e.target.value)} className="mt-1 h-8 w-full rounded border border-gray-300" /></label>
-          <label className="text-xs text-gray-700">Heading color<input type="color" value={value.headingColor} onChange={(e) => update('headingColor', e.target.value)} className="mt-1 h-8 w-full rounded border border-gray-300" /></label>
+          <label className="text-xs text-gray-700">Header text color<input type="color" value={value.headerTextColor} onChange={(e) => update('headerTextColor', e.target.value)} className="mt-1 h-8 w-full rounded border border-gray-300" /></label>
+          <label className="text-xs text-gray-700">Body heading color<input type="color" value={value.headingColor} onChange={(e) => update('headingColor', e.target.value)} className="mt-1 h-8 w-full rounded border border-gray-300" /></label>
           <label className="text-xs text-gray-700">Text color<input type="color" value={value.textColor} onChange={(e) => update('textColor', e.target.value)} className="mt-1 h-8 w-full rounded border border-gray-300" /></label>
           <label className="text-xs text-gray-700">Link color<input type="color" value={value.linkColor} onChange={(e) => update('linkColor', e.target.value)} className="mt-1 h-8 w-full rounded border border-gray-300" /></label>
           <label className="text-xs text-gray-700">Header align
@@ -439,6 +440,7 @@ function StyleControls({
             </select>
           </label>
         </div>
+        <p className="text-[11px] text-gray-500">Header text color does not affect body headings.</p>
         <div className="grid grid-cols-2 gap-3">
           <label className="text-xs text-gray-700">Header size ({value.headerTitleSize}px)<input type="range" min={14} max={36} value={value.headerTitleSize} onChange={(e) => update('headerTitleSize', Number(e.target.value))} className="mt-1 w-full" /></label>
           <label className="text-xs text-gray-700">Body size ({value.bodyFontSize}px)<input type="range" min={12} max={20} value={value.bodyFontSize} onChange={(e) => update('bodyFontSize', Number(e.target.value))} className="mt-1 w-full" /></label>
