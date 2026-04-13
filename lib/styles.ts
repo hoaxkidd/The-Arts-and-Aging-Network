@@ -2,7 +2,7 @@
  * TABLE STANDARDS - Canonical Table Implementation
  * 
  * All tables across all roles MUST follow this structure for consistency.
- * Template reference: /admin/events EventListTable
+ * Template reference: /admin/bookings EventListTable
  * 
  * REQUIRED STRUCTURE:
  * 1. Card wrapper: bg-white rounded-lg border border-gray-200 overflow-hidden

@@ -18,7 +18,7 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { STYLES } from '@/lib/styles'
-import { requestExistingEvent } from '@/app/actions/event-requests'
+import { requestExistingEvent } from '@/app/actions/booking-requests'
 import { notify } from '@/lib/notify'
 
 interface CalendarEvent {
@@ -32,7 +32,7 @@ interface CalendarEvent {
   requiredFormTemplateId?: string | null
 }
 
-// Date Events Popup Modal
+// Date Bookings Popup Modal
 function DateEventsPopup({
   date,
   events,
@@ -72,7 +72,7 @@ function DateEventsPopup({
           </button>
         </div>
 
-        {/* Events List */}
+        {/* Bookings List */}
         <div className="p-4 max-h-[400px] overflow-auto">
           {events.length > 0 ? (
             <div className="space-y-3">
@@ -88,7 +88,7 @@ function DateEventsPopup({
                       color: 'bg-gray-500',
                       bg: 'bg-white border-gray-200',
                       text: 'text-gray-700',
-                      label: 'Past Event',
+                      label: 'Past Booking',
                       dot: 'bg-gray-500',
                       icon: <Clock className="w-4 h-4" />
                     }
@@ -190,8 +190,8 @@ function DateEventsPopup({
               <div className="w-20 h-20 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
                 <Calendar className="w-10 h-10 text-gray-400" />
               </div>
-              <h3 className="font-semibold text-gray-900 mb-1">No events scheduled</h3>
-              <p className="text-sm text-gray-500 mb-5">There are no events on this day.</p>
+              <h3 className="font-semibold text-gray-900 mb-1">No bookings scheduled</h3>
+              <p className="text-sm text-gray-500 mb-5">There are no bookings on this day.</p>
               
               {!isPastDate && (
                 <button
@@ -199,14 +199,14 @@ function DateEventsPopup({
                   className={cn(STYLES.btn, STYLES.btnPrimary, "w-full py-3")}
                 >
                   <Plus className="w-5 h-5" />
-                  Request Custom Event
+                  Request a Booking
                 </button>
               )}
             </div>
           )}
         </div>
 
-        {/* Footer - Request Event for future dates */}
+        {/* Footer - Request a Booking for future dates */}
         {!isPastDate && events.length > 0 && (
           <div className="px-4 py-3 border-t border-gray-100 bg-gray-50">
             <button
@@ -214,7 +214,7 @@ function DateEventsPopup({
               className="w-full px-4 py-3 bg-primary-500 text-white rounded-xl font-medium hover:bg-primary-600 transition-colors flex items-center justify-center gap-2 shadow-sm"
             >
               <Plus className="w-5 h-5" />
-              Request Custom Event
+              Request a Booking
             </button>
           </div>
         )}
@@ -223,7 +223,7 @@ function DateEventsPopup({
   )
 }
 
-// Event Request Modal
+// Booking Request Modal
 function RequestEventModal({
   event,
   onClose,
@@ -252,7 +252,7 @@ function RequestEventModal({
                 <Calendar className="w-5 h-5" />
               </div>
               <div>
-                <h2 className="text-lg font-bold">Request Event</h2>
+                <h2 className="text-lg font-bold">Request a Booking</h2>
                 <p className="text-primary-100 text-sm">Submit a participation request</p>
               </div>
             </div>
@@ -266,7 +266,7 @@ function RequestEventModal({
         <div className="p-6 space-y-5">
           <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
             <div className="flex items-center gap-2 mb-2">
-              <span className="px-2 py-0.5 bg-primary-100 text-primary-700 text-xs font-semibold rounded">Event Details</span>
+              <span className="px-2 py-0.5 bg-primary-100 text-primary-700 text-xs font-semibold rounded">Booking Details</span>
             </div>
             <h3 className="font-semibold text-gray-900 text-base">{event.title}</h3>
             <div className="flex flex-wrap items-center gap-4 mt-3 text-sm text-gray-600">
@@ -458,27 +458,27 @@ export function HomeCalendarView({
     const eventEnd = new Date(event.endDateTime)
     const isPastEvent = eventEnd < new Date()
 
-    // For approved events, navigate to full event page (messages, photos, comments)
+    // For approved bookings, navigate to full booking page (messages, photos, comments)
     if (event.myRequestStatus === 'APPROVED') {
-      router.push(`/events/${event.id}`)
+      router.push(`/dashboard/my-bookings/${event.id}`)
       return
     }
 
     // For pending events, navigate to requests page
     if (event.myRequestStatus === 'PENDING') {
-      router.push('/dashboard/requests')
+      router.push('/dashboard/my-bookings?section=requests')
       return
     }
 
-    // For past events (no status), navigate to public event page (view only)
+    // For past bookings (no status), navigate to public booking page (view only)
     if (isPastEvent) {
-      router.push(`/events/${event.id}`)
+      router.push(`/dashboard/my-bookings/${event.id}`)
       return
     }
 
-    // For available future events: if event requires a sign-up form, go to form page; else open request modal
+    // For available future bookings: if a booking requires a sign-up form, go to form page; else open request modal
     if (event.requiredFormTemplateId) {
-      router.push(`/dashboard/events/${event.id}/sign-up`)
+      router.push(`/dashboard/bookings/${event.id}/sign-up`)
       return
     }
     setSelectedEvent(event)
@@ -521,8 +521,8 @@ export function HomeCalendarView({
               id="home-calendar-search"
               name="searchEvents"
               type="search"
-              placeholder="Search events..."
-              aria-label="Search events"
+              placeholder="Search bookings..."
+              aria-label="Search bookings"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className={cn(STYLES.input, "pl-10 py-2")}
@@ -693,7 +693,7 @@ export function HomeCalendarView({
                           )}
                         >
                           <Calendar className="w-3 h-3" />
-                          {dateEvents.length - 2} more events available
+                          {dateEvents.length - 2} more bookings available
                         </button>
                       )}
                     </div>
@@ -705,7 +705,7 @@ export function HomeCalendarView({
         </div>
       </div>
 
-      {/* Date Events Popup */}
+      {/* Date Bookings Popup */}
       {selectedDate && (
         <DateEventsPopup
           date={selectedDate}
@@ -716,7 +716,7 @@ export function HomeCalendarView({
         />
       )}
 
-      {/* More Events Popup */}
+      {/* More Bookings Popup */}
       {moreEventsDate && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setMoreEventsDate(null)} />
@@ -741,7 +741,7 @@ export function HomeCalendarView({
               </button>
             </div>
 
-            {/* Events List */}
+            {/* Bookings List */}
             <div className="p-4 max-h-[400px] overflow-auto">
               <div className="space-y-3">
                 {getEventsForDate(moreEventsDate).map(event => {
@@ -756,7 +756,7 @@ export function HomeCalendarView({
                         color: 'bg-gray-500',
                         bg: 'bg-gray-50 border-gray-200',
                         text: 'text-gray-600',
-                        label: 'Past Event',
+                        label: 'Past Booking',
                         icon: <Clock className="w-3.5 h-3.5" />
                       }
                     }

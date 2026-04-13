@@ -5,6 +5,7 @@ import { Settings, Trash2, Archive } from 'lucide-react'
 import { updateMessageGroup, deleteMessageGroup } from '@/app/actions/messaging'
 import { useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
+import { STYLES } from '@/lib/styles'
 
 type Group = {
   id: string
@@ -37,14 +38,14 @@ export function GroupSettings({ group }: { group: Group }) {
     if (!confirm('Archive this group? Members will no longer be able to send messages.')) return
     setLoading(true)
     await updateMessageGroup(group.id, { isActive: false })
-    router.push('/admin/messaging')
+    router.push('/admin/communication')
   }
 
   const handleDelete = async () => {
     if (!confirm('Delete this group permanently? This action cannot be undone.')) return
     setLoading(true)
     await deleteMessageGroup(group.id)
-    router.push('/admin/messaging')
+    router.push('/admin/communication')
   }
 
   return (
@@ -65,7 +66,7 @@ export function GroupSettings({ group }: { group: Group }) {
                 type="text"
                 value={formData.name}
                 onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                className={STYLES.input}
               />
             </div>
 
@@ -77,7 +78,7 @@ export function GroupSettings({ group }: { group: Group }) {
                 value={formData.description}
                 onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
                 rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                className={cn(STYLES.input, 'min-h-[96px] resize-y')}
               />
             </div>
 
@@ -104,7 +105,7 @@ export function GroupSettings({ group }: { group: Group }) {
                 className="mt-1"
               />
               <div>
-                <p className="text-sm font-medium text-gray-900">Attachable to event forms</p>
+                <p className="text-sm font-medium text-gray-900">Attachable to booking forms</p>
                 <p className="text-xs text-gray-600">
                   Allow this group to be selected in form template facilitator targeting.
                 </p>
@@ -115,7 +116,7 @@ export function GroupSettings({ group }: { group: Group }) {
               <button
                 onClick={handleUpdate}
                 disabled={loading}
-                className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 text-sm font-medium"
+                className={cn(STYLES.btn, STYLES.btnPrimary, 'h-9 px-4 py-0 text-sm disabled:opacity-50')}
               >
                 {loading ? 'Saving...' : 'Save Changes'}
               </button>
@@ -129,7 +130,7 @@ export function GroupSettings({ group }: { group: Group }) {
                       isAttachableToForms: group.isAttachableToForms || false
                     })
                   }}
-                className="px-4 py-2 text-gray-700 hover:text-gray-900 text-sm"
+                className={cn(STYLES.btn, STYLES.btnSecondary, 'h-9 px-4 py-0 text-sm')}
               >
                 Cancel
               </button>
@@ -160,7 +161,7 @@ export function GroupSettings({ group }: { group: Group }) {
 
             <button
               onClick={() => setEditing(true)}
-              className="w-full px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm font-medium"
+              className={cn(STYLES.btn, STYLES.btnSecondary, 'w-full h-10')}
             >
               Edit Settings
             </button>
@@ -174,7 +175,7 @@ export function GroupSettings({ group }: { group: Group }) {
           <button
             onClick={handleArchive}
             disabled={loading || !group.isActive}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-yellow-50 text-yellow-700 rounded-lg hover:bg-yellow-100 disabled:opacity-50 text-sm font-medium"
+            className={cn(STYLES.btn, 'w-full h-10 bg-yellow-50 text-yellow-700 hover:bg-yellow-100 disabled:opacity-50')}
           >
             <Archive className="w-4 h-4" />
             Archive Group
@@ -183,7 +184,7 @@ export function GroupSettings({ group }: { group: Group }) {
           <button
             onClick={handleDelete}
             disabled={loading}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-red-50 text-red-700 rounded-lg hover:bg-red-100 disabled:opacity-50 text-sm font-medium"
+            className={cn(STYLES.btn, 'w-full h-10 bg-red-50 text-red-700 hover:bg-red-100 disabled:opacity-50')}
           >
             <Trash2 className="w-4 h-4" />
             Delete Group

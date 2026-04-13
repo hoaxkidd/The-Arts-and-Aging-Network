@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { Plus, ClipboardList } from "lucide-react"
 import { TabNavigation } from "@/components/admin/shared/TabNavigation"
-import { RequestList } from "@/components/event-requests/RequestList"
+import { RequestList } from "@/components/booking-requests/RequestList"
 import { STYLES } from "@/lib/styles"
 import { cn } from "@/lib/utils"
 

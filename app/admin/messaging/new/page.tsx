@@ -1,9 +1,11 @@
 import { prisma } from "@/lib/prisma"
 import { auth } from "@/auth"
 import { redirect } from "next/navigation"
-import { ArrowLeft } from "lucide-react"
-import Link from "next/link"
 import { CreateGroupForm } from "@/components/messaging/CreateGroupForm"
+import Link from "next/link"
+import { ArrowLeft } from "lucide-react"
+import { STYLES } from "@/lib/styles"
+import { cn } from "@/lib/utils"
 
 export default async function NewMessageGroupPage() {
   const session = await auth()
@@ -42,7 +44,13 @@ export default async function NewMessageGroupPage() {
   })
 
   return (
-    <div className="h-full flex flex-col">
+    <div className={cn(STYLES.pageTemplateRoot, "h-full flex flex-col") }>
+      <div className="flex-shrink-0">
+        <Link href="/admin/communication" className="inline-flex items-center gap-1 text-sm text-gray-600 hover:text-gray-900">
+          <ArrowLeft className="w-4 h-4" /> Back to Communication Hub
+        </Link>
+      </div>
+
       <div className="flex-1 min-h-0 overflow-auto">
         <CreateGroupForm staff={staff} events={events} />
       </div>

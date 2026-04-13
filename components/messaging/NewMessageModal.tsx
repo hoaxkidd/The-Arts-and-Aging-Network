@@ -53,7 +53,7 @@ export function NewMessageModal({ isOpen, onClose, currentUserRole }: Props) {
   const isHomeAdmin = currentUserRole === 'HOME_ADMIN'
   const selectedUserName = selectedUser?.preferredName || selectedUser?.name || 'user'
   const requestStatus = permission?.requestStatus || 'NONE'
-  const canSendDirect = isAdmin || permission?.canMessage === true
+  const canSendDirect = isAdmin || isHomeAdmin || permission?.canMessage === true
   const isPending = !isAdmin && requestStatus === 'PENDING'
   const actionLabel = isAdmin
     ? 'Send'
@@ -105,7 +105,7 @@ export function NewMessageModal({ isOpen, onClose, currentUserRole }: Props) {
     setIsLoading(true)
     setError(null)
 
-    if (isAdmin) {
+    if (isAdmin || isHomeAdmin) {
       // Admin can message directly
       const result = await sendMessage(selectedUser.id, message.trim() || 'Hi!')
       if ('error' in result) {
@@ -227,7 +227,7 @@ export function NewMessageModal({ isOpen, onClose, currentUserRole }: Props) {
                 <div className="flex-1 text-left">
                   <h3 className="font-semibold text-gray-900">Message Someone</h3>
                   <p className="text-sm text-gray-500">
-                    {isAdmin ? 'Send a direct message' : 'Message admin directly or request approval for others'}
+                     {isAdmin || isHomeAdmin ? 'Send a direct message' : 'Message admin directly or request approval for others'}
                   </p>
                 </div>
               </button>
@@ -308,7 +308,7 @@ export function NewMessageModal({ isOpen, onClose, currentUserRole }: Props) {
                 </div>
               </div>
 
-              {!isAdmin && requestStatus !== 'NONE' && (
+              {!isAdmin && !isHomeAdmin && requestStatus !== 'NONE' && (
                 <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-700">
                   Status: {requestStatus === 'PENDING' ? 'Pending approval' : requestStatus === 'APPROVED' ? 'Approved' : 'Denied'}
                 </div>
@@ -316,12 +316,12 @@ export function NewMessageModal({ isOpen, onClose, currentUserRole }: Props) {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {isAdmin ? 'Message (optional)' : 'Message'}
+                  {isAdmin || isHomeAdmin ? 'Message (optional)' : 'Message'}
                 </label>
                 <textarea
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
-                  placeholder={isAdmin ? "Say hi or leave blank..." : "Introduce yourself and why you'd like to connect..."}
+                  placeholder={isAdmin || isHomeAdmin ? "Say hi or leave blank..." : "Introduce yourself and why you'd like to connect..."}
                   rows={4}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 resize-none"
                 />
@@ -337,7 +337,7 @@ export function NewMessageModal({ isOpen, onClose, currentUserRole }: Props) {
                 {isAdmin
                   ? 'As an admin, you can message anyone directly.'
                   : currentUserRole === 'HOME_ADMIN'
-                    ? 'You can message admins directly.'
+                    ? 'You can message office staff directly.'
                     : canSendDirect
                       ? `You can message ${selectedUserName} directly.`
                       : 'This conversation needs admin approval before direct messaging is enabled.'}
@@ -363,7 +363,7 @@ export function NewMessageModal({ isOpen, onClose, currentUserRole }: Props) {
             </button>
             <button
               onClick={handleSendOrRequest}
-              disabled={isLoading || (!isAdmin && !message.trim()) || isPending}
+               disabled={isLoading || (!isAdmin && !isHomeAdmin && !message.trim()) || isPending}
               className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {isLoading ? (

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createMessageGroup } from '@/app/actions/messaging'
 import { cn } from '@/lib/utils'
+import { STYLES } from '@/lib/styles'
 
 type Staff = {
   id: string
@@ -30,7 +31,7 @@ type CreateGroupFormProps = {
 const GROUP_TYPES = [
   { value: 'CUSTOM', label: 'Custom Group', description: 'Manually select members' },
   { value: 'ROLE_BASED', label: 'Role-Based', description: 'Group by staff role' },
-  { value: 'EVENT_BASED', label: 'Event-Based', description: 'Linked to a specific event' }
+  { value: 'EVENT_BASED', label: 'Booking-Based', description: 'Linked to a specific booking' }
 ]
 
 const COLORS = [
@@ -72,7 +73,7 @@ export function CreateGroupForm({ staff, events }: CreateGroupFormProps) {
       setError(result.error)
       setLoading(false)
     } else {
-      router.push('/admin/messaging')
+      router.push('/admin/communication')
     }
   }
 
@@ -103,8 +104,8 @@ export function CreateGroupForm({ staff, events }: CreateGroupFormProps) {
               required
               value={formData.name}
               onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-              placeholder="e.g., Event Coordinators"
+              className={STYLES.input}
+              placeholder="e.g., Booking Coordinators"
             />
           </div>
 
@@ -118,7 +119,7 @@ export function CreateGroupForm({ staff, events }: CreateGroupFormProps) {
               value={formData.description}
               onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
               rows={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              className={cn(STYLES.input, 'min-h-[96px] resize-y')}
               placeholder="What is this group for?"
             />
           </div>
@@ -204,14 +205,14 @@ export function CreateGroupForm({ staff, events }: CreateGroupFormProps) {
           {formData.type === 'EVENT_BASED' && (
             <div>
               <label htmlFor="group-event" className="block text-sm font-medium text-gray-700 mb-1">
-                Select Event
+                Select Booking
               </label>
               <select
                 id="group-event"
                 name="eventId"
                 value={formData.eventId}
                 onChange={(e) => setFormData(prev => ({ ...prev, eventId: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                className={cn(STYLES.input, STYLES.select)}
               >
                 <option value="">Choose an event...</option>
                 {events.map(event => (
@@ -255,9 +256,9 @@ export function CreateGroupForm({ staff, events }: CreateGroupFormProps) {
               className="mt-1"
             />
             <div>
-              <p className="font-medium text-gray-900">Attachable to Event Forms</p>
+              <p className="font-medium text-gray-900">Attachable to Booking Forms</p>
               <p className="text-sm text-gray-600">
-                This group can be selected on event sign-up templates for facilitator RSVP targeting.
+                This group can be selected on booking sign-up templates for facilitator RSVP targeting.
               </p>
             </div>
           </label>
@@ -345,13 +346,13 @@ export function CreateGroupForm({ staff, events }: CreateGroupFormProps) {
         <button
           type="submit"
           disabled={loading}
-          className="px-6 py-3 min-h-[48px] bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium touch-manipulation"
+          className={cn(STYLES.btn, STYLES.btnPrimary, 'px-6 py-3 min-h-[48px] disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation')}
         >
           {loading ? 'Creating...' : 'Create Group'}
         </button>
         <Link
-          href="/admin/messaging"
-          className="px-6 py-3 min-h-[48px] flex items-center justify-center text-gray-700 hover:text-gray-900 rounded-lg border border-gray-300 hover:bg-gray-50 touch-manipulation"
+          href="/admin/communication"
+          className={cn(STYLES.btn, STYLES.btnSecondary, 'px-6 py-3 min-h-[48px] touch-manipulation')}
         >
           Cancel
         </Link>

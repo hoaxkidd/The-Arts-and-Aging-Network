@@ -130,7 +130,7 @@ export function TestimonialsHubClient({ testimonials }: Props) {
                 <tr className={STYLES.tableHeadRow}>
                   <th className={STYLES.tableHeader}>Author</th>
                   <th className={STYLES.tableHeader}>Excerpt</th>
-                  <th className={STYLES.tableHeader}>Event</th>
+                  <th className={STYLES.tableHeader}>Booking</th>
                   <th className={cn(STYLES.tableHeader, 'text-center')}>Rating</th>
                   <th className={STYLES.tableHeader}>Status</th>
                   <th className={cn(STYLES.tableHeader, 'text-center')}>Featured</th>

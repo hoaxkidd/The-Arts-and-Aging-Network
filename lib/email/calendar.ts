@@ -175,7 +175,7 @@ export function getCalendarSectionHtml(links: CalendarLinks): string {
   return `
     <div style="margin: 25px 0; padding: 20px; background: #f8fafc; border: 1px solid #e5e7eb; border-radius: 12px;">
       <h3 style="color: #111827; margin: 0 0 10px; text-align: center; font-size: 18px; font-family: Arial, sans-serif;">Add to Calendar</h3>
-      <p style="margin: 0 0 16px; color: #6b7280; font-size: 13px; text-align: center; font-family: Arial, sans-serif;">Save this event in your preferred calendar app.</p>
+      <p style="margin: 0 0 16px; color: #6b7280; font-size: 13px; text-align: center; font-family: Arial, sans-serif;">Save this booking in your preferred calendar app.</p>
 
       <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin: 0 auto 12px; max-width: 420px;">
         <tr>

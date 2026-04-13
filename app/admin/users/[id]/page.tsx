@@ -332,7 +332,7 @@ export default async function EditUserPage({
           },
           ...(isHomeAdmin ? [{
             id: 'home',
-            label: 'Home Admin',
+            label: 'Program Coordinator',
             icon: 'building' as const,
             content: (
               <div className="space-y-4 min-w-0">
@@ -361,7 +361,7 @@ export default async function EditUserPage({
                       <div className="text-center mb-6">
                         <Building2 className="w-10 h-10 text-gray-300 mx-auto mb-2" />
                         <h3 className="font-medium text-gray-900 text-sm">No Facility Linked</h3>
-                        <p className="text-xs text-gray-500 mt-1">Create a facility profile below, or the Home Admin can set it up from their own dashboard.</p>
+                        <p className="text-xs text-gray-500 mt-1">Create a facility profile below, or the Program Coordinator can set it up from their own dashboard.</p>
                       </div>
                       <div className="border border-dashed border-gray-300 rounded-lg p-4 space-y-3">
                         <h4 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
@@ -424,7 +424,7 @@ export default async function EditUserPage({
                       <h3 className="text-sm font-semibold text-red-900 mb-1">Danger Zone</h3>
                       <p className="text-xs text-red-700 mb-3">
                         {isHomeAdmin
-                          ? 'This will permanently remove the facility profile, events, contacts, and all data.'
+                          ? 'This will permanently remove the facility profile, bookings, contacts, and all data.'
                           : 'This will permanently remove all user data including messages and activity history.'
                         }
                       </p>

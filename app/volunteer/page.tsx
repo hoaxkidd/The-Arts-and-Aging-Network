@@ -92,10 +92,10 @@ export default async function VolunteerDashboard() {
               </div>
             </div>
             <Link
-              href="/events"
+              href="/bookings"
               className="flex items-center gap-1.5 px-4 py-2 bg-secondary-400 text-primary-800 font-semibold rounded-lg hover:bg-secondary-300 transition-colors text-sm"
             >
-              Browse Events <ArrowUpRight className="w-3.5 h-3.5" />
+              Browse Bookings <ArrowUpRight className="w-3.5 h-3.5" />
             </Link>
           </div>
         </div>
@@ -108,7 +108,7 @@ export default async function VolunteerDashboard() {
               </div>
               <div>
                 <p className="text-xl font-bold text-gray-900">{upcomingEvents.length}</p>
-                <p className="text-xs text-gray-500">Upcoming Events</p>
+                <p className="text-xs text-gray-500">Upcoming Bookings</p>
               </div>
             </div>
           </div>
@@ -137,19 +137,19 @@ export default async function VolunteerDashboard() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {/* Upcoming Events */}
+          {/* Upcoming Bookings */}
           <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
             <div className="px-4 py-2.5 border-b border-gray-100 bg-gray-50">
               <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
                 <Calendar className="w-4 h-4 text-gray-400" />
-                Upcoming Events
+                Upcoming Bookings
               </h3>
             </div>
             <div className="divide-y divide-gray-100">
               {upcomingEvents.length > 0 ? upcomingEvents.map((event) => (
                 <Link
                   key={event.id}
-                  href={`/events/${event.id}`}
+                  href={`/bookings/${event.id}`}
                   className="flex items-start gap-3 px-4 py-3 hover:bg-gray-50 transition-colors"
                 >
                   <div className="w-10 h-10 rounded-lg bg-primary-50 text-primary-600 flex flex-col items-center justify-center flex-shrink-0">
@@ -171,8 +171,8 @@ export default async function VolunteerDashboard() {
               )) : (
                 <div className="p-6 text-center">
                   <Calendar className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-                  <p className="text-xs text-gray-500">No upcoming events</p>
-                  <Link href="/events" className="text-xs text-primary-600 hover:text-primary-700 mt-1 inline-block">
+                  <p className="text-xs text-gray-500">No upcoming bookings</p>
+                  <Link href="/bookings" className="text-xs text-primary-600 hover:text-primary-700 mt-1 inline-block">
                     Browse all events
                   </Link>
                 </div>

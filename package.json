@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev --webpack",
     "build": "prisma generate && next build",
+    "lockfile:repair": "node scripts/repair-lockfile.mjs",
     "postinstall": "prisma generate",
     "start": "next start",
     "lint": "eslint",

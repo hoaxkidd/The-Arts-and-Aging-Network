@@ -4,7 +4,7 @@ import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
-import { uploadEventPhoto, deleteEventPhoto as deleteEventPhotoAction } from "@/app/actions/event-engagement"
+import { uploadEventPhoto, deleteEventPhoto as deleteEventPhotoAction } from "@/app/actions/booking-engagement"
 
 const CommentSchema = z.object({
   eventId: z.string(),
@@ -31,7 +31,7 @@ export async function postComment(formData: FormData) {
       }
     })
     
-    revalidatePath(`/events/${validated.data.eventId}`)
+    revalidatePath(`/bookings/${validated.data.eventId}`)
     return { success: true }
   } catch (e) {
     return { error: 'Failed to post comment' }
@@ -67,7 +67,7 @@ export async function submitFeedback(formData: FormData) {
       }
     })
     
-    revalidatePath(`/events/${validated.data.eventId}`)
+    revalidatePath(`/bookings/${validated.data.eventId}`)
     return { success: true }
   } catch (e) {
     return { error: 'Failed to submit feedback' }
@@ -95,13 +95,13 @@ export async function deleteComment(commentId: string, eventId: string) {
     if (!isOwner && !isAdmin) return { error: 'Unauthorized' }
     
     await prisma.eventComment.delete({ where: { id: commentId } })
-    revalidatePath(`/events/${eventId}`)
+    revalidatePath(`/bookings/${eventId}`)
     return { success: true }
 }
 
 export async function deletePhoto(photoId: string, eventId: string) {
     const result = await deleteEventPhotoAction(photoId)
     if (result?.error) return result
-    revalidatePath(`/events/${eventId}`)
+    revalidatePath(`/bookings/${eventId}`)
     return { success: true }
 }

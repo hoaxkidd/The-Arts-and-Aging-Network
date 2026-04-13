@@ -8,7 +8,7 @@ const HREF_TO_APP_PAGE: Record<string, string> = {
   '/admin': 'app/admin/page.tsx',
   '/admin/audit-log': 'app/admin/audit-log/page.tsx',
   '/admin/financials': 'app/admin/financials/page.tsx',
-  '/admin/events': 'app/admin/events/page.tsx',
+  '/admin/bookings': 'app/admin/bookings/page.tsx',
   '/admin/broadcasts': 'app/admin/broadcasts/page.tsx',
   '/admin/email-reminders': 'app/admin/email-reminders/page.tsx',
   '/admin/communication': 'app/admin/communication/page.tsx',

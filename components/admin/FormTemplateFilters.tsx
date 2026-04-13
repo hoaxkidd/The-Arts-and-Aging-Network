@@ -20,6 +20,7 @@ type FormTemplateFiltersProps = {
   currentSort?: string
   currentSearch?: string
   mode?: 'admin' | 'staff'
+  preserveParams?: Record<string, string>
 }
 
 export function FormTemplateFilters({
@@ -29,10 +30,14 @@ export function FormTemplateFilters({
   currentView = 'cards',
   currentSort = 'title',
   currentSearch = '',
-  mode = 'admin'
+  mode = 'admin',
+  preserveParams = {}
 }: FormTemplateFiltersProps) {
   const getLink = (updates: Record<string, string>) => {
     const params = new URLSearchParams()
+    Object.entries(preserveParams).forEach(([key, value]) => {
+      if (value) params.set(key, value)
+    })
     if (updates.view) params.set('view', updates.view)
     if (updates.sort) params.set('sort', updates.sort)
     if (updates.category && updates.category !== 'ALL') params.set('category', updates.category)
@@ -45,6 +50,13 @@ export function FormTemplateFilters({
     <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
       {/* Search */}
       <form className="relative flex-1 min-w-0">
+        {Object.entries(preserveParams).map(([key, value]) => (
+          <input key={key} type="hidden" name={key} value={value} />
+        ))}
+        <input type="hidden" name="view" value={currentView} />
+        <input type="hidden" name="sort" value={currentSort} />
+        {currentCategory !== 'ALL' && <input type="hidden" name="category" value={currentCategory} />}
+        {currentStatus !== 'ALL' && <input type="hidden" name="status" value={currentStatus} />}
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
         <input
           type="text"

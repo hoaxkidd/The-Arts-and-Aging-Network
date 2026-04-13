@@ -193,7 +193,7 @@ export async function createNotification(params: CreateNotificationParams) {
   return { success: true }
 }
 
-// Notify all staff members about a new event
+// Notify all staff members about a new booking
 export async function notifyAllStaffAboutEvent(event: {
   id: string
   title: string
@@ -208,7 +208,7 @@ export async function notifyAllStaffAboutEvent(event: {
     geriatricHomeId: event.geriatricHomeId,
   })
 
-  logger.log(`Found ${staffMembers.length} users to notify about new event`)
+  logger.log(`Found ${staffMembers.length} users to notify about new booking`)
   
   // Debug: Log each user's notification preferences
   for (const staff of staffMembers) {
@@ -230,7 +230,7 @@ export async function notifyAllStaffAboutEvent(event: {
   const eventTimeISO = startDate.toISOString()
   const appUrl = process.env.NEXTAUTH_URL || 'https://artsandaging.com'
   const appUrlDisplay = appUrl.replace(/^https?:\/\//, '')
-  const eventLink = `${appUrl}/events/${event.id}`
+  const eventLink = `${appUrl}/bookings/${event.id}`
   const calendarLinks = generateCalendarLinks({
     title: event.title,
     startDateTime: startDate,
@@ -240,7 +240,7 @@ export async function notifyAllStaffAboutEvent(event: {
   })
   const calendarSection = getCalendarSectionHtml(calendarLinks)
 
-  const title = 'New Event Available'
+  const title = 'New Booking Available'
   const message = `"${event.title}" has been scheduled for ${formattedDate} at ${event.location.name}. RSVP now!`
 
   // Batch process notifications based on preferences
@@ -341,7 +341,7 @@ export async function notifyAllStaffAboutEventUpdate(event: {
   const eventTimeISO = startDate.toISOString()
   const appUrl = process.env.NEXTAUTH_URL || 'https://artsandaging.com'
   const appUrlDisplay = appUrl.replace(/^https?:\/\//, '')
-  const eventLink = `${appUrl}/events/${event.id}`
+  const eventLink = `${appUrl}/bookings/${event.id}`
   const calendarLinks = generateCalendarLinks({
     title: event.title,
     startDateTime: startDate,
@@ -351,13 +351,13 @@ export async function notifyAllStaffAboutEventUpdate(event: {
   })
   const calendarSection = getCalendarSectionHtml(calendarLinks)
   
-  const title = 'Event Updated'
-  const message = `"${event.title}" on ${formattedDate} - Event details have been updated.`
+  const title = 'Booking Updated'
+  const message = `"${event.title}" on ${formattedDate} - Booking details have been updated.`
 
   // Format changes as plain text lines
   const changesHtml = event.changes.length > 0 
     ? event.changes.map(c => `<p style="margin: 0 0 8px; color: #111827; font-size: 15px; line-height: 1.5;">${c}</p>`).join('')
-    : '<p style="margin: 0; color: #111827; font-size: 15px; line-height: 1.5;">Event details were updated.</p>'
+    : '<p style="margin: 0; color: #111827; font-size: 15px; line-height: 1.5;">Booking details were updated.</p>'
 
   const inAppNotifications = []
   for (const staff of staffMembers) {
@@ -410,7 +410,7 @@ export async function notifyAllStaffAboutEventUpdate(event: {
   return { notifiedCount: staffMembers.length }
 }
 
-// Notify volunteers who have signed up for past events about new events
+// Notify volunteers who have signed up for past bookings about new bookings
 export async function notifyEventSignupsAboutNewEvent(event: {
   id: string
   title: string
@@ -449,7 +449,7 @@ export async function notifyEventSignupsAboutNewEvent(event: {
     select: { id: true, email: true, name: true, notificationPreferences: true }
   })
 
-  logger.log(`Found ${usersToNotify.length} users to notify about new event`)
+  logger.log(`Found ${usersToNotify.length} users to notify about new booking`)
 
   // Use Newfoundland timezone for consistent event display
   const startDate = new Date(event.startDateTime)
@@ -465,7 +465,7 @@ export async function notifyEventSignupsAboutNewEvent(event: {
   const eventTimeISO = startDate.toISOString()
   const appUrl = process.env.NEXTAUTH_URL || 'https://artsandaging.com'
   const appUrlDisplay = appUrl.replace(/^https?:\/\//, '')
-  const eventLink = `${appUrl}/events/${event.id}`
+  const eventLink = `${appUrl}/bookings/${event.id}`
   const calendarLinks = generateCalendarLinks({
     title: event.title,
     startDateTime: startDate,
@@ -475,7 +475,7 @@ export async function notifyEventSignupsAboutNewEvent(event: {
   })
   const calendarSection = getCalendarSectionHtml(calendarLinks)
   
-  const title = 'New Event Available'
+  const title = 'New Booking Available'
   const message = `"${event.title}" has been scheduled for ${formattedDate} at ${event.location.name}. RSVP now!`
 
   // Create in-app notifications
@@ -586,7 +586,7 @@ export async function notifyEventSignupsAboutEventUpdate(event: {
   const eventTimeISO = startDate.toISOString()
   const appUrl = process.env.NEXTAUTH_URL || 'https://artsandaging.com'
   const appUrlDisplay = appUrl.replace(/^https?:\/\//, '')
-  const eventLink = `${appUrl}/events/${event.id}`
+  const eventLink = `${appUrl}/bookings/${event.id}`
   const calendarLinks = generateCalendarLinks({
     title: event.title,
     startDateTime: startDate,
@@ -596,13 +596,13 @@ export async function notifyEventSignupsAboutEventUpdate(event: {
   })
   const calendarSection = getCalendarSectionHtml(calendarLinks)
   
-  const title = 'Event Updated'
+  const title = 'Booking Updated'
   const message = `"${event.title}" on ${formattedDate} has been updated.`
 
   // Format changes as plain text lines
   const changesHtml = event.changes.length > 0 
     ? event.changes.map(c => `<p style="margin: 0 0 8px; color: #111827; font-size: 15px; line-height: 1.5;">${c}</p>`).join('')
-    : '<p style="margin: 0; color: #111827; font-size: 15px; line-height: 1.5;">Event details were updated.</p>'
+    : '<p style="margin: 0; color: #111827; font-size: 15px; line-height: 1.5;">Booking details were updated.</p>'
 
   // Create in-app notifications
   const notifications = []
@@ -674,7 +674,7 @@ export async function notifyAllStaffAboutEventCancellation(event: {
     logger.log(`Found ${staffMembers.length} users to notify`)
 
     const formattedDate = event.date.toLocaleDateString()
-    const title = 'Event Cancelled'
+    const title = 'Booking Cancelled'
     const message = `The event "${event.title}" scheduled for ${formattedDate} has been cancelled.`
   
     const inAppNotifications = []
@@ -743,8 +743,8 @@ async function sendEventNotificationEmail(params: {
   eventLink?: string
 }) {
   // Compatibility with old calls
-  const subject = params.subject || `New Event: ${params.eventTitle}`
-  const content = params.content || `A new event has been scheduled: ${params.eventTitle}`
+  const subject = params.subject || `New Booking: ${params.eventTitle}`
+  const content = params.content || `A new booking has been scheduled: ${params.eventTitle}`
   const link = params.link || params.eventLink || ''
   const appUrl = process.env.NEXTAUTH_URL || 'https://the-arts-and-aging-network.vercel.app'
 
@@ -845,7 +845,7 @@ export async function notifyAdminsAboutRSVP(params: {
         type: 'RSVP_RECEIVED' as NotificationType,
         title: 'New RSVP',
         message: `${params.staffName} ${statusText} for "${params.eventTitle}"`,
-        link: `/admin/events/${params.eventId}/edit`,
+        link: `/admin/bookings/${params.eventId}/edit`,
         read: false,
       })
     }
@@ -879,7 +879,7 @@ export async function notifyAdminsAboutCheckIn(params: {
         type: 'STAFF_CHECKIN' as NotificationType,
         title: 'Staff Check-in',
         message: `${params.staffName} has checked in to "${params.eventTitle}"`,
-        link: `/admin/events/${params.eventId}/edit`,
+        link: `/admin/bookings/${params.eventId}/edit`,
         read: false,
       })
     }

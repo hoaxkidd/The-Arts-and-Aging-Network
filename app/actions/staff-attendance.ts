@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma"
 import { auth } from "@/auth"
 import { revalidatePath } from "next/cache"
 import type { PrismaClient } from "@prisma/client"
-import { checkInNotOpenMessage, getCheckInWindowMinutes, getCheckInWindowStart } from "@/lib/event-checkin"
+import { checkInNotOpenMessage, getCheckInWindowMinutes, getCheckInWindowStart } from "@/lib/booking-checkin"
 import { logger } from "@/lib/logger"
 
 // Type-safe prisma client reference
@@ -34,18 +34,18 @@ export async function confirmStaffAttendance(eventId: string, _notes?: string) {
       }
     })
 
-    if (!event) return { error: "Event not found" }
-    if (event.status !== 'PUBLISHED') return { error: "Event is not available" }
+    if (!event) return { error: "Booking not found" }
+    if (event.status !== 'PUBLISHED') return { error: "Booking is not available" }
 
     // Check if event is in the future
     if (new Date(event.startDateTime) < new Date()) {
-      return { error: "Cannot confirm attendance for past events" }
+      return { error: "Cannot confirm attendance for past bookings" }
     }
 
     // Check capacity
     const confirmedCount = event.attendances.filter((a) => a.status === 'YES').length
     if (confirmedCount >= event.maxAttendees) {
-      return { error: "Event is at full capacity" }
+      return { error: "Booking is at full capacity" }
     }
 
     // Create or update attendance
@@ -78,7 +78,7 @@ export async function confirmStaffAttendance(eventId: string, _notes?: string) {
           type: 'STAFF_ATTENDANCE_CONFIRMED',
           title: 'Staff Attendance Confirmed',
           message: `${session.user.name || 'A staff member'} has confirmed attendance for "${event.title}"`,
-          link: `/admin/events`
+          link: `/admin/bookings`
         }
       })
     }
@@ -92,11 +92,11 @@ export async function confirmStaffAttendance(eventId: string, _notes?: string) {
       }
     })
 
-    revalidatePath('/staff/events')
-    revalidatePath('/staff/my-events')
-    revalidatePath('/facilitator/events')
-    revalidatePath('/facilitator/my-events')
-    revalidatePath('/admin/events')
+    revalidatePath('/staff/bookings')
+    revalidatePath('/staff/my-bookings')
+    revalidatePath('/facilitator/bookings')
+    revalidatePath('/facilitator/my-bookings')
+    revalidatePath('/admin/bookings')
 
     return { success: true, data: attendance }
   } catch (error) {
@@ -115,11 +115,11 @@ export async function withdrawStaffAttendance(eventId: string) {
       where: { id: eventId }
     })
 
-    if (!event) return { error: "Event not found" }
+    if (!event) return { error: "Booking not found" }
 
     // Check if event is in the future (allow withdrawal only before event)
     if (new Date(event.startDateTime) < new Date()) {
-      return { error: "Cannot withdraw from past events" }
+      return { error: "Cannot withdraw from past bookings" }
     }
 
     // Update attendance to NO
@@ -144,11 +144,11 @@ export async function withdrawStaffAttendance(eventId: string) {
       }
     })
 
-    revalidatePath('/staff/events')
-    revalidatePath('/staff/my-events')
-    revalidatePath('/facilitator/events')
-    revalidatePath('/facilitator/my-events')
-    revalidatePath('/admin/events')
+    revalidatePath('/staff/bookings')
+    revalidatePath('/staff/my-bookings')
+    revalidatePath('/facilitator/bookings')
+    revalidatePath('/facilitator/my-bookings')
+    revalidatePath('/admin/bookings')
 
     return { success: true }
   } catch (error) {
@@ -201,8 +201,8 @@ export async function getAvailableEventsForStaff() {
 
     return { success: true, data: eventsWithStatus }
   } catch (error) {
-    logger.serverAction("Failed to get available events:", error)
-    return { error: "Failed to load events" }
+    logger.serverAction("Failed to get available bookings:", error)
+    return { error: "Failed to load bookings" }
   }
 }
 
@@ -263,7 +263,7 @@ export async function getMyConfirmedEvents() {
     return { success: true, data: events }
   } catch (error) {
     logger.serverAction("Failed to get confirmed events:", error)
-    return { error: "Failed to load events" }
+    return { error: "Failed to load bookings" }
   }
 }
 
@@ -277,7 +277,7 @@ export async function staffCheckIn(eventId: string) {
       where: { id: eventId }
     })
 
-    if (!event) return { error: "Event not found" }
+    if (!event) return { error: "Booking not found" }
 
     // Validate check-in window based on event setting
     const now = new Date()
@@ -291,7 +291,7 @@ export async function staffCheckIn(eventId: string) {
     }
 
     if (now > eventEnd) {
-      return { error: "Event has already ended" }
+      return { error: "Booking has already ended" }
     }
 
     // Check if user has attendance record
@@ -333,7 +333,7 @@ export async function staffCheckIn(eventId: string) {
           type: 'STAFF_CHECKIN',
           title: 'Staff Check-In',
           message: `${session.user.name || 'A staff member'} has checked in to "${event.title}"`,
-          link: `/events/${eventId}`
+          link: `/bookings/${eventId}`
         }
       })
     }
@@ -347,13 +347,13 @@ export async function staffCheckIn(eventId: string) {
       }
     })
 
-    revalidatePath('/staff/events')
-    revalidatePath('/staff/my-events')
-    revalidatePath(`/staff/events/${eventId}`)
-    revalidatePath('/facilitator/events')
-    revalidatePath('/facilitator/my-events')
-    revalidatePath(`/facilitator/events/${eventId}`)
-    revalidatePath(`/events/${eventId}`)
+    revalidatePath('/staff/bookings')
+    revalidatePath('/staff/my-bookings')
+    revalidatePath(`/staff/bookings/${eventId}`)
+    revalidatePath('/facilitator/bookings')
+    revalidatePath('/facilitator/my-bookings')
+    revalidatePath(`/facilitator/bookings/${eventId}`)
+    revalidatePath(`/bookings/${eventId}`)
 
     return { success: true }
   } catch (error) {
@@ -402,7 +402,7 @@ export async function getStaffEventDetail(eventId: string) {
       }
     })
 
-    if (!event) return { error: "Event not found" }
+    if (!event) return { error: "Booking not found" }
 
     // Get user's attendance
     const myAttendance = event.attendances.find(
@@ -457,6 +457,6 @@ export async function getStaffEventDetail(eventId: string) {
     }
   } catch (error) {
     logger.serverAction("Failed to get event detail:", error)
-    return { error: "Failed to load event" }
+    return { error: "Failed to load booking" }
   }
 }

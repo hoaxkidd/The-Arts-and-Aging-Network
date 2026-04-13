@@ -37,7 +37,7 @@ export default async function HomeAdminFormFillPage({
         <div className="p-8 text-center">
           <Lock className="w-12 h-12 text-gray-300 mx-auto mb-4" />
           <p className="text-gray-500">This form is not available</p>
-          <Link href="/dashboard/forms" className="text-primary-600 hover:text-primary-700 text-sm mt-2 inline-block">
+          <Link href="/dashboard/profile?tab=forms&formsTab=browse" className="text-primary-600 hover:text-primary-700 text-sm mt-2 inline-block">
             Back to Forms
           </Link>
         </div>

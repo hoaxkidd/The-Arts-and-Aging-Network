@@ -57,6 +57,25 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  async redirects() {
+    // Permanent backward-compatibility redirects for legacy Event-era URLs.
+    // These should remain in place so old bookmarks/shared links continue to work.
+    return [
+      { source: '/events/:path*', destination: '/bookings/:path*', permanent: true },
+      { source: '/admin/events/:path*', destination: '/admin/bookings/:path*', permanent: true },
+      { source: '/dashboard/events/:path*', destination: '/dashboard/bookings/:path*', permanent: true },
+      { source: '/staff/events/:path*', destination: '/staff/bookings/:path*', permanent: true },
+      { source: '/facilitator/events/:path*', destination: '/facilitator/bookings/:path*', permanent: true },
+      { source: '/board/events/:path*', destination: '/board/bookings/:path*', permanent: true },
+      { source: '/partner/events/:path*', destination: '/partner/bookings/:path*', permanent: true },
+      { source: '/admin/event-requests/:path*', destination: '/admin/booking-requests/:path*', permanent: true },
+      { source: '/dashboard/my-events/:path*', destination: '/dashboard/my-bookings/:path*', permanent: true },
+      { source: '/staff/my-events/:path*', destination: '/staff/my-bookings/:path*', permanent: true },
+      { source: '/facilitator/my-events/:path*', destination: '/facilitator/my-bookings/:path*', permanent: true },
+      { source: '/partner/my-events/:path*', destination: '/partner/my-bookings/:path*', permanent: true },
+      { source: '/volunteer/my-events/:path*', destination: '/volunteer/my-bookings/:path*', permanent: true },
+    ]
+  },
 };
 
 export default nextConfig;

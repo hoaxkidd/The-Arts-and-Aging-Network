@@ -30,7 +30,7 @@ export function DashboardStats({ stats }: { stats: { upcoming: number, past: num
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
       <StatCard
-        label="Upcoming Events"
+        label="Upcoming Bookings"
         value={stats.upcoming}
         icon={Calendar}
         iconBg="bg-primary-100"
@@ -44,7 +44,7 @@ export function DashboardStats({ stats }: { stats: { upcoming: number, past: num
         iconColor="text-yellow-600"
       />
       <StatCard
-        label="Completed Events"
+        label="Completed Bookings"
         value={stats.past}
         icon={CheckCircle}
         iconBg="bg-green-100"

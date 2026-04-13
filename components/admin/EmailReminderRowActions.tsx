@@ -276,7 +276,7 @@ export function EmailReminderRowActions({
 
             <div className="mt-3 grid grid-cols-1 gap-2 text-sm text-gray-700">
               <div className="rounded border border-gray-200 bg-gray-50 px-3 py-2">
-                <p className="text-[11px] uppercase tracking-wide text-gray-500">Event</p>
+                <p className="text-[11px] uppercase tracking-wide text-gray-500">Booking</p>
                 <p className="font-medium text-gray-900">{eventTitle}</p>
               </div>
               <div className="rounded border border-gray-200 bg-gray-50 px-3 py-2">

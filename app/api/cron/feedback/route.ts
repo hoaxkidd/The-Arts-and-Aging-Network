@@ -9,7 +9,7 @@ interface FeedbackResult {
   totalFailed: number
 }
 
-// API route for cron job to send post-event feedback requests
+// API route for cron job to send post-booking feedback requests
 // Configure your cron service (Vercel Cron, GitHub Actions, etc.) to call this endpoint
 // Example: Every hour at :00
 export async function GET(request: NextRequest): Promise<NextResponse> {

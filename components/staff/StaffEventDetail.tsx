@@ -25,7 +25,7 @@ import {
 import { cn, safeJsonParse } from '@/lib/utils'
 import { STYLES } from '@/lib/styles'
 import { confirmStaffAttendance, withdrawStaffAttendance, staffCheckIn } from '@/app/actions/staff-attendance'
-import { checkInNotOpenMessage, getCheckInWindowStart } from '@/lib/event-checkin'
+import { checkInNotOpenMessage, getCheckInWindowStart } from '@/lib/booking-checkin'
 import { getStaffBasePathFromPathname } from '@/lib/role-routes'
 
 type EventDetail = {
@@ -126,11 +126,11 @@ export function StaffEventDetail({ event }: { event: EventDetail }) {
     <div className="h-full flex flex-col">
       <div className="flex-shrink-0 pb-3">
         <Link
-          href={`${basePath}/events`}
+          href={`${basePath}/bookings`}
           className="inline-flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-700 mb-2"
         >
           <ArrowLeft className="w-3 h-3" />
-          Back to Events
+          Back to Bookings
         </Link>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -197,7 +197,7 @@ export function StaffEventDetail({ event }: { event: EventDetail }) {
                     <Users className="w-4 h-4 text-gray-600" />
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-gray-700">{isFull ? 'Event is full' : `${event.stats.spotsRemaining} spots remaining`}</p>
+                    <p className="text-sm font-medium text-gray-700">{isFull ? 'Booking is full' : `${event.stats.spotsRemaining} spots remaining`}</p>
                     <p className="text-[10px] text-gray-500">Confirm your attendance to join</p>
                   </div>
                 </>

@@ -8,19 +8,75 @@ export default async function InboxPage() {
   const session = await auth()
   if (!session?.user?.id) redirect('/login')
 
-  const isAdmin = session.user.role === 'ADMIN'
+  const isProgramCoordinator = session.user.role === 'HOME_ADMIN'
 
   // Get conversations, memberships, pending requests, and discoverable groups in parallel
   const [conversationsResult, groupMemberships, pendingMemberships, discoverableGroups] = await Promise.all([
     getConversations(),
     // Groups user is explicitly a member of
-    prisma.groupMember.findMany({
-      where: {
-        userId: session.user.id,
-        isActive: true
-      },
-      include: {
-        group: {
+    isProgramCoordinator
+      ? Promise.resolve([])
+      : prisma.groupMember.findMany({
+          where: {
+            userId: session.user.id,
+            isActive: true
+          },
+          include: {
+            group: {
+              include: {
+                _count: {
+                  select: {
+                    members: true,
+                    messages: true
+                  }
+                },
+                messages: {
+                  take: 1,
+                  orderBy: { createdAt: 'desc' },
+                  select: {
+                    content: true,
+                    createdAt: true,
+                    sender: {
+                      select: {
+                        name: true,
+                        preferredName: true
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          orderBy: {
+            group: {
+              updatedAt: 'desc'
+            }
+          }
+        }),
+    // Pending membership requests
+    isProgramCoordinator
+      ? Promise.resolve([])
+      : prisma.groupMember.findMany({
+          where: {
+            userId: session.user.id,
+            isActive: false
+          },
+          select: {
+            groupId: true
+          }
+        }),
+    // ALL active groups user is not a member of (for discovery)
+    isProgramCoordinator
+      ? Promise.resolve([])
+      : prisma.messageGroup.findMany({
+          where: {
+            isActive: true,
+            members: {
+              none: {
+                userId: session.user.id
+              }
+            }
+          },
           include: {
             _count: {
               select: {
@@ -42,59 +98,9 @@ export default async function InboxPage() {
                 }
               }
             }
-          }
-        }
-      },
-      orderBy: {
-        group: {
-          updatedAt: 'desc'
-        }
-      }
-    }),
-    // Pending membership requests
-    prisma.groupMember.findMany({
-      where: {
-        userId: session.user.id,
-        isActive: false
-      },
-      select: {
-        groupId: true
-      }
-    }),
-    // ALL active groups user is not a member of (for discovery)
-    prisma.messageGroup.findMany({
-      where: {
-        isActive: true,
-        members: {
-          none: {
-            userId: session.user.id
-          }
-        }
-      },
-      include: {
-        _count: {
-          select: {
-            members: true,
-            messages: true
-          }
-        },
-        messages: {
-          take: 1,
-          orderBy: { createdAt: 'desc' },
-          select: {
-            content: true,
-            createdAt: true,
-            sender: {
-              select: {
-                name: true,
-                preferredName: true
-              }
-            }
-          }
-        }
-      },
-      orderBy: { updatedAt: 'desc' }
-    })
+          },
+          orderBy: { updatedAt: 'desc' }
+        })
   ])
 
   const pendingGroupIds = new Set(pendingMemberships.map(p => p.groupId))

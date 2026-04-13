@@ -64,7 +64,7 @@ export default async function AdminDashboard() {
             </div>
           </div>
 
-          {/* Stats Card 2: Active Events */}
+          {/* Stats Card 2: Active Bookings */}
           <div className={STYLES.statsCard}>
             <div className="flex items-center gap-3">
               <div className={cn(STYLES.statsIcon, "bg-green-100 text-green-600")}>
@@ -72,7 +72,7 @@ export default async function AdminDashboard() {
               </div>
               <div>
                 <p className={STYLES.statsValue}>{activeEventsCount}</p>
-                <p className={STYLES.statsLabel}>Active Events</p>
+                <p className={STYLES.statsLabel}>Active Bookings</p>
               </div>
             </div>
           </div>
@@ -103,7 +103,7 @@ export default async function AdminDashboard() {
             </div>
           </div>
 
-          {/* Stats Card 5: This Month Events */}
+          {/* Stats Card 5: This Month Bookings */}
           <div className={STYLES.statsCard}>
             <div className="flex items-center gap-3">
               <div className={cn(STYLES.statsIcon, "bg-purple-100 text-purple-600")}>
@@ -193,15 +193,15 @@ export default async function AdminDashboard() {
                 <span className="text-xs font-semibold text-gray-900">Invite User</span>
               </Link>
 
-              {/* Action 2: Create Event */}
+              {/* Action 2: Create Booking */}
               <Link
-                href="/admin/events/new"
+                href="/admin/bookings/new"
                 className="group flex flex-col items-center p-4 bg-gradient-to-br from-green-50 to-green-100 rounded-lg border border-green-200 hover:border-green-400 transition-all hover:shadow-md"
               >
                 <div className="w-10 h-10 rounded-lg bg-white shadow-sm flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
                   <PlusCircle className="w-5 h-5 text-green-600" />
                 </div>
-                <span className="text-xs font-semibold text-gray-900">Create Event</span>
+                <span className="text-xs font-semibold text-gray-900">Create Booking</span>
               </Link>
 
               {/* Action 3: Manage Users */}
@@ -231,7 +231,7 @@ export default async function AdminDashboard() {
 
               {/* Action 5: View Requests */}
               <Link
-                href="/admin/event-requests"
+                href="/admin/booking-requests"
                 className="group flex flex-col items-center p-4 bg-gradient-to-br from-amber-50 to-amber-100 rounded-lg border border-amber-200 hover:border-amber-400 transition-all hover:shadow-md"
               >
                 <div className="w-10 h-10 rounded-lg bg-white shadow-sm flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">

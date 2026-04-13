@@ -81,10 +81,10 @@ export async function sendFeedbackRequests(hoursAfterEvent: number = 1): Promise
       errors: [],
     }
 
-    const feedbackUrl = event.geriatricHome?.feedbackFormUrl || `${APP_URL}/events/${event.id}/feedback`
+    const feedbackUrl = event.geriatricHome?.feedbackFormUrl || `${APP_URL}/bookings/${event.id}/feedback`
     const eventDate = formatDateLong(event.startDateTime)
     const eventTime = formatEventTime(event.startDateTime, event.endDateTime)
-    const eventLink = `${APP_URL}/events/${event.id}`
+    const eventLink = `${APP_URL}/bookings/${event.id}`
 
     for (const attendance of event.attendances) {
       const user = attendance.user
@@ -176,13 +176,13 @@ export async function sendFeedbackForEvent(
   })
 
   if (!event) {
-    return { sent: 0, failed: 0, errors: ['Event not found'] }
+    return { sent: 0, failed: 0, errors: ['Booking not found'] }
   }
 
-  const url = feedbackUrl || event.geriatricHome?.feedbackFormUrl || `${APP_URL}/events/${event.id}/feedback`
+  const url = feedbackUrl || event.geriatricHome?.feedbackFormUrl || `${APP_URL}/bookings/${event.id}/feedback`
   const eventDate = formatDateLong(event.startDateTime)
   const eventTime = formatEventTime(event.startDateTime, event.endDateTime)
-  const eventLink = `${APP_URL}/events/${event.id}`
+  const eventLink = `${APP_URL}/bookings/${event.id}`
 
   let sent = 0
   let failed = 0

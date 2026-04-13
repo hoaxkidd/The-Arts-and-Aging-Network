@@ -70,7 +70,7 @@ export function HomeEventHistory({
           return (
             <Link
               key={event.id}
-              href={`/dashboard/my-events/${event.id}`}
+              href={`/dashboard/my-bookings/${event.id}`}
               className="block bg-white rounded-lg border border-gray-200 p-3 shadow-sm"
             >
               <div className="flex items-center gap-2 mb-2">
@@ -115,7 +115,7 @@ export function HomeEventHistory({
       ) : (
         <div className="bg-white rounded-lg border border-gray-200 p-6 text-center">
           <Calendar className="w-8 h-8 mx-auto text-gray-300 mb-2" />
-          <p className="text-sm font-medium text-gray-900">No events found.</p>
+          <p className="text-sm font-medium text-gray-900">No bookings found.</p>
         </div>
       )}
     </div>
@@ -129,7 +129,7 @@ export function HomeEventHistory({
           <thead className="bg-gray-50">
             <tr className={STYLES.tableHeadRow}>
               <th className={STYLES.tableHeader}>Status</th>
-              <th className={STYLES.tableHeader}>Event</th>
+              <th className={STYLES.tableHeader}>Booking</th>
               <th className={STYLES.tableHeader}>Date</th>
               <th className={STYLES.tableHeader}>Time</th>
               <th className={STYLES.tableHeader}>Location</th>
@@ -157,7 +157,7 @@ export function HomeEventHistory({
                       )}
                     </td>
                     <td className={STYLES.tableCell}>
-                      <Link href={`/dashboard/my-events/${event.id}`} className="font-medium text-gray-900 hover:text-primary-600">
+                      <Link href={`/dashboard/my-bookings/${event.id}`} className="font-medium text-gray-900 hover:text-primary-600">
                         {event.title}
                       </Link>
                     </td>
@@ -187,7 +187,7 @@ export function HomeEventHistory({
               <tr>
                 <td colSpan={7} className={cn(STYLES.tableCell, "text-center py-8")}>
                   <Calendar className="w-8 h-8 mx-auto text-gray-300 mb-2" />
-                  <p className="text-sm text-gray-500">No events found</p>
+                  <p className="text-sm text-gray-500">No bookings found</p>
                 </td>
               </tr>
             )}
@@ -205,7 +205,7 @@ export function HomeEventHistory({
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <input
             type="text"
-            placeholder="Search events..."
+            placeholder="Search bookings..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className={cn(STYLES.input, "pl-10 py-2 text-sm")}

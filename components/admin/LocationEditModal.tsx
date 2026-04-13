@@ -107,7 +107,7 @@ export function LocationEditModal({ isOpen, onClose, onLocationsChange }: Locati
   }
 
   const handleDelete = async (location: Location) => {
-    if (!confirm(`Are you sure you want to delete "${location.name}"?${location._count?.events ? ` This location is used by ${location._count.events} event(s).` : ''}`)) {
+    if (!confirm(`Are you sure you want to delete "${location.name}"?${location._count?.events ? ` This location is used by ${location._count.events} booking(s).` : ''}`)) {
       return
     }
 
@@ -310,7 +310,7 @@ export function LocationEditModal({ isOpen, onClose, onLocationsChange }: Locati
                           <p className="text-sm text-gray-500 truncate">{location.address}</p>
                           {location._count?.events ? (
                             <p className="text-xs text-amber-600 mt-1">
-                              Used by {location._count.events} event(s)
+                              Used by {location._count.events} booking(s)
                             </p>
                           ) : null}
                         </div>

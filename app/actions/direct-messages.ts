@@ -65,14 +65,14 @@ export async function searchUsers(query: string) {
   }
 }
 
-// Search facilitators who share events with the current HOME_ADMIN's facility
+// Legacy helper retained for non-home roles.
 export async function searchFacilitatorsWithSharedEvents() {
   const session = await auth()
   if (!session?.user?.id) {
     return { error: "Unauthorized" }
   }
   if (session.user.role !== "HOME_ADMIN") {
-    return { error: "Only home admins can use this search" }
+    return { error: "Only program coordinators can use this search" }
   }
 
   try {
@@ -155,6 +155,17 @@ export async function sendDirectMessage(data: {
   }
 
   try {
+    const recipient = await prisma.user.findUnique({
+      where: { id: data.recipientId },
+      select: { id: true, role: true, status: true }
+    })
+    if (!recipient || recipient.status !== 'ACTIVE') {
+      return { error: "Recipient is unavailable" }
+    }
+    if (session.user.role === 'HOME_ADMIN' && recipient.role !== 'ADMIN') {
+      return { error: "Program Coordinators can only message office staff" }
+    }
+
     // Create message
     const message = await prisma.directMessage.create({
       data: {

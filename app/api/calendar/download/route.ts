@@ -18,7 +18,7 @@ function sanitizeFilename(input: string): string {
 export async function GET(request: Request): Promise<Response> {
   const { searchParams } = new URL(request.url)
 
-  const title = searchParams.get('title')?.trim() || 'Event'
+  const title = searchParams.get('title')?.trim() || 'Booking'
   const start = searchParams.get('start')
   const end = searchParams.get('end')
 

@@ -2,13 +2,13 @@ import { prisma } from "@/lib/prisma"
 import { auth } from "@/auth"
 import { redirect } from "next/navigation"
 import { notFound } from "next/navigation"
-import { FileText, Calendar, ArrowLeft, Edit, Users, Lock, Globe } from "lucide-react"
-import { ROLE_LABELS } from "@/lib/roles"
+import { Calendar, Lock } from "lucide-react"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
 import { STYLES } from "@/lib/styles"
 import { sanitizeHtml } from "@/lib/dompurify"
 import { canAccessTemplate } from "@/lib/form-access"
+import { FormActionButtons } from "@/components/forms/FormActionButtons"
 
 export default async function FormTemplateDetailPage({
   params
@@ -97,6 +97,7 @@ export default async function FormTemplateDetailPage({
 
   const category = categories.find(c => c.value === template.category)
   const tags = template.tags ? JSON.parse(template.tags) : []
+  const latestSubmission = mySubmissions[0]
 
   return (
     <div className="h-full flex flex-col">
@@ -132,31 +133,32 @@ export default async function FormTemplateDetailPage({
         {/* Actions */}
         <div className="bg-white rounded-lg border border-gray-200 p-4">
           <h2 className="text-sm font-semibold text-gray-900 mb-3">Actions</h2>
-          <div className="flex flex-col gap-2">
-            {template.isFillable && (
-              <Link
-                href={`/staff/forms/${template.id}/fill`}
-                className={cn(STYLES.btn, STYLES.btnSecondary, "justify-center")}
-              >
-                <Edit className="w-4 h-4" />
-                Fill Out Online
-              </Link>
-            )}
-          </div>
+          <FormActionButtons
+            template={{
+              id: template.id,
+              title: template.title,
+              description: template.description,
+              descriptionHtml: template.descriptionHtml,
+              category: template.category,
+              isFillable: template.isFillable,
+              formFields: template.formFields,
+            }}
+            existingSubmission={latestSubmission ? {
+              id: latestSubmission.id,
+              formData: latestSubmission.formData,
+              status: latestSubmission.status,
+              createdAt: latestSubmission.createdAt.toISOString(),
+            } : null}
+            isProgramCoordinator={false}
+          />
         </div>
 
-        {/* Stats */}
+        {/* Your Activity */}
         <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <h2 className="text-sm font-semibold text-gray-900 mb-3">Usage Stats</h2>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <p className="text-xs text-gray-500">Total Submissions</p>
-              <p className="text-lg font-bold text-gray-900">{template._count.submissions}</p>
-            </div>
-            <div>
-              <p className="text-xs text-gray-500">Your Submissions</p>
-              <p className="text-lg font-bold text-primary-600">{mySubmissions.length}</p>
-            </div>
+          <h2 className="text-sm font-semibold text-gray-900 mb-3">Your Activity</h2>
+          <div>
+            <p className="text-xs text-gray-500">Your Submissions</p>
+            <p className="text-lg font-bold text-primary-600">{mySubmissions.length}</p>
           </div>
         </div>
 

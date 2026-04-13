@@ -123,7 +123,7 @@ export default async function PayrollFormsPage({
   }
 
   const categories = [
-    { value: 'EVENT_SIGNUP', label: 'Event Sign-up', icon: '📅' },
+    { value: 'EVENT_SIGNUP', label: 'Booking Sign-up', icon: '📅' },
     { value: 'INCIDENT', label: 'Incident Reports', icon: '⚠️' },
     { value: 'FEEDBACK', label: 'Feedback Forms', icon: '💬' },
     { value: 'EVALUATION', label: 'Evaluations', icon: '📊' },

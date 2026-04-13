@@ -87,7 +87,7 @@ if (user.status !== 'ACTIVE') return null
 **CVSS:** 7.5 (High)
 
 **Description:**
-The `deleteComment` and `deletePhoto` functions only check for ADMIN/PAYROLL role but don't allow users to delete their own content. More critically, they don't verify that the comment/photo actually belongs to the event specified.
+The `deleteComment` and `deletePhoto` functions only check for ADMIN/PAYROLL role but don't allow users to delete their own content. More critically, they don't verify that the comment/photo actually belongs to the booking specified.
 
 **Recommended Fix:**
 ```typescript
@@ -108,7 +108,7 @@ export async function deleteComment(commentId: string, eventId: string) {
   if (!isOwner && !isAdmin) return { error: 'Unauthorized' }
 
   await prisma.eventComment.delete({ where: { id: commentId } })
-  revalidatePath(`/events/${eventId}`)
+  revalidatePath(`/bookings/${eventId}`)
   return { success: true }
 }
 ```
@@ -238,17 +238,17 @@ The invitation token is returned in the response and could be logged.
 
 ### 12. No Return Value in updateEventStatus
 
-**File:** `app/actions/events.ts:202-208`
+**File:** `app/actions/bookings.ts:202-208`
 
 Function doesn't return success/error status.
 
 ---
 
-### 13. No Event Status Validation
+### 13. No Booking Status Validation
 
-**File:** `app/actions/events.ts:206`
+**File:** `app/actions/bookings.ts:206`
 
-Any string is accepted as event status.
+Any string is accepted as booking status.
 
 **Recommendation:** Validate against allowed values.
 
@@ -272,7 +272,7 @@ Multiple files contain `console.log` statements.
 
 **Files affected:**
 - `lib/notifications.ts`
-- `app/actions/events.ts`
+- `app/actions/bookings.ts`
 - `app/actions/home-registration.ts`
 
 ---
@@ -315,7 +315,7 @@ Values like 5MB, 7 days, 2 hours are hardcoded.
 
 ### 21. Full User Objects in Queries
 
-**File:** `app/events/[id]/page.tsx:21`
+**File:** `app/bookings/[id]/page.tsx:21`
 
 Queries include full user objects when only name/email needed.
 
@@ -354,7 +354,7 @@ Recommended indexes:
 
 ### 26. No Soft Deletes
 
-Users and events are hard deleted, losing audit trail.
+Users and bookings are hard deleted, losing audit trail.
 
 ---
 

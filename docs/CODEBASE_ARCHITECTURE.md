@@ -29,8 +29,8 @@ The **`User`** model is central: profiles, roles, payroll-related fields, staff 
 |--------|------------------------|
 | Identity / access | `User`, `Invitation`, `AuditLog`, `Document`, `UserPrivacy`, `EmailChangeRequest`, `PushSubscription` |
 | Homes | `GeriatricHome` (linked to `HOME_ADMIN` user) |
-| Events | `Event`, `Location`, `Program`, `EventAttendance`, comments/photos/reactions, `EmailReminder` |
-| Event requests | `EventRequest`, `EventRequestResponse`, optional `FormSubmission` link |
+| Bookings | `Event`, `Location`, `Program`, `EventAttendance`, comments/photos/reactions, `EmailReminder` |
+| Booking requests | `EventRequest`, `EventRequestResponse`, optional `FormSubmission` link |
 | Messaging | `DirectMessage`, `DirectMessageRequest`, `MessageGroup`, `GroupMember`, `GroupMessage`, reactions, stars, templates, reminders, scheduled messages, typing, broadcasts |
 | Forms | `FormTemplate`, `FormSubmission`; payroll `PayrollForm`, `PayrollFormSubmission` |
 | Payroll / ops | `Timesheet`, `TimesheetEntry`, `TimeEntry`, `WorkLog`, `MileageEntry`, `ExpenseRequest` |
@@ -38,6 +38,8 @@ The **`User`** model is central: profiles, roles, payroll-related fields, staff 
 | Comms | `Notification`, `MeetingRequest`, `PhoneRequest`, `EmailTemplate` |
 
 See [prisma/schema.prisma](../prisma/schema.prisma) for the full schema.
+
+Note: User-facing terminology is "Booking(s)". Some Prisma/DB model names still use legacy `Event*` naming for compatibility.
 
 ---
 
@@ -54,7 +56,7 @@ flowchart LR
   end
   Auth["(auth)/login"]
   Public["register/home invite/token"]
-  Shared["/events /notifications"]
+  Shared["/bookings /notifications"]
   Admin --> Auth
   Home --> Auth
   Staff --> Auth
@@ -65,17 +67,17 @@ flowchart LR
 
 | Persona | Primary `app/` tree | Notes |
 |---------|---------------------|--------|
-| **ADMIN** | [app/admin/](../app/admin/) | Dashboard, financials, events (list/calendar/requests), homes, users (incl. placeholder staff), communication hub, messaging, conversation requests, forms, inventory, donors, testimonials, timesheets, mileage, invitations, audits, settings, broadcasts, imports, payroll forms, etc. |
-| **HOME_ADMIN** | [app/dashboard/](../app/dashboard/) | Home portal: events, requests, forms, my events, history, contacts, profile, settings. `/dashboard/calendar` redirects to `/dashboard/events`. `/dashboard/engagement` exists but is not in the default sidebar menu ([lib/menu.ts](../lib/menu.ts)). |
-| **Staff-style roles** | [app/staff/](../app/staff/) | **FACILITATOR**, **BOARD**, **PARTNER**, **PAYROLL** (middleware); **VOLUNTEER** may also use `/staff` for inbox/groups per [middleware.ts](../middleware.ts). Inbox, groups, events, directory, forms, profile, onboarding at `/staff/onboarding`. |
+| **ADMIN** | [app/admin/](../app/admin/) | Dashboard, financials, bookings (list/calendar/requests), homes, users (incl. placeholder staff), communication hub, messaging, conversation requests, forms, inventory, donors, testimonials, timesheets, mileage, invitations, audits, settings, broadcasts, imports, payroll forms, etc. |
+| **HOME_ADMIN** | [app/dashboard/](../app/dashboard/) | Home portal: bookings, requests, forms, my bookings, history, contacts, profile, settings. `/dashboard/calendar` redirects to `/dashboard/bookings`. `/dashboard/engagement` exists but is not in the default sidebar menu ([lib/menu.ts](../lib/menu.ts)). |
+| **Staff-style roles** | [app/staff/](../app/staff/) | **FACILITATOR**, **BOARD**, **PARTNER**, **PAYROLL** (middleware); **VOLUNTEER** may also use `/staff` for inbox/groups per [middleware.ts](../middleware.ts). Inbox, groups, bookings, directory, forms, profile, onboarding at `/staff/onboarding`. |
 | **PAYROLL** | [app/payroll/](../app/payroll/) | Check-in, timesheet, mileage, forms, requests, history, schedule, profile. |
 | **VOLUNTEER** (dedicated shell) | [app/volunteers/](../app/volunteers/) | Dashboard + forms; menu may reference routes—verify [lib/menu.ts](../lib/menu.ts) matches implemented pages. |
-| **Shared (authenticated)** | [app/events/](../app/events/), [app/notifications/](../app/notifications/) | Event browsing/detail; notification center. |
+| **Shared (authenticated)** | [app/bookings/](../app/bookings/), [app/notifications/](../app/notifications/) | Booking browsing/detail; notification center. |
 | **Public / pre-auth** | [app/register/home/](../app/register/home/), [app/invite/[token]/](../app/invite/[token]/), [app/(auth)/login/](../app/(auth)/login/) | Registration and login flows. |
 
 **Navigation:** [lib/menu.ts](../lib/menu.ts) (`adminMenu`, `homeAdminMenu`, `staffMenu`, `volunteerMenu`, `boardMenu`, `MENU_ITEMS`) consumed by [components/DashboardLayoutClient.tsx](../components/DashboardLayoutClient.tsx).
 
-**Redirect-only admin URLs (aliases):** `/admin/form-templates` → forms tab; `/admin/timesheets` → financials; `/admin/event-requests` → events requests tab. Safe for bookmarks; prefer canonical URLs in new links.
+**Redirect-only admin URLs (aliases):** `/admin/form-templates` → forms tab; `/admin/timesheets` → financials; `/admin/booking-requests` → booking requests tab. Safe for bookmarks; prefer canonical URLs in new links.
 
 ---
 
@@ -97,14 +99,14 @@ Business logic lives mainly in **`'use server'` modules** under [app/actions/](.
 |-----------|----------------|
 | [auth.ts](../app/actions/auth.ts), [user.ts](../app/actions/user.ts), [user-management.ts](../app/actions/user-management.ts) | Login helpers, user updates, status toggles |
 | [invitation.ts](../app/actions/invitation.ts), [staff-onboarding.ts](../app/actions/staff-onboarding.ts), [staff-import.ts](../app/actions/staff-import.ts) | Invites, placeholder users, onboarding complete/skip |
-| [events.ts](../app/actions/events.ts), [event-requests.ts](../app/actions/event-requests.ts), [attendance.ts](../app/actions/attendance.ts) | Events CRUD, requests, attendance |
+| [bookings.ts](../app/actions/bookings.ts), [booking-requests.ts](../app/actions/booking-requests.ts), [attendance.ts](../app/actions/attendance.ts) | Bookings CRUD, booking requests, attendance |
 | [home-management.ts](../app/actions/home-management.ts), [home-registration.ts](../app/actions/home-registration.ts), [home-import.ts](../app/actions/home-import.ts) | Facility lifecycle |
 | [messaging.ts](../app/actions/messaging.ts), [conversations.ts](../app/actions/conversations.ts), [direct-messages.ts](../app/actions/direct-messages.ts), [conversation-requests.ts](../app/actions/conversation-requests.ts) | DMs, groups, permissions, admin approval |
 | [notifications.ts](../app/actions/notifications.ts) | Notification CRUD where server actions are appropriate |
 | [form-templates.ts](../app/actions/form-templates.ts), [payroll-forms.ts](../app/actions/payroll-forms.ts) | Form templates and payroll forms |
 | [timesheet.ts](../app/actions/timesheet.ts), [mileage.ts](../app/actions/mileage.ts), [payroll.ts](../app/actions/payroll.ts), [work.ts](../app/actions/work.ts) | Payroll domain |
 
-**Also:** `admin`, `broadcast-messages`, `scheduled-messages`, `message-templates`, `starred-messages`, `message-search`, `message-reminders`, `message-features`, `typing-indicators`, `online-status`, `engagement`, `event-engagement`, `feedback`, `inventory`, `donors`, `testimonials`, `communication`, `email-reminders`, `file-upload`, `financial-reports`, `directory`, `staff`, `staff-attendance`, `requests`, `locations` — see [app/actions/](../app/actions/) for the full list.
+**Also:** `admin`, `broadcast-messages`, `scheduled-messages`, `message-templates`, `starred-messages`, `message-search`, `message-reminders`, `message-features`, `typing-indicators`, `online-status`, `engagement`, `booking-engagement`, `feedback`, `inventory`, `donors`, `testimonials`, `communication`, `email-reminders`, `file-upload`, `financial-reports`, `directory`, `staff`, `staff-attendance`, `requests`, `locations` — see [app/actions/](../app/actions/) for the full list.
 
 **Route handlers** under [app/api/](../app/api/): auth, uploads, cron/reminders, push, payroll-forms API, and **GET** [app/api/notifications/route.ts](../app/api/notifications/route.ts) **+ SSE** stream for real-time-style notification updates (reduces fragile server-action polling for notification UI).
 
@@ -131,8 +133,8 @@ Business logic lives mainly in **`'use server'` modules** under [app/actions/](.
 
 1. **One database**, **one `User` row** (with role string(s)) drives portal access.
 2. **NextAuth** = session; **middleware** = coarse routing; **server actions** = authorization + mutations.
-3. **Admin** is the operational super-surface; **dashboard** (home) and **staff** share patterns (events, inbox, forms) with different data scope.
+3. **Admin** is the operational super-surface; **dashboard** (home) and **staff** share patterns (bookings, inbox, forms) with different data scope.
 4. **Messaging** is a large subsystem (DMs, groups, requests, broadcasts).
 5. **Payroll** is a separate vertical (timesheets, mileage, forms).
 
-For subsystem-only deep dives, extend this file or add focused docs under `docs/`. If you want a **deeper dive** on one subsystem (e.g. only messaging, only events, or only payroll), narrow the read to those files when changing or debugging that area.
+For subsystem-only deep dives, extend this file or add focused docs under `docs/`. If you want a **deeper dive** on one subsystem (e.g. only messaging, only bookings, or only payroll), narrow the read to those files when changing or debugging that area.

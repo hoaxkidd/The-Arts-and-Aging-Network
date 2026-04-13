@@ -13,7 +13,7 @@ import { cn } from '@/lib/utils'
 import { RichTextEditor } from '@/components/ui/RichTextEditor'
 
 const CATEGORIES = [
-  { value: 'EVENT_SIGNUP', label: 'Event sign-up' },
+  { value: 'EVENT_SIGNUP', label: 'Booking sign-up' },
   { value: 'INCIDENT', label: 'Incident Reports' },
   { value: 'FEEDBACK', label: 'Feedback Forms' },
   { value: 'EVALUATION', label: 'Evaluations' },

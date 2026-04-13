@@ -9,6 +9,21 @@ import { InlineStatStrip } from "@/components/ui/InlineStatStrip"
 
 export const dynamic = 'force-dynamic'
 
+const GROUP_COLOR_CLASS: Record<string, string> = {
+  blue: 'bg-blue-100 text-blue-700',
+  green: 'bg-green-100 text-green-700',
+  purple: 'bg-purple-100 text-purple-700',
+  red: 'bg-red-100 text-red-700',
+  yellow: 'bg-yellow-100 text-yellow-700',
+  pink: 'bg-pink-100 text-pink-700'
+}
+
+const GROUP_TYPE_BADGE_CLASS: Record<string, string> = {
+  CUSTOM: 'bg-purple-100 text-purple-700 border border-purple-200',
+  EVENT_BASED: 'bg-blue-100 text-blue-700 border border-blue-200',
+  ROLE_BASED: 'bg-green-100 text-green-700 border border-green-200',
+}
+
 export default async function AdminMessagingPage() {
   const session = await auth()
   if (session?.user?.role !== 'ADMIN') redirect('/dashboard')
@@ -54,11 +69,11 @@ export default async function AdminMessagingPage() {
   })
 
   return (
-    <div className="h-full flex flex-col min-w-0">
-      <div className="flex-shrink-0 mb-6 flex items-center justify-end">
+    <div className={cn(STYLES.pageTemplateRoot, "h-full flex flex-col min-w-0") }>
+      <div className="flex-shrink-0 flex items-center justify-end">
         <Link
           href="/admin/messaging/new"
-          className={cn(STYLES.btn, STYLES.btnPrimary)}
+          className={cn(STYLES.btn, STYLES.btnPrimary, STYLES.btnToolbar)}
         >
           <Plus className="w-4 h-4" />
           New Group
@@ -66,7 +81,7 @@ export default async function AdminMessagingPage() {
       </div>
 
       <InlineStatStrip
-        className="mb-6"
+        className="mb-1"
         items={[
           { label: 'Total Groups', value: groups.length },
           { label: 'Total Members', value: groups.reduce((sum, g) => sum + g._count.members, 0), tone: 'info' },
@@ -76,7 +91,7 @@ export default async function AdminMessagingPage() {
 
       {/* Pending Requests Alert */}
       {pendingRequests.length > 0 && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
           <h3 className="text-sm font-semibold text-yellow-900 mb-2">
             {pendingRequests.length} Pending Access Request{pendingRequests.length !== 1 ? 's' : ''}
           </h3>
@@ -95,12 +110,12 @@ export default async function AdminMessagingPage() {
           {groups.map((group) => (
             <div
               key={group.id}
-              className="bg-white rounded-lg border border-gray-200 p-4 transition-colors"
+              className="bg-white rounded-xl border border-gray-200 p-5 transition-all hover:shadow-sm"
             >
               <div className="flex items-start gap-3 mb-3">
                 <div className={cn(
                   "w-12 h-12 rounded-lg flex items-center justify-center text-2xl",
-                  `bg-${group.color}-100`
+                  GROUP_COLOR_CLASS[group.color] || 'bg-primary-100 text-primary-700'
                 )}>
                   {group.iconEmoji}
                 </div>
@@ -129,20 +144,18 @@ export default async function AdminMessagingPage() {
 
                 <div className="flex items-center gap-2">
                   <span className={cn(
-                    "text-xs px-2 py-1 rounded",
-                  group.type === 'CUSTOM' && "bg-purple-100 text-purple-700",
-                  group.type === 'EVENT_BASED' && "bg-blue-100 text-blue-700",
-                  group.type === 'ROLE_BASED' && "bg-green-100 text-green-700"
+                    "text-xs px-2 py-1 rounded font-medium",
+                    GROUP_TYPE_BADGE_CLASS[group.type] || 'bg-gray-100 text-gray-700 border border-gray-200'
                 )}>
                   {group.type}
                   </span>
                   {group.isAttachableToForms && (
-                    <span className="text-xs px-2 py-1 bg-emerald-100 text-emerald-700 rounded">
+                    <span className="text-xs px-2 py-1 bg-emerald-100 text-emerald-700 rounded border border-emerald-200 font-medium">
                       Form-attachable
                     </span>
                   )}
                   {group.allowAllStaff && (
-                    <span className="text-xs px-2 py-1 bg-green-100 text-green-700 rounded">
+                    <span className="text-xs px-2 py-1 bg-green-100 text-green-700 rounded border border-green-200 font-medium">
                       Open to All Staff
                   </span>
                 )}
@@ -150,7 +163,7 @@ export default async function AdminMessagingPage() {
 
               <Link
                 href={`/admin/messaging/${group.id}`}
-                className="mt-3 block text-center px-3 py-2 text-xs font-medium text-primary-600 bg-primary-50 rounded hover:bg-primary-100"
+                className="mt-3 block text-center px-3 py-2 text-xs font-medium text-primary-700 bg-primary-50 rounded-lg border border-primary-100 hover:bg-primary-100"
               >
                 <Settings className="w-3 h-3 inline mr-1" />
                 Manage

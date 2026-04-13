@@ -51,7 +51,7 @@ export function AddHomeButton() {
                 </div>
                 <div>
                   <h2 className="text-lg font-semibold text-gray-900">Add Home</h2>
-                  <p className="text-xs text-gray-500">Create a home and placeholder HOME_ADMIN account</p>
+                  <p className="text-xs text-gray-500">Create a home and placeholder Program Coordinator account</p>
                 </div>
               </div>
               <button type="button" className="rounded p-1 text-gray-500 hover:bg-gray-100" onClick={() => setOpen(false)}>

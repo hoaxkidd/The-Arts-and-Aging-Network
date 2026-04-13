@@ -26,8 +26,8 @@ function formatReminderTiming(reminderType: string) {
   const days = daysMatch ? Number(daysMatch[1]) : null
 
   if (base.startsWith('HOME_ADMIN')) {
-    if (days !== null) return `Home Admin • ${days} day${days === 1 ? '' : 's'} before`
-    return 'Home Admin reminder'
+    if (days !== null) return `Program Coordinator • ${days} day${days === 1 ? '' : 's'} before`
+    return 'Program Coordinator reminder'
   }
 
   if (base.startsWith('STAFF')) {
@@ -171,7 +171,7 @@ export default async function EmailRemindersPage({
         <table className={cn(STYLES.table, 'table-fixed min-w-[1240px]')}>
           <thead className="bg-gray-50">
             <tr className={STYLES.tableHeadRow}>
-              <th className={cn(STYLES.tableHeader, 'w-[260px]')}>Event</th>
+              <th className={cn(STYLES.tableHeader, 'w-[260px]')}>Booking</th>
               <th className={cn(STYLES.tableHeader, 'w-[200px]')}>Recipient</th>
               <th className={cn(STYLES.tableHeader, 'w-[130px]')}>Type</th>
               <th className={cn(STYLES.tableHeader, 'w-[230px]')}>Timing</th>
@@ -193,7 +193,7 @@ export default async function EmailRemindersPage({
                 <tr key={reminder.id} className={STYLES.tableRow}>
                   <td className={STYLES.tableCell}>
                     <Link
-                      href={`/events/${reminder.event.id}`}
+                      href={`/bookings/${reminder.event.id}`}
                       className="block max-w-[230px] truncate text-sm font-medium text-primary-600 hover:text-primary-700"
                       title={reminder.event.title}
                     >
@@ -225,7 +225,7 @@ export default async function EmailRemindersPage({
                         : "bg-purple-100 text-purple-700"
                     )}>
                       {reminder.recipientType === 'HOME_ADMIN' ? (
-                        <><Home className="w-3 h-3" /> Home Admin</>
+                        <><Home className="w-3 h-3" /> Program Coordinator</>
                       ) : (
                         <><Users className="w-3 h-3" /> Staff</>
                       )}

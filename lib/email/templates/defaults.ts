@@ -90,12 +90,12 @@ export const DEFAULT_TEMPLATES: DefaultTemplate[] = [
         </div>
         <div style="text-align: center; margin: 0 0 30px;">
           <a href="{{eventLink}}" style="display: inline-block; background: #4F46E5; color: white; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: 600; font-size: 15px;">
-            View Event Details
+            View Booking Details
           </a>
         </div>
         {{calendarSection}}
         <p style="margin: 20px 0 0; color: #9ca3af; font-size: 13px; text-align: center;">
-          Need to cancel? Update your RSVP from the event page.
+          Need to cancel? Update your RSVP from the booking page.
         </p>
       </div>
       <div style="text-align: center; padding: 20px; color: #9ca3af; font-size: 12px;">
@@ -118,7 +118,7 @@ export const DEFAULT_TEMPLATES: DefaultTemplate[] = [
         </p>
         <div style="text-align: center; margin: 0 0 30px;">
           <a href="{{eventLink}}" style="display: inline-block; background: #4F46E5; color: white; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: 600;">
-            Find Other Events
+            Find Other Bookings
           </a>
         </div>
       </div>
@@ -150,11 +150,11 @@ export const DEFAULT_TEMPLATES: DefaultTemplate[] = [
   },
   {
     type: 'EVENT_REMINDER',
-    name: 'Event Reminder',
+    name: 'Booking Reminder',
     subject: 'Reminder: {{eventTitle}} is coming up!',
     content: `<div style="font-family: Arial, Helvetica, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9fafb;">
       <div style="background: linear-gradient(135deg, #F59E0B 0%, #EF4444 100%); padding: 30px; text-align: center; border-radius: 12px 12px 0 0;">
-        <h1 style="color: white; margin: 0; font-size: 24px;">⏰ Event Reminder</h1>
+        <h1 style="color: white; margin: 0; font-size: 24px;">⏰ Booking Reminder</h1>
       </div>
       <div style="background: #ffffff; padding: 35px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 12px 12px;">
         <p style="margin: 0 0 20px; color: #111827; font-size: 16px;">Hi {{name}},</p>
@@ -168,12 +168,12 @@ export const DEFAULT_TEMPLATES: DefaultTemplate[] = [
         </div>
         <div style="text-align: center; margin: 0 0 30px;">
           <a href="{{eventLink}}" style="display: inline-block; background: #4F46E5; color: white; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: 600; font-size: 15px;">
-            View Event Details
+            View Booking Details
           </a>
         </div>
         {{calendarSection}}
         <p style="margin: 20px 0 0; color: #9ca3af; font-size: 12px;">
-          Remember to check in 24 hours before the event!
+          Remember to check in 24 hours before the booking!
         </p>
       </div>
       <div style="text-align: center; padding: 20px; color: #9ca3af; font-size: 12px;">
@@ -183,17 +183,17 @@ export const DEFAULT_TEMPLATES: DefaultTemplate[] = [
   },
   {
     type: 'EVENT_REQUEST_APPROVED',
-    name: 'Event Request Approved',
-    subject: 'Your event request has been approved!',
+    name: 'Booking Request Approved',
+    subject: 'Your booking request has been approved!',
     content: `<div style="font-family: Arial, Helvetica, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9fafb;">
       <div style="background: linear-gradient(135deg, #10B981 0%, #059669 100%); padding: 30px; text-align: center; border-radius: 12px 12px 0 0;">
-        <h1 style="color: white; margin: 0; font-size: 28px;">✓ Event Approved!</h1>
+        <h1 style="color: white; margin: 0; font-size: 28px;">✓ Booking Approved!</h1>
         <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0; font-size: 16px;">Your request has been confirmed</p>
       </div>
       <div style="background: #ffffff; padding: 35px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 12px 12px;">
         <p style="margin: 0 0 20px; color: #111827; font-size: 16px;">Hi {{name}},</p>
         <p style="margin: 0 0 25px; color: #374151; font-size: 16px;">
-          Great news! Your event request for <strong style="color: #4F46E5;">{{eventTitle}}</strong> has been approved!
+          Great news! Your booking request for <strong style="color: #4F46E5;">{{eventTitle}}</strong> has been approved!
         </p>
         <div style="background: #f0fdf4; padding: 20px; border-radius: 10px; margin: 0 0 25px; border-left: 4px solid #10B981;">
           <p style="margin: 0 0 12px; color: #111827; font-size: 15px;"><strong>📅 Date:</strong> <time datetime="{{eventDateISO}}">{{eventDate}}</time></p>
@@ -202,12 +202,12 @@ export const DEFAULT_TEMPLATES: DefaultTemplate[] = [
         </div>
         <div style="text-align: center; margin: 0 0 30px;">
           <a href="{{eventLink}}" style="display: inline-block; background: #4F46E5; color: white; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: 600; font-size: 15px;">
-            View Event Details
+            View Booking Details
           </a>
         </div>
         {{calendarSection}}
         <p style="margin: 20px 0 0; color: #9ca3af; font-size: 12px;">
-          We look forward to seeing you at the event!
+          We look forward to seeing you at the booking!
         </p>
       </div>
       <div style="text-align: center; padding: 20px; color: #9ca3af; font-size: 12px;">
@@ -217,8 +217,8 @@ export const DEFAULT_TEMPLATES: DefaultTemplate[] = [
   },
   {
     type: 'EVENT_REQUEST_REJECTED',
-    name: 'Event Request Rejected',
-    subject: 'Update on your event request: {{eventTitle}}',
+    name: 'Booking Request Rejected',
+    subject: 'Update on your booking request: {{eventTitle}}',
     content: `<div style="font-family: Arial, Helvetica, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9fafb;">
       <div style="background: linear-gradient(135deg, #EF4444 0%, #B91C1C 100%); padding: 30px; text-align: center; border-radius: 12px 12px 0 0;">
         <h1 style="color: white; margin: 0; font-size: 28px;">Request Declined</h1>
@@ -250,17 +250,17 @@ export const DEFAULT_TEMPLATES: DefaultTemplate[] = [
   },
   {
     type: 'EVENT_CREATED',
-    name: 'New Event Created',
-    subject: 'New Event: {{eventTitle}}',
+    name: 'New Booking Created',
+    subject: 'New Booking: {{eventTitle}}',
     content: `<div style="font-family: Arial, Helvetica, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9fafb;">
       <div style="background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%); padding: 30px; text-align: center; border-radius: 12px 12px 0 0;">
-        <h1 style="color: white; margin: 0; font-size: 28px;">📅 New Event Available!</h1>
-        <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0; font-size: 16px;">A new event has been scheduled</p>
+        <h1 style="color: white; margin: 0; font-size: 28px;">📅 New Booking Available!</h1>
+        <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0; font-size: 16px;">A new booking has been scheduled</p>
       </div>
       <div style="background: #ffffff; padding: 35px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 12px 12px;">
         <p style="margin: 0 0 20px; color: #111827; font-size: 16px;">Hi {{name}},</p>
         <p style="margin: 0 0 25px; color: #374151; font-size: 16px;">
-          A new event <strong style="color: #4F46E5;">{{eventTitle}}</strong> has been scheduled and is now available for RSVP.
+          A new booking <strong style="color: #4F46E5;">{{eventTitle}}</strong> has been scheduled and is now available for RSVP.
         </p>
         <div style="background: #f9fafb; padding: 20px; border-radius: 10px; margin: 0 0 25px; border-left: 4px solid #4F46E5;">
           <p style="margin: 0 0 12px; color: #111827; font-size: 15px;"><strong>📅 Date:</strong> <time datetime="{{eventDateISO}}">{{eventDate}}</time></p>
@@ -281,17 +281,17 @@ export const DEFAULT_TEMPLATES: DefaultTemplate[] = [
   },
   {
     type: 'EVENT_UPDATED',
-    name: 'Event Updated',
-    subject: 'Event Updated: {{eventTitle}}',
+    name: 'Booking Updated',
+    subject: 'Booking Updated: {{eventTitle}}',
     content: `<div style="font-family: Arial, Helvetica, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9fafb;">
       <div style="background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%); padding: 30px; text-align: center; border-radius: 12px 12px 0 0;">
-        <h1 style="color: white; margin: 0; font-size: 28px;">✏️ Event Updated</h1>
-        <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0; font-size: 16px;">One of your events has been modified</p>
+        <h1 style="color: white; margin: 0; font-size: 28px;">✏️ Booking Updated</h1>
+        <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0; font-size: 16px;">One of your bookings has been modified</p>
       </div>
       <div style="background: #ffffff; padding: 35px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 12px 12px;">
         <p style="margin: 0 0 20px; color: #111827; font-size: 16px;">Hi {{name}},</p>
         <p style="margin: 0 0 25px; color: #374151; font-size: 16px;">
-          The event <strong style="color: #4F46E5;">{{eventTitle}}</strong> has been updated.
+          The booking <strong style="color: #4F46E5;">{{eventTitle}}</strong> has been updated.
         </p>
         <div style="margin: 0 0 22px; padding: 0;">
           <p style="margin: 0 0 10px; color: #111827; font-size: 16px; font-weight: 600;">Updates:</p>
@@ -306,7 +306,7 @@ export const DEFAULT_TEMPLATES: DefaultTemplate[] = [
         </div>
         <div style="text-align: center; margin: 0 0 30px;">
           <a href="{{eventLink}}" style="display: inline-block; background: #4F46E5; color: white; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: 600; font-size: 15px;">
-            View Event Details
+            View Booking Details
           </a>
         </div>
         {{calendarSection}}
@@ -438,17 +438,17 @@ export const DEFAULT_TEMPLATES: DefaultTemplate[] = [
   },
   {
     type: 'FEEDBACK_REQUEST',
-    name: 'Post-Event Feedback',
+    name: 'Post-Booking Feedback',
     subject: 'How was {{eventTitle}}? Share your feedback!',
     content: `<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
       <div style="background: linear-gradient(135deg, #8B5CF6 0%, #6366F1 100%); padding: 30px; text-align: center; border-radius: 12px 12px 0 0;">
         <h1 style="color: white; margin: 0; font-size: 28px;">We'd Love Your Feedback!</h1>
-        <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0; font-size: 16px;">Help us improve future events</p>
+        <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0; font-size: 16px;">Help us improve future bookings</p>
       </div>
       <div style="background: #ffffff; padding: 40px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 12px 12px;">
         <p style="margin: 0 0 20px; color: #111827; font-size: 16px;">Hi {{name}},</p>
         <p style="margin: 0 0 25px; color: #374151; font-size: 16px;">
-          Thank you for attending <strong style="color: #4F46E5;">{{eventTitle}}</strong>! Your participation made the event special.
+          Thank you for attending <strong style="color: #4F46E5;">{{eventTitle}}</strong>! Your participation made the booking special.
         </p>
         <div style="background: #f9fafb; padding: 20px; border-radius: 10px; margin: 0 0 25px; border-left: 4px solid #8B5CF6;">
           <p style="margin: 0 0 12px; color: #111827; font-size: 15px;"><strong>📅 Date:</strong> <time datetime="{{eventDateISO}}">{{eventDate}}</time></p>

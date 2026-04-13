@@ -7,6 +7,8 @@ import { headers } from "next/headers"
 import { rateLimit } from "@/lib/rate-limit"
 import { createUserWithGeneratedCode } from "@/lib/user-code"
 import { logger } from "@/lib/logger"
+import { normalizePhone } from "@/lib/phone"
+import { normalizeMultilineText, normalizeText } from "@/lib/input-normalize"
 
 export async function registerGeriatricHome(formData: FormData) {
   // Rate Limiting
@@ -15,27 +17,27 @@ export async function registerGeriatricHome(formData: FormData) {
       return { error: "Too many registration attempts. Please try again later." }
   }
 
-  const name = (formData.get("name") as string)?.trim()
+  const name = normalizeText(formData.get("name"))
   const email = (formData.get("email") as string)?.trim().toLowerCase()
   const password = formData.get("password") as string
 
   // Home Details
-  const homeName = (formData.get("homeName") as string)?.trim()
-  const address = (formData.get("address") as string)?.trim()
+  const homeName = normalizeText(formData.get("homeName"))
+  const address = normalizeText(formData.get("address"))
   const residentCount = parseInt(formData.get("residentCount") as string) || 0
   const maxCapacity = parseInt(formData.get("maxCapacity") as string) || 0
-  const facilityType = (formData.get("facilityType") as string)?.trim() || null
-  const region = (formData.get("region") as string)?.trim() || null
-  const specialNeeds = (formData.get("specialNeeds") as string)?.trim() || null
-  const emergencyProtocol = (formData.get("emergencyProtocol") as string)?.trim() || null
-  const triggerWarnings = (formData.get("triggerWarnings") as string)?.trim() || null
-  const photoPermissions = (formData.get("photoPermissions") as string)?.trim() || null
+  const facilityType = normalizeText(formData.get("facilityType")) || null
+  const region = normalizeText(formData.get("region")) || null
+  const specialNeeds = normalizeMultilineText(formData.get("specialNeeds")) || null
+  const emergencyProtocol = normalizeMultilineText(formData.get("emergencyProtocol")) || null
+  const triggerWarnings = normalizeMultilineText(formData.get("triggerWarnings")) || null
+  const photoPermissions = normalizeText(formData.get("photoPermissions")) || null
 
   // Contact
-  const contactName = (formData.get("contactName") as string)?.trim()
-  const contactEmail = (formData.get("contactEmail") as string)?.trim()
-  const contactPhone = (formData.get("contactPhone") as string)?.trim()
-  const contactPosition = (formData.get("contactPosition") as string)?.trim()
+  const contactName = normalizeText(formData.get("contactName"))
+  const contactEmail = normalizeText(formData.get("contactEmail"))
+  const contactPhone = normalizePhone(formData.get("contactPhone"))
+  const contactPosition = normalizeText(formData.get("contactPosition"))
 
   // Validation
   if (!email || !password || !homeName || !address || !contactName || !contactEmail || !contactPhone || !contactPosition) {

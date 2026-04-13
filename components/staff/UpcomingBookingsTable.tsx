@@ -59,7 +59,7 @@ export function UpcomingBookingsTable({ bookings }: { bookings: Booking[] }) {
               <tr key={booking.id} className={STYLES.tableRow}>
                 <td className={STYLES.tableCell}>
                   <Link
-                    href={`/staff/events/${booking.id}`}
+                    href={`/staff/bookings/${booking.id}`}
                     className="text-primary-600 hover:text-primary-700 font-medium"
                   >
                     {booking.program}

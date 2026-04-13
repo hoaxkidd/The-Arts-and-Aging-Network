@@ -15,8 +15,8 @@ type HomeAdminUser = User & {
 
 function getDisplayHomeAdminName(user: HomeAdminUser): string {
   if (user.geriatricHome?.contactName?.trim()) return user.geriatricHome.contactName.trim()
-  const raw = (user.name || 'Unnamed Home Admin').trim()
-  return raw.replace(/\s+Home Admin$/i, '')
+  const raw = (user.name || 'Unnamed Program Coordinator').trim()
+  return raw.replace(/\s+Home Admin$/i, '').replace(/\s+Program Coordinator$/i, '')
 }
 
 export default function HomeAdminsTable({ users }: { users: HomeAdminUser[] }) {
@@ -109,7 +109,7 @@ export default function HomeAdminsTable({ users }: { users: HomeAdminUser[] }) {
       </div>
 
       <div className="text-sm text-gray-600">
-        Showing {filteredUsers.length} of {users.length} home admins
+        Showing {filteredUsers.length} of {users.length} program coordinators
       </div>
 
       <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
@@ -117,7 +117,7 @@ export default function HomeAdminsTable({ users }: { users: HomeAdminUser[] }) {
           <table className={STYLES.table}>
             <thead className="bg-gray-50">
               <tr className={STYLES.tableHeadRow}>
-                <th className={STYLES.tableHeader}>Home Admin</th>
+                <th className={STYLES.tableHeader}>Program Coordinator</th>
                 <th className={STYLES.tableHeader}>Facility</th>
                 <th className={STYLES.tableHeader}>Contact</th>
                 <th className={STYLES.tableHeader}>Status</th>
@@ -201,7 +201,7 @@ export default function HomeAdminsTable({ users }: { users: HomeAdminUser[] }) {
               {filteredUsers.length === 0 && (
                 <tr>
                   <td colSpan={6} className={cn(STYLES.tableCell, 'text-center py-12')}>
-                    No home admin accounts found matching your filters.
+                    No program coordinator accounts found matching your filters.
                   </td>
                 </tr>
               )}
@@ -228,7 +228,7 @@ export default function HomeAdminsTable({ users }: { users: HomeAdminUser[] }) {
             <div className="p-4 space-y-3">
               <div className="grid grid-cols-1 gap-2">
                 <div className="rounded-lg border border-gray-200 px-3 py-2">
-                  <p className="text-xs text-gray-500">Home Admin Name</p>
+                  <p className="text-xs text-gray-500">Program Coordinator Name</p>
                   <p className="text-sm font-medium text-gray-900">{getDisplayHomeAdminName(contactUser)}</p>
                 </div>
                 <div className="rounded-lg border border-gray-200 px-3 py-2">
