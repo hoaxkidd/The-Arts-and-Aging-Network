@@ -95,7 +95,7 @@ export function StaffEventList({ events }: { events: Event[] }) {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
               type="text"
-              placeholder="Search events..."
+              placeholder="Search bookings..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className={cn(STYLES.input, "pl-10 py-2")}
@@ -165,7 +165,7 @@ export function StaffEventList({ events }: { events: Event[] }) {
                       <div className="flex items-start justify-between gap-2">
                         <div>
                           <Link
-                            href={`/staff/events/${event.id}`}
+                            href={`/staff/bookings/${event.id}`}
                             className="font-semibold text-gray-900 hover:text-primary-600 text-sm"
                           >
                             {event.title}
@@ -211,7 +211,7 @@ export function StaffEventList({ events }: { events: Event[] }) {
                       {/* Actions */}
                       <div className="flex items-center gap-2 mt-2">
                         <Link
-                          href={`/staff/events/${event.id}`}
+                          href={`/staff/bookings/${event.id}`}
                           className="px-2.5 py-1 text-xs font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-md flex items-center gap-1"
                         >
                           View <ExternalLink className="w-2.5 h-2.5" />
@@ -261,11 +261,11 @@ export function StaffEventList({ events }: { events: Event[] }) {
           <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
             <Calendar className="w-6 h-6 text-gray-400" />
           </div>
-          <h3 className="text-sm font-medium text-gray-900 mb-1">No Events Found</h3>
+          <h3 className="text-sm font-medium text-gray-900 mb-1">No Bookings Found</h3>
           <p className="text-xs text-gray-500">
             {searchQuery || filterStatus !== 'ALL'
               ? "Try adjusting your search or filters."
-              : "There are no upcoming events available."}
+              : "There are no upcoming bookings available."}
           </p>
         </div>
       )}

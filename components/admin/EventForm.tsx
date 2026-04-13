@@ -2,7 +2,7 @@
 
 import { useRef, useState } from 'react'
 import Link from 'next/link'
-import { createEvent } from "@/app/actions/events"
+import { createEvent } from "@/app/actions/bookings"
 import { getFormTemplates } from "@/app/actions/form-templates"
 import { CheckCircle, AlertTriangle, Plus, Search, Calendar, Clock, FileText, ExternalLink, Pencil, ArrowLeft } from "lucide-react"
 import { STYLES } from "@/lib/styles"
@@ -28,7 +28,7 @@ export function EventForm({
   initialData,
   currentUser,
   formTemplates = [],
-  backHref = '/admin/events',
+  backHref = '/admin/bookings',
 }: {
   locations: any[]
   initialData?: any
@@ -123,12 +123,12 @@ export function EventForm({
 
     const conflictCount = typeof result?.conflictCount === 'number' ? result.conflictCount : 0
     if (!initialData?.id && result?.eventId) {
-      router.replace(`/admin/events?created=1&eventId=${encodeURIComponent(result.eventId)}&conflicts=${conflictCount}`)
+      router.replace(`/admin/bookings?created=1&eventId=${encodeURIComponent(result.eventId)}&conflicts=${conflictCount}`)
       return
     }
 
     if (initialData?.id) {
-      notify.success({ title: 'Event updated successfully' })
+      notify.success({ title: 'Booking updated successfully' })
     }
 
     setIsSubmitting(false)
@@ -138,18 +138,18 @@ export function EventForm({
   return (
     <div className={STYLES.card}>
       <Link href={backHref} className="inline-flex items-center gap-1 text-sm text-gray-600 hover:text-gray-900 mb-3">
-        <ArrowLeft className="w-4 h-4" /> Back to Events
+        <ArrowLeft className="w-4 h-4" /> Back to Bookings
       </Link>
       <div className="flex items-center gap-2 mb-6 text-primary-700">
         <Plus className="w-5 h-5" />
-        <h2 className="text-lg font-semibold">{initialData ? 'Edit Event' : 'Create New Event'}</h2>
+        <h2 className="text-lg font-semibold">{initialData ? 'Edit Booking' : 'Create New Booking'}</h2>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         {initialData?.id && <input type="hidden" name="id" value={initialData.id} />}
         
         <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-1">Event Title</label>
+          <label className="block text-sm font-semibold text-gray-700 mb-1">Booking Title</label>
           <input 
             name="title" 
             required 
@@ -313,7 +313,7 @@ export function EventForm({
             <option value={120}>2 hours before</option>
             <option value={180}>3 hours before</option>
             <option value={240}>4 hours before</option>
-            <option value={0}>Only at event start</option>
+            <option value={0}>Only at booking start</option>
           </select>
           <p className="text-xs text-gray-500 mt-1">
             When staff can start checking in to the event
@@ -435,7 +435,7 @@ export function EventForm({
                 name="organizerRole"
                 defaultValue={initialData?.organizerRole}
                 className={STYLES.input}
-                placeholder="e.g. Event Coordinator"
+                placeholder="e.g. Booking Coordinator"
               />
             </div>
           </div>
@@ -521,7 +521,7 @@ export function EventForm({
         </div>
 
         <button type="submit" disabled={isSubmitting} className={cn(STYLES.btn, STYLES.btnPrimary, "w-full")}>
-          {isSubmitting ? (initialData ? "Updating..." : "Publishing...") : (initialData ? "Update Event" : "Publish Event")}
+          {isSubmitting ? (initialData ? "Updating..." : "Publishing...") : (initialData ? "Update Booking" : "Publish Booking")}
         </button>
       </form>
 

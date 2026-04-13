@@ -56,10 +56,10 @@ export const adminNavGroups: AdminNavGroup[] = [
   },
   {
     id: "events",
-    label: "Events & Outreach",
+    label: "Bookings & Outreach",
     icon: Calendar,
     children: [
-      { label: "Event Management", href: "/admin/events", icon: Calendar },
+      { label: "Booking Management", href: "/admin/bookings", icon: Calendar },
       { label: "Broadcasts", href: "/admin/broadcasts", icon: Mail },
       { label: "Email Reminders", href: "/admin/email-reminders", icon: Mail },
     ],
@@ -162,8 +162,8 @@ export const adminMenu: MenuItem[] = adminNavGroups.flatMap((g) =>
 
 export const staffMenu = [
   { label: "Dashboard", href: "/staff", icon: LayoutDashboard },
-  { label: "Browse Events", href: "/staff/events", icon: Calendar },
-  { label: "My Schedule", href: "/staff/my-events", icon: CalendarCheck },
+  { label: "Browse Bookings", href: "/staff/bookings", icon: Calendar },
+  { label: "My Schedule", href: "/staff/my-bookings", icon: CalendarCheck },
   { label: "Team Directory", href: "/staff/directory", icon: Users },
   { label: "Inbox", href: "/staff/inbox", icon: Inbox },
   { label: "Form Templates", href: "/staff/forms", icon: FileText },
@@ -184,8 +184,8 @@ export const partnerMenu = withBasePath(staffMenu, '/staff', '/partner')
 
 export const volunteerMenu = [
   { label: "Dashboard", href: "/volunteer", icon: LayoutDashboard },
-  { label: "Browse Events", href: "/events", icon: Calendar },
-  { label: "My Schedule", href: "/volunteer/my-events", icon: CalendarCheck },
+  { label: "Browse Bookings", href: "/bookings", icon: Calendar },
+  { label: "My Schedule", href: "/volunteer/my-bookings", icon: CalendarCheck },
   { label: "Inbox", href: "/volunteer/inbox", icon: Inbox },
   { label: "Forms", href: "/volunteer/forms", icon: FileText },
   { label: "My Profile", href: "/volunteer/profile", icon: UserCircle },
@@ -194,7 +194,7 @@ export const volunteerMenu = [
 
 export const boardMenu = [
   { label: "Dashboard", href: "/board", icon: LayoutDashboard },
-  { label: "Events Calendar", href: "/board/events", icon: CalendarCheck },
+  { label: "Bookings Calendar", href: "/board/bookings", icon: CalendarCheck },
   { label: "Team Directory", href: "/board/directory", icon: Users },
   { label: "Inbox", href: "/board/inbox", icon: Inbox },
   { label: "My Profile", href: "/board/profile", icon: UserCircle },
@@ -204,12 +204,12 @@ export const boardMenu = [
 export const homeAdminMenu = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { label: "Calendar", href: "/dashboard/calendar", icon: Calendar },
-  { label: "Events", href: "/dashboard/events", icon: Calendar },
+  { label: "Bookings", href: "/dashboard/bookings", icon: Calendar },
   { label: "Engagement", href: "/dashboard/engagement", icon: MessageSquare },
   { label: "Inbox", href: "/staff/inbox", icon: Inbox },
   { label: "My Requests", href: "/dashboard/requests", icon: ClipboardList },
   { label: "Forms", href: "/dashboard/forms", icon: FileText },
-  { label: "My Events", href: "/dashboard/my-events", icon: CheckCircle },
+  { label: "My Bookings", href: "/dashboard/my-bookings", icon: CheckCircle },
   { label: "History", href: "/dashboard/history", icon: Clock },
   { label: "Contacts", href: "/dashboard/contacts", icon: Users },
   { label: "My Profile", href: "/dashboard/profile", icon: UserCircle },
@@ -220,7 +220,7 @@ export const MENU_ITEMS: Record<string, MenuItem[]> = {
   ADMIN: adminMenu,
   PAYROLL: [
     { label: "Dashboard", href: "/payroll", icon: LayoutDashboard },
-    { label: "Events", href: "/events", icon: Calendar },
+    { label: "Bookings", href: "/bookings", icon: Calendar },
     { label: "Schedule", href: "/payroll/schedule", icon: CalendarCheck },
     { label: "Team Directory", href: "/staff/directory", icon: Users },
     { label: "Inbox", href: "/staff/inbox", icon: Inbox },

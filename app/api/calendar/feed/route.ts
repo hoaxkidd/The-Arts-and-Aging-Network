@@ -95,7 +95,7 @@ export async function GET(request: Request): Promise<Response> {
     startDateTime: toSafeDate(event.startDateTime),
     endDateTime: toSafeDate(event.endDateTime),
     location: event.location?.name || event.location?.address || undefined,
-    url: appUrl ? `${appUrl}/events/${event.id}` : undefined,
+    url: appUrl ? `${appUrl}/bookings/${event.id}` : undefined,
   }))
 
   const ics = generateICSFeedFile(events)

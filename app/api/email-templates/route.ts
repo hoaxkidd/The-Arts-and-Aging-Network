@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 import { getDefaultTemplate } from '@/lib/email/templates/defaults'
-import { sendEmail, isMailchimpConfigured } from '@/lib/email/service'
 import { EmailTemplateType } from '@/lib/email/types'
 import { logger } from '@/lib/logger'
 
@@ -39,6 +38,9 @@ export async function GET() {
           subject: dbTemplate.subject,
           content: dbTemplate.content,
           isActive: dbTemplate.isActive,
+          styleMode: dbTemplate.styleMode,
+          customStyleJson: dbTemplate.customStyleJson,
+          hasCustomStyle: Boolean(dbTemplate.customStyleJson),
           isDefault: false,
           createdAt: dbTemplate.createdAt,
           updatedAt: dbTemplate.updatedAt
@@ -52,6 +54,9 @@ export async function GET() {
         subject: defaultTemplate?.subject || '',
         content: defaultTemplate?.content || '',
         isActive: true,
+        styleMode: 'UNIVERSAL',
+        customStyleJson: null,
+        hasCustomStyle: false,
         isDefault: true,
         createdAt: new Date(),
         updatedAt: new Date()
@@ -93,7 +98,8 @@ export async function POST(request: NextRequest) {
         name,
         subject,
         content,
-        isActive: isActive ?? true
+        isActive: isActive ?? true,
+        styleMode: 'UNIVERSAL'
       }
     })
 

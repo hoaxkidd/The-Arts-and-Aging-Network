@@ -2,6 +2,8 @@ import { prisma } from '@/lib/prisma'
 import { EmailTemplateType, EmailSendParams, EmailFrequency } from './types'
 import { getDefaultTemplate } from './templates/defaults'
 import { logger } from '@/lib/logger'
+import { DEFAULT_EMAIL_STYLE_PRESET, type EmailStyleMode } from './types'
+import { parseStylePresetJson, renderStyledEmailContent } from './style-preset'
 
 const MAILCHIMP_TRANSACTIONAL_API_KEY = process.env.MAILCHIMP_TRANSACTIONAL_API_KEY
 const MAILCHIMP_FROM_EMAIL = process.env.MAILCHIMP_FROM_EMAIL || 'noreply@artsandaging.com'
@@ -143,22 +145,49 @@ export async function sendEmail(params: EmailSendParams): Promise<SendEmailResul
   })
 
   // If no database template or template is inactive, try to use default
-  let subject = customSubject || ''
-  let htmlContent = ''
+  let rawSubject = customSubject || ''
+  let rawContent = ''
+  let styleMode: EmailStyleMode = 'UNIVERSAL'
+  let customStyleJson: string | null = null
 
   if (dbTemplate && dbTemplate.isActive) {
-    subject = replaceVariables(dbTemplate.subject, fullVariables)
-    htmlContent = replaceVariables(dbTemplate.content, fullVariables)
+    rawSubject = customSubject || dbTemplate.subject
+    rawContent = dbTemplate.content
+    styleMode = (dbTemplate.styleMode as EmailStyleMode) || 'UNIVERSAL'
+    customStyleJson = dbTemplate.customStyleJson
   } else {
     // Use default template
     const defaultTemplate = getDefaultTemplate(templateType)
     if (defaultTemplate) {
-      subject = customSubject || replaceVariables(defaultTemplate.subject, fullVariables)
-      htmlContent = replaceVariables(defaultTemplate.content, fullVariables)
+      rawSubject = customSubject || defaultTemplate.subject
+      rawContent = defaultTemplate.content
     } else {
       return { success: false, error: `No template found for type: ${templateType}` }
     }
   }
+
+  let resolvedStyle = DEFAULT_EMAIL_STYLE_PRESET
+
+  if (styleMode === 'CUSTOM' && customStyleJson) {
+    resolvedStyle = parseStylePresetJson(customStyleJson)
+  } else {
+    const emailStylePresetModel = (prisma as any).emailStylePreset as
+      | { findFirst: (args: { orderBy: { updatedAt: 'desc' } }) => Promise<{ styleJson: string } | null> }
+      | undefined
+
+    if (emailStylePresetModel) {
+      const universalPreset = await emailStylePresetModel.findFirst({
+        orderBy: { updatedAt: 'desc' },
+      })
+      resolvedStyle = parseStylePresetJson(universalPreset?.styleJson)
+    }
+  }
+
+  const subject = replaceVariables(rawSubject, fullVariables)
+  const htmlContent = replaceVariables(
+    renderStyledEmailContent(rawContent, resolvedStyle),
+    fullVariables
+  )
 
   // Send email
   return sendViaMailchimpTransactional(to, subject, htmlContent)
@@ -188,11 +217,12 @@ export function getEmailVariables(): Record<string, { key: string; description: 
     appUrl: { key: '{{appUrl}}', description: 'Application URL', example: APP_URL },
     supportEmail: { key: '{{supportEmail}}', description: 'Support email', example: SUPPORT_EMAIL },
     inviteUrl: { key: '{{inviteUrl}}', description: 'Invitation link', example: `${APP_URL}/invite/abc123` },
-    eventTitle: { key: '{{eventTitle}}', description: 'Event title', example: 'Art Therapy Session' },
-    eventDate: { key: '{{eventDate}}', description: 'Event date', example: 'January 15, 2024' },
-    eventTime: { key: '{{eventTime}}', description: 'Event time', example: '2:00 PM' },
-    eventLocation: { key: '{{eventLocation}}', description: 'Event location', example: 'Sunrise Care Home' },
-    eventLink: { key: '{{eventLink}}', description: 'Event details link', example: `${APP_URL}/events/123` },
+    // Keep legacy event* placeholder keys for compatibility with existing templates.
+    eventTitle: { key: '{{eventTitle}}', description: 'Booking title', example: 'Art Therapy Session' },
+    eventDate: { key: '{{eventDate}}', description: 'Booking date', example: 'January 15, 2024' },
+    eventTime: { key: '{{eventTime}}', description: 'Booking time', example: '2:00 PM' },
+    eventLocation: { key: '{{eventLocation}}', description: 'Booking location', example: 'Sunrise Care Home' },
+    eventLink: { key: '{{eventLink}}', description: 'Booking details link', example: `${APP_URL}/bookings/123` },
     message: { key: '{{message}}', description: 'Custom message', example: 'Thank you for signing up!' },
     role: { key: '{{role}}', description: 'User role', example: 'Staff' },
     expenseAmount: { key: '{{expenseAmount}}', description: 'Expense amount', example: '$50.00' },

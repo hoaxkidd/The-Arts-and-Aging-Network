@@ -8,6 +8,32 @@ const authMiddleware = auth
 export default authMiddleware((req: NextRequest & { auth: unknown }) => {
   const isLoggedIn = !!req.auth
   const { pathname } = req.nextUrl
+
+  // Permanent backward-compatibility redirects for legacy Event-era URLs.
+  // Keep these mappings to avoid breaking older links and integrations.
+  const legacyRedirects: Array<[string, string]> = [
+    ['/admin/events', '/admin/bookings'],
+    ['/dashboard/events', '/dashboard/bookings'],
+    ['/staff/events', '/staff/bookings'],
+    ['/facilitator/events', '/facilitator/bookings'],
+    ['/board/events', '/board/bookings'],
+    ['/partner/events', '/partner/bookings'],
+    ['/dashboard/my-events', '/dashboard/my-bookings'],
+    ['/staff/my-events', '/staff/my-bookings'],
+    ['/facilitator/my-events', '/facilitator/my-bookings'],
+    ['/partner/my-events', '/partner/my-bookings'],
+    ['/volunteer/my-events', '/volunteer/my-bookings'],
+    ['/admin/event-requests', '/admin/booking-requests'],
+    ['/events', '/bookings'],
+  ]
+
+  for (const [legacyPrefix, canonicalPrefix] of legacyRedirects) {
+    if (pathname === legacyPrefix || pathname.startsWith(`${legacyPrefix}/`)) {
+      const nextUrl = req.nextUrl.clone()
+      nextUrl.pathname = pathname.replace(legacyPrefix, canonicalPrefix)
+      return NextResponse.redirect(nextUrl, 308)
+    }
+  }
   const user = req.auth as { user?: { role?: string; roles?: string[]; primaryRole?: string; onboardingCompletedAt?: string; onboardingSkipCount?: number; volunteerReviewStatus?: string } } | undefined
   const userRole = user?.user?.role
   const userRoles = Array.isArray(user?.user?.roles) && user?.user?.roles.length > 0
@@ -171,7 +197,7 @@ export default authMiddleware((req: NextRequest & { auth: unknown }) => {
   }
 
   // Protect events routes - all authenticated users can view
-  if (pathname.startsWith('/events')) {
+  if (pathname.startsWith('/bookings')) {
     if (!isLoggedIn) return NextResponse.redirect(new URL('/login', req.nextUrl))
     return NextResponse.next({
       request: {
@@ -292,7 +318,20 @@ export const config = {
     '/board/:path*',
     '/partner/:path*',
     '/volunteer/:path*',
+    '/bookings/:path*',
     '/events/:path*',
+    '/admin/events/:path*',
+    '/dashboard/events/:path*',
+    '/staff/events/:path*',
+    '/facilitator/events/:path*',
+    '/board/events/:path*',
+    '/partner/events/:path*',
+    '/admin/event-requests/:path*',
+    '/dashboard/my-events/:path*',
+    '/staff/my-events/:path*',
+    '/facilitator/my-events/:path*',
+    '/partner/my-events/:path*',
+    '/volunteer/my-events/:path*',
     '/notifications/:path*',
   ],
 }

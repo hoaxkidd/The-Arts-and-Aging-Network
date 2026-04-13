@@ -1,13 +1,13 @@
 # Arts & Aging Admin Panel
 
-A comprehensive volunteer management system for coordinating events, payroll, and geriatric home administration.
+A comprehensive volunteer management system for coordinating bookings, payroll, and geriatric home administration.
 
 ## Overview
 
 This application provides role-based portals for managing:
-- **Event Management** - Create, schedule, and track volunteer events
+- **Booking Management** - Create, schedule, and track volunteer bookings
 - **Payroll Tracking** - Time entries, expense requests, and approvals
-- **Geriatric Home Management** - Self-registration and event coordination for care facilities
+- **Geriatric Home Management** - Self-registration and booking coordination for care facilities
 - **User Administration** - Invitations, role assignments, and audit logging
 
 ## Tech Stack
@@ -65,11 +65,11 @@ NEXTAUTH_URL="http://localhost:3000"
 |------|----------------|-------------|
 | `ADMIN` | `/admin/*` | Full system access, user management, approvals |
 | `PAYROLL` | `/payroll/*` | Time tracking, mileage, forms, requests |
-| `HOME_ADMIN` | `/dashboard/*` | Geriatric home management, event requests, forms |
-| `FACILITATOR` | `/staff/*` (+ shared `/events`) | Staff inbox, events, directory, forms, profile |
-| `BOARD` | `/staff/*` (+ shared `/events`) | Board member staff shell |
-| `PARTNER` | `/staff/*` (+ shared `/events`) | Partner staff shell |
-| `VOLUNTEER` | `/volunteer/*` (+ `/staff/inbox`, `/staff/groups`, `/events`) | Volunteer portal; messaging subsets per middleware |
+| `HOME_ADMIN` | `/dashboard/*` | Geriatric home management, booking requests, forms |
+| `FACILITATOR` | `/staff/*` (+ shared `/bookings`) | Staff inbox, bookings, directory, forms, profile |
+| `BOARD` | `/staff/*` (+ shared `/bookings`) | Board member staff shell |
+| `PARTNER` | `/staff/*` (+ shared `/bookings`) | Partner staff shell |
+| `VOLUNTEER` | `/volunteer/*` (+ `/staff/inbox`, `/staff/groups`, `/bookings`) | Volunteer portal; messaging subsets per middleware |
 
 See [lib/roles.ts](lib/roles.ts) and [middleware.ts](middleware.ts) for the source of truth.
 
@@ -83,7 +83,7 @@ See [lib/roles.ts](lib/roles.ts) and [middleware.ts](middleware.ts) for the sour
   /admin               # Admin portal (ADMIN only)
   /payroll             # Payroll portal (PAYROLL only)
   /dashboard           # Home admin portal (HOME_ADMIN only)
-  /events              # Event pages (all authenticated users)
+  /bookings              # Booking pages (all authenticated users)
   /invite/[token]      # Invitation acceptance
   /register/home       # Geriatric home self-registration
   /volunteer           # Volunteer portal (VOLUNTEER role)
@@ -94,7 +94,7 @@ See [lib/roles.ts](lib/roles.ts) and [middleware.ts](middleware.ts) for the sour
 /components
   /admin               # Admin-specific components
   /dashboard           # Home admin components
-  /events              # Event-related components
+  /bookings              # Booking-related components
   /notifications       # Notification UI
   /payroll             # Payroll components
   /ui                  # Base UI components
@@ -124,8 +124,8 @@ See [lib/roles.ts](lib/roles.ts) and [middleware.ts](middleware.ts) for the sour
 - Role-based route protection via middleware
 - Rate limiting on login (5 attempts per minute)
 
-### Event Management
-- Create/edit/delete events with location management
+### Booking Management
+- Create/edit/delete bookings with location management
 - RSVP system (Yes/No/Maybe) with capacity limits
 - Day-of check-in functionality
 - Photo uploads and comments
@@ -145,7 +145,7 @@ See [lib/roles.ts](lib/roles.ts) and [middleware.ts](middleware.ts) for the sour
 
 ### Geriatric Home Management
 - Self-registration for facility administrators
-- Event calendar specific to facility
+- Booking calendar specific to facility
 - Staff contact directory
 
 ## Architecture and server actions
@@ -157,13 +157,13 @@ Business logic is implemented primarily as **Server Actions** in [`app/actions/`
 | File | Examples |
 |------|----------|
 | `auth.ts` | Authentication helpers |
-| `events.ts` | Event CRUD and workflows |
+| `bookings.ts` | Booking CRUD and workflows |
 | `attendance.ts` | RSVP, check-in |
 | `invitation.ts` | Invites and acceptance |
 | `payroll.ts` | Payroll submissions |
 | `user.ts` / `user-management.ts` | Profile and admin user updates |
 | `home-registration.ts` | Geriatric home registration |
-| `event-requests.ts` | Home admin event requests |
+| `booking-requests.ts` | Home admin booking requests |
 
 See the architecture doc for the complete categorized list.
 
@@ -172,8 +172,8 @@ See the architecture doc for the complete categorized list.
 See [prisma/schema.prisma](prisma/schema.prisma) for the complete schema. Key models:
 
 - **User** - Authentication and profile data
-- **Event** - Event scheduling and details
-- **Location** - Event venues
+- **Event** - Booking scheduling and details (legacy internal model name)
+- **Location** - Booking venues
 - **EventAttendance** - RSVP and check-in tracking
 - **TimeEntry** - Payroll time submissions
 - **ExpenseRequest** - Expense/leave requests

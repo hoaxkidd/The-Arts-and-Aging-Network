@@ -214,7 +214,7 @@ export function HomeProfileForm({ home }: { home: HomeData }) {
                         />
                         <span className="text-sm font-medium text-gray-700">Send operational notifications to a different email</span>
                     </label>
-                    <p className="text-xs text-gray-500 mt-1">Event and request notifications default to the primary contact email unless overridden here.</p>
+                    <p className="text-xs text-gray-500 mt-1">Booking and request notifications default to the primary contact email unless overridden here.</p>
                     {useCustomNotificationEmail && (
                         <div className="mt-3">
                             <label className="block text-xs font-medium text-gray-600 mb-1">Notification Email</label>

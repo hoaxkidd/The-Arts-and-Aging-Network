@@ -34,7 +34,7 @@ export function AuditLogDetailsCell({ details, children }: AuditLogDetailsCellPr
     if (name) return name
     if (title) return title
     if (email) return email
-    if (eventId) return 'Event action'
+    if (eventId) return 'Booking action'
     
     return '-'
   }

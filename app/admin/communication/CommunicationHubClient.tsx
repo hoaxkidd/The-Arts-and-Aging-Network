@@ -9,6 +9,8 @@ import { cn } from "@/lib/utils"
 import Link from "next/link"
 import { STYLES } from "@/lib/styles"
 import { approveGroupAccess, denyGroupAccess } from "@/app/actions/messaging"
+import { notify } from "@/lib/notify"
+import { InlineStatStrip } from "@/components/ui/InlineStatStrip"
 
 // Import or recreate list components
 // For brevity, we will inline simple versions or reuse existing logic patterns
@@ -137,16 +139,24 @@ function GroupRequestsList({ requests }: { requests: GroupRequest[] }) {
     async function handleApprove(groupId: string, userId: string, requestId: string) {
         setProcessing(requestId)
         const result = await approveGroupAccess(groupId, userId)
-        if (result.error) alert(result.error)
-        else router.refresh()
+        if (result.error) {
+            notify.error({ title: 'Approval failed', description: result.error })
+        } else {
+            notify.success({ title: 'Request approved' })
+            router.refresh()
+        }
         setProcessing(null)
     }
 
     async function handleDeny(groupId: string, userId: string, requestId: string) {
         setProcessing(requestId)
         const result = await denyGroupAccess(groupId, userId)
-        if (result.error) alert(result.error)
-        else router.refresh()
+        if (result.error) {
+            notify.error({ title: 'Deny failed', description: result.error })
+        } else {
+            notify.success({ title: 'Request denied' })
+            router.refresh()
+        }
         setProcessing(null)
     }
 
@@ -274,10 +284,14 @@ function InvitationsList({ invitations }: { invitations: Invitation[] }) {
                     <div key={inv.id} className="bg-white rounded-lg border border-gray-200 p-4">
                         <div className="flex justify-between items-start gap-2 mb-2">
                             <p className="text-sm font-medium text-gray-900 truncate">{inv.email}</p>
-                            <span className={cn("shrink-0 text-xs font-medium",
-                                inv.status === 'ACCEPTED' ? "text-green-700" :
-                                inv.status === 'PENDING' ? "text-yellow-700" :
-                                "text-red-700"
+                            <span className={cn(
+                                STYLES.badge,
+                                inv.status === 'ACCEPTED'
+                                  ? STYLES.badgeSuccess
+                                  : inv.status === 'PENDING'
+                                    ? STYLES.badgeWarning
+                                    : STYLES.badgeDanger,
+                                "shrink-0"
                             )}>
                                 {inv.status}
                             </span>
@@ -316,10 +330,13 @@ function InvitationsList({ invitations }: { invitations: Invitation[] }) {
                                             <td className={STYLES.tableCell}>{inv.email}</td>
                                             <td className={STYLES.tableCell}>{inv.role}</td>
                                             <td className={STYLES.tableCell}>
-                                                <span className={cn("text-xs font-medium",
-                                                    inv.status === 'ACCEPTED' ? "text-green-700" :
-                                                    inv.status === 'PENDING' ? "text-yellow-700" :
-                                                    "text-red-700"
+                                                <span className={cn(
+                                                    STYLES.badge,
+                                                    inv.status === 'ACCEPTED'
+                                                      ? STYLES.badgeSuccess
+                                                      : inv.status === 'PENDING'
+                                                        ? STYLES.badgeWarning
+                                                        : STYLES.badgeDanger
                                                 )}>
                                                     {inv.status}
                                                 </span>
@@ -349,6 +366,8 @@ export function CommunicationHubClient({ groups, pendingGroupRequests, pendingCo
     const [activeTab, setActiveTab] = useState('messages') // Default to messages for better UX
 
     const totalRequests = pendingGroupRequests.length + pendingConversationRequests.length
+    const activeInvites = invitations.filter((invite) => invite.status === 'PENDING').length
+    const totalMembers = groups.reduce((sum, group) => sum + (group?._count?.members || 0), 0)
 
     const tabs = [
         { 
@@ -381,7 +400,16 @@ export function CommunicationHubClient({ groups, pendingGroupRequests, pendingCo
     ]
 
     return (
-        <div className="h-full min-h-0 flex flex-col w-full max-w-full min-w-0 overflow-x-hidden">
+        <div className={cn(STYLES.pageTemplateRoot, "h-full min-h-0 flex flex-col w-full max-w-full min-w-0 overflow-x-hidden") }>
+            <InlineStatStrip
+                items={[
+                    { label: 'Message groups', value: groups.length },
+                    { label: 'Group members', value: totalMembers, tone: 'info' },
+                    { label: 'Access requests', value: totalRequests, tone: totalRequests > 0 ? 'warning' : 'default' },
+                    { label: 'Pending invites', value: activeInvites, tone: activeInvites > 0 ? 'warning' : 'success' },
+                ]}
+            />
+
             <TabNavigation
                 tabs={tabs}
                 activeTab={activeTab}

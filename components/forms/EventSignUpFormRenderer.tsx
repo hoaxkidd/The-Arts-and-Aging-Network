@@ -72,7 +72,7 @@ export function EventSignUpFormRenderer({ template, eventTitle, onSubmit }: Prop
       values={values}
       onFieldChange={setValue}
       errors={errors}
-      submitLabel="Submit and request event"
+      submitLabel="Submit and request booking"
       onSubmit={handleSubmit}
       submitting={submitting}
     />

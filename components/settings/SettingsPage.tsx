@@ -168,7 +168,7 @@ export function SettingsPage({
       if (typeof name === 'string') return name
       if (typeof title === 'string') return title
       if (typeof email === 'string') return email
-      if (typeof eventId === 'string') return 'Event action'
+      if (typeof eventId === 'string') return 'Booking action'
       return '-'
     } catch {
       return details.length > 50 ? details.slice(0, 50) + '...' : details
@@ -328,7 +328,7 @@ export function SettingsPage({
                     <table className={STYLES.table}>
                       <thead className="bg-gray-50">
                         <tr className={STYLES.tableHeadRow}>
-                          <th className={STYLES.tableHeader}>Event</th>
+                          <th className={STYLES.tableHeader}>Booking</th>
                           <th className={STYLES.tableHeader}>Recipient</th>
                           <th className={STYLES.tableHeader}>Type</th>
                           <th className={STYLES.tableHeader}>Timing</th>

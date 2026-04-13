@@ -4,7 +4,7 @@ import { NextRequest } from 'next/server'
 import { logger } from '@/lib/logger'
 
 /**
- * Server-Sent Events (SSE) stream for real-time notifications.
+ * Server-Sent Bookings (SSE) stream for real-time notifications.
  * Client connects and receives notification updates every 2 seconds
  * without needing to refresh or poll manually.
  */

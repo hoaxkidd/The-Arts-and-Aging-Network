@@ -126,7 +126,7 @@ export function NotificationPreferences({ initialPreferences }: { initialPrefere
               </button>
             </div>
             <p className="text-xs text-gray-500 mt-1">
-              Event invitations and updates
+              Booking invitations and updates
             </p>
           </div>
         </div>

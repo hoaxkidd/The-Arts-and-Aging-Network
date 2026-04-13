@@ -24,7 +24,7 @@ export default async function StaffProfilePage({
     return <div className="text-red-600">{result.error}</div>
   }
 
-  const { staff, upcomingEvents, phoneRequestStatus } = result
+  const { staff, upcomingBookings, phoneRequestStatus } = result
   const canonicalIdentifier = staff.userCode || staff.id
   if (id !== canonicalIdentifier) {
     redirect(`/staff/directory/${canonicalIdentifier}`)
@@ -36,7 +36,7 @@ export default async function StaffProfilePage({
       <div className="flex-1 min-h-0 pt-4">
         <StaffPublicProfile
           staff={staff}
-          upcomingEvents={upcomingEvents}
+          upcomingBookings={upcomingBookings}
           phoneRequestStatus={phoneRequestStatus}
           currentUserId={session.user.id}
         />

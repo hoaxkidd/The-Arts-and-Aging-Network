@@ -85,7 +85,7 @@ export async function scheduleEventReminders(eventId: string) {
     })
 
     if (!event || event.status !== 'PUBLISHED') {
-      return { error: "Event not found or not published" }
+      return { error: "Booking not found or not published" }
     }
 
     const eventDate = new Date(event.startDateTime)
@@ -814,7 +814,7 @@ function generateReminderEmail(data: ReminderData) {
 
   const subject = isHomeAdmin
     ? `Reminder: ${event.title} - ${daysUntil} ${daysUntil === 1 ? 'day' : 'days'} away`
-    : `Event Reminder: ${event.title} - ${daysUntil} ${daysUntil === 1 ? 'day' : 'days'} away`
+    : `Booking Reminder: ${event.title} - ${daysUntil} ${daysUntil === 1 ? 'day' : 'days'} away`
 
   const calendarLinks = generateCalendarLinks({
     title: event.title,
@@ -822,7 +822,7 @@ function generateReminderEmail(data: ReminderData) {
     startDateTime,
     endDateTime,
     location: event.location?.address,
-    url: `${APP_URL}/events/${event.id}`
+    url: `${APP_URL}/bookings/${event.id}`
   })
   const calendarSection = getCalendarSectionHtml(calendarLinks)
 
@@ -834,7 +834,7 @@ function generateReminderEmail(data: ReminderData) {
   const reminderText = event.reminderMessage 
     ? event.reminderMessage 
     : (isHomeAdmin 
-      ? `This is a friendly reminder that your event is coming up in ${daysUntil} ${daysUntil === 1 ? 'day' : 'days'}!`
+      ? `This is a friendly reminder that your booking is coming up in ${daysUntil} ${daysUntil === 1 ? 'day' : 'days'}!`
       : `Don't forget! You're scheduled to facilitate an event in ${daysUntil} ${daysUntil === 1 ? 'day' : 'days'}.`)
 
   const html = `<!DOCTYPE html>
@@ -842,11 +842,11 @@ function generateReminderEmail(data: ReminderData) {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Event Reminder</title>
+  <title>Booking Reminder</title>
 </head>
 <body style="font-family: Arial, Helvetica, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9fafb;">
   <div style="background: linear-gradient(135deg, #F59E0B 0%, #EF4444 100%); padding: 30px; text-align: center; border-radius: 12px 12px 0 0;">
-    <h1 style="color: white; margin: 0; font-size: 28px;">&#128336; Event Reminder</h1>
+    <h1 style="color: white; margin: 0; font-size: 28px;">&#128336; Booking Reminder</h1>
   </div>
   
   <div style="background: #ffffff; padding: 35px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 12px 12px;">
@@ -880,8 +880,8 @@ function generateReminderEmail(data: ReminderData) {
     `}
     
     <div style="text-align: center; margin: 0 0 30px;">
-      <a href="${APP_URL}/events/${event.id}" style="display: inline-block; background: #4F46E5; color: white; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: 600; font-size: 15px; font-family: Arial, sans-serif;">
-        View Event Details
+      <a href="${APP_URL}/bookings/${event.id}" style="display: inline-block; background: #4F46E5; color: white; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: 600; font-size: 15px; font-family: Arial, sans-serif;">
+        View Booking Details
       </a>
     </div>
     

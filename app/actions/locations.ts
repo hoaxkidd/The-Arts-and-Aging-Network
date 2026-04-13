@@ -58,9 +58,9 @@ export async function createLocation(data: {
       }
     })
 
-    revalidatePath('/admin/events')
-    revalidatePath('/admin/events/new')
-    revalidatePath('/admin/events/[id]/edit')
+    revalidatePath('/admin/bookings')
+    revalidatePath('/admin/bookings/new')
+    revalidatePath('/admin/bookings/[id]/edit')
     
     return { success: true, data: location }
   } catch (error) {
@@ -98,9 +98,9 @@ export async function updateLocation(id: string, data: {
       }
     })
 
-    revalidatePath('/admin/events')
-    revalidatePath('/admin/events/new')
-    revalidatePath('/admin/events/[id]/edit')
+    revalidatePath('/admin/bookings')
+    revalidatePath('/admin/bookings/new')
+    revalidatePath('/admin/bookings/[id]/edit')
     
     return { success: true, data: location }
   } catch (error) {
@@ -123,7 +123,7 @@ export async function deleteLocation(id: string) {
     if (eventsUsingLocation > 0) {
       return { 
         success: false, 
-        error: `Cannot delete location: it is being used by ${eventsUsingLocation} event(s). Please update or remove those events first.` 
+        error: `Cannot delete location: it is being used by ${eventsUsingLocation} booking(s). Please update or remove those bookings first.`
       }
     }
 
@@ -131,9 +131,9 @@ export async function deleteLocation(id: string) {
       where: { id }
     })
 
-    revalidatePath('/admin/events')
-    revalidatePath('/admin/events/new')
-    revalidatePath('/admin/events/[id]/edit')
+    revalidatePath('/admin/bookings')
+    revalidatePath('/admin/bookings/new')
+    revalidatePath('/admin/bookings/[id]/edit')
     
     return { success: true }
   } catch (error) {

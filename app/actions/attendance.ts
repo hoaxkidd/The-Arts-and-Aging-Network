@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma"
 import { auth } from "@/auth"
 import { revalidatePath } from "next/cache"
 import { notifyAdminsAboutRSVP, notifyAdminsAboutCheckIn } from "@/lib/notifications"
-import { checkInNotOpenMessage, getCheckInWindowStart } from "@/lib/event-checkin"
+import { checkInNotOpenMessage, getCheckInWindowStart } from "@/lib/booking-checkin"
 import { sendEmailWithRetry } from "@/lib/email/service"
 import { generateCalendarLinks, formatEventTime } from "@/lib/email/calendar"
 import { logger } from "@/lib/logger"
@@ -97,7 +97,7 @@ export async function checkInToEvent(eventId: string) {
         },
     })
     
-    if (!event) return { error: 'Event not found' }
+    if (!event) return { error: 'Booking not found' }
 
     // Validation: Ensure check-in is within allowed window
     const now = new Date()
@@ -151,7 +151,7 @@ export async function checkInToEvent(eventId: string) {
       logger.email('Failed to send check-in notification', notifyError)
     }
 
-    revalidatePath(`/events/${eventId}`)
+    revalidatePath(`/bookings/${eventId}`)
     return { success: true }
   } catch (_e) {
     return { error: 'Failed to check in' }
@@ -173,7 +173,7 @@ export async function rsvpToEvent(eventId: string, status: 'YES' | 'NO' | 'MAYBE
         })
 
         if (!event) {
-          throw new Error('Event not found')
+          throw new Error('Booking not found')
         }
 
         // Check if user already has a YES status (don't count them twice)
@@ -186,7 +186,7 @@ export async function rsvpToEvent(eventId: string, status: 'YES' | 'NO' | 'MAYBE
 
         // Only check capacity if user isn't already marked as YES
         if (!isAlreadyYes && currentYesCount >= event.maxAttendees) {
-          throw new Error('Event is full')
+          throw new Error('Booking is full')
         }
       }
 
@@ -202,7 +202,7 @@ export async function rsvpToEvent(eventId: string, status: 'YES' | 'NO' | 'MAYBE
         }
       })
 
-      // Get event details for notification and email
+      // Get booking details for notification and email
       const event = await tx.event.findUnique({
         where: { id: eventId },
         include: { location: true }
@@ -213,7 +213,7 @@ export async function rsvpToEvent(eventId: string, status: 'YES' | 'NO' | 'MAYBE
         eventStartDateTime: event?.startDateTime,
         eventEndDateTime: event?.endDateTime,
         eventLocation: event?.location?.name || event?.location?.address,
-        eventLink: event ? `/events/${eventId}` : null
+        eventLink: event ? `/bookings/${eventId}` : null
       }
     })
 
@@ -255,7 +255,7 @@ export async function rsvpToEvent(eventId: string, status: 'YES' | 'NO' | 'MAYBE
         eventDate,
         eventTime,
         eventLocation: result.eventLocation || 'TBD',
-        eventLink: result.eventLink || `/events/${eventId}`
+        eventLink: result.eventLink || `/bookings/${eventId}`
       }
 
       // Add calendar links for confirmations
@@ -265,7 +265,7 @@ export async function rsvpToEvent(eventId: string, status: 'YES' | 'NO' | 'MAYBE
           startDateTime: new Date(result.eventStartDateTime),
           endDateTime: new Date(result.eventEndDateTime),
           location: result.eventLocation,
-          url: `${process.env.NEXTAUTH_URL || ''}${result.eventLink || `/events/${eventId}`}`
+          url: `${process.env.NEXTAUTH_URL || ''}${result.eventLink || `/bookings/${eventId}`}`
         })
         emailVariables.calendarLink = calendarLinks.webcal
         emailVariables.googleCalendarLink = calendarLinks.google
@@ -278,8 +278,8 @@ export async function rsvpToEvent(eventId: string, status: 'YES' | 'NO' | 'MAYBE
       }, { userId: session.user.id })
     }
 
-    revalidatePath('/events')
-    revalidatePath(`/events/${eventId}`)
+    revalidatePath('/bookings')
+    revalidatePath(`/bookings/${eventId}`)
     return { success: true }
   } catch (e) {
     const errorMessage = e instanceof Error ? e.message : 'Failed to RSVP'

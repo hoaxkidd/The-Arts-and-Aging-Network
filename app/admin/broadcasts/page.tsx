@@ -13,6 +13,8 @@ import {
 import { STYLES } from '@/lib/styles'
 import { cn } from '@/lib/utils'
 import { notify } from '@/lib/notify'
+import { InlineStatStrip } from '@/components/ui/InlineStatStrip'
+import { DataTableShell } from '@/components/admin/shared/DataTableShell'
 
 type Broadcast = {
   id: string
@@ -338,28 +340,16 @@ export default function BroadcastMessagesPage() {
           </select>
         </div>
 
-        <div className="grid flex-1 min-w-0 grid-cols-5 gap-1">
-          <div className="min-w-0 rounded border border-gray-200 bg-white px-2 py-1">
-            <p className="truncate text-[10px] font-semibold uppercase tracking-wide text-gray-500" title="Total">Total</p>
-            <p className="truncate text-right text-xs font-semibold tabular-nums text-gray-800">{stats.total}</p>
-          </div>
-          <div className="min-w-0 rounded border border-amber-200 bg-amber-50 px-2 py-1">
-            <p className="truncate text-[10px] font-semibold uppercase tracking-wide text-amber-700" title="Pending">Pending</p>
-            <p className="truncate text-right text-xs font-semibold tabular-nums text-amber-700">{stats.pending}</p>
-          </div>
-          <div className="min-w-0 rounded border border-amber-200 bg-amber-50 px-2 py-1">
-            <p className="truncate text-[10px] font-semibold uppercase tracking-wide text-amber-700" title="Approval">Approval</p>
-            <p className="truncate text-right text-xs font-semibold tabular-nums text-amber-700">{stats.pendingApproval}</p>
-          </div>
-          <div className="min-w-0 rounded border border-emerald-200 bg-emerald-50 px-2 py-1">
-            <p className="truncate text-[10px] font-semibold uppercase tracking-wide text-emerald-700" title="Sent">Sent</p>
-            <p className="truncate text-right text-xs font-semibold tabular-nums text-emerald-700">{stats.sent}</p>
-          </div>
-          <div className="min-w-0 rounded border border-blue-200 bg-blue-50 px-2 py-1">
-            <p className="truncate text-[10px] font-semibold uppercase tracking-wide text-blue-700" title="Recipients">Recipients</p>
-            <p className="truncate text-right text-xs font-semibold tabular-nums text-blue-700">{stats.recipients}</p>
-          </div>
-        </div>
+        <InlineStatStrip
+          className="flex-1 min-w-0"
+          items={[
+            { label: 'Total', value: stats.total },
+            { label: 'Pending', value: stats.pending, tone: 'warning' },
+            { label: 'Needs approval', value: stats.pendingApproval, tone: 'warning' },
+            { label: 'Sent', value: stats.sent, tone: 'success' },
+            { label: 'Recipients', value: stats.recipients, tone: 'info' },
+          ]}
+        />
 
         <button
           onClick={() => setShowForm(true)}
@@ -370,7 +360,7 @@ export default function BroadcastMessagesPage() {
         </button>
       </div>
 
-      <div className={cn(STYLES.tableWrapper, 'flex-1 min-h-0')}>
+      <DataTableShell className="flex-1 min-h-0">
         {loading ? (
           <div className="flex h-full items-center justify-center py-12">
             <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
@@ -384,7 +374,6 @@ export default function BroadcastMessagesPage() {
             <p className={STYLES.emptyDescription}>Create a broadcast to send in-app updates at scale.</p>
           </div>
         ) : (
-          <div className="table-scroll-wrapper max-h-[calc(100vh-320px)] min-w-0">
             <table className={cn(STYLES.table, 'table-fixed min-w-[1216px]')}>
               <thead>
                 <tr className={STYLES.tableHeadRow}>
@@ -572,9 +561,8 @@ export default function BroadcastMessagesPage() {
                 })}
               </tbody>
             </table>
-          </div>
         )}
-      </div>
+      </DataTableShell>
 
       {showForm ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">

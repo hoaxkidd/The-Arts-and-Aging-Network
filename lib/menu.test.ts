@@ -9,7 +9,7 @@ const FROZEN_21 = [
   '/admin',
   '/admin/audit-log',
   '/admin/financials',
-  '/admin/events',
+  '/admin/bookings',
   '/admin/broadcasts',
   '/admin/email-reminders',
   '/admin/communication',

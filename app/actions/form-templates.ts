@@ -153,8 +153,8 @@ export async function getEventSignupForms() {
 
     return { success: true, data: templates }
   } catch (error) {
-    logger.serverAction("Failed to fetch event sign-up forms:", error)
-    return { error: "Failed to load event sign-up forms" }
+    logger.serverAction("Failed to fetch booking sign-up forms:", error)
+    return { error: "Failed to load booking sign-up forms" }
   }
 }
 

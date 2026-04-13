@@ -183,7 +183,7 @@ export function AdminFormSubmissionsList({
   }
 
   const categoryLabels: Record<string, string> = {
-    EVENT_SIGNUP: 'Event Sign-up',
+    EVENT_SIGNUP: 'Booking Sign-up',
     INCIDENT: 'Incident Reports',
     FEEDBACK: 'Feedback Forms',
     EVALUATION: 'Evaluations',
@@ -318,7 +318,7 @@ export function AdminFormSubmissionsList({
                       Submitter {getSortIcon('user')}
                     </button>
                   </th>
-                  <th className={STYLES.tableHeader}>Event</th>
+                  <th className={STYLES.tableHeader}>Booking</th>
                   <th className={STYLES.tableHeader}>
                     <button
                       onClick={() => handleSort('status')}
@@ -634,7 +634,7 @@ export function AdminFormSubmissionsList({
                 </div>
                 {showDetailsModal.event && (
                   <div>
-                    <p className="text-xs text-gray-500">Related Event</p>
+                    <p className="text-xs text-gray-500">Related Booking</p>
                     <p className="text-sm text-gray-700">{showDetailsModal.event.title}</p>
                   </div>
                 )}

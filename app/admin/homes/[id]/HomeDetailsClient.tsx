@@ -114,7 +114,7 @@ function DeleteConfirmationModal({
             </p>
             <ul className="text-sm text-red-700 space-y-1 ml-4 list-disc">
               <li>All facility information and contacts</li>
-              <li>All events hosted at this location</li>
+              <li>All bookings hosted at this location</li>
               <li>All attendance records and feedback</li>
               <li>The HOME_ADMIN user account</li>
             </ul>
@@ -380,7 +380,7 @@ export function HomeDetailsClient({ home }: { home: HomeData }) {
           <p className="text-sm font-semibold text-gray-900">Occupancy: <span className={cn("tabular-nums", occupancyPercent >= 90 ? "text-red-600" : occupancyPercent >= 70 ? "text-amber-600" : "text-emerald-600")}>{occupancyPercent}%</span></p>
         </div>
         <div className="bg-white text-gray-700 border border-gray-300 px-3 py-2 rounded-lg text-center">
-          <p className="text-sm font-semibold text-gray-900">Events: <span className="tabular-nums">{home._count.events}</span></p>
+          <p className="text-sm font-semibold text-gray-900">Bookings: <span className="tabular-nums">{home._count.events}</span></p>
         </div>
       </div>
 
@@ -407,7 +407,7 @@ export function HomeDetailsClient({ home }: { home: HomeData }) {
               {tab === 'contact' && <><Phone className="w-4 h-4 opacity-80" /> Contact</>}
               {tab === 'account' && <><User className="w-4 h-4 opacity-80" /> Account</>}
               {tab === 'protocol' && <><Shield className="w-4 h-4 opacity-80" /> Protocol</>}
-              {tab === 'events' && <><Calendar className="w-4 h-4 opacity-80" /> Events</>}
+              {tab === 'events' && <><Calendar className="w-4 h-4 opacity-80" /> Bookings</>}
             </button>
           ))}
         </div>
@@ -498,7 +498,7 @@ export function HomeDetailsClient({ home }: { home: HomeData }) {
                       />
                       <span className="text-sm font-medium text-gray-700">Use a different notification email</span>
                     </label>
-                    <p className="text-xs text-gray-500 mt-1">Operational event/request notifications will use this address when enabled.</p>
+                    <p className="text-xs text-gray-500 mt-1">Operational booking/request notifications will use this address when enabled.</p>
                     <div className="mt-3">
                       <label className="block text-xs font-medium text-gray-600 mb-1">Notification Email</label>
                       <input
@@ -516,7 +516,7 @@ export function HomeDetailsClient({ home }: { home: HomeData }) {
                 <div className="px-5 py-3 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div>
                     <h3 className="text-sm font-semibold text-gray-800">Additional contacts</h3>
-                    <p className="text-xs text-gray-500 mt-1">Staff or personnel for events and coordination</p>
+                    <p className="text-xs text-gray-500 mt-1">Staff or personnel for bookings and coordination</p>
                   </div>
                   <button type="button" onClick={() => { setEditingPersonnel(undefined); setShowPersonnelModal(true) }} className={cn(STYLES.btn, "bg-primary-50 text-primary-700 border border-primary-200 hover:bg-primary-100 text-sm")}>
                     <Plus className="w-4 h-4 mr-1" /> Add contact
@@ -546,7 +546,7 @@ export function HomeDetailsClient({ home }: { home: HomeData }) {
                       </div>
                     ))
                   ) : (
-                    <div className="p-10 text-center text-gray-500 text-sm">No additional contacts yet. Add staff or personnel for events and coordination.</div>
+                    <div className="p-10 text-center text-gray-500 text-sm">No additional contacts yet. Add staff or personnel for bookings and coordination.</div>
                   )}
                 </div>
               </div>
@@ -609,7 +609,7 @@ export function HomeDetailsClient({ home }: { home: HomeData }) {
                 <div>
                   <h3 className="text-sm font-semibold text-amber-800 mb-2 flex items-center gap-2"><AlertTriangle className="w-4 h-4" /> Special needs & accommodations</h3>
                   <p className="text-xs text-amber-700/80 mb-3">Notes for staff and facilitators</p>
-                  <textarea name="specialNeeds" defaultValue={home.specialNeeds ?? ''} rows={4} placeholder="Special considerations for events..." className={cn(STYLES.input)} />
+                  <textarea name="specialNeeds" defaultValue={home.specialNeeds ?? ''} rows={4} placeholder="Special considerations for bookings..." className={cn(STYLES.input)} />
                 </div>
                 <div>
                   <h3 className="text-sm font-semibold text-red-800 mb-2 flex items-center gap-2"><Shield className="w-4 h-4" /> Emergency protocol</h3>
@@ -648,24 +648,24 @@ export function HomeDetailsClient({ home }: { home: HomeData }) {
                 </div>
                 <div>
                   <h3 className="text-sm font-semibold text-gray-700 mb-2">Feedback form URL</h3>
-                  <p className="text-xs text-gray-500 mb-3">Link to post-event feedback survey (optional)</p>
+                  <p className="text-xs text-gray-500 mb-3">Link to post-booking feedback survey (optional)</p>
                   <input name="feedbackFormUrl" type="url" defaultValue={home.feedbackFormUrl ?? ''} placeholder="https://..." className={cn(STYLES.input)} />
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Events tab */}
+          {/* Bookings tab */}
           <div className={cn(activeTab !== 'events' && 'hidden')}>
             <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
               <div className="px-5 py-3 border-b border-gray-200">
-                <h3 className="text-sm font-semibold text-gray-800">Recent events</h3>
-                <p className="text-xs text-gray-500 mt-1">Events this facility is linked to</p>
+                <h3 className="text-sm font-semibold text-gray-800">Recent bookings</h3>
+                <p className="text-xs text-gray-500 mt-1">Bookings this facility is linked to</p>
               </div>
               {home.events.length > 0 ? (
                 <div className="divide-y divide-gray-100 max-h-80 overflow-y-auto">
                   {home.events.map((event) => (
-                    <Link key={event.id} href={`/admin/events/${event.id}/edit`} className="block p-4 hover:bg-gray-50/50 transition-colors">
+                    <Link key={event.id} href={`/admin/bookings/${event.id}/edit`} className="block p-4 hover:bg-gray-50/50 transition-colors">
                       <div className="flex items-start justify-between">
                         <div>
                           <div className="font-medium text-gray-900 text-sm">{event.title}</div>
@@ -680,8 +680,8 @@ export function HomeDetailsClient({ home }: { home: HomeData }) {
               ) : (
                 <div className="py-14 px-6 text-center">
                   <Calendar className="w-10 h-10 mx-auto text-gray-300 mb-3" />
-                  <p className="text-sm font-medium text-gray-500">No events yet</p>
-                  <p className="text-xs text-gray-400 mt-1">This facility has no events scheduled.</p>
+                  <p className="text-sm font-medium text-gray-500">No bookings yet</p>
+                  <p className="text-xs text-gray-400 mt-1">This facility has no bookings scheduled.</p>
                 </div>
               )}
             </div>

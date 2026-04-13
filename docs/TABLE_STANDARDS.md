@@ -21,7 +21,7 @@ Primary references (migrate new work toward these):
 - **Status filter strip (lined tabs):** `components/ui/LinedStatusTabs.tsx` — **Financials → Timesheets** ([`TimesheetList.tsx`](../components/admin/financials/TimesheetList.tsx)), **Mileage** ([`MileageList.tsx`](../components/admin/financials/MileageList.tsx)), **Requests & Expenses** ([`ExpenseRequestList.tsx`](../components/admin/financials/ExpenseRequestList.tsx)).
 - **Card + scroll + table slot:** `components/admin/shared/DataTableShell.tsx` — used by Mileage and Expense lists after the status strip.
 - **Table with lined header row:** Every `<thead>` must use `<tr className={STYLES.tableHeadRow}>` plus `STYLES.tableHeader` on each `<th>` (see [`MileageList.tsx`](../components/admin/financials/MileageList.tsx), [`StickyTable`](../components/ui/StickyTable.tsx)).
-- **Legacy / complex tables:** `components/admin/events/EventListTable.tsx` — align with `tableHeadRow` and dividers when touched.
+- **Legacy / complex tables:** `components/admin/bookings/EventListTable.tsx` — align with `tableHeadRow` and dividers when touched.
 
 ## Migration backlog (incremental)
 

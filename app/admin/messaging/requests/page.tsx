@@ -2,9 +2,10 @@ import { prisma } from "@/lib/prisma"
 import { auth } from "@/auth"
 import { redirect } from "next/navigation"
 import { CheckCircle, XCircle, UserPlus, ArrowLeft } from "lucide-react"
-import { cn } from "@/lib/utils"
 import Link from "next/link"
 import { approveGroupAccess, denyGroupAccess } from "@/app/actions/messaging"
+import { STYLES } from "@/lib/styles"
+import { cn } from "@/lib/utils"
 
 export default async function MessagingRequestsPage() {
   const session = await auth()
@@ -37,15 +38,15 @@ export default async function MessagingRequestsPage() {
   })
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col space-y-4">
       <div className="flex-shrink-0 mb-4">
-        <Link href="/admin/messaging" className="inline-flex items-center gap-1 text-sm text-gray-600 hover:text-gray-900">
+        <Link href="/admin/communication" className="inline-flex items-center gap-1 text-sm text-gray-600 hover:text-gray-900">
           <ArrowLeft className="w-4 h-4" /> Back to Messaging
         </Link>
       </div>
       <div className="flex-1 min-h-0 overflow-auto">
         {pendingRequests.length === 0 ? (
-          <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
+          <div className={cn(STYLES.card, "p-12 text-center") }>
             <UserPlus className="w-12 h-12 text-gray-300 mx-auto mb-3" />
             <p className="text-gray-500">No pending requests</p>
           </div>
@@ -54,7 +55,7 @@ export default async function MessagingRequestsPage() {
             {pendingRequests.map((request) => (
               <div
                 key={request.id}
-                className="bg-white rounded-lg border border-gray-200 p-4"
+                className={cn(STYLES.card, "p-4 sm:p-5")}
               >
                 <div className="flex items-start justify-between">
                   <div className="flex items-start gap-3 flex-1">
@@ -66,7 +67,7 @@ export default async function MessagingRequestsPage() {
                         <span className="font-semibold text-gray-900">
                           {request.user.preferredName || request.user.name}
                         </span>
-                        <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-700 rounded">
+                        <span className={cn(STYLES.badge, STYLES.badgeNeutral)}>
                           {request.user.role}
                         </span>
                       </div>
@@ -90,7 +91,7 @@ export default async function MessagingRequestsPage() {
                       await approveGroupAccess(request.group.id, request.user.id)
                       redirect('/admin/messaging/requests')
                     }}>
-                      <button className="px-3 py-1.5 text-xs font-medium text-white bg-green-600 hover:bg-green-700 rounded flex items-center gap-1">
+                      <button className={cn(STYLES.btn, "h-9 px-3 py-0 text-xs bg-green-600 hover:bg-green-700 text-white")}>
                         <CheckCircle className="w-3 h-3" />
                         Approve
                       </button>
@@ -100,7 +101,7 @@ export default async function MessagingRequestsPage() {
                       await denyGroupAccess(request.group.id, request.user.id)
                       redirect('/admin/messaging/requests')
                     }}>
-                      <button className="px-3 py-1.5 text-xs font-medium text-white bg-red-600 hover:bg-red-700 rounded flex items-center gap-1">
+                      <button className={cn(STYLES.btn, STYLES.btnDanger, "h-9 px-3 py-0 text-xs")}>
                         <XCircle className="w-3 h-3" />
                         Deny
                       </button>

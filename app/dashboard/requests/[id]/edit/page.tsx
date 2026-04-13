@@ -1,7 +1,7 @@
 import { auth } from '@/auth'
 import { redirect, notFound } from 'next/navigation'
-import { getEventRequestDetail } from '@/app/actions/event-requests'
-import { EditEventRequestForm } from '@/components/event-requests/EditEventRequestForm'
+import { getEventRequestDetail } from '@/app/actions/booking-requests'
+import { EditEventRequestForm } from '@/components/booking-requests/EditEventRequestForm'
 
 export default async function EditHomeRequestPage({
   params,

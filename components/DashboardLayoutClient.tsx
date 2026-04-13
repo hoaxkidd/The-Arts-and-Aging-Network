@@ -18,13 +18,13 @@ const PAGE_TITLES: Record<string, string> = {
   '/dashboard': 'Home Dashboard',
   '/dashboard/profile': 'Organization Profile',
   '/dashboard/engagement': 'Engagement & Feedback',
-  '/dashboard/calendar': 'Events',
+  '/dashboard/calendar': 'Bookings',
   '/dashboard/contacts': 'Contact Information',
-  '/dashboard/events': 'Events',
-  '/dashboard/history': 'Event History',
-  '/dashboard/my-events': 'My Events',
-  '/dashboard/requests': 'My Event Requests',
-  '/dashboard/requests/new': 'New Event Request',
+  '/dashboard/bookings': 'Bookings',
+  '/dashboard/history': 'Booking History',
+  '/dashboard/my-bookings': 'My Bookings',
+  '/dashboard/requests': 'My Booking Requests',
+  '/dashboard/requests/new': 'New Booking Request',
   '/dashboard/settings': 'Settings',
   '/dashboard/forms': 'Forms',
   '/admin': 'Admin Dashboard',
@@ -33,8 +33,8 @@ const PAGE_TITLES: Record<string, string> = {
   '/admin/users/new': 'Add User',
   '/admin/homes': 'Facility Management',
   '/admin/financials': 'Financial Overview',
-  '/admin/events': 'Event Management',
-  '/admin/events/new': 'Create Event',
+  '/admin/bookings': 'Booking Management',
+  '/admin/bookings/new': 'Create Booking',
   '/admin/email-reminders': 'Email Reminders',
   '/admin/form-templates': 'Form Templates',
   '/admin/form-submissions': 'Form Submissions',
@@ -51,7 +51,7 @@ const PAGE_TITLES: Record<string, string> = {
   '/admin/profile': 'My Profile',
   '/admin/requests': 'Payroll Requests',
   '/admin/settings': 'Settings',
-  '/admin/event-requests': 'Event Requests',
+  '/admin/booking-requests': 'Booking Requests',
   '/admin/import': 'Import Data',
   '/admin/conversation-requests': 'Conversation Requests',
   '/admin/payroll-forms': 'Payroll Forms',
@@ -69,22 +69,22 @@ const PAGE_TITLES: Record<string, string> = {
   '/payroll/settings': 'Settings',
   '/staff': 'Staff Dashboard',
   '/staff/directory': 'Team Directory',
-  '/staff/events': 'Browse Events',
+  '/staff/bookings': 'Browse Bookings',
   '/staff/inbox': 'Inbox',
   '/staff/forms': 'Form Templates',
   '/staff/groups': 'Groups',
-  '/staff/my-events': 'My Schedule',
+  '/staff/my-bookings': 'My Schedule',
   '/staff/profile': 'My Profile',
   '/staff/settings': 'Settings',
   '/staff/onboarding': 'Complete Profile',
   '/volunteer': 'Volunteer Dashboard',
-  '/volunteer/my-events': 'My Schedule',
+  '/volunteer/my-bookings': 'My Schedule',
   '/volunteer/inbox': 'Inbox',
   '/volunteer/forms': 'Forms',
   '/volunteer/onboarding': 'Complete Profile',
   '/volunteer/profile': 'My Profile',
   '/volunteer/settings': 'Settings',
-  '/events': 'Events Calendar',
+  '/bookings': 'Bookings Calendar',
   '/notifications': 'Notifications',
 }
 
@@ -95,9 +95,9 @@ const PAGE_ICONS: Record<string, typeof Calendar> = {
   '/dashboard/engagement': MessageSquare,
   '/dashboard/calendar': Calendar,
   '/dashboard/contacts': Users,
-  '/dashboard/events': Calendar,
+  '/dashboard/bookings': Calendar,
   '/dashboard/history': Clock,
-  '/dashboard/my-events': CheckCircle,
+  '/dashboard/my-bookings': CheckCircle,
   '/dashboard/requests': ClipboardList,
   '/dashboard/requests/new': ClipboardList,
   '/dashboard/settings': Settings,
@@ -108,8 +108,8 @@ const PAGE_ICONS: Record<string, typeof Calendar> = {
   '/admin/users/new': Users,
   '/admin/homes': Home,
   '/admin/financials': DollarSign,
-  '/admin/events': Calendar,
-  '/admin/events/new': Calendar,
+  '/admin/bookings': Calendar,
+  '/admin/bookings/new': Calendar,
   '/admin/email-reminders': Mail,
   '/admin/form-templates': FileText,
   '/admin/form-submissions': FileText,
@@ -126,7 +126,7 @@ const PAGE_ICONS: Record<string, typeof Calendar> = {
   '/admin/profile': UserCircle,
   '/admin/requests': FileText,
   '/admin/settings': Settings,
-  '/admin/event-requests': ClipboardList,
+  '/admin/booking-requests': ClipboardList,
   '/admin/import': Upload,
   '/admin/conversation-requests': MessageSquare,
   '/admin/payroll-forms': FileText,
@@ -144,22 +144,22 @@ const PAGE_ICONS: Record<string, typeof Calendar> = {
   '/payroll/settings': Settings,
   '/staff': LayoutDashboard,
   '/staff/directory': Users,
-  '/staff/events': Calendar,
+  '/staff/bookings': Calendar,
   '/staff/inbox': Inbox,
   '/staff/forms': FileText,
   '/staff/groups': MessageSquare,
-  '/staff/my-events': Calendar,
+  '/staff/my-bookings': Calendar,
   '/staff/profile': UserCircle,
   '/staff/settings': Settings,
   '/staff/onboarding': UserCircle,
   '/volunteer': LayoutDashboard,
-  '/volunteer/my-events': Calendar,
+  '/volunteer/my-bookings': Calendar,
   '/volunteer/inbox': Inbox,
   '/volunteer/forms': FileText,
   '/volunteer/onboarding': UserCircle,
   '/volunteer/profile': UserCircle,
   '/volunteer/settings': Settings,
-  '/events': Calendar,
+  '/bookings': Calendar,
   '/notifications': Bell,
 }
 
@@ -168,13 +168,13 @@ const PAGE_SUBTITLES: Record<string, string> = {
   '/dashboard': 'Welcome back',
   '/dashboard/profile': 'Manage your organization profile',
   '/dashboard/engagement': 'View engagement metrics and feedback',
-  '/dashboard/calendar': 'View events calendar',
+  '/dashboard/calendar': 'View bookings calendar',
   '/dashboard/contacts': 'View contact information',
-  '/dashboard/events': 'Browse and manage events',
-  '/dashboard/history': 'View event history',
-  '/dashboard/my-events': 'Events your facility has attended',
-  '/dashboard/requests': 'Submit and track event requests',
-  '/dashboard/requests/new': 'Submit a new event request',
+  '/dashboard/bookings': 'Browse and manage bookings',
+  '/dashboard/history': 'View booking history',
+  '/dashboard/my-bookings': 'Bookings your facility has attended',
+  '/dashboard/requests': 'Submit and track booking requests',
+  '/dashboard/requests/new': 'Submit a new booking request',
   '/dashboard/settings': 'Update your settings',
   '/dashboard/forms': 'Access and manage forms',
   '/admin': 'Manage all system settings and users',
@@ -183,8 +183,8 @@ const PAGE_SUBTITLES: Record<string, string> = {
   '/admin/users/new': 'Create a new user account',
   '/admin/homes': 'Manage facility locations',
   '/admin/financials': 'Approve timesheets, mileage, and expenses',
-  '/admin/events': 'Manage events and calendar',
-  '/admin/events/new': 'Create a new event',
+  '/admin/bookings': 'Manage bookings and calendar',
+  '/admin/bookings/new': 'Create a new booking',
   '/admin/email-reminders': 'Monitor automated email reminders',
   '/admin/form-templates': 'Manage form templates',
   '/admin/form-submissions': 'Review form submissions',
@@ -201,7 +201,7 @@ const PAGE_SUBTITLES: Record<string, string> = {
   '/admin/profile': 'Manage your profile',
   '/admin/requests': 'Review and manage requests',
   '/admin/settings': 'System configuration',
-  '/admin/event-requests': 'Review event requests',
+  '/admin/booking-requests': 'Review booking requests',
   '/admin/import': 'Bulk import data',
   '/admin/conversation-requests': 'Review conversation requests',
   '/admin/payroll-forms': 'Manage required forms for staff',
@@ -219,22 +219,22 @@ const PAGE_SUBTITLES: Record<string, string> = {
   '/payroll/settings': 'Update your settings',
   '/staff': 'Staff portal',
   '/staff/directory': 'Browse team members',
-  '/staff/events': 'Browse events',
+  '/staff/bookings': 'Browse bookings',
   '/staff/inbox': 'View your messages',
   '/staff/forms': 'Access form templates',
   '/staff/groups': 'Manage message groups',
-  '/staff/my-events': 'View your schedule',
+  '/staff/my-bookings': 'View your schedule',
   '/staff/profile': 'Update your profile',
   '/staff/settings': 'Update your settings',
   '/staff/onboarding': 'Finish setting up your profile',
   '/volunteer': 'Volunteer portal',
-  '/volunteer/my-events': 'View your schedule',
+  '/volunteer/my-bookings': 'View your schedule',
   '/volunteer/inbox': 'View your messages',
   '/volunteer/forms': 'Access forms',
   '/volunteer/onboarding': 'Finish setting up your profile',
   '/volunteer/profile': 'Update your profile',
   '/volunteer/settings': 'Update your settings',
-  '/events': 'Browse all events',
+  '/bookings': 'Browse all bookings',
   '/notifications': 'View your notifications',
 }
 
@@ -243,12 +243,12 @@ const FORM_PAGES = [
   '/admin/form-templates/new',
   '/admin/users/new',
   '/dashboard/requests/new',
-  '/admin/events/new',
+  '/admin/bookings/new',
 ]
 
 const TABLE_PAGES = [
   '/admin/users',
-  '/admin/events',
+  '/admin/bookings',
   '/admin/homes',
   '/admin/invitations',
   '/admin/timesheets',
@@ -257,14 +257,14 @@ const TABLE_PAGES = [
   '/admin/inventory',
   '/admin/forms',
   '/admin/testimonials',
-  '/admin/event-requests',
+  '/admin/booking-requests',
   '/admin/audit-log',
   '/staff/directory',
   '/payroll/timesheet',
   '/payroll/mileage',
   '/payroll/history',
-  '/dashboard/events',
-  '/dashboard/my-events',
+  '/dashboard/bookings',
+  '/dashboard/my-bookings',
   '/dashboard/history',
   '/dashboard/contacts',
   '/dashboard/requests',
@@ -275,7 +275,7 @@ function getPageLayoutType(pathname: string): 'form' | 'table' | 'mixed' {
   if (FORM_PAGES.some(p => pathname === p)) return 'form'
   if (pathname.startsWith('/admin/form-templates/') && pathname !== '/admin/form-templates' && pathname !== '/admin/form-templates/new') return 'form'
   if (pathname.startsWith('/admin/users/') && pathname !== '/admin/users/new') return 'form'
-  if (pathname.startsWith('/admin/events/') && pathname.includes('/edit')) return 'form'
+  if (pathname.startsWith('/admin/bookings/') && pathname.includes('/edit')) return 'form'
   if (pathname.startsWith('/staff/forms/') || pathname.startsWith('/dashboard/forms/') || pathname.startsWith('/payroll/forms/') || pathname.startsWith('/volunteer/forms/')) return 'form'
   if (TABLE_PAGES.some(p => pathname.startsWith(p))) return 'table'
   return 'mixed'
@@ -295,7 +295,7 @@ function getPageTitle(pathname: string, homeName?: string) {
   
   if (PAGE_TITLES[pathname]) return PAGE_TITLES[pathname]
   
-  if (pathname.startsWith('/admin/event-requests/')) return 'Event Request'
+  if (pathname.startsWith('/admin/booking-requests/')) return 'Booking Request'
   if (pathname.startsWith('/admin/homes/')) return 'Facility Details'
   if (pathname.startsWith('/admin/users/')) return 'User Profile'
   if (pathname.startsWith('/admin/timesheets/')) return 'Timesheet Review'
@@ -303,7 +303,7 @@ function getPageTitle(pathname: string, homeName?: string) {
   if (pathname.startsWith('/admin/forms/')) return 'Form Template'
   if (pathname.startsWith('/admin/form-templates/')) return 'Form Template'
   if (pathname.startsWith('/staff/directory/')) return 'Staff Profile'
-  if (pathname.startsWith('/staff/events/')) return 'Event Details'
+  if (pathname.startsWith('/staff/bookings/')) return 'Booking Details'
   if (pathname.startsWith('/staff/forms/')) return 'Form Template'
   if (pathname.startsWith('/staff/groups/')) return 'Group Messages'
   if (pathname.startsWith('/staff/inbox/') && pathname.split('/').length > 3) return 'Conversation'
@@ -311,10 +311,10 @@ function getPageTitle(pathname: string, homeName?: string) {
   if (pathname.startsWith('/volunteer/forms/')) return 'Form Template'
   if (pathname.startsWith('/volunteer/inbox/') && pathname.split('/').length > 3) return 'Conversation'
   if (pathname.startsWith('/dashboard/forms/')) return 'Form Template'
-  if (pathname.startsWith('/dashboard/my-events/')) return 'Event Details'
-  if (pathname.startsWith('/dashboard/requests/')) return 'Event Request'
-  if (pathname.startsWith('/dashboard/events/')) return 'Event Sign-up'
-  if (pathname.startsWith('/events/')) return 'Event Details'
+  if (pathname.startsWith('/dashboard/my-bookings/')) return 'Booking Details'
+  if (pathname.startsWith('/dashboard/requests/')) return 'Booking Request'
+  if (pathname.startsWith('/dashboard/bookings/')) return 'Booking Sign-up'
+  if (pathname.startsWith('/bookings/')) return 'Booking Details'
   
   return 'Dashboard'
 }
@@ -322,7 +322,7 @@ function getPageTitle(pathname: string, homeName?: string) {
 function getPageIcon(pathname: string) {
   if (PAGE_ICONS[pathname]) return PAGE_ICONS[pathname]
   
-  if (pathname.startsWith('/admin/event-requests/')) return ClipboardList
+  if (pathname.startsWith('/admin/booking-requests/')) return ClipboardList
   if (pathname.startsWith('/admin/homes/')) return Home
   if (pathname.startsWith('/admin/users/')) return Users
   if (pathname.startsWith('/admin/timesheets/')) return Clock
@@ -330,7 +330,7 @@ function getPageIcon(pathname: string) {
   if (pathname.startsWith('/admin/forms/')) return FileText
   if (pathname.startsWith('/admin/form-templates/')) return FileText
   if (pathname.startsWith('/staff/directory/')) return Users
-  if (pathname.startsWith('/staff/events/')) return Calendar
+  if (pathname.startsWith('/staff/bookings/')) return Calendar
   if (pathname.startsWith('/staff/forms/')) return FileText
   if (pathname.startsWith('/staff/groups/')) return MessageSquare
   if (pathname.startsWith('/staff/inbox/')) return Inbox
@@ -338,10 +338,10 @@ function getPageIcon(pathname: string) {
   if (pathname.startsWith('/volunteer/forms/')) return FileText
   if (pathname.startsWith('/volunteer/inbox/')) return Inbox
   if (pathname.startsWith('/dashboard/forms/')) return FileText
-  if (pathname.startsWith('/dashboard/my-events/')) return Calendar
+  if (pathname.startsWith('/dashboard/my-bookings/')) return Calendar
   if (pathname.startsWith('/dashboard/requests/')) return ClipboardList
-  if (pathname.startsWith('/dashboard/events/')) return Calendar
-  if (pathname.startsWith('/events/')) return Calendar
+  if (pathname.startsWith('/dashboard/bookings/')) return Calendar
+  if (pathname.startsWith('/bookings/')) return Calendar
   
   return LayoutDashboard
 }
@@ -349,7 +349,7 @@ function getPageIcon(pathname: string) {
 function getPageSubtitle(pathname: string) {
   if (PAGE_SUBTITLES[pathname]) return PAGE_SUBTITLES[pathname]
   
-  if (pathname.startsWith('/admin/event-requests/')) return 'View request details'
+  if (pathname.startsWith('/admin/booking-requests/')) return 'View request details'
   if (pathname.startsWith('/admin/homes/')) return 'View facility details'
   if (pathname.startsWith('/admin/users/')) return 'View user profile'
   if (pathname.startsWith('/admin/timesheets/')) return 'Review timesheet'
@@ -357,7 +357,7 @@ function getPageSubtitle(pathname: string) {
   if (pathname.startsWith('/admin/forms/')) return 'View form template'
   if (pathname.startsWith('/admin/form-templates/')) return 'Edit form template'
   if (pathname.startsWith('/staff/directory/')) return 'View staff profile'
-  if (pathname.startsWith('/staff/events/')) return 'View event details'
+  if (pathname.startsWith('/staff/bookings/')) return 'View booking details'
   if (pathname.startsWith('/staff/forms/')) return 'View form template'
   if (pathname.startsWith('/staff/groups/')) return 'View messages'
   if (pathname.startsWith('/staff/inbox/')) return 'View conversation'
@@ -365,10 +365,10 @@ function getPageSubtitle(pathname: string) {
   if (pathname.startsWith('/volunteer/forms/')) return 'View form template'
   if (pathname.startsWith('/volunteer/inbox/')) return 'View conversation'
   if (pathname.startsWith('/dashboard/forms/')) return 'View form template'
-  if (pathname.startsWith('/dashboard/my-events/')) return 'View event details'
+  if (pathname.startsWith('/dashboard/my-bookings/')) return 'View booking details'
   if (pathname.startsWith('/dashboard/requests/')) return 'View request details'
-  if (pathname.startsWith('/dashboard/events/')) return 'Sign up for event'
-  if (pathname.startsWith('/events/')) return 'View event details'
+  if (pathname.startsWith('/dashboard/bookings/')) return 'Sign up for booking'
+  if (pathname.startsWith('/bookings/')) return 'View booking details'
   
   return ''
 }

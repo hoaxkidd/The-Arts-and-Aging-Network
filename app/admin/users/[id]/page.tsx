@@ -424,7 +424,7 @@ export default async function EditUserPage({
                       <h3 className="text-sm font-semibold text-red-900 mb-1">Danger Zone</h3>
                       <p className="text-xs text-red-700 mb-3">
                         {isHomeAdmin
-                          ? 'This will permanently remove the facility profile, events, contacts, and all data.'
+                          ? 'This will permanently remove the facility profile, bookings, contacts, and all data.'
                           : 'This will permanently remove all user data including messages and activity history.'
                         }
                       </p>

@@ -1,9 +1,10 @@
 'use client'
 
 import { useState } from 'react'
-import { UserPlus, UserMinus, Shield, User, X } from 'lucide-react'
+import { UserPlus, UserMinus, Shield, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { addGroupMember, removeGroupMember, updateMemberRole } from '@/app/actions/messaging'
+import { STYLES } from '@/lib/styles'
 
 type Member = {
   id: string
@@ -65,12 +66,12 @@ export function GroupMembersList({ groupId, members, availableStaff }: GroupMemb
   }
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200">
+    <div className={cn(STYLES.card, 'p-0 overflow-hidden')}>
       <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
         <h3 className="font-semibold text-gray-900">Members ({members.length})</h3>
         <button
           onClick={() => setShowAddMember(!showAddMember)}
-          className="text-xs font-medium text-primary-600 hover:text-primary-700 flex items-center gap-1"
+          className={cn(STYLES.btn, STYLES.btnSecondary, 'h-8 px-3 py-0 text-xs')}
         >
           <UserPlus className="w-3 h-3" />
           Add Member
@@ -109,7 +110,7 @@ export function GroupMembersList({ groupId, members, availableStaff }: GroupMemb
                 <button
                   onClick={() => handleAddMember(staff.id)}
                   disabled={loading === staff.id}
-                  className="px-2 py-1 text-xs font-medium text-primary-600 hover:text-primary-700 disabled:opacity-50"
+                  className={cn(STYLES.btn, STYLES.btnSecondary, 'h-7 px-2 py-0 text-xs disabled:opacity-50')}
                 >
                   {loading === staff.id ? 'Adding...' : 'Add'}
                 </button>

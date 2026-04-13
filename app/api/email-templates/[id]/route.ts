@@ -16,7 +16,7 @@ export async function PUT(
 
     const { id } = await params
     const body = await request.json()
-    const { name, subject, content, isActive } = body
+    const { name, subject, content, isActive, styleMode, customStyleJson, resetCustomStyle, resetToDefault } = body
 
     if (id.startsWith('default-')) {
       const type = id.replace('default-', '')
@@ -36,7 +36,13 @@ export async function PUT(
             name: name ?? defaultTemplate.name,
             subject: subject ?? defaultTemplate.subject,
             content: content ?? defaultTemplate.content,
-            isActive: isActive ?? true
+            isActive: isActive ?? true,
+            ...(styleMode && { styleMode }),
+            ...(resetCustomStyle
+              ? { customStyleJson: null }
+              : customStyleJson !== undefined
+                ? { customStyleJson }
+                : {}),
           }
         })
         return NextResponse.json(template)
@@ -48,10 +54,38 @@ export async function PUT(
           name: name ?? defaultTemplate.name,
           subject: subject ?? defaultTemplate.subject,
           content: content ?? defaultTemplate.content,
-          isActive: isActive ?? true
+          isActive: isActive ?? true,
+          styleMode: styleMode ?? 'UNIVERSAL',
+          customStyleJson: resetCustomStyle ? null : (customStyleJson ?? null),
         }
       })
       return NextResponse.json(template)
+    }
+
+    if (resetToDefault) {
+      const existingTemplate = await prisma.emailTemplate.findUnique({ where: { id } })
+      if (!existingTemplate) {
+        return NextResponse.json({ error: 'Template not found' }, { status: 404 })
+      }
+
+      const defaultTemplate = getDefaultTemplate(existingTemplate.type as any)
+      if (!defaultTemplate) {
+        return NextResponse.json({ error: 'Default template not found for this type' }, { status: 400 })
+      }
+
+      const resetTemplate = await prisma.emailTemplate.update({
+        where: { id },
+        data: {
+          name: defaultTemplate.name,
+          subject: defaultTemplate.subject,
+          content: defaultTemplate.content,
+          styleMode: 'UNIVERSAL',
+          customStyleJson: null,
+          ...(isActive !== undefined && { isActive }),
+        },
+      })
+
+      return NextResponse.json(resetTemplate)
     }
 
     const template = await prisma.emailTemplate.update({
@@ -60,7 +94,13 @@ export async function PUT(
         ...(name && { name }),
         ...(subject && { subject }),
         ...(content && { content }),
-        ...(isActive !== undefined && { isActive })
+        ...(isActive !== undefined && { isActive }),
+        ...(styleMode !== undefined && { styleMode }),
+        ...(resetCustomStyle
+          ? { customStyleJson: null }
+          : customStyleJson !== undefined
+            ? { customStyleJson }
+            : {})
       }
     })
 

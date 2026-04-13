@@ -1,11 +1,12 @@
 import { prisma } from "@/lib/prisma"
 import { createInvitation, cancelInvitation } from "@/app/actions/invitation"
-import { Mail, Send, Calendar, User, Clock, Trash2, Link2, Copy, Check } from "lucide-react"
+import { Mail, Send, User, Clock, Trash2 } from "lucide-react"
 import { STYLES } from "@/lib/styles"
 import { cn } from "@/lib/utils"
 import { formatDateShort } from "@/lib/date-utils"
 import { logger } from "@/lib/logger"
 import { CopyInviteButton } from "@/components/admin/CopyInviteButton"
+import { DataTableShell } from "@/components/admin/shared/DataTableShell"
 
 export const dynamic = 'force-dynamic'
 
@@ -71,8 +72,7 @@ export default async function InvitationsPage() {
       </div>
 
       {/* Invitations List */}
-      <div className={cn(STYLES.card, "p-0 overflow-hidden")}>
-        <div className="table-scroll-wrapper max-h-[calc(100vh-320px)]">
+      <DataTableShell>
           <table className={STYLES.table}>
             <thead className="bg-gray-50">
               <tr className={STYLES.tableHeadRow}>
@@ -100,12 +100,13 @@ export default async function InvitationsPage() {
                     </div>
                   </td>
                   <td className={STYLES.tableCell}>
-                    <span className={cn("inline-flex text-xs font-medium",
-                      inv.status === 'ACCEPTED' 
-                        ? 'text-green-700'
+                    <span className={cn(
+                      STYLES.badge,
+                      inv.status === 'ACCEPTED'
+                        ? STYLES.badgeSuccess
                         : inv.status === 'EXPIRED'
-                        ? 'text-red-700'
-                        : 'text-yellow-700'
+                          ? STYLES.badgeDanger
+                          : STYLES.badgeWarning
                     )}>
                       {inv.status}
                     </span>
@@ -149,8 +150,7 @@ export default async function InvitationsPage() {
               )}
             </tbody>
           </table>
-        </div>
-      </div>
+      </DataTableShell>
     </div>
   )
 }

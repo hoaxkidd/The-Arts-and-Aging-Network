@@ -12,7 +12,7 @@ import {
   ArrowUpRight
 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { isCheckInOpen } from "@/lib/event-checkin"
+import { isCheckInOpen } from "@/lib/booking-checkin"
 import { STYLES } from "@/lib/styles"
 import { getStaffBasePathForRole } from "@/lib/role-routes"
 
@@ -88,7 +88,7 @@ export default async function StaffDashboard() {
       <div className="flex-1 min-h-0 overflow-auto space-y-4">
         {/* Compact Stats */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <Link href={`${basePath}/my-events`} className={cn(STYLES.statsCard, "transition-colors") }>
+          <Link href={`${basePath}/my-bookings`} className={cn(STYLES.statsCard, "transition-colors") }>
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 bg-primary-100 rounded-lg flex items-center justify-center">
                 <Calendar className="w-4 h-4 text-primary-600" />
@@ -99,7 +99,7 @@ export default async function StaffDashboard() {
               </div>
             </div>
           </Link>
-          <Link href={`${basePath}/my-events`} className={cn(STYLES.statsCard, "transition-colors") }>
+          <Link href={`${basePath}/my-bookings`} className={cn(STYLES.statsCard, "transition-colors") }>
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 bg-secondary-100 rounded-lg flex items-center justify-center">
                 <Clock className="w-4 h-4 text-secondary-600" />
@@ -110,7 +110,7 @@ export default async function StaffDashboard() {
               </div>
             </div>
           </Link>
-          <Link href={`${basePath}/my-events`} className={cn(STYLES.statsCard, "transition-colors") }>
+          <Link href={`${basePath}/my-bookings`} className={cn(STYLES.statsCard, "transition-colors") }>
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
                 <CheckCircle className="w-4 h-4 text-green-600" />
@@ -123,7 +123,7 @@ export default async function StaffDashboard() {
           </Link>
         </div>
 
-        {/* Today's Events Banner */}
+        {/* Today's Bookings Banner */}
         {todayEvents.length > 0 && (
           <div className="bg-gradient-to-r from-secondary-100 to-secondary-50 border border-secondary-200 rounded-lg p-4">
             <div className="flex items-center gap-2 mb-3">
@@ -131,8 +131,8 @@ export default async function StaffDashboard() {
                 <Clock className="w-4 h-4" />
               </div>
               <div>
-                <h2 className="text-sm font-semibold text-gray-900">Today&apos;s Events</h2>
-                <p className="text-xs text-gray-600">{todayEvents.length} event(s) scheduled</p>
+                <h2 className="text-sm font-semibold text-gray-900">Today&apos;s Bookings</h2>
+                <p className="text-xs text-gray-600">{todayEvents.length} booking(s) scheduled</p>
               </div>
             </div>
             <div className="space-y-2">
@@ -154,7 +154,7 @@ export default async function StaffDashboard() {
                 return (
                   <Link
                     key={event.id}
-                    href={`${basePath}/events/${event.id}`}
+                    href={`${basePath}/bookings/${event.id}`}
                     className="flex items-center justify-between bg-white rounded-lg p-3 transition-colors border border-gray-100"
                   >
                     <div className="flex items-center gap-3">
@@ -184,7 +184,7 @@ export default async function StaffDashboard() {
           </div>
         )}
 
-        {/* Upcoming Events */}
+        {/* Upcoming Bookings */}
         <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
           <div className="px-4 py-2.5 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
             <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
@@ -192,7 +192,7 @@ export default async function StaffDashboard() {
               Upcoming Schedule
             </h3>
             <Link
-              href={`${basePath}/my-events`}
+              href={`${basePath}/my-bookings`}
               className="text-xs text-primary-500 hover:text-primary-600 font-medium flex items-center gap-1"
             >
               View All <ArrowUpRight className="w-3 h-3" />
@@ -208,7 +208,7 @@ export default async function StaffDashboard() {
                 return (
                   <Link
                     key={event.id}
-                    href={`${basePath}/events/${event.id}`}
+                    href={`${basePath}/bookings/${event.id}`}
                     className={cn(
                       "flex items-center gap-3 p-3 hover:bg-gray-50 transition-colors",
                       index === 0 && "bg-primary-50/50"
@@ -258,13 +258,13 @@ export default async function StaffDashboard() {
               <div className="w-12 h-12 bg-primary-50 rounded-full flex items-center justify-center mx-auto mb-3">
                 <Calendar className="w-6 h-6 text-primary-400" />
               </div>
-              <p className="text-sm font-medium text-gray-900">No Upcoming Events</p>
-              <p className="text-xs text-gray-500 mt-1">Browse available events and confirm your attendance.</p>
+              <p className="text-sm font-medium text-gray-900">No Upcoming Bookings</p>
+              <p className="text-xs text-gray-500 mt-1">Browse available bookings and confirm your attendance.</p>
               <Link
-                href={`${basePath}/events`}
+                href={`${basePath}/bookings`}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 mt-3 text-xs font-medium bg-primary-600 text-white rounded-lg hover:bg-primary-700"
               >
-                Browse Events
+                Browse Bookings
               </Link>
             </div>
           )}
@@ -273,21 +273,21 @@ export default async function StaffDashboard() {
         {/* Quick Actions */}
         <div className="grid grid-cols-2 gap-3">
           <Link
-            href={`${basePath}/events`}
+            href={`${basePath}/bookings`}
             className="group flex items-center gap-3 p-3 bg-gradient-to-br from-primary-50 to-primary-100 rounded-lg border border-primary-200 hover:border-primary-400 transition-colors"
           >
             <div className="w-9 h-9 bg-white shadow-sm rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
               <Calendar className="w-4 h-4 text-primary-500" />
             </div>
             <div className="flex-1">
-              <h3 className="text-sm font-semibold text-gray-900">Browse Events</h3>
+              <h3 className="text-sm font-semibold text-gray-900">Browse Bookings</h3>
               <p className="text-xs text-gray-500">Find and confirm attendance</p>
             </div>
             <ArrowRight className="w-4 h-4 text-primary-300 group-hover:text-primary-500" />
           </Link>
 
           <Link
-            href={`${basePath}/my-events`}
+            href={`${basePath}/my-bookings`}
             className="group flex items-center gap-3 p-3 bg-gradient-to-br from-accent-50 to-accent-100 rounded-lg border border-accent-200 hover:border-accent-400 transition-colors"
           >
             <div className="w-9 h-9 bg-white shadow-sm rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">

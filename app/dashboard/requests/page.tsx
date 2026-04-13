@@ -1,6 +1,6 @@
 import { auth } from "@/auth"
 import { redirect } from "next/navigation"
-import { getHomeEventRequests } from "@/app/actions/event-requests"
+import { getHomeEventRequests } from "@/app/actions/booking-requests"
 import { RequestListClient } from "./RequestListClient"
 
 type Props = {

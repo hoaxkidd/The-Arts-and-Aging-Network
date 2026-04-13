@@ -47,6 +47,15 @@ type SearchUser = {
     image: string | null
 }
 
+const GROUP_COLOR_CLASS: Record<string, string> = {
+    blue: 'bg-blue-100 text-blue-700',
+    green: 'bg-green-100 text-green-700',
+    purple: 'bg-purple-100 text-purple-700',
+    red: 'bg-red-100 text-red-700',
+    yellow: 'bg-yellow-100 text-yellow-700',
+    pink: 'bg-pink-100 text-pink-700',
+}
+
 // DM Creation Modal
 function NewDMModal({ onClose, onSent }: { onClose: () => void, onSent: () => void }) {
     const [query, setQuery] = useState('')
@@ -102,16 +111,16 @@ function NewDMModal({ onClose, onSent }: { onClose: () => void, onSent: () => vo
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
-            <div className="relative bg-white rounded-lg shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="relative bg-white rounded-2xl border border-gray-200 shadow-2xl w-full max-w-xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
                 {/* Header */}
-                <div className="bg-gray-50 px-5 py-4 border-b border-gray-200 flex items-center justify-between">
+                <div className="bg-gray-50 px-6 py-4 border-b border-gray-200 flex items-center justify-between">
                     <h2 className="font-semibold text-gray-900">New Direct Message</h2>
-                    <button onClick={onClose} className="p-1 hover:bg-gray-200 rounded">
+                    <button onClick={onClose} className="p-2 hover:bg-gray-200 rounded-lg">
                         <X className="w-4 h-4 text-gray-500" />
                     </button>
                 </div>
 
-                <div className="p-5 space-y-4">
+                <div className="p-6 space-y-4">
                     {/* Recipient Selection */}
                     {!selectedUser ? (
                         <div>
@@ -137,7 +146,7 @@ function NewDMModal({ onClose, onSent }: { onClose: () => void, onSent: () => vo
                                 </div>
                             )}
                             {users.length > 0 && (
-                                <div className="mt-2 border border-gray-200 rounded-lg max-h-48 overflow-y-auto">
+                                <div className="mt-2 border border-gray-200 rounded-lg max-h-48 overflow-y-auto bg-white">
                                     {users.map(user => (
                                         <button
                                             key={user.id}
@@ -146,7 +155,7 @@ function NewDMModal({ onClose, onSent }: { onClose: () => void, onSent: () => vo
                                                 setQuery('')
                                                 setUsers([])
                                             }}
-                                            className="w-full text-left px-3 py-2 hover:bg-gray-50 flex items-center gap-3 border-b border-gray-100 last:border-b-0"
+                                            className="w-full text-left px-3 py-2 hover:bg-gray-50 flex items-center gap-3 border-b border-gray-100 last:border-b-0 transition-colors"
                                         >
                                             <div className="w-8 h-8 rounded-full bg-primary-100 text-primary-600 flex items-center justify-center text-xs font-medium shrink-0">
                                                 {(user.preferredName || user.name)?.[0] || 'U'}
@@ -178,10 +187,10 @@ function NewDMModal({ onClose, onSent }: { onClose: () => void, onSent: () => vo
                                 <span className="text-sm font-medium text-gray-900">
                                     {selectedUser.preferredName || selectedUser.name}
                                 </span>
-                                <span className="text-xs text-gray-500">{selectedUser.email || 'No email'}</span>
+                                <span className="text-xs text-gray-500 truncate">{selectedUser.email || 'No email'}</span>
                                 <button
                                     onClick={() => setSelectedUser(null)}
-                                    className="ml-auto p-0.5 hover:bg-gray-200 rounded"
+                                    className="ml-auto p-1 hover:bg-gray-200 rounded"
                                 >
                                     <X className="w-3.5 h-3.5 text-gray-400" />
                                 </button>
@@ -219,17 +228,17 @@ function NewDMModal({ onClose, onSent }: { onClose: () => void, onSent: () => vo
                 </div>
 
                 {/* Footer */}
-                <div className="px-5 py-4 border-t border-gray-200 bg-gray-50 flex items-center justify-end gap-3">
+                <div className="px-6 py-4 border-t border-gray-200 bg-gray-50 flex items-center justify-end gap-3">
                     <button
                         onClick={onClose}
-                        className="px-4 py-2 text-sm text-gray-700 hover:bg-gray-200 rounded-lg transition-colors"
+                        className={cn(STYLES.btn, STYLES.btnSecondary, 'h-9 px-4 py-0 text-sm')}
                     >
                         Cancel
                     </button>
                     <button
                         onClick={handleSend}
                         disabled={sending || !selectedUser || !subject.trim() || !content.trim()}
-                        className={cn(STYLES.btn, STYLES.btnPrimary, "disabled:opacity-50")}
+                        className={cn(STYLES.btn, STYLES.btnPrimary, 'h-9 px-4 py-0 text-sm disabled:opacity-50')}
                     >
                         {sending ? (
                             <>
@@ -401,6 +410,8 @@ export function AdminMessagingPanel({ groups, currentUserId }: { groups: any[], 
     const filtered = allItems.filter(item =>
         item.name.toLowerCase().includes(searchQuery.toLowerCase())
     )
+    const filteredDMs = filtered.filter((item) => item.type === 'DM')
+    const filteredGroups = filtered.filter((item) => item.type === 'GROUP')
 
     const selectedGroup = groups.find((g: any) => g.id === selectedId)
     const selectedDM = dmConversations.find(d => d.id === selectedId)
@@ -436,25 +447,25 @@ export function AdminMessagingPanel({ groups, currentUserId }: { groups: any[], 
 
     return (
         <>
-            <div className="flex flex-col md:flex-row flex-1 w-full max-w-full min-w-0 bg-white rounded-lg border border-gray-200 overflow-hidden">
+            <div className="flex flex-col md:flex-row flex-1 w-full max-w-full min-w-0 bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
                 {/* Sidebar - full width on mobile when no selection, hidden when chat shown */}
                 <div className={cn(
-                    "flex flex-col bg-gray-50 min-h-0 min-w-0 shrink-0",
+                    "flex flex-col bg-white min-h-0 min-w-0 shrink-0",
                     hasSelection ? "hidden md:flex md:w-80 md:border-r md:border-gray-200" : "flex-1 w-full max-w-full md:w-80 md:flex-shrink-0 md:border-r md:border-gray-200"
                 )}>
-                    <div className="flex-shrink-0 p-4 border-b border-gray-200 bg-gray-50">
+                    <div className="flex-shrink-0 p-4 border-b border-gray-200 bg-gradient-to-b from-gray-50 to-white">
                         <div className="flex items-center justify-between gap-2 mb-3">
                             <h2 className="font-semibold text-gray-900 text-base sm:text-lg">Messages</h2>
                             <div className="flex gap-1">
                                 <Link
                                     href="/admin/messaging/new"
-                                    className="min-w-[44px] min-h-[44px] flex items-center justify-center -m-2 text-primary-600 hover:bg-primary-50 rounded-lg transition-colors touch-manipulation"
+                                    className="min-w-[40px] min-h-[40px] flex items-center justify-center text-primary-600 hover:bg-primary-50 rounded-lg transition-colors touch-manipulation"
                                     title="New Group"
                                 >
                                     <Users className="w-4 h-4" />
                                 </Link>
                                 <button
-                                    className="min-w-[44px] min-h-[44px] flex items-center justify-center -m-2 text-primary-600 hover:bg-primary-50 rounded-lg transition-colors touch-manipulation"
+                                    className="min-w-[40px] min-h-[40px] flex items-center justify-center text-primary-600 hover:bg-primary-50 rounded-lg transition-colors touch-manipulation"
                                     title="New Direct Message"
                                     onClick={() => setShowDMModal(true)}
                                 >
@@ -462,26 +473,30 @@ export function AdminMessagingPanel({ groups, currentUserId }: { groups: any[], 
                                 </button>
                             </div>
                         </div>
-                        <input
-                            id="search-conversations"
-                            name="searchConversations"
-                            type="search"
-                            placeholder="Search conversations..."
-                            aria-label="Search conversations"
-                            className={cn(STYLES.input, "min-h-[44px] text-base")}
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                        />
+                        <div className="relative">
+                            <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                            <input
+                                id="search-conversations"
+                                name="searchConversations"
+                                type="search"
+                                placeholder="Search conversations..."
+                                aria-label="Search conversations"
+                                className={cn(STYLES.input, 'min-h-[40px] pl-9 text-sm')}
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                            />
+                        </div>
                     </div>
 
                     <div className="flex-1 overflow-y-auto custom-scrollbar">
                         {/* DM Conversations */}
                         {dmConversations.length > 0 && (
                             <>
-                                <div className="px-4 pt-3 pb-1">
+                                <div className="px-4 pt-3 pb-1 flex items-center justify-between">
                                     <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Direct Messages</p>
+                                    <span className="text-[10px] text-gray-400">{filteredDMs.length}</span>
                                 </div>
-                                {filtered.filter(i => i.type === 'DM').map(item => {
+                                {filteredDMs.map(item => {
                                     const hasUnread = (item.unreadCount ?? 0) > 0
                                     return (
                                         <button
@@ -491,8 +506,8 @@ export function AdminMessagingPanel({ groups, currentUserId }: { groups: any[], 
                                                 setSelectedType('DM')
                                             }}
                                             className={cn(
-                                                "w-full text-left px-4 py-3 min-h-[64px] border-b border-gray-100 hover:bg-white active:bg-gray-50 transition-colors flex items-center gap-3 touch-manipulation",
-                                                selectedId === item.id ? "bg-white border-l-4 border-l-primary-500" : "border-l-4 border-l-transparent",
+                                                "w-full text-left px-4 py-3 min-h-[64px] border-b border-gray-100 hover:bg-gray-50 active:bg-gray-100 transition-colors flex items-center gap-3 touch-manipulation",
+                                                selectedId === item.id ? "bg-primary-50 border-l-4 border-l-primary-500" : "border-l-4 border-l-transparent",
                                                 hasUnread && selectedId !== item.id && "bg-primary-50/50"
                                             )}
                                         >
@@ -532,13 +547,13 @@ export function AdminMessagingPanel({ groups, currentUserId }: { groups: any[], 
                         )}
 
                         {/* Group Conversations */}
-                        <div className="px-4 pt-3 pb-1">
+                        <div className="px-4 pt-3 pb-1 flex items-center justify-between">
                             <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Groups</p>
+                            <span className="text-[10px] text-gray-400">{filteredGroups.length}</span>
                         </div>
-                        {filtered.filter(i => i.type === 'GROUP').map(item => {
+                        {filteredGroups.map(item => {
                             const group = groups.find((g: any) => g.id === item.id)
                             const iconEmoji = group?.iconEmoji || '👥'
-                            const colorClass = group?.color ? `bg-${group.color}-100 text-${group.color}-700` : 'bg-primary-100 text-primary-700'
                             return (
                                 <button
                                     key={item.id}
@@ -547,19 +562,13 @@ export function AdminMessagingPanel({ groups, currentUserId }: { groups: any[], 
                                         setSelectedType('GROUP')
                                     }}
                                     className={cn(
-                                        "w-full text-left px-4 py-3 min-h-[64px] border-b border-gray-100 hover:bg-white active:bg-gray-50 transition-colors flex items-center gap-3 touch-manipulation",
-                                        selectedId === item.id ? "bg-white border-l-4 border-l-primary-500" : "border-l-4 border-l-transparent"
+                                        "w-full text-left px-4 py-3 min-h-[64px] border-b border-gray-100 hover:bg-gray-50 active:bg-gray-100 transition-colors flex items-center gap-3 touch-manipulation",
+                                        selectedId === item.id ? "bg-primary-50 border-l-4 border-l-primary-500" : "border-l-4 border-l-transparent"
                                     )}
                                 >
                                     <div className={cn(
                                         "w-10 h-10 rounded-full flex items-center justify-center text-base shrink-0",
-                                        group?.color === 'blue' && "bg-blue-100 text-blue-700",
-                                        group?.color === 'green' && "bg-green-100 text-green-700",
-                                        group?.color === 'purple' && "bg-purple-100 text-purple-700",
-                                        group?.color === 'red' && "bg-red-100 text-red-700",
-                                        group?.color === 'yellow' && "bg-yellow-100 text-yellow-700",
-                                        group?.color === 'pink' && "bg-pink-100 text-pink-700",
-                                        !group?.color && "bg-primary-100 text-primary-700"
+                                        GROUP_COLOR_CLASS[group?.color] || 'bg-primary-100 text-primary-700'
                                     )}>
                                         {iconEmoji}
                                     </div>

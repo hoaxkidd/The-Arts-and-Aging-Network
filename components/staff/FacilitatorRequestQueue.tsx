@@ -3,7 +3,7 @@
 import { useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { CheckCircle2, CircleHelp, XCircle, Loader2 } from 'lucide-react'
-import { respondToFacilitatorRequestRsvp } from '@/app/actions/event-requests'
+import { respondToFacilitatorRequestRsvp } from '@/app/actions/booking-requests'
 import { cn } from '@/lib/utils'
 
 type QueueItem = {
@@ -39,7 +39,7 @@ export function FacilitatorRequestQueue({ items }: { items: QueueItem[] }) {
       <h2 className="text-sm font-semibold text-amber-900 mb-2">Facilitator RSVP Required</h2>
       <div className="space-y-2">
         {items.map((item) => {
-          const title = item.request.customTitle || item.request.existingEvent?.title || 'Event request'
+          const title = item.request.customTitle || item.request.existingEvent?.title || 'Booking request'
           return (
             <div key={item.id} className="rounded-md border border-amber-200 bg-white p-3">
               <p className="text-sm font-medium text-gray-900">{title}</p>

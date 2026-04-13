@@ -298,7 +298,7 @@ export function HomeQuickView({ homeId, isOpen, onClose }: HomeQuickViewProps) {
               </div>
               <div className="flex items-baseline gap-1.5">
                 <span className="text-2xl font-bold text-gray-800 tabular-nums">{home._count.events}</span>
-                <span className="text-sm text-gray-500">events</span>
+                <span className="text-sm text-gray-500">bookings</span>
               </div>
               {home.type && (
                 <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2.5 py-1 rounded-md">{home.type}</span>
@@ -344,7 +344,7 @@ export function HomeQuickView({ homeId, isOpen, onClose }: HomeQuickViewProps) {
                     {tab === 'contact' && <><Phone className="w-4 h-4 inline-block mr-2 align-middle opacity-80" /> Contact</>}
                     {tab === 'account' && <><User className="w-4 h-4 inline-block mr-2 align-middle opacity-80" /> Account</>}
                     {tab === 'protocol' && <><Shield className="w-4 h-4 inline-block mr-2 align-middle opacity-80" /> Protocol</>}
-                    {tab === 'events' && <><Calendar className="w-4 h-4 inline-block mr-2 align-middle opacity-80" /> Events</>}
+                    {tab === 'events' && <><Calendar className="w-4 h-4 inline-block mr-2 align-middle opacity-80" /> Bookings</>}
                   </button>
                 ))}
               </div>
@@ -377,7 +377,7 @@ export function HomeQuickView({ homeId, isOpen, onClose }: HomeQuickViewProps) {
                         )}
                         <tr className="hover:bg-gray-50/50 transition-colors"><td className="py-3 px-4 text-sm font-medium text-gray-600">Resident count</td><td className="py-3 px-4"><EditableField label="" value={home.residentCount} field="residentCount" homeId={home.id} type="number" onUpdate={handleUpdate} hideLabel /></td></tr>
                         <tr className="hover:bg-gray-50/50 transition-colors"><td className="py-3 px-4 text-sm font-medium text-gray-600">Max capacity</td><td className="py-3 px-4"><EditableField label="" value={home.maxCapacity} field="maxCapacity" homeId={home.id} type="number" onUpdate={handleUpdate} hideLabel /></td></tr>
-                        <tr className="hover:bg-gray-50/50 transition-colors"><td className="py-3 px-4 text-sm font-medium text-gray-600">Events (total)</td><td className="py-3 px-4 text-sm text-gray-900">{home._count.events}</td></tr>
+                        <tr className="hover:bg-gray-50/50 transition-colors"><td className="py-3 px-4 text-sm font-medium text-gray-600">Bookings (total)</td><td className="py-3 px-4 text-sm text-gray-900">{home._count.events}</td></tr>
                       </tbody>
                     </table>
                   </div>
@@ -471,19 +471,19 @@ export function HomeQuickView({ homeId, isOpen, onClose }: HomeQuickViewProps) {
                   </div>
                 )}
 
-                {/* Events tab */}
+                {/* Bookings tab */}
                 {activeTab === 'events' && (
                   <div className="rounded-lg border border-gray-200 bg-white overflow-hidden">
                     <div className="px-4 py-3 border-b border-gray-100 bg-gray-50/80">
-                      <h3 className="text-sm font-semibold text-gray-700">Recent events</h3>
-                      <p className="text-xs text-gray-500 mt-0.5">Events this facility is linked to (up to 10)</p>
+                      <h3 className="text-sm font-semibold text-gray-700">Recent bookings</h3>
+                      <p className="text-xs text-gray-500 mt-0.5">Bookings this facility is linked to (up to 10)</p>
                     </div>
                     {home.events.length > 0 ? (
                       <div className="table-scroll-wrapper">
                         <table className={STYLES.table}>
                           <thead className="bg-gray-50">
                             <tr className={STYLES.tableHeadRow}>
-                              <th className={STYLES.tableHeader}>Event</th>
+                              <th className={STYLES.tableHeader}>Booking</th>
                               <th className={STYLES.tableHeader}>Date</th>
                               <th className={STYLES.tableHeader}>Status</th>
                               <th className={cn(STYLES.tableHeader, "text-right")}>Action</th>
@@ -497,7 +497,7 @@ export function HomeQuickView({ homeId, isOpen, onClose }: HomeQuickViewProps) {
                                   <td className={cn(STYLES.tableCell, "font-medium text-gray-900")}>{event.title}</td>
                                   <td className={STYLES.tableCell}>{new Date(event.startDateTime).toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}</td>
                                   <td className={STYLES.tableCell}><span className={cn("text-xs font-medium", event.status === 'PUBLISHED' ? "text-emerald-700" : event.status === 'COMPLETED' ? "text-sky-700" : "text-gray-600")}>{event.status}</span></td>
-                                  <td className={cn(STYLES.tableCell, "text-right")}><a href={`/admin/events/${event.id}/edit`} className="text-primary-600 hover:text-primary-700 hover:underline text-sm font-medium inline-flex items-center gap-1"><ExternalLink className="w-3.5 h-3.5" /> Edit</a></td>
+                                  <td className={cn(STYLES.tableCell, "text-right")}><a href={`/admin/bookings/${event.id}/edit`} className="text-primary-600 hover:text-primary-700 hover:underline text-sm font-medium inline-flex items-center gap-1"><ExternalLink className="w-3.5 h-3.5" /> Edit</a></td>
                                 </tr>
                               ))}
                           </tbody>
@@ -506,8 +506,8 @@ export function HomeQuickView({ homeId, isOpen, onClose }: HomeQuickViewProps) {
                     ) : (
                       <div className="py-12 px-4 text-center">
                         <Calendar className="w-10 h-10 mx-auto text-gray-300 mb-3" />
-                        <p className="text-sm font-medium text-gray-500">No events linked</p>
-                        <p className="text-xs text-gray-400 mt-1">This facility has no events yet.</p>
+                        <p className="text-sm font-medium text-gray-500">No bookings linked</p>
+                        <p className="text-xs text-gray-400 mt-1">This facility has no bookings yet.</p>
                         <a href={`/admin/homes/${home.id}`} className="inline-block mt-3 text-sm text-primary-600 hover:text-primary-700 font-medium">View full details →</a>
                       </div>
                     )}

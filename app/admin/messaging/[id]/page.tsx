@@ -1,9 +1,10 @@
 import { prisma } from "@/lib/prisma"
 import { auth } from "@/auth"
 import { redirect } from "next/navigation"
-import { ArrowLeft, Users, MessageSquare, Settings } from "lucide-react"
+import { ArrowLeft, Users, MessageSquare } from "lucide-react"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
+import { STYLES } from "@/lib/styles"
 import { GroupMembersList } from "@/components/messaging/GroupMembersList"
 import { GroupSettings } from "@/components/messaging/GroupSettings"
 import { GroupFormAttachmentsPanel } from "@/components/admin/GroupFormAttachmentsPanel"
@@ -84,15 +85,15 @@ export default async function ManageGroupPage({
   ])
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col space-y-4">
       <div className="flex-shrink-0 mb-4">
-        <Link href="/admin/messaging" className="inline-flex items-center gap-1 text-sm text-gray-600 hover:text-gray-900">
+        <Link href="/admin/communication" className="inline-flex items-center gap-1 text-sm text-gray-600 hover:text-gray-900">
           <ArrowLeft className="w-4 h-4" /> Back to Messaging
         </Link>
       </div>
       {/* Stats */}
       <div className="grid grid-cols-2 gap-4 mb-6">
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
+        <div className={cn(STYLES.statsCard, "p-4") }>
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
               <Users className="w-5 h-5 text-blue-600" />
@@ -103,7 +104,7 @@ export default async function ManageGroupPage({
             </div>
           </div>
         </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
+        <div className={cn(STYLES.statsCard, "p-4") }>
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
               <MessageSquare className="w-5 h-5 text-purple-600" />

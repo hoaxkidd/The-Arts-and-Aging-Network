@@ -125,7 +125,7 @@ export async function getStaffPublicProfile(staffIdentifier: string) {
 
   return {
     staff,
-    upcomingEvents: upcomingEvents.map(a => ({
+    upcomingBookings: upcomingEvents.map(a => ({
       id: a.event.id,
       title: a.event.title,
       program: a.event.program?.name || 'General',

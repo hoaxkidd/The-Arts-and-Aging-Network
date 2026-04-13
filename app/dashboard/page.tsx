@@ -8,8 +8,8 @@ import { STYLES } from "@/lib/styles"
 
 const quickActions = [
   { label: "New Request", icon: Plus, href: "/dashboard/requests/new", color: "bg-primary-500", hover: "hover:bg-primary-600" },
-  { label: "Browse Events", icon: Calendar, href: "/dashboard/events", color: "bg-blue-500", hover: "hover:bg-blue-600" },
-  { label: "My Events", icon: CheckCircle, href: "/dashboard/my-events", color: "bg-green-500", hover: "hover:bg-green-600" },
+  { label: "Browse Bookings", icon: Calendar, href: "/dashboard/bookings", color: "bg-blue-500", hover: "hover:bg-blue-600" },
+  { label: "My Bookings", icon: CheckCircle, href: "/dashboard/my-bookings", color: "bg-green-500", hover: "hover:bg-green-600" },
   { label: "Contacts", icon: Users, href: "/dashboard/contacts", color: "bg-purple-500", hover: "hover:bg-purple-600" },
   { label: "Forms", icon: FileText, href: "/dashboard/forms", color: "bg-amber-500", hover: "hover:bg-amber-600" },
   { label: "Profile", icon: Settings, href: "/dashboard/profile", color: "bg-gray-500", hover: "hover:bg-gray-600" },
@@ -130,7 +130,7 @@ export default async function HomeAdminDashboard() {
                 Upcoming Schedule
               </h3>
               <Link
-                href="/dashboard/events"
+                href="/dashboard/bookings"
                 className="text-xs font-medium text-primary-600 hover:text-primary-700 flex items-center gap-1"
               >
                 View all <ArrowUpRight className="w-3 h-3" />
@@ -142,7 +142,7 @@ export default async function HomeAdminDashboard() {
                   {upcoming.slice(0, 6).map((event, index) => (
                     <Link
                       key={event.id}
-                      href={`/events/${event.id}`}
+                      href={`/bookings/${event.id}`}
                       className={cn(
                         "flex items-center gap-3 p-3 hover:bg-gray-50/50 transition-colors",
                         index === 0 && "bg-primary-50/30"
@@ -194,13 +194,13 @@ export default async function HomeAdminDashboard() {
                   <div className="w-14 h-14 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
                     <Calendar className="w-7 h-7 text-gray-400" />
                   </div>
-                  <p className="text-sm font-medium text-gray-900">No upcoming events</p>
-                  <p className="text-xs text-gray-500 mt-1 mb-4">Browse events to find opportunities for your residents.</p>
+                  <p className="text-sm font-medium text-gray-900">No upcoming bookings</p>
+                  <p className="text-xs text-gray-500 mt-1 mb-4">Browse bookings to find opportunities for your residents.</p>
                   <Link
-                    href="/dashboard/events"
+                    href="/dashboard/bookings"
                     className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-medium bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
                   >
-                    Browse Events
+                    Browse Bookings
                   </Link>
                 </div>
               )}

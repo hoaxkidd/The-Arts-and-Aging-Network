@@ -171,7 +171,7 @@ export default async function EmailRemindersPage({
         <table className={cn(STYLES.table, 'table-fixed min-w-[1240px]')}>
           <thead className="bg-gray-50">
             <tr className={STYLES.tableHeadRow}>
-              <th className={cn(STYLES.tableHeader, 'w-[260px]')}>Event</th>
+              <th className={cn(STYLES.tableHeader, 'w-[260px]')}>Booking</th>
               <th className={cn(STYLES.tableHeader, 'w-[200px]')}>Recipient</th>
               <th className={cn(STYLES.tableHeader, 'w-[130px]')}>Type</th>
               <th className={cn(STYLES.tableHeader, 'w-[230px]')}>Timing</th>
@@ -193,7 +193,7 @@ export default async function EmailRemindersPage({
                 <tr key={reminder.id} className={STYLES.tableRow}>
                   <td className={STYLES.tableCell}>
                     <Link
-                      href={`/events/${reminder.event.id}`}
+                      href={`/bookings/${reminder.event.id}`}
                       className="block max-w-[230px] truncate text-sm font-medium text-primary-600 hover:text-primary-700"
                       title={reminder.event.title}
                     >

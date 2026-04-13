@@ -93,14 +93,14 @@ export function StaffScheduleView({ events }: { events: Event[] }) {
 
   const emptyMessage =
     filter === 'ALL'
-      ? "You haven't confirmed attendance for any events yet."
-      : `No ${filter === 'UPCOMING' ? 'upcoming' : filter.toLowerCase()} events in your schedule.`
+      ? "You haven't confirmed attendance for any bookings yet."
+      : `No ${filter === 'UPCOMING' ? 'upcoming' : filter.toLowerCase()} bookings in your schedule.`
 
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap gap-3">
         <div className={cn(STYLES.statsCard, 'flex-1 min-w-[140px]')}>
-          <p className="text-sm text-gray-500">Total Events</p>
+          <p className="text-sm text-gray-500">Total Bookings</p>
           <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
         </div>
         <div className={cn(STYLES.statsCard, 'flex-1 min-w-[140px]')}>
@@ -132,13 +132,13 @@ export function StaffScheduleView({ events }: { events: Event[] }) {
             <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <Calendar className="w-6 h-6 text-gray-400" />
             </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No Events Found</h3>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No Bookings Found</h3>
             <p className="text-gray-500 mb-4">{emptyMessage}</p>
             <Link
-              href={`${basePath}/events`}
+              href={`${basePath}/bookings`}
               className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700"
             >
-              Browse Available Events
+              Browse Available Bookings
             </Link>
           </div>
         ) : (
@@ -151,7 +151,7 @@ export function StaffScheduleView({ events }: { events: Event[] }) {
                 return (
                   <Link
                     key={event.id}
-                    href={`${basePath}/events/${event.id}`}
+                    href={`${basePath}/bookings/${event.id}`}
                     className="block bg-white rounded-lg border border-gray-200 p-3 shadow-sm"
                   >
                     <div className="flex items-center gap-2 mb-2">{eventStatusBadge(event)}</div>
@@ -195,7 +195,7 @@ export function StaffScheduleView({ events }: { events: Event[] }) {
                   <thead className="bg-gray-50">
                     <tr className={STYLES.tableHeadRow}>
                       <th className={STYLES.tableHeader}>Status</th>
-                      <th className={STYLES.tableHeader}>Event</th>
+                      <th className={STYLES.tableHeader}>Booking</th>
                       <th className={STYLES.tableHeader}>Date</th>
                       <th className={STYLES.tableHeader}>Time</th>
                       <th className={STYLES.tableHeader}>Location</th>
@@ -216,7 +216,7 @@ export function StaffScheduleView({ events }: { events: Event[] }) {
                           <td className={STYLES.tableCell}>{eventStatusBadge(event)}</td>
                           <td className={STYLES.tableCell}>
                             <Link
-                              href={`${basePath}/events/${event.id}`}
+                              href={`${basePath}/bookings/${event.id}`}
                               className="font-medium text-gray-900 hover:text-primary-600"
                             >
                               {event.title}

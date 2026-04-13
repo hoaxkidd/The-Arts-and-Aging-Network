@@ -1,0 +1,38 @@
+import { prisma } from "@/lib/prisma"
+import { auth } from "@/auth"
+import { redirect } from "next/navigation"
+import { EventManagementHubClient } from "./EventManagementHubClient"
+import { getAllEventRequests } from "@/app/actions/booking-requests"
+
+export default async function EventManagementHubPage() {
+  const session = await auth()
+  if (session?.user?.role !== 'ADMIN') redirect('/dashboard')
+
+  // Fetch Bookings
+  const events = await prisma.event.findMany({
+    orderBy: { startDateTime: 'asc' },
+    include: {
+      location: true,
+      requiredFormTemplate: {
+        select: {
+          id: true,
+          title: true,
+        },
+      },
+      attendances: {
+        include: { user: true }
+      }
+    }
+  })
+
+  // Fetch Requests
+  const requestResult = await getAllEventRequests()
+  const requests = requestResult.data || []
+
+  return (
+    <EventManagementHubClient 
+        events={events}
+        requests={requests}
+    />
+  )
+}

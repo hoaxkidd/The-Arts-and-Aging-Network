@@ -97,7 +97,7 @@ export default async function ConversationRequestsPage() {
   })
 
   return (
-    <div className="space-y-6">
+    <div className={cn(STYLES.pageTemplateRoot, "space-y-6")}>
       <div className={cn(STYLES.card, 'p-5 sm:p-6 bg-gradient-to-r from-white to-gray-50')}>
         <h1 className="text-xl font-semibold text-gray-900">Conversation Request Management</h1>
         <p className="text-sm text-gray-600 mt-1">

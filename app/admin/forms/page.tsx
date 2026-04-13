@@ -32,7 +32,7 @@ export default async function AdminFormsPage({
 
   // Categories
   const categories = [
-    { value: 'EVENT_SIGNUP', label: 'Event Sign-up', color: 'blue' },
+    { value: 'EVENT_SIGNUP', label: 'Booking Sign-up', color: 'blue' },
     { value: 'INCIDENT', label: 'Incident Reports', color: 'red' },
     { value: 'FEEDBACK', label: 'Feedback Forms', color: 'blue' },
     { value: 'EVALUATION', label: 'Evaluations', color: 'purple' },
