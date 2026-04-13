@@ -14,11 +14,8 @@ import { normalizeRoleList } from '@/lib/roles'
 
 export type AuthState = { error?: string; redirect?: string } | undefined
 
-/** Base URL for redirects: prefer configured env URL; avoid host-header trust in production. */
-function getBaseUrl(headersList: Headers): string {
-  const envUrl = process.env.NEXTAUTH_URL ?? process.env.AUTH_URL
-  if (envUrl) return envUrl.replace(/\/$/, '')
-  if (process.env.NODE_ENV === 'production') return 'https://the-arts-and-aging-network.vercel.app'
+/** Request origin used for same-origin callbackUrl validation. */
+function getRequestOrigin(headersList: Headers): string {
   const host = headersList.get('x-forwarded-host') ?? headersList.get('host')
   const proto = headersList.get('x-forwarded-proto') ?? 'https'
   if (host) return `${proto === 'https' ? 'https' : 'http'}://${host}`
@@ -78,7 +75,7 @@ export async function authenticate(
     return { error: 'Too many login attempts. Please try again later.' }
   }
 
-  const baseUrl = getBaseUrl(headersList)
+  const requestOrigin = getRequestOrigin(headersList)
 
   const email = formData.get('email') as string | null
   const password = formData.get('password') as string | null
@@ -105,30 +102,29 @@ export async function authenticate(
       const path = result.startsWith('http') ? new URL(result).pathname : result
       const isAuthCallback = path.includes('/api/auth/callback/') || path.includes('/api/auth/signin')
       
-      const safeCallback = sanitizeCallbackUrl(callbackUrl, baseUrl)
+      const safeCallback = sanitizeCallbackUrl(callbackUrl, requestOrigin)
       let destination = safeCallback || '/'
 
       if (!safeCallback && email) {
         destination = await getPostLoginDestinationByEmail(email)
       }
       
-      const redirectUrl = isAuthCallback 
-        ? `${baseUrl}${destination}`
-        : `${baseUrl}${destination.startsWith('/') ? '' : '/'}${destination}`
-      
-      return { redirect: redirectUrl }
+      if (isAuthCallback) {
+        return { redirect: destination }
+      }
+
+      return { redirect: destination.startsWith('/') ? destination : `/${destination}` }
     }
 
     if (result?.ok && result.url) {
-      const safeCallback = sanitizeCallbackUrl(callbackUrl, baseUrl)
+      const safeCallback = sanitizeCallbackUrl(callbackUrl, requestOrigin)
       let destination = safeCallback || '/'
 
       if (!safeCallback && email) {
         destination = await getPostLoginDestinationByEmail(email)
       }
        
-      const redirectUrl = `${baseUrl}${destination.startsWith('/') ? '' : '/'}${destination}`
-      return { redirect: redirectUrl }
+      return { redirect: destination.startsWith('/') ? destination : `/${destination}` }
     }
     
     if (!result) {

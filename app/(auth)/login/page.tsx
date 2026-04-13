@@ -46,9 +46,25 @@ function LoginForm({ searchParams, router, tabParam }: { searchParams: ReturnTyp
 
   useEffect(() => {
     if (state?.redirect) {
-      window.location.href = state.redirect
+      try {
+        const redirect = state.redirect.trim()
+        if (redirect.startsWith('/')) {
+          router.replace(redirect)
+          return
+        }
+
+        const parsed = new URL(redirect)
+        if (parsed.origin === window.location.origin) {
+          router.replace(`${parsed.pathname}${parsed.search}${parsed.hash}`)
+          return
+        }
+
+        router.replace('/')
+      } catch {
+        router.replace('/')
+      }
     }
-  }, [state?.redirect])
+  }, [router, state?.redirect])
 
   const callbackUrl = searchParams.get('callbackUrl') || ''
 
