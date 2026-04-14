@@ -36,7 +36,7 @@ export type AdminNavChild = {
   icon: LucideIcon
 }
 
-/** Collapsible admin sidebar group with nested links (8 groups, 21 routes). */
+/** Collapsible admin sidebar group with nested links. */
 export type AdminNavGroup = {
   id: string
   label: string
@@ -45,7 +45,7 @@ export type AdminNavGroup = {
 }
 
 /**
- * Admin IA: 8 top-level groups, 21 destinations — every href must stay in sync with App Router.
+ * Admin IA: top-level grouped navigation — every href must stay in sync with App Router.
  */
 export const adminNavGroups: AdminNavGroup[] = [
   {
@@ -60,6 +60,7 @@ export const adminNavGroups: AdminNavGroup[] = [
     icon: Calendar,
     children: [
       { label: "Booking Management", href: "/admin/bookings", icon: Calendar },
+      { label: "Booking Requests", href: "/admin/booking-requests", icon: ClipboardList },
       { label: "Broadcasts", href: "/admin/broadcasts", icon: Mail },
       { label: "Email Reminders", href: "/admin/email-reminders", icon: Mail },
     ],
@@ -72,6 +73,8 @@ export const adminNavGroups: AdminNavGroup[] = [
       { label: "Financial Management", href: "/admin/financials", icon: Receipt },
       { label: "Payroll Forms", href: "/admin/payroll-forms", icon: FileText },
       { label: "Payroll Requests", href: "/admin/requests", icon: ClipboardList },
+      { label: "Timesheets", href: "/admin/timesheets", icon: Clock },
+      { label: "Mileage", href: "/admin/mileage", icon: MapPin },
     ],
   },
   {
@@ -81,6 +84,8 @@ export const adminNavGroups: AdminNavGroup[] = [
     children: [
       { label: "Homes", href: "/admin/homes", icon: Building },
       { label: "User Management", href: "/admin/users", icon: Users },
+      { label: "Volunteer Review", href: "/admin/volunteers", icon: Users },
+      { label: "Invitations", href: "/admin/invitations", icon: Mail },
       { label: "Team Directory", href: "/staff/directory", icon: Users },
     ],
   },
@@ -90,6 +95,8 @@ export const adminNavGroups: AdminNavGroup[] = [
     icon: MessageSquare,
     children: [
       { label: "Communication Hub", href: "/admin/communication", icon: MessageSquare },
+      { label: "Message Groups", href: "/admin/messaging", icon: MessageSquare },
+      { label: "Messaging Requests", href: "/admin/messaging/requests", icon: MessageSquare },
       { label: "Conversation Requests", href: "/admin/conversation-requests", icon: MessageSquare },
     ],
   },
@@ -100,6 +107,7 @@ export const adminNavGroups: AdminNavGroup[] = [
     children: [
       { label: "Testimonials", href: "/admin/testimonials", icon: Quote },
       { label: "Forms", href: "/admin/forms", icon: FileText },
+      { label: "Form Templates", href: "/admin/form-templates", icon: FileText },
       { label: "Form Submissions", href: "/admin/form-submissions", icon: FileText },
       { label: "Import Data", href: "/admin/import", icon: Upload },
     ],
@@ -125,7 +133,7 @@ export const adminNavGroups: AdminNavGroup[] = [
   },
 ]
 
-/** Frozen list of 21 sidebar hrefs (merge / QA parity). */
+/** Frozen list of sidebar hrefs (merge / QA parity). */
 export const CANONICAL_ADMIN_NAV_HREFS: readonly string[] = adminNavGroups.flatMap((g) =>
   g.children.map((c) => c.href)
 ) as readonly string[]
@@ -160,6 +168,21 @@ export const adminMenu: MenuItem[] = adminNavGroups.flatMap((g) =>
   }))
 )
 
+export const adminContextualRoutes: AdminNavChild[] = [
+  { label: 'Create Booking', href: '/admin/bookings/new', icon: Calendar },
+  { label: 'Edit Booking', href: '/admin/bookings/[id]/edit', icon: Calendar },
+  { label: 'Review Booking Request', href: '/admin/booking-requests/[id]', icon: ClipboardList },
+  { label: 'Create User', href: '/admin/users/new', icon: Users },
+  { label: 'User Profile', href: '/admin/users/[id]', icon: UserCircle },
+  { label: 'Home Details', href: '/admin/homes/[id]', icon: Building },
+  { label: 'Create Message Group', href: '/admin/messaging/new', icon: MessageSquare },
+  { label: 'Message Group Details', href: '/admin/messaging/[id]', icon: MessageSquare },
+  { label: 'Timesheet Review Details', href: '/admin/timesheets/[id]', icon: Clock },
+  { label: 'Create Form Template', href: '/admin/form-templates/new', icon: FileText },
+  { label: 'Edit Form Template', href: '/admin/form-templates/[id]/edit', icon: FileText },
+  { label: 'Edit Form', href: '/admin/forms/[id]/edit', icon: FileText },
+]
+
 export const staffMenu = [
   { label: "Dashboard", href: "/staff", icon: LayoutDashboard },
   { label: "Browse Bookings", href: "/staff/bookings", icon: Calendar },
@@ -180,7 +203,7 @@ function withBasePath(menu: MenuItem[], fromBase: string, toBase: string): MenuI
 
 export const facilitatorMenu = withBasePath(staffMenu, '/staff', '/facilitator')
 
-export const partnerMenu = withBasePath(staffMenu, '/staff', '/partner')
+export const partnerMenu = withBasePath(staffMenu, '/staff', '/partner').filter((item) => item.href !== '/partner/bookings')
 
 export const volunteerMenu = [
   { label: "Dashboard", href: "/volunteer", icon: LayoutDashboard },
@@ -203,7 +226,7 @@ export const boardMenu = [
 
 export const homeAdminMenu = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { label: "Home's Bookings", href: "/dashboard/my-bookings", icon: CheckCircle },
+  { label: "My Bookings", href: "/dashboard/my-bookings", icon: CheckCircle },
   { label: "Inbox", href: "/staff/inbox", icon: Inbox },
   { label: "Profile", href: "/dashboard/profile", icon: UserCircle },
 ]
@@ -212,7 +235,6 @@ export const MENU_ITEMS: Record<string, MenuItem[]> = {
   ADMIN: adminMenu,
   PAYROLL: [
     { label: "Dashboard", href: "/payroll", icon: LayoutDashboard },
-    { label: "Bookings", href: "/bookings", icon: Calendar },
     { label: "Schedule", href: "/payroll/schedule", icon: CalendarCheck },
     { label: "Team Directory", href: "/staff/directory", icon: Users },
     { label: "Inbox", href: "/staff/inbox", icon: Inbox },

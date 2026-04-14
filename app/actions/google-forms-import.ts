@@ -4,10 +4,13 @@ import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
 import { google } from 'googleapis'
+import type { FormTemplateField } from '@/lib/form-template-types'
 import {
   GOOGLE_FORMS_SCOPES,
   createGoogleFormsOAuthClient,
+  getGoogleApiErrorUserMessage,
   mapGoogleFormToTemplate,
+  withGoogleApiRetry,
 } from '@/lib/google-forms'
 import { decryptSecret, encryptSecret } from '@/lib/secret-crypto'
 import { logger } from '@/lib/logger'
@@ -56,7 +59,10 @@ async function getConnectedClient(userId: string) {
     (!connection.tokenExpiryDate || connection.tokenExpiryDate.getTime() <= Date.now() + 60_000)
 
   if (shouldRefresh) {
-    const refreshed = await oauth2.refreshAccessToken()
+    const refreshed = await withGoogleApiRetry(() => oauth2.refreshAccessToken(), {
+      retries: 1,
+      baseDelayMs: 300,
+    })
     const token = refreshed.credentials.access_token
     const expiry = refreshed.credentials.expiry_date
     const nextRefreshToken = refreshed.credentials.refresh_token || refreshToken
@@ -89,14 +95,18 @@ async function listGoogleForms(oauth2: ReturnType<typeof createGoogleFormsOAuthC
     queryParts.push(`name contains '${safeSearch}'`)
   }
 
-  const response = await drive.files.list({
-    q: queryParts.join(' and '),
-    orderBy: 'modifiedTime desc',
-    pageSize: 200,
-    fields: 'files(id,name,modifiedTime,webViewLink)',
-    supportsAllDrives: true,
-    includeItemsFromAllDrives: true,
-  })
+  const response = await withGoogleApiRetry(
+    () =>
+      drive.files.list({
+        q: queryParts.join(' and '),
+        orderBy: 'modifiedTime desc',
+        pageSize: 200,
+        fields: 'files(id,name,modifiedTime,webViewLink)',
+        supportsAllDrives: true,
+        includeItemsFromAllDrives: true,
+      }),
+    { retries: 2, baseDelayMs: 350 }
+  )
 
   return (response.data.files || [])
     .filter((file): file is { id: string; name?: string | null; modifiedTime?: string | null; webViewLink?: string | null } => Boolean(file.id))
@@ -106,6 +116,13 @@ async function listGoogleForms(oauth2: ReturnType<typeof createGoogleFormsOAuthC
       modifiedTime: file.modifiedTime || null,
       webViewLink: file.webViewLink || null,
     }))
+}
+
+async function fetchGoogleForm(formsApi: ReturnType<typeof google.forms>, formId: string) {
+  return withGoogleApiRetry(() => formsApi.forms.get({ formId }), {
+    retries: 2,
+    baseDelayMs: 350,
+  })
 }
 
 export async function getGoogleFormsConnectionStatus() {
@@ -171,7 +188,7 @@ export async function listGoogleFormsForImport(search = '') {
     return {
       success: false,
       forms: [] as FormListItem[],
-      error: error instanceof Error ? error.message : 'Failed to list forms',
+      error: getGoogleApiErrorUserMessage(error, 'Failed to list forms'),
     }
   }
 }
@@ -188,11 +205,11 @@ export async function previewGoogleFormsImport(formIds: string[]) {
       description: string
       fieldCount: number
       warnings: string[]
-      fields: Array<{ id: string; label: string; type: string; required: boolean }>
+      fields: FormTemplateField[]
     }> = []
 
     for (const formId of formIds.slice(0, 25)) {
-      const response = await formsApi.forms.get({ formId })
+      const response = await fetchGoogleForm(formsApi, formId)
       const mapped = mapGoogleFormToTemplate(response.data as any)
       previews.push({
         formId,
@@ -200,12 +217,7 @@ export async function previewGoogleFormsImport(formIds: string[]) {
         description: mapped.description,
         fieldCount: mapped.fields.length,
         warnings: mapped.warnings,
-        fields: mapped.fields.slice(0, 12).map((field) => ({
-          id: field.id,
-          label: field.label,
-          type: field.type,
-          required: field.required,
-        })),
+        fields: mapped.fields,
       })
     }
 
@@ -215,7 +227,7 @@ export async function previewGoogleFormsImport(formIds: string[]) {
     return {
       success: false,
       previews: [],
-      error: error instanceof Error ? error.message : 'Failed to preview forms',
+      error: getGoogleApiErrorUserMessage(error, 'Failed to preview forms'),
     }
   }
 }
@@ -268,7 +280,7 @@ export async function importGoogleFormsBulk(input: {
           continue
         }
 
-        const response = await formsApi.forms.get({ formId })
+        const response = await fetchGoogleForm(formsApi, formId)
         const mapped = mapGoogleFormToTemplate(response.data as any)
 
         if (mapped.fields.length === 0) {
@@ -328,7 +340,7 @@ export async function importGoogleFormsBulk(input: {
           formId,
           title: 'Unknown form',
           status: 'failed',
-          message: error instanceof Error ? error.message : 'Import failed',
+          message: getGoogleApiErrorUserMessage(error, 'Import failed'),
         })
       }
     }
@@ -348,7 +360,7 @@ export async function importGoogleFormsBulk(input: {
     return {
       success: false,
       results: [],
-      error: error instanceof Error ? error.message : 'Failed to import forms',
+      error: getGoogleApiErrorUserMessage(error, 'Failed to import forms'),
     }
   }
 }

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { google } from 'googleapis'
-import { createGoogleFormsOAuthClient } from '@/lib/google-forms'
+import { createGoogleFormsOAuthClient, getGoogleApiErrorUserMessage, inspectGoogleApiError, withGoogleApiRetry } from '@/lib/google-forms'
 import { logger } from '@/lib/logger'
 import { prisma } from '@/lib/prisma'
 import { encryptSecret } from '@/lib/secret-crypto'
@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
 
   try {
     const oauth2 = createGoogleFormsOAuthClient()
-    const tokenResponse = await oauth2.getToken(code)
+    const tokenResponse = await withGoogleApiRetry(() => oauth2.getToken(code), { retries: 1, baseDelayMs: 300 })
     const tokens = tokenResponse.tokens
 
     if (!tokens.access_token) {
@@ -92,17 +92,16 @@ export async function GET(request: NextRequest) {
     response.headers.set('Location', importRedirect().toString())
     return response
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error)
+    const details = inspectGoogleApiError(error)
     logger.api('Failed Google Forms OAuth callback', {
-      error: message,
+      error: details.message,
+      code: details.code,
+      status: details.status,
+      reasons: details.reasons,
     })
 
-    let userError = 'Failed to connect Google Forms'
-    if (message.includes('invalid_client')) {
-      userError = 'Google OAuth client credentials are invalid'
-    } else if (message.includes('invalid_grant')) {
-      userError = 'Google OAuth authorization code was invalid or expired'
-    } else if (message.includes('GoogleFormsConnection')) {
+    let userError = getGoogleApiErrorUserMessage(error, 'Failed to connect Google Forms')
+    if (details.message.includes('GoogleFormsConnection')) {
       userError = 'Database schema missing GoogleFormsConnection table'
     }
 

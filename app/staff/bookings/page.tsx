@@ -4,6 +4,8 @@ import { redirect } from "next/navigation"
 import { Calendar } from "lucide-react"
 import { StaffEventsClient } from "./StaffEventsClient"
 import { getPendingFacilitatorRsvpRequests } from "@/app/actions/booking-requests"
+import { BOOKINGS_ACCESS_POLICY_TEMPLATE_TYPE, canRoleAccessBookings, parseBookingsAccessPolicyConfig } from "@/lib/bookings-access-policy"
+import { getRoleHomePath } from "@/lib/role-routes"
 
 const db = prisma as any
 
@@ -12,6 +14,20 @@ export const revalidate = 30
 export default async function StaffEventsPage() {
   const session = await auth()
   if (!session?.user?.id) redirect('/login')
+
+  const policyTemplate = await db.emailTemplate.findUnique({
+    where: { type: BOOKINGS_ACCESS_POLICY_TEMPLATE_TYPE },
+    select: { content: true },
+  })
+  const policyConfig = parseBookingsAccessPolicyConfig(policyTemplate?.content)
+
+  if (session.user.role === 'HOME_ADMIN') {
+    redirect('/dashboard/my-bookings')
+  }
+
+  if (!canRoleAccessBookings(session.user.role, policyConfig)) {
+    redirect(getRoleHomePath(session.user.role))
+  }
 
   // Get published events (past month + future) for calendar view
   const [events, pendingRsvpsResult] = await Promise.all([

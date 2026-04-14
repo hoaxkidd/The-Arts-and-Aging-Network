@@ -13,6 +13,46 @@ import { ROLE_LABELS } from "@/lib/roles"
 
 export const dynamic = 'force-dynamic'
 
+const SEARCH_STOP_WORDS = new Set([
+  'a',
+  'an',
+  'and',
+  'are',
+  'as',
+  'at',
+  'be',
+  'by',
+  'for',
+  'from',
+  'in',
+  'is',
+  'it',
+  'of',
+  'on',
+  'or',
+  'that',
+  'the',
+  'to',
+  'was',
+  'were',
+  'with',
+  'all',
+  'you',
+  'your',
+  'we',
+  'our',
+])
+
+function tokenizeSearch(input: string): string[] {
+  const normalized = input.toLowerCase().replace(/[^a-z0-9\s]/g, ' ')
+  const tokens = normalized
+    .split(/\s+/)
+    .map((token) => token.trim())
+    .filter((token) => token.length >= 3 && !SEARCH_STOP_WORDS.has(token))
+
+  return Array.from(new Set(tokens))
+}
+
 export default async function AdminFormsPage({
   searchParams
 }: {
@@ -28,6 +68,8 @@ export default async function AdminFormsPage({
   const view = params.view || 'cards'
   const sort = params.sort || 'title'
   const search = params.search || ''
+  const normalizedSearch = search.trim().toLowerCase()
+  const searchTokens = tokenizeSearch(search)
   const page = parseInt(params.page || '1')
   const perPage = 20
   const submissionStatus = params.subStatus || 'all'
@@ -54,12 +96,6 @@ export default async function AdminFormsPage({
   if (categoryFilter !== 'ALL') templateWhere.category = categoryFilter
   if (statusFilter === 'ACTIVE') templateWhere.isActive = true
   else if (statusFilter === 'ARCHIVED') templateWhere.isActive = false
-  if (search) {
-    templateWhere.OR = [
-      { title: { contains: search } },
-      { description: { contains: search } }
-    ]
-  }
 
   let templateOrderBy: Prisma.FormTemplateOrderByWithRelationInput[] = []
   if (sort === 'title') templateOrderBy = [{ title: 'asc' }]
@@ -76,11 +112,84 @@ export default async function AdminFormsPage({
     orderBy: templateOrderBy
   })
 
+  const compareBySort = (a: any, b: any) => {
+    if (sort === 'title') return a.title.localeCompare(b.title)
+    if (sort === 'date_desc') return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    if (sort === 'category') {
+      const byCategory = a.category.localeCompare(b.category)
+      return byCategory !== 0 ? byCategory : a.title.localeCompare(b.title)
+    }
+    return Number(b.isActive) - Number(a.isActive) || new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  }
+
+  const getSearchScore = (template: any) => {
+    if (!normalizedSearch) return 0
+    const title = String(template.title || '').toLowerCase()
+    const description = String(template.description || '').toLowerCase()
+    const descriptionHtml = String(template.descriptionHtml || '').toLowerCase()
+    const formFields = String(template.formFields || '').toLowerCase()
+
+    let score = 0
+    if (title === normalizedSearch) score += 1000
+    if (title.startsWith(normalizedSearch)) score += 700
+    if (title.includes(normalizedSearch)) score += 500
+    if (description.includes(normalizedSearch)) score += 250
+    if (descriptionHtml.includes(normalizedSearch)) score += 200
+    if (formFields.includes(normalizedSearch)) score += 300
+
+    for (const token of searchTokens) {
+      if (title.includes(token)) score += 160
+      if (description.includes(token)) score += 70
+      if (descriptionHtml.includes(token)) score += 50
+      if (formFields.includes(token)) score += 110
+    }
+
+    const searchableBlob = `${title} ${description} ${descriptionHtml} ${formFields}`
+    const tokenHits = searchTokens.reduce((acc, token) => acc + (searchableBlob.includes(token) ? 1 : 0), 0)
+    score += tokenHits * 25
+
+    return score
+  }
+
+  let matchedTemplates = templates
+  if (normalizedSearch) {
+    matchedTemplates = templates.filter((template: any) => {
+      const title = String(template.title || '').toLowerCase()
+      const description = String(template.description || '').toLowerCase()
+      const descriptionHtml = String(template.descriptionHtml || '').toLowerCase()
+      const formFields = String(template.formFields || '').toLowerCase()
+
+      if (
+        title.includes(normalizedSearch) ||
+        description.includes(normalizedSearch) ||
+        descriptionHtml.includes(normalizedSearch) ||
+        formFields.includes(normalizedSearch)
+      ) {
+        return true
+      }
+
+      if (searchTokens.length === 0) return false
+
+      const searchableBlob = `${title} ${description} ${descriptionHtml} ${formFields}`
+      const tokenHits = searchTokens.reduce((acc, token) => acc + (searchableBlob.includes(token) ? 1 : 0), 0)
+      return tokenHits >= Math.min(2, searchTokens.length)
+    })
+
+    matchedTemplates = [...matchedTemplates].sort((a: any, b: any) => {
+      const byScore = getSearchScore(b) - getSearchScore(a)
+      if (byScore !== 0) return byScore
+      return compareBySort(a, b)
+    })
+  }
+
+  const hasSearch = normalizedSearch.length > 0
+  const displayTemplates = hasSearch && matchedTemplates.length > 0 ? matchedTemplates : templates
+
   const templateStats = {
-    total: templates.length,
-    active: templates.filter(t => t.isActive).length,
-    archived: templates.filter(t => !t.isActive).length,
-    totalSubmissions: templates.reduce((sum, t) => sum + t._count.submissions, 0)
+    total: displayTemplates.length,
+    active: displayTemplates.filter(t => t.isActive).length,
+    archived: displayTemplates.filter(t => !t.isActive).length,
+    totalSubmissions: displayTemplates.reduce((sum, t) => sum + t._count.submissions, 0)
   }
 
   // SUBMISSIONS DATA
@@ -172,7 +281,8 @@ export default async function AdminFormsPage({
       <div className="flex-1 min-h-0 overflow-auto pt-4">
         {activeTab === 'templates' && (
           <TemplatesTab 
-            templates={templates}
+            templates={displayTemplates}
+            matchedTemplates={matchedTemplates}
             templateStats={templateStats}
             categories={categories}
             categoryFilter={categoryFilter}
@@ -209,6 +319,7 @@ export default async function AdminFormsPage({
 
 function TemplatesTab({ 
   templates, 
+  matchedTemplates,
   templateStats, 
   categories, 
   categoryFilter, 
@@ -217,6 +328,7 @@ function TemplatesTab({
   search 
 }: { 
   templates: any[]
+  matchedTemplates: any[]
   templateStats: { total: number; active: number; archived: number; totalSubmissions: number }
   categories: { value: string; label: string; color: string }[]
   categoryFilter: string
@@ -251,6 +363,17 @@ function TemplatesTab({
         currentSort={sort}
         currentSearch={search}
         mode="admin"
+        preserveParams={{ tab: 'templates' }}
+        showSearchResults={Boolean(search.trim())}
+        searchResults={matchedTemplates.map((template) => ({
+          id: template.id,
+          title: template.title,
+          isActive: template.isActive,
+          categoryLabel: categories.find((cat) => cat.value === template.category)?.label || template.category,
+          description: template.description,
+          descriptionHtml: template.descriptionHtml,
+          formFields: template.formFields,
+        }))}
       />
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -271,10 +394,19 @@ function TemplatesTab({
       {templates.length === 0 && (
         <div className="bg-white rounded-lg border p-8 text-center">
           <FileText className="w-10 h-10 text-gray-300 mx-auto mb-2" />
-          <p className="text-sm text-gray-500">No form templates yet</p>
-          <p className="text-xs text-gray-400 mt-2">
-            Click "Create Template" button above to add your first template
-          </p>
+          {search ? (
+            <>
+              <p className="text-sm text-gray-500">No templates match "{search}"</p>
+              <p className="text-xs text-gray-400 mt-2">Try another keyword from the form title, description, or form fields.</p>
+            </>
+          ) : (
+            <>
+              <p className="text-sm text-gray-500">No form templates yet</p>
+              <p className="text-xs text-gray-400 mt-2">
+                Click "Create Template" button above to add your first template
+              </p>
+            </>
+          )}
         </div>
       )}
     </div>

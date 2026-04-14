@@ -1,4 +1,4 @@
-import { isValidRole, normalizeRoleList } from "@/lib/roles"
+import { isValidRole, normalizeRoleList, ROLE_LABELS, ROLE_ORDER, type UserRole } from "@/lib/roles"
 
 type TemplateAccessInput = {
   isActive: boolean
@@ -14,6 +14,20 @@ export function parseAllowedRolesCsv(allowedRoles: string | null): string[] {
       .map((r) => r.trim())
       .filter((r) => isValidRole(r))
   )
+}
+
+export function getAllowedRolesForDisplay(allowedRoles: string | null): UserRole[] {
+  const normalized = parseAllowedRolesCsv(allowedRoles)
+  return [...normalized].sort(
+    (a, b) => ROLE_ORDER.indexOf(a as UserRole) - ROLE_ORDER.indexOf(b as UserRole)
+  ) as UserRole[]
+}
+
+export function getAccessLabel(isPublic: boolean, allowedRoles: string | null): string {
+  if (isPublic) return 'All roles'
+  const roles = getAllowedRolesForDisplay(allowedRoles)
+  if (roles.length === 0) return 'Restricted'
+  return roles.map((role) => ROLE_LABELS[role]).join(', ')
 }
 
 type AccessCheck = {
@@ -47,4 +61,3 @@ export function canAccessTemplate(template: TemplateAccessInput, ctx: AccessChec
   // Private template: empty allowedRoles means deny all non-admins (strict).
   return false
 }
-

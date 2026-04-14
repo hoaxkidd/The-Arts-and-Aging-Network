@@ -89,7 +89,7 @@ export function ReminderPolicyPanel({ config, canEditCron = true }: ReminderPoli
   }
 
   return (
-    <div className="flex-shrink-0 mt-4 rounded-lg border border-blue-200 bg-blue-50 p-4">
+    <div className="flex-shrink-0 rounded-lg border border-blue-200 bg-blue-50 p-4">
       <div className="flex items-start gap-3">
         <div className="text-sm text-blue-900">
           <p className="font-medium mb-2">Automatic Email Reminders</p>

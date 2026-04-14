@@ -196,7 +196,7 @@ export default authMiddleware((req: NextRequest & { auth: unknown }) => {
     }
   }
 
-  // Protect events routes - all authenticated users can view
+  // Protect bookings routes - Program Coordinators are always routed to home bookings
   if (pathname.startsWith('/bookings')) {
     if (!isLoggedIn) return NextResponse.redirect(new URL('/login', req.nextUrl))
     if (activeRole === 'HOME_ADMIN') {

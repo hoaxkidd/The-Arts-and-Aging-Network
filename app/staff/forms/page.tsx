@@ -4,12 +4,11 @@ import { redirect } from "next/navigation"
 import { FileText, Calendar, CheckCircle, Clock, XCircle, Search } from "lucide-react"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
-import { ROLE_LABELS } from "@/lib/roles"
 import { FormTemplateCard } from "@/components/admin/FormTemplateCard"
 import { FormTemplateFilters } from "@/components/admin/FormTemplateFilters"
 import { StickyTable } from "@/components/ui/StickyTable"
 import { STYLES } from "@/lib/styles"
-import { canAccessTemplate } from "@/lib/form-access"
+import { canAccessTemplate, getAccessLabel } from "@/lib/form-access"
 
 export default async function StaffFormsPage({
   searchParams
@@ -45,8 +44,10 @@ export default async function StaffFormsPage({
   // Add search filter if provided
   if (search) {
     where.OR = [
-      { title: { contains: search } },
-      { description: { contains: search } }
+      { title: { contains: search, mode: 'insensitive' } },
+      { description: { contains: search, mode: 'insensitive' } },
+      { descriptionHtml: { contains: search, mode: 'insensitive' } },
+      { formFields: { contains: search, mode: 'insensitive' } }
     ]
   }
 
@@ -225,7 +226,7 @@ export default async function StaffFormsPage({
               >
                 {templates.map((template) => {
                   const category = categories.find(c => c.value === template.category)
-                  const accessLabel = template.isPublic ? 'All' : (template.allowedRoles ? template.allowedRoles.split(',').map(r => ROLE_LABELS[r as keyof typeof ROLE_LABELS] || r).join(', ') : 'All')
+                  const accessLabel = getAccessLabel(Boolean(template.isPublic), template.allowedRoles ?? null)
                   return (
                     <tr key={template.id} className={STYLES.tableRow}>
                       <td className={cn(STYLES.tableCell, "min-w-0")}>
@@ -255,8 +256,8 @@ export default async function StaffFormsPage({
                       </td>
                       <td className={STYLES.tableCell}>
                         <span className={cn(
-                          "inline-flex text-xs font-medium",
-                          template.isPublic ? "text-blue-700" : "text-purple-700"
+                          "inline-flex px-2 py-1 rounded-full text-xs font-medium",
+                          template.isPublic ? "bg-blue-100 text-blue-700" : "bg-indigo-100 text-indigo-700"
                             )}>
                               {accessLabel}
                             </span>

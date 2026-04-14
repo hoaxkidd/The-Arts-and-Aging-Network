@@ -9,6 +9,8 @@ import {
   listGoogleFormsForImport,
   previewGoogleFormsImport,
 } from '@/app/actions/google-forms-import'
+import { FormTemplateView } from '@/components/forms/FormTemplateView'
+import type { FormTemplateField } from '@/lib/form-template-types'
 import { RefreshCw, Link2, Unlink, Download, Search, AlertCircle, CheckCircle2 } from 'lucide-react'
 
 type FormItem = {
@@ -45,9 +47,10 @@ export function GoogleFormsImportPanel() {
   const [preview, setPreview] = useState<Array<{
     formId: string
     title: string
+    description: string
     fieldCount: number
     warnings: string[]
-    fields: Array<{ id: string; label: string; type: string; required: boolean }>
+    fields: FormTemplateField[]
   }>>([])
   const [result, setResult] = useState<{
     imported: number
@@ -113,6 +116,10 @@ export function GoogleFormsImportPanel() {
       void loadForms()
     }
   }, [connected, loadForms])
+
+  useEffect(() => {
+    setPreview([])
+  }, [selected])
 
   function toggleForm(id: string) {
     setSelected((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]))
@@ -342,6 +349,17 @@ export function GoogleFormsImportPanel() {
                   <div key={form.formId} className="border border-gray-200 rounded-lg p-3 space-y-2">
                     <div className="font-medium text-gray-900">{form.title}</div>
                     <div className="text-xs text-gray-500">{form.fieldCount} compatible fields</div>
+                    <div className="border border-gray-200 rounded-lg overflow-hidden bg-gray-50">
+                      <FormTemplateView
+                        title={form.title}
+                        description={form.description}
+                        fields={form.fields}
+                        preview={true}
+                      />
+                    </div>
+                    {form.fieldCount === 0 && (
+                      <div className="text-xs text-gray-500">No compatible fields found in this form.</div>
+                    )}
                     {form.warnings.length > 0 && (
                       <div className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded p-2">
                         {form.warnings.slice(0, 3).join(' ')}

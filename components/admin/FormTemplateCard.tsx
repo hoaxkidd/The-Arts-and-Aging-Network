@@ -12,11 +12,13 @@ import {
   type FormGroupAttachmentRow,
   type MessageGroupOption,
 } from '@/components/admin/FormTemplateGroupLinksPanel'
-import { VALID_ROLES, ROLE_LABELS } from '@/lib/roles'
+import { VALID_ROLES, ROLE_LABELS, ROLE_ORDER, normalizeRoleList } from '@/lib/roles'
 import { FormTemplateView } from '@/components/forms/FormTemplateView'
 import type { FormTemplateField } from '@/lib/form-template-types'
 import { parseFormFields } from '@/lib/form-template-types'
 import { sanitizeHtml } from "@/lib/dompurify"
+import { getAllowedRolesForDisplay } from '@/lib/form-access'
+import { FormTemplatePreviewAdminControls } from '@/components/admin/FormTemplatePreviewAdminControls'
 
 type Template = {
   id: string
@@ -86,14 +88,13 @@ export function FormTemplateCard({ template, categories, mode = 'admin', fillUrl
   const isAdmin = mode === 'admin'
 
   const [isDeleting, setIsDeleting] = useState(false)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [showViewModal, setShowViewModal] = useState(false)
   const [showRolesModal, setShowRolesModal] = useState(false)
   const [showFillModal, setShowFillModal] = useState(false)
   const [fillModalMode, setFillModalMode] = useState<FillModalMode>('preview')
   const [deleteError, setDeleteError] = useState<string | null>(null)
-  const [selectedRoles, setSelectedRoles] = useState<string[]>(
-    template.allowedRoles ? template.allowedRoles.split(',') : []
-  )
+  const [selectedRoles, setSelectedRoles] = useState<string[]>(getAllowedRolesForDisplay(template.allowedRoles))
   const [isUpdatingRoles, setIsUpdatingRoles] = useState(false)
 
   const [groupLinksAttachments, setGroupLinksAttachments] = useState<FormGroupAttachmentRow[]>([])
@@ -115,7 +116,7 @@ export function FormTemplateCard({ template, categories, mode = 'admin', fillUrl
 
   const category = categories.find(c => c.value === template.category)
   
-  const currentRoles = template.allowedRoles ? template.allowedRoles.split(',') : []
+  const currentRoles = getAllowedRolesForDisplay(template.allowedRoles)
 
   // Parse form fields from JSON
   const parsedFields: FormTemplateField[] = template.formFields ? parseFormFields(template.formFields) : []
@@ -125,10 +126,6 @@ export function FormTemplateCard({ template, categories, mode = 'admin', fillUrl
   const isSingleSubmitTemplate = !allowsMultipleSubmissions
 
   const handleDelete = async () => {
-    if (!confirm('Are you sure you want to delete this template? This action cannot be undone.')) {
-      return
-    }
-
     setIsDeleting(true)
     setDeleteError(null)
 
@@ -138,21 +135,28 @@ export function FormTemplateCard({ template, categories, mode = 'admin', fillUrl
       setDeleteError(result.error)
       setIsDeleting(false)
     } else {
+      setShowDeleteModal(false)
       window.location.reload()
     }
   }
 
   const toggleRole = (role: string) => {
-    if (selectedRoles.includes(role)) {
-      setSelectedRoles(selectedRoles.filter(r => r !== role))
-    } else {
-      setSelectedRoles([...selectedRoles, role])
-    }
+    const next = selectedRoles.includes(role)
+      ? selectedRoles.filter((r) => r !== role)
+      : [...selectedRoles, role]
+
+    const normalized = normalizeRoleList(next).sort(
+      (a, b) => ROLE_ORDER.indexOf(a) - ROLE_ORDER.indexOf(b)
+    )
+    setSelectedRoles(normalized)
   }
 
   const handleSaveRoles = async () => {
     setIsUpdatingRoles(true)
-    const result = await updateFormTemplateRoles(template.id, selectedRoles)
+    const normalized = normalizeRoleList(selectedRoles).sort(
+      (a, b) => ROLE_ORDER.indexOf(a) - ROLE_ORDER.indexOf(b)
+    )
+    const result = await updateFormTemplateRoles(template.id, normalized)
     if (result.error) {
       alert(result.error)
     } else {
@@ -167,6 +171,7 @@ export function FormTemplateCard({ template, categories, mode = 'admin', fillUrl
       if (e.key === 'Escape') {
         setShowViewModal(false)
         setShowRolesModal(false)
+        setShowDeleteModal(false)
         setShowFillModal(false)
       }
     }
@@ -328,20 +333,6 @@ export function FormTemplateCard({ template, categories, mode = 'admin', fillUrl
   return (
     <>
       <div className="bg-white rounded-lg border border-gray-200 p-4 transition-colors relative flex flex-col min-h-[280px]">
-        {deleteError && (
-          <div className="absolute inset-0 bg-white/95 flex items-center justify-center z-10 rounded-lg">
-            <div className="text-center p-4">
-              <p className="text-red-600 text-sm mb-2">{deleteError}</p>
-              <button 
-                onClick={() => setDeleteError(null)}
-                className="text-xs text-gray-500 underline"
-              >
-                Dismiss
-              </button>
-            </div>
-          </div>
-        )}
-
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between mb-3 gap-3">
             <div className="flex items-center gap-2 flex-1 min-w-0">
@@ -392,7 +383,7 @@ export function FormTemplateCard({ template, categories, mode = 'admin', fillUrl
                       <div className="flex items-center gap-1">
                         <Users className="w-3 h-3 text-gray-400" />
                         <span className="text-xs text-gray-500">
-                          {currentRoles.length === 0 ? 'All roles' : currentRoles.length === 1 ? currentRoles[0] : `${currentRoles.length} roles`}
+                          {currentRoles.length === 0 ? 'All roles' : currentRoles.length === 1 ? ROLE_LABELS[currentRoles[0]] : `${currentRoles.length} roles`}
                         </span>
                       </div>
                       <button
@@ -406,8 +397,8 @@ export function FormTemplateCard({ template, categories, mode = 'admin', fillUrl
                       {currentRoles.length === 0 ? (
                         <span className="text-[10px] px-2 py-0.5 bg-green-100 text-green-700 rounded-full">All roles</span>
                       ) : currentRoles.slice(0, 3).map(role => (
-                        <span key={role} className="text-[10px] px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full">
-                          {role}
+                        <span key={role} className="text-[10px] px-2 py-0.5 bg-indigo-100 text-indigo-700 rounded-full">
+                          {ROLE_LABELS[role]}
                         </span>
                       ))}
                       {currentRoles.length > 3 && (
@@ -438,7 +429,10 @@ export function FormTemplateCard({ template, categories, mode = 'admin', fillUrl
                 Edit
               </Link>
               <button
-                onClick={handleDelete}
+                onClick={() => {
+                  setDeleteError(null)
+                  setShowDeleteModal(true)
+                }}
                 disabled={isDeleting}
                 className="flex-1 text-center px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 rounded hover:bg-red-100 disabled:opacity-50"
               >
@@ -547,12 +541,6 @@ export function FormTemplateCard({ template, categories, mode = 'admin', fillUrl
               <div className="flex items-center gap-2">
                 {isAdmin && (
                   <>
-                    <span className={cn(
-                      "text-xs px-2 py-1 font-medium rounded-full",
-                      template.isActive ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"
-                    )}>
-                      {template.isActive ? 'Active' : 'Archived'}
-                    </span>
                     {adminSubmissions.length > 0 && !viewingSubmission && (
                       <button
                         onClick={() => setShowSubmittersPanel((prev) => !prev)}
@@ -567,21 +555,26 @@ export function FormTemplateCard({ template, categories, mode = 'admin', fillUrl
                         Submitters ({adminSubmissions.length})
                       </button>
                     )}
-                    <Link
-                      href={`/admin/forms/${template.id}/edit`}
-                      className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg"
-                      onClick={() => setShowViewModal(false)}
-                    >
-                      <Edit2 className="w-5 h-5" />
-                    </Link>
+                    <FormTemplatePreviewAdminControls
+                      templateId={template.id}
+                      isActive={template.isActive}
+                      onAccess={() => setShowRolesModal(true)}
+                      onDelete={() => {
+                        setDeleteError(null)
+                        setShowDeleteModal(true)
+                      }}
+                      onClose={() => setShowViewModal(false)}
+                    />
                   </>
                 )}
-                <button 
-                  onClick={() => setShowViewModal(false)}
-                  className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg"
-                >
-                  <X className="w-5 h-5" />
-                </button>
+                {!isAdmin && (
+                  <button 
+                    onClick={() => setShowViewModal(false)}
+                    className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                )}
               </div>
             </div>
 
@@ -702,6 +695,55 @@ export function FormTemplateCard({ template, categories, mode = 'admin', fillUrl
               >
                 Close
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Modal */}
+      {isAdmin && showDeleteModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
+          onClick={(e) => {
+            if (e.target === e.currentTarget && !isDeleting) setShowDeleteModal(false)
+          }}
+        >
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
+            <div className="p-5 border-b border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-900">Delete Form Template</h3>
+              <p className="text-sm text-gray-600 mt-2">
+                You are about to permanently delete <span className="font-medium text-gray-900">{template.title}</span>.
+                This action cannot be undone.
+              </p>
+            </div>
+            <div className="p-5">
+              {deleteError && (
+                <p className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2 mb-4">
+                  {deleteError}
+                </p>
+              )}
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => {
+                    if (!isDeleting) {
+                      setDeleteError(null)
+                      setShowDeleteModal(false)
+                    }
+                  }}
+                  disabled={isDeleting}
+                  className="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 text-sm font-medium disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDelete}
+                  disabled={isDeleting}
+                  className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm font-medium disabled:opacity-50 inline-flex items-center justify-center gap-2"
+                >
+                  {isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                  {isDeleting ? 'Deleting...' : 'Delete Form'}
+                </button>
+              </div>
             </div>
           </div>
         </div>

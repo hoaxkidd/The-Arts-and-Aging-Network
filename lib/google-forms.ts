@@ -219,3 +219,134 @@ export function mapGoogleFormToTemplate(form: {
     warnings,
   }
 }
+
+type GoogleApiErrorInfo = {
+  message: string
+  code?: string
+  status?: number
+  reasons: string[]
+  transient: boolean
+  driveApiDisabled: boolean
+  insufficientScope: boolean
+  invalidGrant: boolean
+  invalidClient: boolean
+}
+
+function toRecord(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === 'object' ? (value as Record<string, unknown>) : null
+}
+
+function extractReasons(error: unknown): string[] {
+  const errorRecord = toRecord(error)
+  const response = toRecord(errorRecord?.response)
+  const responseData = toRecord(response?.data)
+  const nestedError = toRecord(responseData?.error)
+  const nestedErrors = Array.isArray(nestedError?.errors) ? nestedError.errors : []
+  const reasonsFromNested = nestedErrors
+    .map((entry) => toRecord(entry)?.reason)
+    .filter((reason): reason is string => typeof reason === 'string')
+
+  const rootErrors = Array.isArray(errorRecord?.errors) ? errorRecord.errors : []
+  const reasonsFromRoot = rootErrors
+    .map((entry) => toRecord(entry)?.reason)
+    .filter((reason): reason is string => typeof reason === 'string')
+
+  return Array.from(new Set([...reasonsFromNested, ...reasonsFromRoot]))
+}
+
+export function inspectGoogleApiError(error: unknown): GoogleApiErrorInfo {
+  const message = error instanceof Error ? error.message : String(error)
+  const lower = message.toLowerCase()
+  const errorRecord = toRecord(error)
+  const response = toRecord(errorRecord?.response)
+
+  const codeValue = errorRecord?.code
+  const code = typeof codeValue === 'string' ? codeValue : typeof codeValue === 'number' ? String(codeValue) : undefined
+
+  const statusFromError = typeof errorRecord?.status === 'number' ? errorRecord.status : undefined
+  const statusFromResponse = typeof response?.status === 'number' ? response.status : undefined
+  const status = statusFromError ?? statusFromResponse
+
+  const reasons = extractReasons(error)
+  const reasonSet = new Set(reasons.map((reason) => reason.toLowerCase()))
+
+  const transientCodes = new Set(['ECONNRESET', 'ETIMEDOUT', 'ESOCKETTIMEDOUT', 'EAI_AGAIN'])
+  const isTransientCode = code ? transientCodes.has(code.toUpperCase()) : false
+  const isTransientMessage =
+    lower.includes('aborted') ||
+    lower.includes('socket hang up') ||
+    lower.includes('connection reset') ||
+    lower.includes('temporarily unavailable') ||
+    lower.includes('deadline exceeded')
+  const isTransientStatus = status === 429 || (typeof status === 'number' && status >= 500)
+  const isTransientReason = ['backenderror', 'internalerror', 'ratelimitexceeded', 'userratelimitexceeded', 'quotaexceeded'].some(
+    (reason) => reasonSet.has(reason)
+  )
+
+  return {
+    message,
+    code,
+    status,
+    reasons,
+    transient: isTransientCode || isTransientMessage || isTransientStatus || isTransientReason,
+    driveApiDisabled:
+      lower.includes('drive api has not been used') ||
+      lower.includes('accessnotconfigured') ||
+      reasonSet.has('accessnotconfigured'),
+    insufficientScope:
+      lower.includes('insufficient authentication scopes') ||
+      lower.includes('insufficient permissions') ||
+      reasonSet.has('insufficientpermissions'),
+    invalidGrant: lower.includes('invalid_grant'),
+    invalidClient: lower.includes('invalid_client'),
+  }
+}
+
+export function getGoogleApiErrorUserMessage(error: unknown, fallback = 'Google request failed'): string {
+  const details = inspectGoogleApiError(error)
+
+  if (details.driveApiDisabled) {
+    return 'Google Drive API is disabled for your Google Cloud project. Enable it in Google Cloud Console, wait a few minutes, then retry.'
+  }
+
+  if (details.insufficientScope) {
+    return 'Google account permissions are missing required scopes. Disconnect and reconnect Google Forms to grant access again.'
+  }
+
+  if (details.invalidGrant) {
+    return 'Google authorization code or refresh token expired. Disconnect and reconnect Google Forms.'
+  }
+
+  if (details.invalidClient) {
+    return 'Google OAuth client credentials are invalid for this environment.'
+  }
+
+  if (details.transient) {
+    return 'Google request was interrupted by a temporary network issue. Please retry.'
+  }
+
+  return details.message || fallback
+}
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+export async function withGoogleApiRetry<T>(operation: () => Promise<T>, options?: { retries?: number; baseDelayMs?: number }): Promise<T> {
+  const retries = options?.retries ?? 2
+  const baseDelayMs = options?.baseDelayMs ?? 400
+
+  let attempt = 0
+  while (true) {
+    try {
+      return await operation()
+    } catch (error) {
+      const canRetry = attempt < retries && inspectGoogleApiError(error).transient
+      if (!canRetry) throw error
+
+      const backoff = baseDelayMs * Math.pow(2, attempt)
+      await delay(backoff)
+      attempt += 1
+    }
+  }
+}

@@ -11,8 +11,6 @@ import { EmailReminderFilters } from "@/components/admin/EmailReminderFilters"
 import { InlineStatStrip } from '@/components/ui/InlineStatStrip'
 import { EmailReminderRowActions } from '@/components/admin/EmailReminderRowActions'
 import { EmailReminderBulkActions } from '@/components/admin/EmailReminderBulkActions'
-import { parseReminderPolicyConfig, REMINDER_POLICY_TEMPLATE_TYPE } from '@/lib/reminder-policy'
-import { ReminderPolicyPanel } from '@/components/admin/ReminderPolicyPanel'
 
 export const dynamic = 'force-dynamic'
 
@@ -98,12 +96,6 @@ export default async function EmailRemindersPage({
     orderBy: { scheduledFor: 'desc' },
     take: 100
   })
-
-  const policyTemplate = await prisma.emailTemplate.findUnique({
-    where: { type: REMINDER_POLICY_TEMPLATE_TYPE },
-    select: { content: true },
-  })
-  const reminderPolicyConfig = parseReminderPolicyConfig(policyTemplate?.content)
 
   // Get recipient details for each reminder
   const recipientIds = Array.from(new Set(reminders.map((reminder) => reminder.recipientId).filter((id): id is string => !!id)))
@@ -293,10 +285,15 @@ export default async function EmailRemindersPage({
         </div>
       </div>
 
-      <ReminderPolicyPanel
-        config={reminderPolicyConfig}
-        canEditCron={process.env.NODE_ENV !== 'production'}
-      />
+      <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900">
+        <p className="font-medium">Reminder policy moved to Admin Settings</p>
+        <p className="mt-1 text-xs text-blue-700">
+          Configure reminder offsets and worker schedule from the centralized policy controls.
+        </p>
+        <Link href="/admin/settings" className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-blue-800 underline underline-offset-2 hover:text-blue-900">
+          Open Admin Settings
+        </Link>
+      </div>
     </div>
   )
 }

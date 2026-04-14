@@ -12,6 +12,9 @@ import { cn } from "@/lib/utils"
 import { logout } from "@/app/actions/auth"
 import { getRoleHomePath, normalizeStaffNamespace } from "@/lib/role-routes"
 import { ROLE_LABELS } from '@/lib/roles'
+import { canRoleAccessBookings } from '@/lib/bookings-access-policy'
+
+const ORG_BOOKING_HREFS = ['/bookings', '/staff/bookings', '/facilitator/bookings', '/board/bookings', '/partner/bookings']
 
 // Define title map
 const PAGE_TITLES: Record<string, string> = {
@@ -56,6 +59,7 @@ const PAGE_TITLES: Record<string, string> = {
   '/admin/conversation-requests': 'Conversation Requests',
   '/admin/payroll-forms': 'Payroll Forms',
   '/admin/broadcasts': 'Broadcast Messages',
+  '/admin/volunteers': 'Volunteer Review',
   '/payroll': 'Payroll Dashboard',
   '/payroll/check-in': 'Daily Check-in',
   '/payroll/profile': 'My Profile',
@@ -131,6 +135,7 @@ const PAGE_ICONS: Record<string, typeof Calendar> = {
   '/admin/conversation-requests': MessageSquare,
   '/admin/payroll-forms': FileText,
   '/admin/broadcasts': Mail,
+  '/admin/volunteers': Users,
   '/payroll': LayoutDashboard,
   '/payroll/check-in': Clock,
   '/payroll/profile': UserCircle,
@@ -206,6 +211,7 @@ const PAGE_SUBTITLES: Record<string, string> = {
   '/admin/conversation-requests': 'Review conversation requests',
   '/admin/payroll-forms': 'Manage required forms for staff',
   '/admin/broadcasts': 'Send messages to all users',
+  '/admin/volunteers': 'Review and approve volunteers',
   '/payroll': 'Manage your work activities',
   '/payroll/check-in': 'Log your daily attendance',
   '/payroll/profile': 'Update your profile',
@@ -256,6 +262,7 @@ const TABLE_PAGES = [
   '/admin/donors',
   '/admin/inventory',
   '/admin/forms',
+  '/admin/volunteers',
   '/admin/testimonials',
   '/admin/booking-requests',
   '/admin/audit-log',
@@ -381,9 +388,10 @@ type DashboardLayoutProps = {
   unreadCount: number
   userSession: any
   homeName?: string
+  bookingsAccessAllowedRoles?: string[]
 }
 
-export function DashboardLayoutClient({ children, role, title = "Arts & Aging", notifications, unreadCount, userSession, homeName }: DashboardLayoutProps) {
+export function DashboardLayoutClient({ children, role, title = "Arts & Aging", notifications, unreadCount, userSession, homeName, bookingsAccessAllowedRoles = [] }: DashboardLayoutProps) {
   const pathname = usePathname()
   const normalizedPathname = normalizeStaffNamespace(pathname)
   const currentTitle = getPageTitle(normalizedPathname, homeName)
@@ -391,7 +399,14 @@ export function DashboardLayoutClient({ children, role, title = "Arts & Aging", 
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   const menuItems =
-    role === 'HOME_ADMIN' ? homeAdminMenu : role === 'ADMIN' ? [] : MENU_ITEMS[role] || []
+    role === 'HOME_ADMIN'
+      ? homeAdminMenu
+      : role === 'ADMIN'
+        ? []
+        : (MENU_ITEMS[role] || []).filter((item) => {
+            if (!ORG_BOOKING_HREFS.includes(item.href)) return true
+            return canRoleAccessBookings(role, { allowedRoles: bookingsAccessAllowedRoles })
+          })
 
   const assignedRoles = Array.isArray(userSession?.roles) ? userSession.roles : (userSession?.role ? [userSession.role] : [])
   const rolePortalLinks: Array<{ role: string; href: string; label: string }> = assignedRoles

@@ -1,6 +1,7 @@
 import { auth } from "@/auth"
 import { prisma } from "@/lib/prisma"
 import { DashboardLayoutClient } from "@/components/DashboardLayoutClient"
+import { BOOKINGS_ACCESS_POLICY_TEMPLATE_TYPE, parseBookingsAccessPolicyConfig } from "@/lib/bookings-access-policy"
 
 type DashboardLayoutProps = {
   children: React.ReactNode
@@ -44,6 +45,11 @@ export default async function DashboardLayout({ children, role, title = "Arts & 
     createdAt: Date
   }[] = []
   let unreadCount = 0
+  const policyTemplate = await prisma.emailTemplate.findUnique({
+    where: { type: BOOKINGS_ACCESS_POLICY_TEMPLATE_TYPE },
+    select: { content: true },
+  })
+  const bookingsAccessPolicy = parseBookingsAccessPolicyConfig(policyTemplate?.content)
 
   if (session?.user?.id) {
     notifications = await getNotifications(session.user.id)
@@ -56,6 +62,7 @@ export default async function DashboardLayout({ children, role, title = "Arts & 
         title={title} 
         notifications={notifications} 
         unreadCount={unreadCount}
+        bookingsAccessAllowedRoles={bookingsAccessPolicy.allowedRoles}
         userSession={{
           ...session?.user,
           name: currentUser?.name ?? session?.user?.name,
