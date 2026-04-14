@@ -111,6 +111,7 @@ export function FormTemplateCard({ template, categories, mode = 'admin', fillUrl
   // Admin submission viewing
   const [viewingSubmission, setViewingSubmission] = useState<Submission | null>(null)
   const [adminSubmissions, setAdminSubmissions] = useState<Submission[]>(submissions)
+  const [showSubmittersPanel, setShowSubmittersPanel] = useState(false)
 
   const category = categories.find(c => c.value === template.category)
   
@@ -214,6 +215,13 @@ export function FormTemplateCard({ template, categories, mode = 'admin', fillUrl
       cancelled = true
     }
   }, [showViewModal, isAdmin, template.id])
+
+  useEffect(() => {
+    if (!showViewModal) {
+      setViewingSubmission(null)
+      setShowSubmittersPanel(false)
+    }
+  }, [showViewModal])
 
   const exportAdminSubmissionsCsv = () => {
     if (!adminSubmissions.length) return
@@ -419,8 +427,8 @@ export function FormTemplateCard({ template, categories, mode = 'admin', fillUrl
                 onClick={() => setShowViewModal(true)}
                 className="flex-1 text-center px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-50 rounded hover:bg-gray-100"
               >
-                <User className="w-3 h-3 inline mr-1" />
-                Submitters
+                <Eye className="w-3 h-3 inline mr-1" />
+                Preview
               </button>
               <Link
                 href={`/admin/forms/${template.id}/edit`}
@@ -545,6 +553,20 @@ export function FormTemplateCard({ template, categories, mode = 'admin', fillUrl
                     )}>
                       {template.isActive ? 'Active' : 'Archived'}
                     </span>
+                    {adminSubmissions.length > 0 && !viewingSubmission && (
+                      <button
+                        onClick={() => setShowSubmittersPanel((prev) => !prev)}
+                        className={cn(
+                          "inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full border transition-colors",
+                          showSubmittersPanel
+                            ? "bg-primary-50 text-primary-700 border-primary-200"
+                            : "bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100"
+                        )}
+                      >
+                        <User className="w-3 h-3" />
+                        Submitters ({adminSubmissions.length})
+                      </button>
+                    )}
                     <Link
                       href={`/admin/forms/${template.id}/edit`}
                       className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg"
@@ -606,10 +628,10 @@ export function FormTemplateCard({ template, categories, mode = 'admin', fillUrl
                   )}
 
                   {/* Admin-only: Submissions List */}
-                  {isAdmin && adminSubmissions.length > 0 && (
+                  {isAdmin && adminSubmissions.length > 0 && showSubmittersPanel && (
                     <div className="border border-gray-200 rounded-lg overflow-hidden">
                       <div className="bg-gray-50 px-4 py-2 border-b border-gray-200 flex items-center justify-between">
-                        <h3 className="text-sm font-medium text-gray-900">Submitters ({adminSubmissions.length})</h3>
+                        <h3 className="text-sm font-medium text-gray-900">Submitters list</h3>
                         <button
                           onClick={exportAdminSubmissionsCsv}
                           className="inline-flex items-center gap-1 text-xs text-primary-700 hover:text-primary-800"

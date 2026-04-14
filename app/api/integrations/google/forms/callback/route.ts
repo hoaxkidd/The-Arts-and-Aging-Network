@@ -92,10 +92,21 @@ export async function GET(request: NextRequest) {
     response.headers.set('Location', importRedirect().toString())
     return response
   } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
     logger.api('Failed Google Forms OAuth callback', {
-      error: error instanceof Error ? error.message : String(error),
+      error: message,
     })
-    response.headers.set('Location', importRedirect('Failed to connect Google Forms').toString())
+
+    let userError = 'Failed to connect Google Forms'
+    if (message.includes('invalid_client')) {
+      userError = 'Google OAuth client credentials are invalid'
+    } else if (message.includes('invalid_grant')) {
+      userError = 'Google OAuth authorization code was invalid or expired'
+    } else if (message.includes('GoogleFormsConnection')) {
+      userError = 'Database schema missing GoogleFormsConnection table'
+    }
+
+    response.headers.set('Location', importRedirect(userError).toString())
     return response
   }
 }
