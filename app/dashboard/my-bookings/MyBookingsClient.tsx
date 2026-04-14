@@ -49,6 +49,15 @@ export function MyBookingsClient({ events, requests }: Props) {
 
   return (
     <div className="space-y-4">
+      {section === 'requests' && (
+        <div className="flex justify-end">
+          <Link href="/dashboard/requests/new" className={cn(STYLES.btn, STYLES.btnPrimary)}>
+            <Plus className="w-4 h-4" />
+            New Booking Request
+          </Link>
+        </div>
+      )}
+
       <div className="flex flex-wrap items-center gap-2 border-b border-gray-200 pb-3">
         <Link href="/dashboard/my-bookings?section=all" className={sectionTabClass(section === 'all')}>
           All Bookings
@@ -91,12 +100,6 @@ export function MyBookingsClient({ events, requests }: Props) {
             </Link>
             <Link href="/dashboard/my-bookings?section=requests&tab=rejected" className={sectionTabClass(requestFilter === 'REJECTED')}>
               Declined
-            </Link>
-          </div>
-          <div className="flex justify-end">
-            <Link href="/dashboard/requests/new" className={cn(STYLES.btn, STYLES.btnPrimary)}>
-              <Plus className="w-4 h-4" />
-              New Request
             </Link>
           </div>
           <RequestList requests={requests} userRole="HOME_ADMIN" activeFilter={requestFilter} />

@@ -203,7 +203,7 @@ export const boardMenu = [
 
 export const homeAdminMenu = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { label: "My Bookings", href: "/dashboard/my-bookings", icon: CheckCircle },
+  { label: "Home's Bookings", href: "/dashboard/my-bookings", icon: CheckCircle },
   { label: "Inbox", href: "/staff/inbox", icon: Inbox },
   { label: "Profile", href: "/dashboard/profile", icon: UserCircle },
 ]

@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { Calendar, ChevronLeft, ChevronRight, X } from 'lucide-react'
 import { parseDMYDate, parseISODate, toInputDate, formatDateWords } from '@/lib/date-utils'
+import { createPortal } from 'react-dom'
 
 interface DateInputProps {
   name: string
@@ -41,7 +42,10 @@ export function DateInput({
   const [viewYear, setViewYear] = useState(new Date().getFullYear())
   const [error, setError] = useState('')
   const containerRef = useRef<HTMLDivElement>(null)
+  const pickerRef = useRef<HTMLDivElement>(null)
+  const inputWrapRef = useRef<HTMLDivElement>(null)
   const isUserTyping = useRef(false)
+  const [pickerPosition, setPickerPosition] = useState<{ top: number; left: number }>({ top: 0, left: 0 })
 
   const today = new Date()
   today.setHours(0, 0, 0, 0)
@@ -71,16 +75,53 @@ export function DateInput({
     }
   }, [value])
 
+  const updatePickerPosition = () => {
+    const inputRect = inputWrapRef.current?.getBoundingClientRect()
+    if (!inputRect) return
+
+    const dropdownWidth = 288
+    const dropdownHeight = 360
+    const spacing = 8
+
+    const viewportWidth = window.innerWidth
+    const viewportHeight = window.innerHeight
+
+    const left = Math.max(
+      8,
+      Math.min(inputRect.left, viewportWidth - dropdownWidth - 8)
+    )
+
+    const openUp = inputRect.bottom + spacing + dropdownHeight > viewportHeight && inputRect.top - spacing - dropdownHeight > 0
+    const top = openUp ? inputRect.top - dropdownHeight - spacing : inputRect.bottom + spacing
+
+    setPickerPosition({ top, left })
+  }
+
   // Close picker when clicking outside
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+      const target = e.target as Node
+      const clickedInField = containerRef.current?.contains(target)
+      const clickedInPicker = pickerRef.current?.contains(target)
+      if (!clickedInField && !clickedInPicker) {
         setShowPicker(false)
       }
     }
+
+    const handleReposition = () => {
+      if (showPicker) updatePickerPosition()
+    }
+
     if (showPicker) {
+      updatePickerPosition()
       document.addEventListener('mousedown', handleClickOutside)
-      return () => document.removeEventListener('mousedown', handleClickOutside)
+      window.addEventListener('resize', handleReposition)
+      window.addEventListener('scroll', handleReposition, true)
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside)
+        window.removeEventListener('resize', handleReposition)
+        window.removeEventListener('scroll', handleReposition, true)
+      }
     }
   }, [showPicker])
 
@@ -283,7 +324,7 @@ export function DateInput({
         </label>
       )}
       
-      <div className="relative">
+      <div className="relative" ref={inputWrapRef}>
         {/* Text input for manual typing */}
         <input
           type="text"
@@ -315,8 +356,12 @@ export function DateInput({
       </div>
 
       {/* Custom Calendar Dropdown */}
-      {showPicker && !disabled && (
-        <div className="absolute z-50 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg p-3 w-72">
+      {showPicker && !disabled && createPortal(
+        <div
+          ref={pickerRef}
+          className="fixed z-[80] bg-white border border-gray-200 rounded-lg shadow-lg p-3 w-72"
+          style={{ top: pickerPosition.top, left: pickerPosition.left }}
+        >
           {/* Month/Year Header */}
           <div className="flex items-center justify-between mb-3">
             <button
@@ -429,7 +474,8 @@ export function DateInput({
               </button>
             )}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {error && (
