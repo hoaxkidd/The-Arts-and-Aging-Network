@@ -2,13 +2,13 @@
 
 import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import Link from 'next/link'
 import * as XLSX from 'xlsx'
-import { ArrowLeft, Upload, Users, Check, AlertCircle, FileText, Building2 } from 'lucide-react'
+import { Upload, Users, Check, AlertCircle, FileText, Building2, FileInput } from 'lucide-react'
 import { importStaffFromCSV, previewCSV } from '@/app/actions/staff-import'
 import { importHomesFromCSV, importHomesRows, previewHomesCSV, type HomesImportRow } from '@/app/actions/home-import'
 import { STYLES } from '@/lib/styles'
 import { cn } from '@/lib/utils'
+import { GoogleFormsImportPanel } from '@/components/admin/GoogleFormsImportPanel'
 
 const ROLES = [
   { value: 'FACILITATOR', label: 'Facilitator' },
@@ -146,7 +146,7 @@ function parseHomesWorkbookAllTabs(file: File, workbook: XLSX.WorkBook): { rows:
 export default function ImportStaffPage() {
   const router = useRouter()
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const [importType, setImportType] = useState<'staff' | 'homes'>('staff')
+  const [importType, setImportType] = useState<'staff' | 'homes' | 'googleForms'>('staff')
   const [file, setFile] = useState<File | null>(null)
   const [csvContent, setCsvContent] = useState<string | null>(null)
   const [homesRows, setHomesRows] = useState<HomesImportRow[] | null>(null)
@@ -208,7 +208,7 @@ export default function ImportStaffPage() {
     setIsImporting(false)
   }
 
-  function resetForType(type: 'staff' | 'homes') {
+  function resetForType(type: 'staff' | 'homes' | 'googleForms') {
     setImportType(type)
     setFile(null)
     setCsvContent(null)
@@ -235,9 +235,18 @@ export default function ImportStaffPage() {
           >
             <Building2 className="w-4 h-4 inline mr-1.5" /> Homes Import
           </button>
+          <button
+            onClick={() => resetForType('googleForms')}
+            className={`px-4 py-2 rounded-lg text-sm font-medium border ${importType === 'googleForms' ? 'bg-primary-50 text-primary-700 border-primary-200' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}
+          >
+            <FileInput className="w-4 h-4 inline mr-1.5" /> Google Forms Import
+          </button>
         </div>
       </div>
 
+      {importType === 'googleForms' ? (
+        <GoogleFormsImportPanel />
+      ) : (
       <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6">
         <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
           <Upload className="w-5 h-5" />
@@ -338,8 +347,9 @@ export default function ImportStaffPage() {
           </div>
         )}
       </div>
+      )}
 
-      {result && (
+      {importType !== 'googleForms' && result && (
         <div className="bg-white border border-gray-200 rounded-lg p-6">
           <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
             <Check className="w-5 h-5 text-green-600" />
