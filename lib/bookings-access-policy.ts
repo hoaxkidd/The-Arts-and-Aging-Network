@@ -17,7 +17,7 @@ export const BOOKING_ACCESS_ROLE_LABELS: Record<(typeof BOOKING_ACCESS_CANDIDATE
   BOARD: 'Board',
 }
 
-const VALID_BOOKINGS_ROLES = [...BOOKING_ACCESS_CANDIDATE_ROLES]
+const VALID_BOOKINGS_ROLES: readonly string[] = [...BOOKING_ACCESS_CANDIDATE_ROLES]
 
 function uniqRoles(roles: string[]): string[] {
   return Array.from(new Set(roles))
