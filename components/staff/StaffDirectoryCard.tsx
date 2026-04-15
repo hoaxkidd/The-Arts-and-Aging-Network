@@ -2,10 +2,11 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
-import { useRouter } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { MessageCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { getRoleLabel } from '@/lib/roles'
+import { getStaffBasePathFromPathname } from '@/lib/role-routes'
 
 type StaffMember = {
   id: string
@@ -32,12 +33,14 @@ const avatarColors: Record<string, string> = {
 
 export function StaffDirectoryCard({ staff }: { staff: StaffMember }) {
   const router = useRouter()
+  const pathname = usePathname()
+  const basePath = getStaffBasePathFromPathname(pathname || '/staff')
   const displayName = staff.preferredName || staff.name || 'Unknown'
   const initials = displayName.split(' ').map(n => n.charAt(0)).join('').toUpperCase().slice(0, 2)
 
   return (
     <div className="flex items-center gap-3 px-3 py-2.5 rounded-md hover:bg-gray-50 transition-colors group">
-      <Link href={`/staff/directory/${staff.userCode || staff.id}`} className="flex items-center gap-3 flex-1 min-w-0">
+      <Link href={`${basePath}/directory/${staff.userCode || staff.id}`} className="flex items-center gap-3 flex-1 min-w-0">
         {staff.image ? (
           <Image src={staff.image} alt={displayName} width={32} height={32} className="w-8 h-8 rounded-full object-cover flex-shrink-0" />
         ) : (
@@ -65,7 +68,7 @@ export function StaffDirectoryCard({ staff }: { staff: StaffMember }) {
       </Link>
 
         <button
-        onClick={() => router.push(`/staff/inbox/${staff.userCode || staff.id}`)}
+        onClick={() => router.push(`${basePath}/inbox/${staff.userCode || staff.id}`)}
         className="text-gray-300 hover:text-primary-500 transition-colors flex-shrink-0"
       >
         <MessageCircle className="w-4 h-4" />

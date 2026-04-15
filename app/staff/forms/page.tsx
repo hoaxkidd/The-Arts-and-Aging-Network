@@ -9,6 +9,8 @@ import { FormTemplateFilters } from "@/components/admin/FormTemplateFilters"
 import { StickyTable } from "@/components/ui/StickyTable"
 import { STYLES } from "@/lib/styles"
 import { canAccessTemplate, getAccessLabel } from "@/lib/form-access"
+import { FormPreviewButton } from "@/components/forms/FormPreviewButton"
+import { getStaffBasePathForRole } from "@/lib/role-routes"
 
 export default async function StaffFormsPage({
   searchParams
@@ -29,7 +31,8 @@ export default async function StaffFormsPage({
   // Scope access to the currently active role (prevents cross-role leakage).
   const roles = session.user.role ? [session.user.role] : []
   const isAdmin = session.user.role === 'ADMIN'
-
+  const basePath = getStaffBasePathForRole(session.user.role)
+  
   // Build query based on user role
   let templates
   const categoryFilterObj = categoryFilter !== 'ALL' ? { category: categoryFilter } : {}
@@ -155,7 +158,7 @@ export default async function StaffFormsPage({
       {/* Tabs */}
       <div className="flex-shrink-0 flex items-center gap-2 mb-4 border-b border-gray-200">
         <Link
-          href={`/staff/forms?tab=browse&view=${view}&sort=${sort}&search=${search}&category=${categoryFilter}&status=${statusFilter}`}
+          href={`${basePath}/forms?tab=browse&view=${view}&sort=${sort}&search=${search}&category=${categoryFilter}&status=${statusFilter}`}
           className={cn(
             "px-4 py-2 text-sm font-medium border-b-2 transition-colors",
             activeTab === 'browse'
@@ -166,7 +169,7 @@ export default async function StaffFormsPage({
           Browse Templates ({templates.length})
         </Link>
         <Link
-          href={`/staff/forms?tab=submissions&view=${view}&sort=${sort}&search=${search}&category=${categoryFilter}&status=${statusFilter}`}
+          href={`${basePath}/forms?tab=submissions&view=${view}&sort=${sort}&search=${search}&category=${categoryFilter}&status=${statusFilter}`}
           className={cn(
             "px-4 py-2 text-sm font-medium border-b-2 transition-colors",
             activeTab === 'submissions'
@@ -185,7 +188,7 @@ export default async function StaffFormsPage({
           <div className="flex-shrink-0 mb-4">
             <div className="flex items-center gap-2 overflow-x-auto pb-2">
               <Link
-                href="/staff/forms?tab=browse&category=ALL"
+                href={`${basePath}/forms?tab=browse&category=ALL`}
                 className={cn(
                   "px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap",
                   categoryFilter === 'ALL'
@@ -198,7 +201,7 @@ export default async function StaffFormsPage({
               {categories.map(cat => (
                 <Link
                   key={cat.value}
-                  href={`/staff/forms?tab=browse&category=${cat.value}`}
+                  href={`${basePath}/forms?tab=browse&category=${cat.value}`}
                   className={cn(
                     "px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap",
                     categoryFilter === cat.value
@@ -222,7 +225,7 @@ export default async function StaffFormsPage({
             ) : view === 'table' ? (
               /* Table View */
               <StickyTable 
-                headers={["Form", "Category", "Status", "Access", "Submissions"]}
+                headers={["Form", "Category", "Status", "Access", "Submissions", "Actions"]}
               >
                 {templates.map((template) => {
                   const category = categories.find(c => c.value === template.category)
@@ -230,7 +233,7 @@ export default async function StaffFormsPage({
                   return (
                     <tr key={template.id} className={STYLES.tableRow}>
                       <td className={cn(STYLES.tableCell, "min-w-0")}>
-                        <Link href={`/staff/forms/${template.id}`} className="block min-w-0">
+                        <Link href={`${basePath}/forms/${template.id}`} className="block min-w-0">
                           <div className="min-w-0">
                             <span className="block truncate text-sm font-medium text-gray-900 hover:text-primary-600">
                               {template.title}
@@ -265,6 +268,21 @@ export default async function StaffFormsPage({
                           <td className={STYLES.tableCell}>
                             <span className="text-sm text-gray-900">{template._count.submissions}</span>
                           </td>
+                          <td className={STYLES.tableCell}>
+                            <div className="flex items-center justify-end gap-2">
+                              <FormPreviewButton
+                                template={{
+                                  title: template.title,
+                                  description: template.description,
+                                  descriptionHtml: template.descriptionHtml,
+                                  formFields: template.formFields,
+                                }}
+                              />
+                              <Link href={`${basePath}/forms/${template.id}`} className={cn(STYLES.btn, STYLES.btnPrimary, 'h-8 px-3 py-1.5 text-xs')}>
+                                Open
+                              </Link>
+                            </div>
+                          </td>
                         </tr>
                       )
                     })}
@@ -277,7 +295,7 @@ export default async function StaffFormsPage({
                     template={template}
                     categories={categories.map(c => ({ value: c.value, label: c.label }))}
                     mode="staff"
-                    fillUrlPrefix="/staff/forms"
+                    fillUrlPrefix={`${basePath}/forms`}
                     existingSubmission={submissionMap.get(template.id) ? {
                       id: submissionMap.get(template.id)!.id,
                       formData: submissionMap.get(template.id)!.formData,
@@ -322,7 +340,7 @@ export default async function StaffFormsPage({
                 <FileText className="w-10 h-10 text-gray-300 mx-auto mb-2" />
                 <p className="text-sm text-gray-500">No submissions yet</p>
                 <Link
-                  href="/staff/forms?tab=browse"
+                  href={`${basePath}/forms?tab=browse`}
                   className="text-xs text-primary-600 hover:text-primary-700 mt-2 inline-block"
                 >
                   Browse forms to get started

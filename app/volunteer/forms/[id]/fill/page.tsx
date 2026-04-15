@@ -69,9 +69,11 @@ export default async function VolunteerFormFillPage({
     orderBy: { createdAt: 'desc' }
   }) as any
 
-  return <StaffFormFill 
-    template={template} 
-    existingSubmission={existingSubmission} 
-    redirectUrl="/volunteer"
-  />
+  return (
+    <StaffFormFill
+      template={template}
+      existingSubmission={existingSubmission}
+      redirectUrl="/volunteer/forms?tab=submissions"
+    />
+  )
 }

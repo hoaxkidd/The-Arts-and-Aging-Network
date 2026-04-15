@@ -3,6 +3,8 @@
 import Link from 'next/link'
 import { Calendar, Clock, MapPin } from 'lucide-react'
 import { STYLES } from '@/lib/styles'
+import { usePathname } from 'next/navigation'
+import { getStaffBasePathFromPathname } from '@/lib/role-routes'
 
 type Booking = {
   id: string
@@ -33,6 +35,9 @@ function formatTime(date: Date | string) {
 }
 
 export function UpcomingBookingsTable({ bookings }: { bookings: Booking[] }) {
+  const pathname = usePathname()
+  const basePath = getStaffBasePathFromPathname(pathname || '/staff')
+
   if (bookings.length === 0) {
     return (
       <div className="text-center py-8 text-gray-500">
@@ -59,7 +64,7 @@ export function UpcomingBookingsTable({ bookings }: { bookings: Booking[] }) {
               <tr key={booking.id} className={STYLES.tableRow}>
                 <td className={STYLES.tableCell}>
                   <Link
-                    href={`/staff/bookings/${booking.id}`}
+                    href={`${basePath}/bookings/${booking.id}`}
                     className="text-primary-600 hover:text-primary-700 font-medium"
                   >
                     {booking.program}

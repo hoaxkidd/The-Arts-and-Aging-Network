@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useMemo, useTransition } from 'react'
-import { useRouter } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
   Calendar,
@@ -18,6 +18,7 @@ import {
 import { cn } from '@/lib/utils'
 import { STYLES } from '@/lib/styles'
 import { confirmStaffAttendance, withdrawStaffAttendance } from '@/app/actions/staff-attendance'
+import { getStaffBasePathFromPathname } from '@/lib/role-routes'
 
 type Event = {
   id: string
@@ -36,6 +37,8 @@ type Event = {
 
 export function StaffEventList({ events }: { events: Event[] }) {
   const router = useRouter()
+  const pathname = usePathname()
+  const basePath = getStaffBasePathFromPathname(pathname || '/staff')
   const [isPending, startTransition] = useTransition()
   const [actionEventId, setActionEventId] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
@@ -165,7 +168,7 @@ export function StaffEventList({ events }: { events: Event[] }) {
                       <div className="flex items-start justify-between gap-2">
                         <div>
                           <Link
-                            href={`/staff/bookings/${event.id}`}
+                            href={`${basePath}/bookings/${event.id}`}
                             className="font-semibold text-gray-900 hover:text-primary-600 text-sm"
                           >
                             {event.title}
@@ -211,7 +214,7 @@ export function StaffEventList({ events }: { events: Event[] }) {
                       {/* Actions */}
                       <div className="flex items-center gap-2 mt-2">
                         <Link
-                          href={`/staff/bookings/${event.id}`}
+                          href={`${basePath}/bookings/${event.id}`}
                           className="px-2.5 py-1 text-xs font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-md flex items-center gap-1"
                         >
                           View <ExternalLink className="w-2.5 h-2.5" />

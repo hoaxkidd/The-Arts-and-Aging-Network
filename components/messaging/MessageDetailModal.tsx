@@ -1,8 +1,9 @@
 'use client'
 
-import { X, Reply, User } from 'lucide-react'
-import { useState } from 'react'
+import { X, Reply } from 'lucide-react'
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
+import { getStaffBasePathFromPathname } from '@/lib/role-routes'
 
 type Message = {
   id: string
@@ -33,6 +34,8 @@ type MessageDetailModalProps = {
 
 export function MessageDetailModal({ message, isInbox, onClose }: MessageDetailModalProps) {
   const otherUser = isInbox ? message.sender : message.recipient
+  const pathname = usePathname()
+  const basePath = getStaffBasePathFromPathname(pathname || '/staff')
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -84,7 +87,7 @@ export function MessageDetailModal({ message, isInbox, onClose }: MessageDetailM
         {isInbox && (
           <div className="p-4 border-t border-gray-200 bg-gray-50">
             <Link
-              href={`/staff/directory/${otherUser?.userCode || otherUser?.id}`}
+              href={`${basePath}/directory/${otherUser?.userCode || otherUser?.id}`}
               className="w-full px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 font-medium flex items-center justify-center gap-2"
             >
               <Reply className="w-4 h-4" />

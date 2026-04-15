@@ -9,27 +9,6 @@ import { sendDirectMessage } from "./direct-messages"
 import { logger } from "@/lib/logger"
 import { canAccessTemplate } from "@/lib/form-access"
 
-const BLOCKED_HOME_ADMIN_TAGS = [
-  'google-form:1COS8yKpKH3D9MDrCPtxI34UQb9GySiJuMJ7Iq6VJ-fU',
-  'source:google-forms',
-]
-
-function parseTemplateTags(tags: string | null | undefined): string[] {
-  if (!tags) return []
-  try {
-    const parsed = JSON.parse(tags)
-    if (Array.isArray(parsed)) {
-      return parsed.filter((tag): tag is string => typeof tag === 'string').map((tag) => tag.trim()).filter(Boolean)
-    }
-  } catch {}
-  return tags.split(',').map((tag) => tag.trim()).filter(Boolean)
-}
-
-function shouldHideTemplateForHomeAdmin(tags: string | null | undefined): boolean {
-  const parsed = parseTemplateTags(tags)
-  return parsed.some((tag) => BLOCKED_HOME_ADMIN_TAGS.includes(tag))
-}
-
 function hasTemplateAccess(
   template: { isActive: boolean; isPublic: boolean; allowedRoles: string | null },
   roles: string[],
@@ -183,11 +162,7 @@ export async function getEventSignupForms() {
       )
     )
 
-    const filteredTemplates = isHomeAdmin
-      ? visibleTemplates.filter((template) => !shouldHideTemplateForHomeAdmin(template.tags))
-      : visibleTemplates
-
-    return { success: true, data: filteredTemplates }
+    return { success: true, data: visibleTemplates }
   } catch (error) {
     logger.serverAction("Failed to fetch booking sign-up forms:", error)
     return { error: "Failed to load booking sign-up forms" }

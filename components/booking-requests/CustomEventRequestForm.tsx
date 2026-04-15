@@ -449,7 +449,7 @@ export function CustomEventRequestForm() {
 
         {/* Actions */}
         {selectedForm && (
-          <div className="px-4 py-3 bg-gray-50 border-t border-gray-100 flex items-center justify-end gap-2.5">
+          <div className="px-4 py-3 md:px-5 bg-gray-50 border-t border-gray-100 flex items-center justify-end gap-2.5">
               <Link
                 href="/dashboard/my-bookings?section=requests"
                 className={cn(STYLES.btn, "bg-white border border-gray-200 text-gray-700 hover:bg-gray-50")}

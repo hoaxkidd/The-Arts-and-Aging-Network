@@ -6,6 +6,8 @@ import { cn } from '@/lib/utils'
 import { InboxList } from './InboxList'
 import { ComposeMessageModal } from './ComposeMessageModal'
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
+import { getStaffBasePathFromPathname } from '@/lib/role-routes'
 
 type DirectMessage = {
   id: string
@@ -76,6 +78,8 @@ export function MessagingCenter({
 }: Props) {
   const [activeTab, setActiveTab] = useState<'direct' | 'groups'>('direct')
   const [showComposeModal, setShowComposeModal] = useState(false)
+  const pathname = usePathname()
+  const basePath = getStaffBasePathFromPathname(pathname || '/staff')
 
   return (
     <div className="h-full flex flex-col">
@@ -91,7 +95,7 @@ export function MessagingCenter({
         )}
         {activeTab === 'groups' && (
           <Link
-            href="/staff/groups"
+            href={`${basePath}/groups`}
             className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 font-medium flex items-center gap-2 shadow-sm"
           >
             <Plus className="w-4 h-4" />
@@ -153,7 +157,7 @@ export function MessagingCenter({
                 <Users className="w-12 h-12 text-gray-300 mx-auto mb-3" />
                 <p className="text-sm text-gray-500 mb-4">No groups yet</p>
                 <Link
-                  href="/staff/groups"
+                  href={`${basePath}/groups`}
                   className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 font-medium"
                 >
                   <Plus className="w-4 h-4" />
@@ -168,7 +172,7 @@ export function MessagingCenter({
                 return (
                   <Link
                     key={membership.id}
-                    href={`/staff/groups/${membership.groupId}`}
+                    href={`${basePath}/groups/${membership.groupId}`}
                     className="block bg-white rounded-lg border border-gray-200 p-4 transition-colors"
                   >
                     <div className="flex items-start justify-between">

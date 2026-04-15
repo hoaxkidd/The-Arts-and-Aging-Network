@@ -1,9 +1,10 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { requestGroupAccess } from '@/app/actions/messaging'
 import { CheckCircle, Clock } from 'lucide-react'
+import { getStaffBasePathFromPathname } from '@/lib/role-routes'
 
 type JoinGroupFormProps = {
   groupId: string
@@ -13,6 +14,8 @@ type JoinGroupFormProps = {
 
 export function JoinGroupForm({ groupId, allowAllStaff, isPending }: JoinGroupFormProps) {
   const router = useRouter()
+  const pathname = usePathname()
+  const basePath = getStaffBasePathFromPathname(pathname || '/staff')
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
   const [success, setSuccess] = useState(false)
@@ -25,10 +28,10 @@ export function JoinGroupForm({ groupId, allowAllStaff, isPending }: JoinGroupFo
       setSuccess(true)
       if (result.autoApproved) {
         // Auto-approved, redirect to group
-        setTimeout(() => router.push(`/staff/groups/${groupId}`), 1000)
+        setTimeout(() => router.push(`${basePath}/groups/${groupId}`), 1000)
       } else {
         // Pending approval
-        setTimeout(() => router.push('/staff/groups'), 2000)
+        setTimeout(() => router.push(`${basePath}/groups`), 2000)
       }
     } else {
       setLoading(false)
@@ -96,7 +99,7 @@ export function JoinGroupForm({ groupId, allowAllStaff, isPending }: JoinGroupFo
           {loading ? 'Joining...' : allowAllStaff ? 'Join Group' : 'Send Request'}
         </button>
         <button
-          onClick={() => router.push('/staff/groups')}
+          onClick={() => router.push(`${basePath}/groups`)}
           className="px-4 py-2 text-gray-700 hover:text-gray-900"
         >
           Cancel

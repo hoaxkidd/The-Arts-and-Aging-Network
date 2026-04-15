@@ -83,7 +83,7 @@ export function UnifiedInbox({ conversations, groupMemberships, currentUserId, c
     const result = await requestGroupAccess(groupId)
     if (result.success) {
       if (result.autoApproved) {
-        router.push(`/staff/groups/${groupId}`)
+        router.push(`${inboxBasePath}/groups/${groupId}`)
       } else {
         router.refresh()
       }
@@ -198,7 +198,7 @@ export function UnifiedInbox({ conversations, groupMemberships, currentUserId, c
                     return (
                       <Link
                         key={membership.id}
-                        href={`/staff/groups/${membership.groupId}`}
+                        href={`${inboxBasePath}/groups/${membership.groupId}`}
                         className="block bg-white border border-gray-200 rounded-lg p-3 sm:p-3 hover:border-primary-400 active:bg-gray-50 transition-colors min-h-[64px] touch-manipulation"
                       >
                         <div className="flex items-start gap-3">

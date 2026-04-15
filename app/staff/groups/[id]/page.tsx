@@ -1,10 +1,11 @@
 import { prisma } from "@/lib/prisma"
 import { auth } from "@/auth"
 import { redirect } from "next/navigation"
-import { ArrowLeft, Users, Hash } from "lucide-react"
+import { Users, Hash } from "lucide-react"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
 import { MessageThread } from "@/components/messaging/MessageThread"
+import { getStaffBasePathForRole } from "@/lib/role-routes"
 
 export default async function GroupMessagesPage({
   params
@@ -13,6 +14,7 @@ export default async function GroupMessagesPage({
 }) {
   const session = await auth()
   if (!session?.user?.id) redirect('/login')
+  const basePath = getStaffBasePathForRole(session.user.role)
 
   const { id } = await params
   const isAdmin = session.user.role === 'ADMIN'
@@ -40,7 +42,7 @@ export default async function GroupMessagesPage({
         </div>
         <p className="text-lg font-semibold text-gray-900 mb-1">Group not found</p>
         <p className="text-sm text-gray-500 mb-4">This group may have been deleted</p>
-        <Link href="/staff/inbox" className="text-sm text-primary-600 hover:text-primary-700 font-medium">
+        <Link href={`${basePath}/inbox`} className="text-sm text-primary-600 hover:text-primary-700 font-medium">
           Back to Inbox
         </Link>
       </div>
@@ -55,7 +57,7 @@ export default async function GroupMessagesPage({
         </div>
         <p className="text-lg font-semibold text-gray-900 mb-1">Group archived</p>
         <p className="text-sm text-gray-500 mb-4">This group is no longer active</p>
-        <Link href="/staff/inbox" className="text-sm text-primary-600 hover:text-primary-700 font-medium">
+        <Link href={`${basePath}/inbox`} className="text-sm text-primary-600 hover:text-primary-700 font-medium">
           Back to Inbox
         </Link>
       </div>
@@ -85,7 +87,7 @@ export default async function GroupMessagesPage({
         </div>
         <p className="text-lg font-semibold text-gray-900 mb-1">Access required</p>
         <p className="text-sm text-gray-500 mb-4">You need to be a member to view this group</p>
-        <Link href="/staff/inbox" className="text-sm text-primary-600 hover:text-primary-700 font-medium">
+        <Link href={`${basePath}/inbox`} className="text-sm text-primary-600 hover:text-primary-700 font-medium">
           Back to Inbox
         </Link>
       </div>

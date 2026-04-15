@@ -2,6 +2,7 @@ import DashboardLayout from "@/components/DashboardLayout"
 import { auth } from "@/auth"
 import { redirect } from "next/navigation"
 import { headers } from "next/headers"
+import { normalizeStaffNamespace } from "@/lib/role-routes"
 
 export default async function StaffLayout({
   children,
@@ -17,8 +18,10 @@ export default async function StaffLayout({
     // Headers may fail in edge/serverless; fallback allows layout to render
   }
 
+  const normalizedPathname = normalizeStaffNamespace(pathname)
+
   // Allow all authenticated users to access inbox and directory
-  const isPublicStaffRoute = pathname.startsWith('/staff/inbox') || pathname.startsWith('/staff/directory')
+  const isPublicStaffRoute = normalizedPathname.startsWith('/staff/inbox') || normalizedPathname.startsWith('/staff/directory')
 
   if (!session) {
     redirect('/login')

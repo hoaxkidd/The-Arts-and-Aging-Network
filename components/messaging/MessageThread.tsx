@@ -7,8 +7,9 @@ import { starMessage, unstarMessage, isMessageStarred } from '@/app/actions/star
 import { cn } from '@/lib/utils'
 import { MessageActions } from './MessageActions'
 import { MessageReactions } from './MessageReactions'
-import { useRouter } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { logger } from '@/lib/logger'
+import { getStaffBasePathFromPathname } from '@/lib/role-routes'
 
 type Message = {
   id: string
@@ -73,6 +74,8 @@ export function MessageThread({
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const router = useRouter()
+  const pathname = usePathname()
+  const basePath = getStaffBasePathFromPathname(pathname || '/staff')
 
   const isPlatformAdmin = currentUserRole === 'ADMIN'
   const isGroupAdmin = myGroupRole === 'ADMIN'
@@ -166,7 +169,7 @@ export function MessageThread({
     if (result.error) {
       alert(result.error)
     } else {
-      router.push('/staff/inbox')
+      router.push(`${basePath}/inbox`)
     }
   }
 

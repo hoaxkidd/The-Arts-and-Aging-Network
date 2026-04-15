@@ -2,12 +2,11 @@ import { prisma } from "@/lib/prisma"
 import { auth } from "@/auth"
 import { redirect } from "next/navigation"
 import { notFound } from "next/navigation"
-import { FileText, Calendar, ArrowLeft, Edit, Users, Lock, Globe } from "lucide-react"
-import { ROLE_LABELS } from "@/lib/roles"
+import { Calendar } from "lucide-react"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
-import { STYLES } from "@/lib/styles"
 import { sanitizeHtml } from "@/lib/dompurify"
+import { FormActionButtons } from "@/components/forms/FormActionButtons"
 
 export default async function PayrollFormTemplateDetailPage({
   params
@@ -87,8 +86,7 @@ export default async function PayrollFormTemplateDetailPage({
   }
 
   const category = categories.find(c => c.value === template.category)
-  const tags = template.tags ? JSON.parse(template.tags) : []
-
+  const latestSubmission = mySubmissions[0]
   return (
     <div className="h-full flex flex-col">
       <div className="flex-1 min-h-0 overflow-auto space-y-4">
@@ -104,32 +102,26 @@ export default async function PayrollFormTemplateDetailPage({
           </div>
         )}
 
-        {tags.length > 0 && (
-          <div className="bg-white rounded-lg border border-gray-200 p-4">
-            <h2 className="text-sm font-semibold text-gray-900 mb-2">Tags</h2>
-            <div className="flex flex-wrap gap-2">
-              {tags.map((tag: string, i: number) => (
-                <span key={i} className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs">
-                  {tag}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
-
         <div className="bg-white rounded-lg border border-gray-200 p-4">
           <h2 className="text-sm font-semibold text-gray-900 mb-3">Actions</h2>
-          <div className="flex flex-col gap-2">
-            {template.isFillable && (
-              <Link
-                href={`/payroll/forms/${template.id}/fill`}
-                className={cn(STYLES.btn, STYLES.btnSecondary, "justify-center")}
-              >
-                <Edit className="w-4 h-4" />
-                Fill Out Online
-              </Link>
-            )}
-          </div>
+          <FormActionButtons
+            template={{
+              id: template.id,
+              title: template.title,
+              description: template.description,
+              descriptionHtml: template.descriptionHtml,
+              category: template.category,
+              isFillable: template.isFillable,
+              formFields: template.formFields,
+            }}
+            existingSubmission={latestSubmission ? {
+              id: latestSubmission.id,
+              formData: latestSubmission.formData,
+              status: latestSubmission.status,
+              createdAt: latestSubmission.createdAt.toISOString(),
+            } : null}
+            isProgramCoordinator={false}
+          />
         </div>
 
         <div className="bg-white rounded-lg border border-gray-200 p-4">

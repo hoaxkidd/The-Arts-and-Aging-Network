@@ -99,7 +99,6 @@ export default async function HomeAdminFormDetailPage({
   }
 
   const category = categories.find(c => c.value === template.category)
-  const tags = template.tags ? JSON.parse(template.tags) : []
   const latestSubmission = mySubmissions[0]
 
   return (
@@ -116,20 +115,6 @@ export default async function HomeAdminFormDetailPage({
                 __html: sanitizeHtml(template.descriptionHtml || template.description || '') 
               }} 
             />
-          </div>
-        )}
-
-        {/* Tags */}
-        {tags.length > 0 && (
-          <div className="bg-white rounded-lg border border-gray-200 p-4">
-            <h2 className="text-sm font-semibold text-gray-900 mb-2">Tags</h2>
-            <div className="flex flex-wrap gap-2">
-              {tags.map((tag: string, i: number) => (
-                <span key={i} className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs">
-                  {tag}
-                </span>
-              ))}
-            </div>
           </div>
         )}
 

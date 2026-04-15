@@ -1,10 +1,10 @@
 import { prisma } from "@/lib/prisma"
 import { auth } from "@/auth"
 import { redirect } from "next/navigation"
-import { ArrowLeft, Users, MessageSquare } from "lucide-react"
-import Link from "next/link"
+import { Users, MessageSquare } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { JoinGroupForm } from "@/components/messaging/JoinGroupForm"
+import { getStaffBasePathForRole } from "@/lib/role-routes"
 
 export default async function JoinGroupPage({
   params
@@ -13,6 +13,7 @@ export default async function JoinGroupPage({
 }) {
   const session = await auth()
   if (!session?.user?.id) redirect('/login')
+  const basePath = getStaffBasePathForRole(session.user.role)
 
   const { id } = await params
 
@@ -32,7 +33,7 @@ export default async function JoinGroupPage({
   })
 
   if (!group || !group.isActive) {
-    redirect('/staff/groups')
+    redirect(`${basePath}/groups`)
   }
 
   // Check if already a member
@@ -46,7 +47,7 @@ export default async function JoinGroupPage({
   })
 
   if (existingMember?.isActive) {
-    redirect(`/staff/groups/${id}`)
+    redirect(`${basePath}/groups/${id}`)
   }
 
   return (

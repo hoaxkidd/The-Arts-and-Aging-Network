@@ -4,12 +4,14 @@ import { redirect } from "next/navigation"
 import { MessageSquare, Users, Clock, Plus, Lock, MessageCircle } from "lucide-react"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
+import { getStaffBasePathForRole } from "@/lib/role-routes"
 
 export const revalidate = 30
 
 export default async function StaffMessagesPage() {
   const session = await auth()
   if (!session?.user?.id) redirect('/login')
+  const basePath = getStaffBasePathForRole(session.user.role)
 
   // Get user's active groups
   const memberships = await prisma.groupMember.findMany({
@@ -142,7 +144,7 @@ export default async function StaffMessagesPage() {
               {openGroups.map((group) => (
                 <Link
                   key={group.id}
-                  href={`/staff/groups/join/${group.id}`}
+                  href={`${basePath}/groups/join/${group.id}`}
                   className="flex items-center gap-3 text-xs text-blue-700 hover:text-blue-800 p-1.5 rounded hover:bg-blue-100 transition-colors"
                 >
                   <span className="text-lg">{group.iconEmoji}</span>
@@ -172,7 +174,7 @@ export default async function StaffMessagesPage() {
                 return (
                   <Link
                     key={group.id}
-                    href={`/staff/groups/join/${group.id}`}
+                    href={`${basePath}/groups/join/${group.id}`}
                     className={cn(
                       "flex items-center gap-3 text-xs p-1.5 rounded transition-colors",
                       isPending
@@ -218,7 +220,7 @@ export default async function StaffMessagesPage() {
               return (
                 <Link
                   key={group.id}
-                  href={`/staff/groups/${group.id}`}
+                  href={`${basePath}/groups/${group.id}`}
                   className="block bg-white rounded-lg border border-gray-200 p-3 hover:border-primary-300 transition-colors"
                 >
                   <div className="flex items-start gap-3">

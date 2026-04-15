@@ -6,6 +6,54 @@ import { AddressAutocomplete } from '@/components/ui/AddressAutocomplete'
 import { sanitizeHtml } from "@/lib/dompurify"
 import { DateInput } from '@/components/ui/DateInput'
 
+function hasHtmlMarkup(value: string): boolean {
+  return /<\/?[a-z][\s\S]*>/i.test(value)
+}
+
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
+function applySimpleMarkdown(value: string): string {
+  return value
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/__(.+?)__/g, '<strong>$1</strong>')
+    .replace(/\*(?!\*)([^*\n]+)\*(?!\*)/g, '<em>$1</em>')
+    .replace(/_(?!_)([^_\n]+)_(?!_)/g, '<em>$1</em>')
+}
+
+function plainTextToHtml(value: string): string {
+  const escaped = escapeHtml(value.trim())
+  const withFormatting = applySimpleMarkdown(escaped)
+  return withFormatting
+    .split(/\n{2,}/)
+    .map((paragraph) => `<p>${paragraph.replace(/\n/g, '<br />')}</p>`)
+    .join('')
+}
+
+function buildRichContent(rawHtml?: string | null, rawText?: string | null): string | null {
+  const htmlCandidate = rawHtml?.trim() || ''
+  const textCandidate = rawText?.trim() || ''
+
+  if (htmlCandidate) {
+    if (hasHtmlMarkup(htmlCandidate)) {
+      return sanitizeHtml(htmlCandidate)
+    }
+    return sanitizeHtml(plainTextToHtml(htmlCandidate))
+  }
+
+  if (textCandidate) {
+    return sanitizeHtml(plainTextToHtml(textCandidate))
+  }
+
+  return null
+}
+
 export type FormTemplateViewProps = {
   title: string
   description?: string | null
@@ -49,24 +97,25 @@ export function FormTemplateView({
   submitting = false,
   density = 'default',
 }: FormTemplateViewProps) {
-  const wrapperPadding = density === 'compact' ? 'p-0' : 'p-4'
+  const wrapperPadding = density === 'compact' ? 'px-4 py-4 md:px-5' : 'p-4 md:p-5'
+  const descriptionContent = buildRichContent(descriptionHtml, description)
   const content = (
-    <>
+    <div className="space-y-5">
       {eventTitle && (
         <div className="pb-2 border-b border-gray-200">
           <h2 className="text-lg font-semibold text-gray-900">{eventTitle}</h2>
         </div>
       )}
-      <div className="pb-3">
+      <div className="space-y-2">
         <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
-        {(description || descriptionHtml) && (
-          <div 
-            className="text-sm text-gray-500 mt-1 rich-text-content"
-            dangerouslySetInnerHTML={{ 
-              __html: sanitizeHtml(descriptionHtml || description || '') 
-            }} 
+        {descriptionContent ? (
+          <div
+            className="text-sm text-gray-600 rich-text-content"
+            dangerouslySetInnerHTML={{
+              __html: descriptionContent,
+            }}
           />
-        )}
+        ) : null}
       </div>
 
       {fields.length === 0 && preview && (
@@ -75,20 +124,29 @@ export function FormTemplateView({
         </p>
       )}
 
-      {fields.map((field) => (
-        <div key={field.id} className="pb-3 last:pb-0">
+      {fields.map((field, index) => (
+        (() => {
+          const fieldDescriptionContent = buildRichContent(field.descriptionHtml, field.description)
+          return (
+        <div
+          key={field.id}
+          className={cn(
+            'space-y-2 pb-4',
+            index < fields.length - 1 ? 'border-b border-gray-100' : 'pb-0'
+          )}
+        >
           <label className="block text-sm font-medium text-gray-900">
             {field.label || '(Untitled field)'}
             {field.required && <span className="text-red-500 ml-0.5">*</span>}
           </label>
-          {(field.description || field.descriptionHtml) && (
-            <div 
-              className="text-xs text-gray-500 mb-1.5 rich-text-content"
-              dangerouslySetInnerHTML={{ 
-                __html: sanitizeHtml(field.descriptionHtml || field.description || '') 
-              }} 
+          {fieldDescriptionContent ? (
+            <div
+              className="text-sm text-gray-600 rich-text-content"
+              dangerouslySetInnerHTML={{
+                __html: fieldDescriptionContent,
+              }}
             />
-          )}
+          ) : null}
           {preview ? (
             <FieldInputPreview field={field} value={values[field.id]} />
           ) : (
@@ -104,6 +162,8 @@ export function FormTemplateView({
             </>
           )}
         </div>
+          )
+        })()
       ))}
 
       {!preview && submitLabel != null && (
@@ -120,7 +180,7 @@ export function FormTemplateView({
           </button>
         </div>
       )}
-    </>
+    </div>
   )
 
   if (preview) {

@@ -9,6 +9,7 @@ import { FormTemplateFilters } from "@/components/admin/FormTemplateFilters"
 import { StickyTable } from "@/components/ui/StickyTable"
 import { STYLES } from "@/lib/styles"
 import { canAccessTemplate, getAccessLabel } from "@/lib/form-access"
+import { FormPreviewButton } from "@/components/forms/FormPreviewButton"
 
 export default async function VolunteerFormsPage({
   searchParams
@@ -233,7 +234,7 @@ export default async function VolunteerFormsPage({
               </div>
             ) : view === 'table' ? (
               <StickyTable 
-                headers={["Form", "Category", "Status", "Access", "Submissions"]}
+                headers={["Form", "Category", "Status", "Access", "Submissions", "Actions"]}
               >
                 {templates.map((template) => {
                   const category = categories.find(c => c.value === template.category)
@@ -271,6 +272,21 @@ export default async function VolunteerFormsPage({
                           </td>
                           <td className={STYLES.tableCell}>
                             <span className="text-sm text-gray-900">{template._count.submissions}</span>
+                          </td>
+                          <td className={STYLES.tableCell}>
+                            <div className="flex items-center justify-end gap-2">
+                              <FormPreviewButton
+                                template={{
+                                  title: template.title,
+                                  description: template.description,
+                                  descriptionHtml: template.descriptionHtml,
+                                  formFields: template.formFields,
+                                }}
+                              />
+                              <Link href={`/volunteer/forms/${template.id}`} className={cn(STYLES.btn, STYLES.btnPrimary, 'h-8 px-3 py-1.5 text-xs')}>
+                                Open
+                              </Link>
+                            </div>
                           </td>
                         </tr>
                   )

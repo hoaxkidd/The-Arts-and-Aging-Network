@@ -4,6 +4,7 @@ import { getConversation, getConversations } from "@/app/actions/conversations"
 import { prisma } from "@/lib/prisma"
 import { ConversationSplitView } from "@/components/messaging/ConversationSplitView"
 import { notFound } from "next/navigation"
+import { getStaffBasePathForRole } from "@/lib/role-routes"
 
 export default async function ConversationPage({
   params
@@ -16,6 +17,7 @@ export default async function ConversationPage({
   if (!session?.user?.id) {
     redirect('/login')
   }
+  const basePath = getStaffBasePathForRole(session.user.role)
 
   // Get conversation, conversations list, and groups in parallel
   const [conversationResult, conversationsResult, groupMemberships] = await Promise.all([
@@ -73,7 +75,7 @@ export default async function ConversationPage({
 
   const canonicalIdentifier = conversationResult.partner.userCode || conversationResult.partner.id
   if (id !== canonicalIdentifier) {
-    redirect(`/staff/inbox/${canonicalIdentifier}`)
+    redirect(`${basePath}/inbox/${canonicalIdentifier}`)
   }
 
   return (

@@ -9,6 +9,7 @@ import { STYLES } from "@/lib/styles"
 import { sanitizeHtml } from "@/lib/dompurify"
 import { canAccessTemplate } from "@/lib/form-access"
 import { FormActionButtons } from "@/components/forms/FormActionButtons"
+import { getStaffBasePathForRole } from "@/lib/role-routes"
 
 export default async function FormTemplateDetailPage({
   params
@@ -39,6 +40,7 @@ export default async function FormTemplateDetailPage({
   if (!template) notFound()
 
   const isAdmin = session.user.role === 'ADMIN'
+  const basePath = getStaffBasePathForRole(session.user.role)
   const roles = Array.isArray(session.user.roles) ? session.user.roles : (session.user.role ? [session.user.role] : [])
 
   if (!isAdmin) {
@@ -50,7 +52,7 @@ export default async function FormTemplateDetailPage({
       return (
         <div className="p-8 text-center">
           <p className="text-gray-500">This template is not available</p>
-          <Link href="/staff/forms" className="text-primary-600 hover:text-primary-700 text-sm mt-2 inline-block">
+          <Link href={`${basePath}/forms`} className="text-primary-600 hover:text-primary-700 text-sm mt-2 inline-block">
             Back to Forms
           </Link>
         </div>
@@ -96,7 +98,6 @@ export default async function FormTemplateDetailPage({
   }
 
   const category = categories.find(c => c.value === template.category)
-  const tags = template.tags ? JSON.parse(template.tags) : []
   const latestSubmission = mySubmissions[0]
 
   return (
@@ -113,20 +114,6 @@ export default async function FormTemplateDetailPage({
                 __html: sanitizeHtml(template.descriptionHtml || template.description || '') 
               }} 
             />
-          </div>
-        )}
-
-        {/* Tags */}
-        {tags.length > 0 && (
-          <div className="bg-white rounded-lg border border-gray-200 p-4">
-            <h2 className="text-sm font-semibold text-gray-900 mb-2">Tags</h2>
-            <div className="flex flex-wrap gap-2">
-              {tags.map((tag: string, i: number) => (
-                <span key={i} className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs">
-                  {tag}
-                </span>
-              ))}
-            </div>
           </div>
         )}
 
@@ -168,7 +155,7 @@ export default async function FormTemplateDetailPage({
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-sm font-semibold text-gray-900">Your Recent Submissions</h2>
               <Link
-                href="/staff/forms?tab=submissions"
+                href={`${basePath}/forms?tab=submissions`}
                 className="text-xs text-primary-600 hover:text-primary-700"
               >
                 View All

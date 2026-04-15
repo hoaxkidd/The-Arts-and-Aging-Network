@@ -2,6 +2,7 @@ import { getStaffPublicProfile } from '@/app/actions/directory'
 import { StaffPublicProfile } from '@/components/staff/StaffPublicProfile'
 import { auth } from '@/auth'
 import { notFound, redirect } from 'next/navigation'
+import { getStaffBasePathForRole } from '@/lib/role-routes'
 
 export default async function StaffProfilePage({
   params
@@ -14,6 +15,7 @@ export default async function StaffProfilePage({
   if (!session?.user?.id) {
     return <div className="text-red-600">Unauthorized</div>
   }
+  const basePath = getStaffBasePathForRole(session.user.role)
 
   const result = await getStaffPublicProfile(id)
 
@@ -27,7 +29,7 @@ export default async function StaffProfilePage({
   const { staff, upcomingBookings, phoneRequestStatus } = result
   const canonicalIdentifier = staff.userCode || staff.id
   if (id !== canonicalIdentifier) {
-    redirect(`/staff/directory/${canonicalIdentifier}`)
+    redirect(`${basePath}/directory/${canonicalIdentifier}`)
   }
 
   return (

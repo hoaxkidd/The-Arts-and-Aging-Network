@@ -4,9 +4,10 @@ import { useState } from 'react'
 import { parseFormFields } from '@/lib/form-template-types'
 import { FormTemplateView } from '@/components/forms/FormTemplateView'
 import { submitForm } from '@/app/actions/form-templates'
-import { useRouter } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { ArrowLeft, Lock } from 'lucide-react'
 import Link from 'next/link'
+import { getStaffBasePathFromPathname } from '@/lib/role-routes'
 
 type TemplateForRender = {
   id: string
@@ -29,6 +30,8 @@ type Props = {
 
 export function StaffFormFill({ template, existingSubmission, redirectUrl }: Props) {
   const router = useRouter()
+  const pathname = usePathname()
+  const basePath = getStaffBasePathFromPathname(pathname || '/staff')
   const fields = parseFormFields(template.formFields)
   
   const initialValues = existingSubmission 
@@ -85,7 +88,7 @@ export function StaffFormFill({ template, existingSubmission, redirectUrl }: Pro
       if (result.error) {
         setError(result.error)
       } else {
-        const destination = redirectUrl || '/staff/forms?tab=submissions'
+        const destination = redirectUrl || `${basePath}/forms?tab=submissions`
         router.push(destination)
       }
     } catch (e) {
@@ -100,7 +103,7 @@ export function StaffFormFill({ template, existingSubmission, redirectUrl }: Pro
       {/* Header */}
       <div className="flex-shrink-0 pb-3 border-b border-gray-200">
         <Link
-          href={`/staff/forms/${template.id}`}
+          href={`${basePath}/forms/${template.id}`}
           className="inline-flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-700 mb-2"
         >
           <ArrowLeft className="w-3 h-3" /> Back to Form Details

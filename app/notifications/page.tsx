@@ -30,6 +30,10 @@ export default async function NotificationsPage() {
   const settingsPath = role === 'ADMIN' ? '/admin/settings' :
     role === 'PAYROLL' ? '/payroll/settings' :
     role === 'HOME_ADMIN' ? '/dashboard/settings' :
+    role === 'VOLUNTEER' ? '/volunteer/settings' :
+    role === 'FACILITATOR' ? '/facilitator/settings' :
+    role === 'PARTNER' ? '/partner/settings' :
+    role === 'BOARD' ? '/board/settings' :
     '/staff/settings'
 
   return (

@@ -1,5 +1,1 @@
-import { redirect } from "next/navigation"
-
-export default function VolunteerSettingsRedirectPage() {
-  redirect('/staff/settings')
-}
+export { default } from "@/app/staff/settings/page"

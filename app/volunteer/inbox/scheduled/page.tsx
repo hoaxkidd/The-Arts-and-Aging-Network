@@ -1,5 +1,1 @@
-import { redirect } from "next/navigation"
-
-export default function VolunteerInboxScheduledRedirectPage() {
-  redirect('/staff/inbox/scheduled')
-}
+export { default } from "@/app/staff/inbox/scheduled/page"

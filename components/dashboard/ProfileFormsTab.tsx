@@ -7,22 +7,7 @@ import { FormTemplateFilters } from "@/components/admin/FormTemplateFilters"
 import { StickyTable } from "@/components/ui/StickyTable"
 import { STYLES } from "@/lib/styles"
 import { canAccessTemplate } from "@/lib/form-access"
-
-const BLOCKED_HOME_ADMIN_TAGS = [
-  'google-form:1COS8yKpKH3D9MDrCPtxI34UQb9GySiJuMJ7Iq6VJ-fU',
-  'source:google-forms',
-]
-
-function parseTemplateTags(tags: string | null | undefined): string[] {
-  if (!tags) return []
-  try {
-    const parsed = JSON.parse(tags)
-    if (Array.isArray(parsed)) {
-      return parsed.filter((tag): tag is string => typeof tag === 'string').map((tag) => tag.trim()).filter(Boolean)
-    }
-  } catch {}
-  return tags.split(',').map((tag) => tag.trim()).filter(Boolean)
-}
+import { FormPreviewButton } from "@/components/forms/FormPreviewButton"
 
 type FormsParams = {
   category?: string
@@ -131,13 +116,6 @@ export async function ProfileFormsTab({
         { roles, isHomeAdmin }
       )
     )
-  }
-
-  if (isHomeAdmin) {
-    templates = (templates as any[]).filter((t: any) => {
-      const tags = parseTemplateTags(t.tags)
-      return !tags.some((tag) => BLOCKED_HOME_ADMIN_TAGS.includes(tag))
-    })
   }
 
   const mySubmissions = await prisma.formSubmission.findMany({
@@ -268,7 +246,7 @@ export async function ProfileFormsTab({
                 <p className="text-sm text-gray-500">{search ? 'No forms match your search' : 'No forms assigned to your role'}</p>
               </div>
             ) : view === 'table' ? (
-              <StickyTable headers={isAdmin ? ["Form", "Category", "Status", "Access", "Submissions"] : ["Form", "Category", "Status"]}>
+              <StickyTable headers={isAdmin ? ["Form", "Category", "Status", "Access", "Submissions", "Actions"] : ["Form", "Category", "Status", "Actions"]}>
                 {templates.map((template: any) => {
                   const category = categories.find((c) => c.value === template.category)
                   return (
@@ -301,6 +279,21 @@ export async function ProfileFormsTab({
                           <span className="text-sm text-gray-900">{template._count.submissions}</span>
                         </td>
                       )}
+                      <td className={STYLES.tableCell}>
+                        <div className="flex items-center justify-end gap-2">
+                          <FormPreviewButton
+                            template={{
+                              title: template.title,
+                              description: template.description,
+                              descriptionHtml: template.descriptionHtml,
+                              formFields: template.formFields,
+                            }}
+                          />
+                          <Link href={`/dashboard/forms/${template.id}`} className={cn(STYLES.btn, STYLES.btnPrimary, 'h-8 px-3 py-1.5 text-xs')}>
+                            Open
+                          </Link>
+                        </div>
+                      </td>
                     </tr>
                   )
                 })}

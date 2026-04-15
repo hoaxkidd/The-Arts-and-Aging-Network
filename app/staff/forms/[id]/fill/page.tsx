@@ -5,6 +5,7 @@ import { Lock } from "lucide-react"
 import Link from "next/link"
 import { StaffFormFill } from "./StaffFormFill"
 import { canAccessTemplate } from "@/lib/form-access"
+import { getStaffBasePathForRole } from "@/lib/role-routes"
 
 export default async function StaffFormFillPage({
   params
@@ -13,6 +14,7 @@ export default async function StaffFormFillPage({
 }) {
   const session = await auth()
   if (!session?.user?.id) redirect('/login')
+  const basePath = getStaffBasePathForRole(session.user.role)
 
   const { id } = await params
 
@@ -36,7 +38,7 @@ export default async function StaffFormFillPage({
         <div className="p-8 text-center">
           <Lock className="w-12 h-12 text-gray-300 mx-auto mb-4" />
           <p className="text-gray-500">You don't have access to this form.</p>
-          <Link href="/staff/forms" className="text-primary-600 hover:text-primary-700 text-sm mt-2 inline-block">
+          <Link href={`${basePath}/forms`} className="text-primary-600 hover:text-primary-700 text-sm mt-2 inline-block">
             Back to Forms
           </Link>
         </div>
@@ -48,7 +50,7 @@ export default async function StaffFormFillPage({
     return (
       <div className="p-8 text-center">
         <p className="text-gray-500">This form is not fillable</p>
-        <Link href={`/staff/forms/${id}`} className="text-primary-600 hover:text-primary-700 text-sm mt-2 inline-block">
+        <Link href={`${basePath}/forms/${id}`} className="text-primary-600 hover:text-primary-700 text-sm mt-2 inline-block">
           Back to Form Details
         </Link>
       </div>
