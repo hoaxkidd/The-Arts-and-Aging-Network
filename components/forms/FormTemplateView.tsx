@@ -26,6 +26,8 @@ export type FormTemplateViewProps = {
   onSubmit?: (e: React.FormEvent) => void
   /** For fill mode: submit in progress */
   submitting?: boolean
+  /** Optional density mode for layout spacing */
+  density?: 'default' | 'compact'
 }
 
 /**
@@ -45,7 +47,9 @@ export function FormTemplateView({
   submitLabel,
   onSubmit,
   submitting = false,
+  density = 'default',
 }: FormTemplateViewProps) {
+  const wrapperPadding = density === 'compact' ? 'p-0' : 'p-4'
   const content = (
     <>
       {eventTitle && (
@@ -121,7 +125,7 @@ export function FormTemplateView({
 
   if (preview) {
     return (
-      <div className="space-y-4 p-4">
+      <div className={cn('space-y-4', wrapperPadding)}>
         {content}
       </div>
     )
@@ -133,7 +137,7 @@ export function FormTemplateView({
         e.preventDefault()
         onSubmit?.(e)
       }}
-      className="space-y-4 p-4"
+      className={cn('space-y-4', wrapperPadding)}
     >
       {content}
     </form>

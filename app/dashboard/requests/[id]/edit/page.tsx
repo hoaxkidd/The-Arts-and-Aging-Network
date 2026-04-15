@@ -16,5 +16,9 @@ export default async function EditHomeRequestPage({
   const result = await getEventRequestDetail(id)
   if (result.error || !result.data) notFound()
 
-  return <EditEventRequestForm request={result.data as never} />
+  return (
+    <div className="mx-auto w-full max-w-5xl px-2 pb-4 md:px-4">
+      <EditEventRequestForm request={result.data as never} />
+    </div>
+  )
 }

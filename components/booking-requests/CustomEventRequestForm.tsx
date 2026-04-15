@@ -38,10 +38,15 @@ export function CustomEventRequestForm() {
   const [isLoadingForms, setIsLoadingForms] = useState(true)
 
   const selectedDate = searchParams.get('date')
+  const prefillMode = searchParams.get('prefillMode')
+  const prefillBookingTitle = searchParams.get('prefillBookingTitle')
+  const prefillNotes = searchParams.get('prefillNotes')
+  const prefillStart = searchParams.get('prefillStart')
+  const prefillEnd = searchParams.get('prefillEnd')
   const selectedTemplateFromUrl = searchParams.get('formTemplateId')
   const hasCalendarDate = !!selectedDate && /^\d{4}-\d{2}-\d{2}$/.test(selectedDate)
-  const defaultStart = hasCalendarDate ? `${selectedDate}T09:00` : ''
-  const defaultEnd = hasCalendarDate ? `${selectedDate}T10:00` : ''
+  const defaultStart = prefillStart || (hasCalendarDate ? `${selectedDate}T09:00` : '')
+  const defaultEnd = prefillEnd || (hasCalendarDate ? `${selectedDate}T10:00` : '')
   const [startDateTime, setStartDateTime] = useState(defaultStart)
   const [endDateTime, setEndDateTime] = useState(defaultEnd)
   const [occurrences, setOccurrences] = useState<Array<{ startDateTime: string; endDateTime: string }>>([])
@@ -225,6 +230,8 @@ export function CustomEventRequestForm() {
         startDateTime: firstOccurrence.startDateTime,
         endDateTime: firstOccurrence.endDateTime,
         preferredDates: occurrences,
+        title: prefillMode === 'update' && prefillBookingTitle ? `Update Request: ${prefillBookingTitle}` : undefined,
+        notes: prefillNotes || undefined,
       }
 
       const result = await createCustomEventRequest(requestData)
@@ -256,7 +263,7 @@ export function CustomEventRequestForm() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <Link href="/dashboard/my-bookings?section=requests" className="inline-flex items-center gap-1 text-sm text-gray-600 hover:text-gray-900">
         <ArrowLeft className="w-4 h-4" /> Back to Requests
       </Link>
@@ -269,8 +276,17 @@ export function CustomEventRequestForm() {
       )}
 
       {/* Form Card */}
-      <div className="bg-white rounded-lg border border-gray-200 overflow-visible">
-        <div className="p-6 space-y-5">
+      <div className="bg-white rounded-lg border border-gray-200 overflow-visible shadow-sm">
+        <div className="p-4 md:p-5 space-y-4">
+          {prefillMode === 'update' && (
+            <div className="rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm text-blue-800">
+              <p className="font-medium">Update Details Request</p>
+              <p className="mt-1 text-xs text-blue-700">
+                You are submitting an update request{prefillBookingTitle ? ` for "${prefillBookingTitle}"` : ''}. Review the schedule below, complete the form, and submit.
+              </p>
+            </div>
+          )}
+
           <h2 className="font-semibold text-gray-900">
             Booking Schedule
           </h2>
@@ -368,7 +384,7 @@ export function CustomEventRequestForm() {
             </div>
           )}
 
-          <div className="pt-1 border-t border-gray-100" />
+          <div className="pt-0.5 border-t border-gray-100" />
 
           <h2 className="font-semibold text-gray-900">
             Select Booking Sign-up Form
@@ -426,13 +442,14 @@ export function CustomEventRequestForm() {
               errors={errors}
               onSubmit={handleSubmit}
               submitting={isPending}
+              density="compact"
             />
           </div>
         )}
 
         {/* Actions */}
         {selectedForm && (
-          <div className="p-6 bg-gray-50 border-t border-gray-100 flex items-center justify-end gap-3">
+          <div className="px-4 py-3 bg-gray-50 border-t border-gray-100 flex items-center justify-end gap-2.5">
               <Link
                 href="/dashboard/my-bookings?section=requests"
                 className={cn(STYLES.btn, "bg-white border border-gray-200 text-gray-700 hover:bg-gray-50")}

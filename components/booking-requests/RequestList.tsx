@@ -14,11 +14,13 @@ import {
   Loader2,
   AlertCircle,
   ExternalLink,
-  Pencil
+  Pencil,
+  FileText
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { STYLES } from '@/lib/styles'
 import { cancelEventRequest } from '@/app/actions/booking-requests'
+import { AddToCalendar } from '@/components/bookings/AddToCalendar'
 
 type Request = {
   id: string
@@ -45,6 +47,7 @@ type Request = {
     id: string
     title: string
     startDateTime: string
+    endDateTime?: string | null
     location: { name: string } | null
   } | null
   editAccessGranted?: boolean
@@ -69,6 +72,37 @@ export function RequestList({
   const [isPending, startTransition] = useTransition()
   const [cancellingId, setCancellingId] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
+  const [previewRequest, setPreviewRequest] = useState<Request | null>(null)
+
+  const toLocalDateInput = (iso?: string | null) => {
+    if (!iso) return ''
+    const date = new Date(iso)
+    if (Number.isNaN(date.getTime())) return ''
+    const year = date.getFullYear()
+    const month = `${date.getMonth() + 1}`.padStart(2, '0')
+    const day = `${date.getDate()}`.padStart(2, '0')
+    return `${year}-${month}-${day}`
+  }
+
+  const getUpdateDetailsHref = (request: Request) => {
+    if (
+      request.type === 'CREATE_CUSTOM' &&
+      (request.status === 'PENDING' || (request.status === 'REJECTED' && request.editAccessGranted))
+    ) {
+      return `/dashboard/requests/${request.id}/edit`
+    }
+
+    const title = request.existingEvent?.title || request.approvedEvent?.title || request.customTitle || 'Booking'
+    const start = request.existingEvent?.startDateTime || request.customStartDateTime || request.approvedEvent?.startDateTime || ''
+    const params = new URLSearchParams()
+    const date = toLocalDateInput(start)
+    if (date) params.set('date', date)
+    params.set('prefillMode', 'update')
+    params.set('prefillRequestId', request.id)
+    params.set('prefillBookingTitle', title)
+    params.set('prefillNotes', `Update details request for booking: ${title}`)
+    return `/dashboard/requests/new?${params.toString()}`
+  }
 
   const filteredRequests = useMemo(() => {
     return requests.filter(req => {
@@ -116,6 +150,7 @@ export function RequestList({
           return (
             <div
               key={request.id}
+              onClick={() => setPreviewRequest(request)}
               className="bg-white rounded-lg border border-gray-200 p-3 shadow-sm"
             >
               <div className="flex items-center gap-2 mb-2">
@@ -164,6 +199,7 @@ export function RequestList({
                 {request.status === 'PENDING' && userRole === 'HOME_ADMIN' && (
                   <button
                     onClick={() => handleCancel(request.id)}
+                    onMouseDown={(e) => e.stopPropagation()}
                     disabled={isCancelling}
                     className="px-2 py-1 text-xs text-red-600 hover:bg-red-50 rounded flex items-center gap-1 disabled:opacity-50"
                   >
@@ -221,7 +257,11 @@ export function RequestList({
                 const isCancelling = isPending && cancellingId === request.id
 
                 return (
-                  <tr key={request.id} className={STYLES.tableRow}>
+                  <tr
+                    key={request.id}
+                    className={cn(STYLES.tableRow, 'cursor-pointer')}
+                    onClick={() => setPreviewRequest(request)}
+                  >
                     <td className={STYLES.tableCell}>
                       <span className={cn(
                         "px-2 py-0.5 rounded text-xs font-medium flex items-center gap-1 w-fit",
@@ -259,6 +299,7 @@ export function RequestList({
                         {(request.type === 'CREATE_CUSTOM' && (request.status === 'PENDING' || (request.status === 'REJECTED' && request.editAccessGranted)) && userRole === 'HOME_ADMIN') && (
                           <Link
                             href={`/dashboard/requests/${request.id}/edit`}
+                            onClick={(e) => e.stopPropagation()}
                             className="p-1.5 text-primary-600 hover:bg-primary-50 rounded transition-colors"
                             title="Edit request"
                           >
@@ -268,6 +309,7 @@ export function RequestList({
                         {request.status === 'PENDING' && userRole === 'HOME_ADMIN' && (
                           <button
                             onClick={() => handleCancel(request.id)}
+                            onMouseDown={(e) => e.stopPropagation()}
                             disabled={isCancelling}
                             className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors disabled:opacity-50"
                             title="Cancel request"
@@ -278,6 +320,7 @@ export function RequestList({
                         {request.status === 'APPROVED' && (
                           <Link
                             href={`/dashboard/my-bookings/${request.approvedEvent?.id || request.existingEvent?.id}`}
+                            onClick={(e) => e.stopPropagation()}
                             className="p-1.5 text-primary-600 hover:bg-primary-50 rounded transition-colors"
                             title="View booking"
                           >
@@ -322,6 +365,110 @@ export function RequestList({
       {/* Views */}
       <MobileCardView />
       <DesktopTableView />
+
+      {previewRequest && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <button
+            type="button"
+            onClick={() => setPreviewRequest(null)}
+            className="absolute inset-0 bg-gray-900/40"
+            aria-label="Close preview"
+          />
+          <div className="relative w-full max-w-2xl overflow-hidden rounded-xl border border-gray-200 bg-white shadow-xl">
+            <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
+              <div>
+                <h3 className="text-base font-semibold text-gray-900">Request Preview</h3>
+                <p className="text-xs text-gray-500">Review request details and next actions</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPreviewRequest(null)}
+                className="rounded-md p-1.5 text-gray-500 hover:bg-gray-100 hover:text-gray-800"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="max-h-[70vh] overflow-auto px-4 py-4 space-y-4">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className={cn('px-2 py-0.5 rounded text-xs font-medium', statusStyles[previewRequest.status])}>{previewRequest.status}</span>
+                  <span className="text-xs text-gray-500">{previewRequest.type === 'CREATE_CUSTOM' ? 'Custom Request' : 'Existing Program Request'}</span>
+                </div>
+                <p className="mt-2 text-lg font-semibold text-gray-900">
+                  {previewRequest.type === 'CREATE_CUSTOM' ? previewRequest.customTitle : previewRequest.existingEvent?.title}
+                </p>
+                {previewRequest.notes && <p className="mt-1 text-sm text-gray-600">{previewRequest.notes}</p>}
+              </div>
+
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                <div className="rounded-lg border border-gray-200 bg-gray-50 p-3 text-sm text-gray-700">
+                  <p className="text-xs uppercase tracking-wide text-gray-500">Date</p>
+                  <p className="mt-1 font-medium">
+                    {(() => {
+                      const dt = previewRequest.type === 'CREATE_CUSTOM' ? previewRequest.customStartDateTime : previewRequest.existingEvent?.startDateTime
+                      return dt ? new Date(dt).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }) : 'TBD'
+                    })()}
+                  </p>
+                </div>
+                <div className="rounded-lg border border-gray-200 bg-gray-50 p-3 text-sm text-gray-700">
+                  <p className="text-xs uppercase tracking-wide text-gray-500">Location</p>
+                  <p className="mt-1 font-medium">
+                    {previewRequest.type === 'CREATE_CUSTOM' ? previewRequest.customLocationName || 'TBD' : previewRequest.existingEvent?.location?.name || 'TBD'}
+                  </p>
+                </div>
+              </div>
+
+              {previewRequest.status === 'REJECTED' && previewRequest.rejectionReason && (
+                <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                  <p className="font-medium">Decline Reason</p>
+                  <p className="mt-1">{previewRequest.rejectionReason}</p>
+                </div>
+              )}
+            </div>
+
+            <div className="flex flex-wrap items-center justify-end gap-2 border-t border-gray-100 px-4 py-3">
+              {(() => {
+                const startIso = previewRequest.type === 'CREATE_CUSTOM'
+                  ? previewRequest.customStartDateTime
+                  : previewRequest.existingEvent?.startDateTime || previewRequest.approvedEvent?.startDateTime || null
+                const endIso = previewRequest.type === 'CREATE_CUSTOM'
+                  ? previewRequest.customEndDateTime
+                  : previewRequest.existingEvent?.endDateTime || previewRequest.approvedEvent?.endDateTime || null
+                if (!startIso || !endIso) return null
+                return (
+                  <AddToCalendar
+                    event={{
+                      title: (previewRequest.type === 'CREATE_CUSTOM' ? previewRequest.customTitle : previewRequest.existingEvent?.title) || 'Booking Request',
+                      description: previewRequest.notes,
+                      location: previewRequest.type === 'CREATE_CUSTOM'
+                        ? previewRequest.customLocationName || ''
+                        : previewRequest.existingEvent?.location?.name || previewRequest.approvedEvent?.location?.name || '',
+                      startDateTime: new Date(startIso),
+                      endDateTime: new Date(endIso),
+                    }}
+                  />
+                )
+              })()}
+
+              <Link href={getUpdateDetailsHref(previewRequest)} className={cn(STYLES.btn, STYLES.btnSecondary, 'inline-flex items-center gap-2')}>
+                <FileText className="h-4 w-4" />
+                Update Details Request
+              </Link>
+
+              {(previewRequest.approvedEvent?.id || previewRequest.existingEvent?.id) && (
+                <Link
+                  href={`/dashboard/my-bookings/${previewRequest.approvedEvent?.id || previewRequest.existingEvent?.id}`}
+                  className={cn(STYLES.btn, STYLES.btnPrimary, 'inline-flex items-center gap-2')}
+                >
+                  <ExternalLink className="h-4 w-4" />
+                  View Program
+                </Link>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

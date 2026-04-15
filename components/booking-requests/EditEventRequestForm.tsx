@@ -226,7 +226,7 @@ export function EditEventRequestForm({ request }: { request: EditRequest }) {
         <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700">{error}</div>
       )}
 
-      <div className="bg-white rounded-lg border border-gray-200 p-4 space-y-4">
+      <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-4 md:p-5 space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="md:col-span-2">
             <label className="block text-sm font-medium text-gray-700 mb-1">Booking Title</label>
@@ -336,13 +336,14 @@ export function EditEventRequestForm({ request }: { request: EditRequest }) {
       </div>
 
       {request.formSubmission && fields.length > 0 && (
-        <div className="bg-white rounded-lg border border-gray-200">
+        <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-4 md:p-5">
           <FormTemplateView
             title={request.formSubmission.template.title}
             fields={fields}
             values={formValues}
             onFieldChange={(fieldId, value) => setFormValues((prev) => ({ ...prev, [fieldId]: value }))}
             errors={formErrors}
+            density="compact"
           />
         </div>
       )}
